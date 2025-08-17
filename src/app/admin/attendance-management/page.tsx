@@ -1,0 +1,437 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/supabase';
+import { 
+  Clock, MapPin, Users, Calendar, Filter, Download,
+  Search, Eye, CheckCircle, XCircle, AlertCircle,
+  TrendingUp, BarChart3, Download as DownloadIcon
+} from 'lucide-react';
+
+interface AttendanceRecord {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  employee_id_code: string;
+  department: string;
+  position: string;
+  schedule_date: string;
+  actual_start: string;
+  actual_end: string;
+  total_hours: number;
+  overtime_hours: number;
+  status: 'confirmed' | 'completed' | 'pending';
+  check_in_location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  check_out_location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  employee_note?: string;
+  manager_note?: string;
+}
+
+export default function AttendanceManagementPage() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    checkAuth();
+    loadData();
+  }, [selectedDate, selectedDepartment]);
+
+  const checkAuth = async () => {
+    const user = await auth.getCurrentUser();
+    console.log('Current user:', user); // 디버깅용
+    
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
+    // 관리자/매니저 권한 확인
+    const isManager = user.role_id === 'admin' || 
+                     user.role_id === 'manager' ||
+                     user.employee_id === 'MASLABS-001' ||
+                     user.name === '시스템 관리자';
+    
+    if (!isManager) {
+      alert('관리자 또는 매니저 권한이 필요합니다.');
+      router.push('/dashboard');
+      return;
+    }
+    
+    setCurrentUser(user);
+  };
+
+  const loadData = async () => {
+    // 샘플 출근 데이터
+    const sampleRecords: AttendanceRecord[] = [
+      {
+        id: '1',
+        employee_id: '1',
+        employee_name: '김영희',
+        employee_id_code: 'OP-001',
+        department: '마쓰구',
+        position: 'OP팀원',
+        schedule_date: selectedDate,
+        actual_start: '2025-01-15T09:05:00Z',
+        actual_end: '2025-01-15T18:30:00Z',
+        total_hours: 8.5,
+        overtime_hours: 0.5,
+        status: 'completed',
+        check_in_location: {
+          latitude: 37.5665,
+          longitude: 126.9780,
+          address: '서울시 강남구 테헤란로 123'
+        },
+        check_out_location: {
+          latitude: 37.5665,
+          longitude: 126.9780,
+          address: '서울시 강남구 테헤란로 123'
+        },
+        employee_note: '정상 출근'
+      },
+      {
+        id: '2',
+        employee_id: '2',
+        employee_name: '박철수',
+        employee_id_code: 'OP-002',
+        department: '싱싱',
+        position: 'OP팀원',
+        schedule_date: selectedDate,
+        actual_start: '2025-01-15T09:00:00Z',
+        actual_end: null,
+        total_hours: 0,
+        overtime_hours: 0,
+        status: 'confirmed',
+        check_in_location: {
+          latitude: 37.5665,
+          longitude: 126.9780,
+          address: '서울시 강남구 테헤란로 456'
+        },
+        employee_note: '현재 근무 중'
+      },
+      {
+        id: '3',
+        employee_id: '3',
+        employee_name: '이민수',
+        employee_id_code: 'OP-003',
+        department: '마쓰구',
+        position: 'OP팀원',
+        schedule_date: selectedDate,
+        actual_start: null,
+        actual_end: null,
+        total_hours: 0,
+        overtime_hours: 0,
+        status: 'pending',
+        employee_note: '연차 사용'
+      }
+    ];
+
+    setAttendanceRecords(sampleRecords);
+    setIsLoading(false);
+  };
+
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return '-';
+    return new Date(timeString).toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-green-600 bg-green-100';
+      case 'confirmed': return 'text-blue-600 bg-blue-100';
+      case 'pending': return 'text-yellow-600 bg-yellow-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="w-4 h-4" />;
+      case 'confirmed': return <Clock className="w-4 h-4" />;
+      case 'pending': return <AlertCircle className="w-4 h-4" />;
+      default: return <XCircle className="w-4 h-4" />;
+    }
+  };
+
+  const filteredRecords = attendanceRecords.filter(record => {
+    const matchesSearch = record.employee_name.includes(searchTerm) || 
+                         record.employee_id_code.includes(searchTerm);
+    const matchesDepartment = selectedDepartment === 'all' || 
+                             record.department === selectedDepartment;
+    return matchesSearch && matchesDepartment;
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 헤더 */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="mr-4 p-2 rounded-lg hover:bg-gray-100 flex items-center"
+              >
+                <svg className="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                뒤로가기
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">출근 관리</h1>
+                <p className="text-gray-600">직원들의 출근체크 위치/시간 확인 및 관리</p>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center">
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                엑셀 다운로드
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 필터 및 검색 */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">날짜</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">부서</label>
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="all">전체 부서</option>
+                <option value="마쓰구">마쓰구</option>
+                <option value="싱싱">싱싱</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">검색</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="이름 또는 사번"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={loadData}
+                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                <Filter className="w-4 h-4 inline mr-2" />
+                필터 적용
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 통계 요약 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">출근 완료</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {filteredRecords.filter(r => r.status === 'completed').length}명
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-blue-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">근무 중</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {filteredRecords.filter(r => r.status === 'confirmed').length}명
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-8 w-8 text-yellow-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">미출근</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {filteredRecords.filter(r => r.status === 'pending').length}명
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <BarChart3 className="h-8 w-8 text-purple-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">평균 근무시간</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {Math.round(filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / Math.max(filteredRecords.length, 1) * 10) / 10}시간
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 출근 기록 테이블 */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">출근 기록</h3>
+            <p className="text-sm text-gray-600 mt-1">총 {filteredRecords.length}명의 기록</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    직원 정보
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    출근 시간
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    퇴근 시간
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    근무 시간
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    위치
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    상태
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    액션
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredRecords.map((record) => (
+                  <tr key={record.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <span className="text-sm font-medium text-indigo-600">
+                              {record.employee_name.charAt(0)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{record.employee_name}</div>
+                          <div className="text-sm text-gray-500">{record.employee_id_code}</div>
+                          <div className="text-sm text-gray-500">{record.department} - {record.position}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatTime(record.actual_start)}</div>
+                      {record.check_in_location && (
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {record.check_in_location.address}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatTime(record.actual_end)}</div>
+                      {record.check_out_location && (
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {record.check_out_location.address}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {record.total_hours > 0 ? `${record.total_hours}시간` : '-'}
+                      </div>
+                      {record.overtime_hours > 0 && (
+                        <div className="text-xs text-orange-600">
+                          연장: {record.overtime_hours}시간
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {record.check_in_location ? (
+                        <div className="text-xs text-gray-600">
+                          <div>위도: {record.check_in_location.latitude.toFixed(6)}</div>
+                          <div>경도: {record.check_in_location.longitude.toFixed(6)}</div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-500">위치 없음</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
+                        {getStatusIcon(record.status)}
+                        <span className="ml-1">
+                          {record.status === 'completed' ? '완료' : 
+                           record.status === 'confirmed' ? '근무중' : '미출근'}
+                        </span>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button className="text-indigo-600 hover:text-indigo-900 mr-3">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="text-green-600 hover:text-green-900">
+                        <BarChart3 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
