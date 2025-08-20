@@ -209,8 +209,12 @@ export const auth = {
       throw new Error('전화번호를 찾을 수 없습니다.');
     }
 
+    // 기본 패스워드: 전화번호 뒷 8자리 (예: 010-6669-9000 -> 66699000)
+    const defaultPassword = phone.replace(/\D/g, '').slice(-8);
+    
     // 비밀번호 확인 (개발용 - 실제로는 해시 비교)
-    if (password === employee.password_hash || password === 'admin123') {
+    if (password === employee.password_hash || 
+        password === defaultPassword) {
       // 로그인 성공 - 세션 저장
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentEmployee', JSON.stringify(employee));
@@ -245,8 +249,12 @@ export const auth = {
       throw new Error('사번을 찾을 수 없습니다.');
     }
 
+    // 기본 패스워드: 전화번호 뒷 8자리
+    const defaultPassword = employee.phone.replace(/\D/g, '').slice(-8);
+    
     // 간단한 인증 (개발용)
-    if (password === employee.password_hash || password === 'admin123') {
+    if (password === employee.password_hash || 
+        password === defaultPassword) {
       // 로그인 성공 - 세션 저장
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentEmployee', JSON.stringify(employee));
@@ -262,6 +270,61 @@ export const auth = {
       return { user: employee, session: { access_token: 'dev-token' } };
     } else {
       throw new Error('비밀번호가 올바르지 않습니다.');
+    }
+  },
+
+  /**
+   * 핀번호로 로그인 (사용자 식별자 + 핀번호)
+   */
+  async signInWithPin(userIdentifier: string, pinCode: string) {
+    try {
+      // 사용자 식별자로 직원 찾기 (전화번호 또는 사번)
+      let employee;
+      
+      // 전화번호로 검색
+      const { data: phoneData, error: phoneError } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('phone', userIdentifier)
+        .single();
+      
+      if (phoneData && !phoneError) {
+        employee = phoneData;
+      } else {
+        // 사번으로 검색
+        const { data: idData, error: idError } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('employee_id', userIdentifier)
+          .single();
+        
+        if (idData && !idError) {
+          employee = idData;
+        }
+      }
+      
+      if (!employee) {
+        throw new Error('등록되지 않은 사용자입니다. 전화번호 또는 사번을 확인해주세요.');
+      }
+      
+      // 핀번호 확인
+      if (employee.pin_code === pinCode) {
+        // 로그인 성공
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('currentEmployee', JSON.stringify(employee));
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('lastActivity', Date.now().toString());
+        }
+        return { user: employee, session: { access_token: 'dev-token' } };
+      } else {
+        throw new Error('핀번호가 올바르지 않습니다.');
+      }
+    } catch (error: any) {
+      if (error.message) {
+        throw error;
+      } else {
+        throw new Error('로그인에 실패했습니다.');
+      }
     }
   },
 
@@ -284,19 +347,57 @@ export const auth = {
       const employeeData = localStorage.getItem('currentEmployee');
       
       if (isLoggedIn === 'true' && employeeData) {
-        const employee = JSON.parse(employeeData);
-        
-        // role_id가 없으면 기본값 설정
-        if (!employee.role_id) {
-          // employee_id가 'MASLABS-001'이면 관리자로 설정
-          if (employee.employee_id === 'MASLABS-001') {
-            employee.role_id = 'admin';
-          } else {
-            employee.role_id = 'employee';
+        try {
+          const employee = JSON.parse(employeeData);
+          
+          // 데이터베이스에서 최신 정보 가져오기
+          const { data: freshEmployee, error } = await supabase
+            .from('employees')
+            .select(`
+              *,
+              department:departments(name),
+              position:positions(name),
+              role:roles(name)
+            `)
+            .eq('id', employee.id)
+            .single();
+          
+          if (error) {
+            console.error('사용자 정보 조회 오류:', error);
+            // 로컬 스토리지 정보 사용
+            return employee;
           }
+          
+          if (freshEmployee) {
+            // 최신 정보로 로컬 스토리지 업데이트
+            const updatedEmployee = {
+              ...freshEmployee,
+              department_name: freshEmployee.department?.name,
+              position_name: freshEmployee.position?.name,
+              role_name: freshEmployee.role?.name
+            };
+            
+            localStorage.setItem('currentEmployee', JSON.stringify(updatedEmployee));
+            return updatedEmployee;
+          }
+          
+          return employee;
+        } catch (error) {
+          console.error('사용자 정보 처리 오류:', error);
+          // 로컬 스토리지 정보 사용
+          const employee = JSON.parse(employeeData);
+          
+          // role_id가 없으면 기본값 설정
+          if (!employee.role_id) {
+            if (employee.employee_id === 'MASLABS-001') {
+              employee.role_id = 'admin';
+            } else {
+              employee.role_id = 'employee';
+            }
+          }
+          
+          return employee;
         }
-        
-        return employee;
       }
     }
     return null;

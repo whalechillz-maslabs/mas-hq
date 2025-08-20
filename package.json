@@ -6,7 +6,18 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "playwright test",
+    "test:park-jin": "playwright test tests/park-jin-test.spec.ts --headed",
+    "test:park-jin-nickname": "playwright test tests/park-jin-nickname-test.spec.ts --headed",
+    "test:admin": "playwright test tests/admin-permission-test.spec.ts --headed",
+    "test:manager": "playwright test tests/manager-permission-test.spec.ts --headed",
+    "test:ui": "playwright test --ui",
+    "db:insert-park-jin": "bash scripts/insert_park_jin_data.sh",
+    "db:fix-admin": "bash scripts/auto-supabase.sh db reset --linked && bash scripts/auto-supabase.sh db push",
+    "db:reset": "bash scripts/auto-supabase.sh db reset --linked",
+    "db:push": "bash scripts/auto-supabase.sh db push",
+    "db:auto": "bash scripts/auto-supabase.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",

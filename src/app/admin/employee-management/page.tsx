@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/supabase';
+import { supabase, auth } from '@/lib/supabase';
 import { 
   Users, UserPlus, UserCheck, Settings, Save, 
-  Plus, Edit, Trash, Eye, Search, Filter
+  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw
 } from 'lucide-react';
 
 interface Employee {
@@ -14,9 +14,45 @@ interface Employee {
   name: string;
   phone: string;
   email?: string;
-  department: string;
-  position: string;
-  role: string;
+  department_id?: string;
+  department_name?: string;
+  position_id?: string;
+  position_name?: string;
+  role_id?: string;
+  role_name?: string;
+  hire_date: string;
+  status: 'active' | 'inactive' | 'on_leave';
+  monthly_salary?: number;
+  hourly_rate?: number;
+  password_hash?: string;
+  pin_code?: string;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface Position {
+  id: string;
+  name: string;
+  level: number;
+}
+
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface NewEmployee {
+  name: string;
+  phone: string;
+  email: string;
+  department_id: string;
+  position_id: string;
+  role_id: string;
   hire_date: string;
   status: 'active' | 'inactive' | 'on_leave';
   monthly_salary?: number;
@@ -27,9 +63,31 @@ export default function EmployeeManagementPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('employee-list');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [newEmployee, setNewEmployee] = useState<NewEmployee>({
+    name: '',
+    phone: '',
+    email: '',
+    department_id: '',
+    position_id: '',
+    role_id: '',
+    hire_date: new Date().toISOString().split('T')[0],
+    status: 'active',
+    monthly_salary: undefined,
+    hourly_rate: undefined
+  });
 
   useEffect(() => {
     checkAuth();
@@ -46,57 +104,226 @@ export default function EmployeeManagementPage() {
   };
 
   const loadData = async () => {
-    // 샘플 데이터
-    const sampleEmployees: Employee[] = [
-      {
-        id: '1',
-        employee_id: 'MASLABS-001',
-        name: '시스템 관리자',
-        phone: '010-6669-9000',
-        email: 'admin@maslabs.kr',
-        department: '경영지원팀',
-        position: '총관리자',
-        role: 'admin',
-        hire_date: '2024-01-01',
-        status: 'active',
-        monthly_salary: 5000000
-      },
-      {
-        id: '2',
-        employee_id: 'MASLABS-002',
-        name: '김팀장',
-        phone: '010-1234-5678',
-        email: 'kim@maslabs.kr',
-        department: 'OP팀',
-        position: '팀장',
-        role: 'team_lead',
-        hire_date: '2024-02-01',
-        status: 'active',
-        monthly_salary: 3500000
-      },
-      {
-        id: '3',
-        employee_id: 'MASLABS-003',
-        name: '이사원',
-        phone: '010-2345-6789',
-        email: 'lee@maslabs.kr',
-        department: 'OP팀',
-        position: '사원',
-        role: 'employee',
-        hire_date: '2024-03-01',
-        status: 'active',
-        monthly_salary: 2800000
-      }
-    ];
+    try {
+      // 부서 데이터 로드
+      const { data: deptData, error: deptError } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name');
+      
+      if (deptError) throw deptError;
+      setDepartments(deptData || []);
 
-    setEmployees(sampleEmployees);
-    setIsLoading(false);
+      // 직급 데이터 로드
+      const { data: posData, error: posError } = await supabase
+        .from('positions')
+        .select('*')
+        .order('level');
+      
+      if (posError) throw posError;
+      setPositions(posData || []);
+
+      // 역할 데이터 로드
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+      
+      if (roleError) throw roleError;
+      setRoles(roleData || []);
+
+      // 직원 데이터 로드 (패스워드와 핀번호 포함)
+      const { data: empData, error: empError } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          department:departments(name),
+          position:positions(name),
+          role:roles(name)
+        `)
+        .order('name');
+      
+      if (empError) throw empError;
+      
+      const formattedEmployees = (empData || []).map(emp => ({
+        ...emp,
+        department_name: emp.department?.name,
+        position_name: emp.position?.name,
+        role_name: emp.role?.name
+      }));
+      
+      setEmployees(formattedEmployees);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('데이터 로드 오류:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const generateEmployeeId = () => {
+    const count = employees.length + 1;
+    return `MASLABS-${count.toString().padStart(3, '0')}`;
+  };
+
+  const handleAddEmployee = () => {
+    setNewEmployee({
+      name: '',
+      phone: '',
+      email: '',
+      department_id: '',
+      position_id: '',
+      role_id: '',
+      hire_date: new Date().toISOString().split('T')[0],
+      status: 'active',
+      monthly_salary: undefined,
+      hourly_rate: undefined
+    });
+    setShowAddModal(true);
+  };
+
+  const handleSaveNewEmployee = async () => {
+    try {
+      // 필수 필드 검증
+      if (!newEmployee.name || !newEmployee.phone || !newEmployee.department_id || !newEmployee.position_id || !newEmployee.role_id) {
+        alert('필수 정보를 모두 입력해주세요.');
+        return;
+      }
+
+      const employeeId = generateEmployeeId();
+      const defaultPassword = newEmployee.phone.replace(/\D/g, '').slice(-8);
+
+      const { error } = await supabase
+        .from('employees')
+        .insert({
+          employee_id: employeeId,
+          name: newEmployee.name,
+          phone: newEmployee.phone,
+          email: newEmployee.email || null,
+          department_id: newEmployee.department_id,
+          position_id: newEmployee.position_id,
+          role_id: newEmployee.role_id,
+          hire_date: newEmployee.hire_date,
+          status: newEmployee.status,
+          monthly_salary: newEmployee.monthly_salary || null,
+          hourly_rate: newEmployee.hourly_rate || null,
+          password_hash: defaultPassword,
+          pin_code: '1234',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      setShowAddModal(false);
+      loadData(); // 데이터 새로고침
+      alert(`직원이 성공적으로 추가되었습니다.\n사번: ${employeeId}\n기본 비밀번호: ${defaultPassword}\n기본 핀번호: 1234`);
+    } catch (error) {
+      console.error('직원 추가 오류:', error);
+      alert('직원 추가에 실패했습니다.');
+    }
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEmployee = async () => {
+    if (!editingEmployee) return;
+
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .update({
+          department_id: editingEmployee.department_id,
+          position_id: editingEmployee.position_id,
+          role_id: editingEmployee.role_id,
+          status: editingEmployee.status,
+          monthly_salary: editingEmployee.monthly_salary,
+          hourly_rate: editingEmployee.hourly_rate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingEmployee.id);
+
+      if (error) throw error;
+
+      setShowEditModal(false);
+      setEditingEmployee(null);
+      loadData(); // 데이터 새로고침
+      alert('직원 정보가 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('직원 정보 업데이트 오류:', error);
+      alert('직원 정보 업데이트에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteEmployee = (employee: Employee) => {
+    setDeletingEmployee(employee);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteEmployee = async () => {
+    if (!deletingEmployee) return;
+
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .eq('id', deletingEmployee.id);
+
+      if (error) throw error;
+
+      setShowDeleteModal(false);
+      setDeletingEmployee(null);
+      loadData(); // 데이터 새로고침
+      alert('직원이 성공적으로 삭제되었습니다.');
+    } catch (error) {
+      console.error('직원 삭제 오류:', error);
+      alert('직원 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleViewPassword = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setShowPasswordModal(true);
+  };
+
+  const handleResetPassword = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setShowResetModal(true);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!selectedEmployee) return;
+
+    try {
+      const defaultPassword = selectedEmployee.phone.replace(/\D/g, '').slice(-8);
+      
+      const { error } = await supabase
+        .from('employees')
+        .update({
+          password_hash: defaultPassword,
+          pin_code: '1234',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedEmployee.id);
+
+      if (error) throw error;
+
+      setShowResetModal(false);
+      setSelectedEmployee(null);
+      loadData(); // 데이터 새로고침
+      alert(`비밀번호가 초기화되었습니다.\n새 비밀번호: ${defaultPassword}\n새 핀번호: 1234`);
+    } catch (error) {
+      console.error('비밀번호 초기화 오류:', error);
+      alert('비밀번호 초기화에 실패했습니다.');
+    }
   };
 
   const filteredEmployees = employees.filter(employee =>
     employee.name.includes(searchTerm) ||
     employee.employee_id.includes(searchTerm) ||
-    employee.department.includes(searchTerm)
+    employee.department_name?.includes(searchTerm)
   );
 
   if (isLoading) {
@@ -121,15 +348,16 @@ export default function EmployeeManagementPage() {
                 onClick={() => router.push('/dashboard')}
                 className="mr-4 p-2 rounded-lg hover:bg-gray-100 flex items-center"
               >
-                <svg className="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ArrowLeft className="h-5 w-5 mr-1" />
                 뒤로가기
               </button>
               <h1 className="text-2xl font-bold text-gray-900">직원 관리</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              <button 
+                onClick={handleAddEmployee}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              >
                 <Plus className="h-4 w-4 inline mr-2" />
                 직원 추가
               </button>
@@ -209,8 +437,8 @@ export default function EmployeeManagementPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{employee.department}</div>
-                      <div className="text-sm text-gray-500">{employee.position}</div>
+                      <div className="text-sm text-gray-900">{employee.department_name || '미지정'}</div>
+                      <div className="text-sm text-gray-500">{employee.position_name || '미지정'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{employee.phone}</div>
@@ -229,14 +457,37 @@ export default function EmployeeManagementPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.monthly_salary?.toLocaleString()}원
+                      {employee.monthly_salary ? `${employee.monthly_salary.toLocaleString()}원` : 
+                       employee.hourly_rate ? `${employee.hourly_rate.toLocaleString()}원/시` : '미지정'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        수정
+                      <button 
+                        onClick={() => handleEditEmployee(employee)}
+                        className="text-indigo-600 hover:text-indigo-900 mr-2"
+                        title="수정"
+                      >
+                        <Edit className="h-4 w-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
-                        삭제
+                      <button 
+                        onClick={() => handleViewPassword(employee)}
+                        className="text-blue-600 hover:text-blue-900 mr-2"
+                        title="비밀번호 확인"
+                      >
+                        <Key className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleResetPassword(employee)}
+                        className="text-orange-600 hover:text-orange-900 mr-2"
+                        title="비밀번호 초기화"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteEmployee(employee)}
+                        className="text-red-600 hover:text-red-900"
+                        title="삭제"
+                      >
+                        <Trash className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
@@ -246,6 +497,436 @@ export default function EmployeeManagementPage() {
           </div>
         </div>
       </main>
+
+      {/* 비밀번호 확인 모달 */}
+      {showPasswordModal && selectedEmployee && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">비밀번호 정보</h3>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">직원명</label>
+                  <p className="text-sm text-gray-900">{selectedEmployee.name} ({selectedEmployee.employee_id})</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">전화번호</label>
+                  <p className="text-sm text-gray-900">{selectedEmployee.phone}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">현재 비밀번호</label>
+                  <p className="text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
+                    {selectedEmployee.password_hash || '미설정'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">현재 핀번호</label>
+                  <p className="text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
+                    {selectedEmployee.pin_code || '미설정'}
+                  </p>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>보안 주의사항:</strong><br />
+                    • 비밀번호는 직원에게 직접 전달하세요<br />
+                    • 화면에 표시된 정보를 캡처하지 마세요<br />
+                    • 확인 후 즉시 창을 닫으세요
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 bg-gray-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-gray-700"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비밀번호 초기화 확인 모달 */}
+      {showResetModal && selectedEmployee && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">비밀번호 초기화 확인</h3>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  <strong>{selectedEmployee.name}</strong> ({selectedEmployee.employee_id}) 직원의 비밀번호를 초기화하시겠습니까?
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>초기화 후 설정될 정보:</strong><br />
+                    • 비밀번호: {selectedEmployee.phone.replace(/\D/g, '').slice(-8)}<br />
+                    • 핀번호: 1234
+                  </p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-800">
+                    <strong>주의사항:</strong><br />
+                    • 기존 비밀번호는 즉시 무효화됩니다<br />
+                    • 직원에게 새로운 비밀번호를 안전하게 전달하세요
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowResetModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={confirmResetPassword}
+                  className="px-4 py-2 bg-orange-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-orange-700"
+                >
+                  초기화
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 직원 추가 모달 */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">새 직원 추가</h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">이름 *</label>
+                  <input
+                    type="text"
+                    value={newEmployee.name}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      name: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="직원 이름"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">전화번호 *</label>
+                  <input
+                    type="tel"
+                    value={newEmployee.phone}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      phone: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="010-0000-0000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">이메일</label>
+                  <input
+                    type="email"
+                    value={newEmployee.email}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      email: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">부서 *</label>
+                  <select
+                    value={newEmployee.department_id}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      department_id: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">부서 선택</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">직급 *</label>
+                  <select
+                    value={newEmployee.position_id}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      position_id: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">직급 선택</option>
+                    {positions.map(pos => (
+                      <option key={pos.id} value={pos.id}>{pos.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">역할 *</label>
+                  <select
+                    value={newEmployee.role_id}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      role_id: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">역할 선택</option>
+                    {roles.map(role => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">입사일</label>
+                  <input
+                    type="date"
+                    value={newEmployee.hire_date}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      hire_date: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">상태</label>
+                  <select
+                    value={newEmployee.status}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      status: e.target.value as 'active' | 'inactive' | 'on_leave'
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="active">재직</option>
+                    <option value="on_leave">휴직</option>
+                    <option value="inactive">퇴직</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">월급 (원)</label>
+                  <input
+                    type="number"
+                    value={newEmployee.monthly_salary || ''}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      monthly_salary: e.target.value ? parseInt(e.target.value) : undefined
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="월급 입력"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">시급 (원)</label>
+                  <input
+                    type="number"
+                    value={newEmployee.hourly_rate || ''}
+                    onChange={(e) => setNewEmployee({
+                      ...newEmployee,
+                      hourly_rate: e.target.value ? parseInt(e.target.value) : undefined
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="시급 입력"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveNewEmployee}
+                  className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  추가
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 수정 모달 */}
+      {showEditModal && editingEmployee && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">직원 정보 수정</h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">부서</label>
+                  <select
+                    value={editingEmployee.department_id || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      department_id: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">부서 선택</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">직급</label>
+                  <select
+                    value={editingEmployee.position_id || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      position_id: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">직급 선택</option>
+                    {positions.map(pos => (
+                      <option key={pos.id} value={pos.id}>{pos.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">역할</label>
+                  <select
+                    value={editingEmployee.role_id || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      role_id: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">역할 선택</option>
+                    {roles.map(role => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">상태</label>
+                  <select
+                    value={editingEmployee.status}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      status: e.target.value as 'active' | 'inactive' | 'on_leave'
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="active">재직</option>
+                    <option value="on_leave">휴직</option>
+                    <option value="inactive">퇴직</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">월급 (원)</label>
+                  <input
+                    type="number"
+                    value={editingEmployee.monthly_salary || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      monthly_salary: e.target.value ? parseInt(e.target.value) : undefined
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="월급 입력"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">시급 (원)</label>
+                  <input
+                    type="number"
+                    value={editingEmployee.hourly_rate || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      hourly_rate: e.target.value ? parseInt(e.target.value) : undefined
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="시급 입력"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveEmployee}
+                  className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteModal && deletingEmployee && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">직원 삭제 확인</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                <strong>{deletingEmployee.name}</strong> ({deletingEmployee.employee_id}) 직원을 삭제하시겠습니까?
+                <br />
+                <span className="text-red-600">이 작업은 되돌릴 수 없습니다.</span>
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={confirmDeleteEmployee}
+                  className="px-4 py-2 bg-red-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-red-700"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -82,8 +82,10 @@ CREATE TABLE IF NOT EXISTS employees (
     employee_id VARCHAR(20) UNIQUE NOT NULL, -- MASLABS-001 형식
     email VARCHAR(255) UNIQUE,
     name VARCHAR(100) NOT NULL,
+    nickname VARCHAR(50), -- 닉네임 추가
     phone VARCHAR(20) UNIQUE NOT NULL, -- 로그인 키
     password_hash TEXT, -- 비밀번호 해시
+    pin_code VARCHAR(4), -- 핀번호 추가
     department_id UUID REFERENCES departments(id),
     position_id UUID REFERENCES positions(id),
     role_id UUID REFERENCES roles(id),

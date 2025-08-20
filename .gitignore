@@ -39,3 +39,30 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Supabase
+.supabase/
+
+# Screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Database
+*.sqlite
+*.db
+
+# Logs
+*.log
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

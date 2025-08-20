@@ -7,7 +7,7 @@
 -- 1. 기존 업무 유형 비활성화 (삭제 대신)
 UPDATE operation_types SET is_active = false;
 
--- 2. 새로운 KPI 기반 업무 유형 추가
+-- 2. 새로운 KPI 기반 업무 유형 추가 (중복 방지)
 INSERT INTO operation_types (code, name, description, category, points, is_active) VALUES 
 
 -- ====================================
@@ -64,7 +64,13 @@ INSERT INTO operation_types (code, name, description, category, points, is_activ
 ('TRAINING_ATTEND', '교육 참석', '교육 프로그램 참석', 'training', 10, true),
 ('TRAINING_CONDUCT', '교육 진행', '교육 프로그램 진행', 'training', 15, true),
 ('QUALITY_CHECK', '품질 검사', '품질 관리 및 검사', 'quality', 8, true),
-('MAINTENANCE', '시스템 유지보수', '시스템 및 장비 유지보수', 'maintenance', 12, true);
+('MAINTENANCE', '시스템 유지보수', '시스템 및 장비 유지보수', 'maintenance', 12, true)
+ON CONFLICT (code) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    category = EXCLUDED.category,
+    points = EXCLUDED.points,
+    is_active = EXCLUDED.is_active;
 
 -- 3. 업데이트 확인 뷰 생성
 CREATE OR REPLACE VIEW kpi_operation_types_summary AS
