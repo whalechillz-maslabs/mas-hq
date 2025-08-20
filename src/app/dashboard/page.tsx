@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { auth, db } from '@/lib/supabase';
-import { getUserAccessibleMenus, canAccessMenu } from '@/lib/permissions';
-import { formatCurrency, getStatusColor, formatHours } from '@/utils/formatUtils';
-import { formatDateKR, formatTimeKR, isToday } from '@/utils/dateUtils';
-import { 
+import { Building2, useEffect, useState } from 'react';
+import { Building2, useRouter } from 'next/navigation';
+import { Building2, auth, db } from '@/lib/supabase';
+import { Building2, getUserAccessibleMenus, canAccessMenu } from '@/lib/permissions';
+import { Building2, formatCurrency, getStatusColor, formatHours } from '@/utils/formatUtils';
+import { Building2, formatDateKR, formatTimeKR, isToday } from '@/utils/dateUtils';
+import { Building2, 
   TrendingUp, DollarSign, Users, Clock, Calendar, Target,
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User
@@ -458,6 +458,11 @@ export default function DashboardPage() {
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
               <Award className="h-6 w-6 mr-3 text-blue-600" />
               관리자 + 매니저 기능
+                  <button onClick={() => router.push('/admin/department-management')} className="bg-white hover:bg-gray-50 p-6 rounded-2xl shadow-lg transition-all duration-200 transform hover:scale-105 border border-gray-200">
+                    <Building2 className="h-10 w-10 text-purple-600 mb-3" />
+                    <h3 className="font-bold text-lg text-purple-900 mb-2">부서 관리</h3>
+                    <p className="text-sm text-purple-700">부서 추가/수정/삭제</p>
+                  </button>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <button 
