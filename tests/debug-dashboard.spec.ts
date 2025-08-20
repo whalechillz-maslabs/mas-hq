@@ -1,48 +1,47 @@
 import { test, expect } from '@playwright/test';
 
 test('대시보드 디버깅 테스트', async ({ page }) => {
-  console.log('🔍 대시보드 디버깅 시작');
+  console.log('🔍 대시보드 디버깅 테스트 시작');
   
-  // 1. 로그인
-  await page.goto('http://localhost:3000/login');
-  await page.fill('input[type="tel"]', '010-6669-9000');
-  await page.fill('input[type="password"]', 'admin123');
-  await page.click('button[type="submit"]');
-  await page.waitForURL('**/dashboard');
+  // 1. 대시보드 페이지로 직접 이동
+  await page.goto('http://localhost:3000/dashboard');
+  console.log('✅ 대시보드 페이지 직접 접속');
   
-  console.log('✅ 로그인 성공');
+  // 2. 페이지 URL 확인
+  console.log('📍 현재 URL:', page.url());
   
-  // 2. 페이지 로딩 대기
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(2000); // 추가 대기
+  // 3. 페이지 로딩 대기
+  await page.waitForTimeout(5000);
   
-  // 3. 페이지 내용 확인
-  console.log('🔍 페이지 내용 확인');
+  // 4. 페이지 내용 확인
+  const pageContent = await page.textContent('body');
+  console.log('📄 페이지 내용 (처음 1000자):', pageContent?.substring(0, 1000));
   
-  // 페이지의 모든 텍스트 내용 가져오기
-  const pageText = await page.textContent('body');
-  console.log('페이지 텍스트:', pageText?.substring(0, 500) + '...');
+  // 5. 로딩 상태 확인
+  const loadingElements = await page.locator('[class*="loading"], [class*="Loading"]').allTextContents();
+  console.log('⏳ 로딩 요소들:', loadingElements);
   
-  // 4. 특정 요소들 확인
-  const elements = [
-    '오늘의 미션',
-    '근무 상태', 
-    '관리자 기능',
-    'OP 팀장 설정',
-    '직원 관리',
-    '시스템 설정'
-  ];
+  // 6. 에러 메시지 확인
+  const errorElements = await page.locator('[class*="error"], [class*="Error"]').allTextContents();
+  console.log('❌ 에러 요소들:', errorElements);
   
-  for (const element of elements) {
-    const isVisible = await page.locator(`text=${element}`).isVisible();
-    console.log(`${element}: ${isVisible ? '✅ 보임' : '❌ 안보임'}`);
-  }
-  
-  // 5. 스크린샷 캡처
-  await page.screenshot({ 
-    path: 'dashboard-debug.png', 
-    fullPage: true 
+  // 7. 콘솔 로그 확인
+  page.on('console', msg => {
+    console.log('🔍 브라우저 콘솔:', msg.text());
   });
   
-  console.log('🎉 디버깅 완료!');
+  // 8. 네트워크 요청 확인
+  page.on('request', request => {
+    console.log('🌐 요청:', request.url());
+  });
+  
+  page.on('response', response => {
+    console.log('📡 응답:', response.url(), response.status());
+  });
+  
+  // 9. 스크린샷 캡처
+  await page.screenshot({ path: 'debug-dashboard.png', fullPage: true });
+  console.log('✅ 디버그 스크린샷 캡처 완료');
+  
+  console.log('🎉 대시보드 디버깅 테스트 완료!');
 });

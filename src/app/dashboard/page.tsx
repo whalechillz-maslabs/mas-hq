@@ -63,12 +63,17 @@ export default function DashboardPage() {
       const currentUser = await auth.getCurrentUser();
       
       if (!currentUser) {
+        router.push("/login");
+        return;
+      }
+      
+      if (!currentUser) {
         router.push('/login');
         return;
       }
 
       // 직원 정보와 관련 데이터 가져오기
-      const { data: employeeData, error: employeeError } = await db.supabase
+      const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
         .select(`
           *,
@@ -83,7 +88,7 @@ export default function DashboardPage() {
 
       // 오늘의 스케줄 가져오기
       const today = new Date().toISOString().split('T')[0];
-      const { data: scheduleData } = await db.supabase
+      const { data: scheduleData } = await supabase
         .from('schedules')
         .select('*')
         .eq('employee_id', currentUser.id)
