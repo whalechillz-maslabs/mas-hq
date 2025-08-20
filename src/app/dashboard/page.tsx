@@ -1,11 +1,11 @@
 'use client';
 
-import { Building2, useEffect, useState } from 'react';
-import { Building2, useRouter } from 'next/navigation';
-import { Building2, auth, db } from '@/lib/supabase';
-import { Building2, getUserAccessibleMenus, canAccessMenu } from '@/lib/permissions';
-import { Building2, formatCurrency, getStatusColor, formatHours } from '@/utils/formatUtils';
-import { Building2, formatDateKR, formatTimeKR, isToday } from '@/utils/dateUtils';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { auth, db } from '@/lib/supabase';
+import { getUserAccessibleMenus, canAccessMenu } from '@/lib/permissions';
+import { formatCurrency, getStatusColor, formatHours } from '@/utils/formatUtils';
+import { formatDateKR, formatTimeKR, isToday } from '@/utils/dateUtils';
 import { Building2, 
   TrendingUp, DollarSign, Users, Clock, Calendar, Target,
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
