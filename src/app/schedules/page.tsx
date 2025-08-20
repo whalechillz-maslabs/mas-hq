@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface Schedule {
   id: string;
@@ -25,7 +25,7 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(true);
   const [currentWeek, setCurrentWeek] = useState<Date[]>([]);
 
-  const supabase = createClient();
+  const supabaseClient = supabase;
 
   // 현재 주의 날짜들 계산
   useEffect(() => {

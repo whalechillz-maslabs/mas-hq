@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, Save, ArrowLeft } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export default function AddSchedulePage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseClient = supabase;
   
   const [formData, setFormData] = useState({
     schedule_date: '2025-08-20',
@@ -24,7 +24,7 @@ export default function AddSchedulePage() {
 
     try {
       // 현재 로그인한 사용자 정보 가져오기
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) {
         alert('로그인이 필요합니다.');
         return;
