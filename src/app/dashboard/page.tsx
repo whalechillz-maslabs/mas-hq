@@ -446,6 +446,11 @@ export default function DashboardPage() {
                 <UserPlus className="h-10 w-10 text-red-600 mb-3" />
                 <h3 className="font-bold text-lg text-red-900 mb-2">직원 데이터 관리</h3>
                 <p className="text-sm text-red-700">직원 데이터 마이그레이션</p>
+              <button onClick={() => router.push('/admin/department-management')} className="p-6 bg-purple-50 border-2 border-purple-200 rounded-2xl hover:bg-purple-100 transition-all duration-200 text-left">
+                <Building2 className="h-10 w-10 text-purple-600 mb-3" />
+                <h3 className="font-bold text-lg text-purple-900 mb-2">부서 관리</h3>
+                <p className="text-sm text-purple-700">부서 추가/수정/삭제</p>
+              </button>
               </button>
             </div>
           </div>
@@ -460,9 +465,6 @@ export default function DashboardPage() {
               관리자 + 매니저 기능
                   <button onClick={() => router.push('/admin/department-management')} className="bg-white hover:bg-gray-50 p-6 rounded-2xl shadow-lg transition-all duration-200 transform hover:scale-105 border border-gray-200">
                     <Building2 className="h-10 w-10 text-purple-600 mb-3" />
-                    <h3 className="font-bold text-lg text-purple-900 mb-2">부서 관리</h3>
-                    <p className="text-sm text-purple-700">부서 추가/수정/삭제</p>
-                  </button>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <button 
