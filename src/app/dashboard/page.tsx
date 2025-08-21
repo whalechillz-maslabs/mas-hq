@@ -11,7 +11,7 @@ import {
   TrendingUp, DollarSign, Users, Clock, Calendar, Target,
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
-  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap
+  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu
 } from 'lucide-react';
 
 interface DashboardData {
@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [data, setData] = useState<DashboardData | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -230,38 +231,94 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* 상단바 */}
+        {/* 개선된 상단바 */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
           <div className="flex items-center justify-between">
+            {/* 로고 영역 */}
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">MASLABS</h1>
-              <div className="text-sm text-gray-600 whitespace-pre-line">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">MASLABS</h1>
+            </div>
+            
+            {/* 중앙 날짜/시간 영역 - 데스크톱에서만 표시 */}
+            <div className="hidden md:block text-center">
+              <div className="text-sm text-gray-600 whitespace-pre-line font-medium">
                 {formatDateTime(currentTime)}
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            
+            {/* 우측 사용자 영역 */}
+            <div className="flex items-center space-x-2 md:space-x-4">
+              {/* 알림 아이콘 - 알림 개수 뱃지 추가 */}
               <button className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
-                <Bell className="h-6 w-6" />
+                <Bell className="h-5 w-5 md:h-6 md:w-6" />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {notifications.length}
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 md:h-5 md:w-5 flex items-center justify-center font-bold">
+                    {notifications.length > 9 ? '9+' : notifications.length}
                   </span>
                 )}
               </button>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Hi,</p>
-                <p className="font-semibold text-gray-900">
+              
+              {/* 사용자 정보 - 모바일에서 축약 */}
+              <div className="hidden sm:block text-right">
+                <p className="text-xs md:text-sm text-gray-600">Hi,</p>
+                <p className="text-sm md:text-base font-semibold text-gray-900 truncate max-w-24 md:max-w-32">
                   {data?.employee?.nickname || data?.employee?.name || '사용자'}님
                 </p>
               </div>
+              
+              {/* 모바일에서 사용자 이름만 표시 */}
+              <div className="sm:hidden text-right">
+                <p className="text-sm font-semibold text-gray-900 truncate max-w-16">
+                  {data?.employee?.nickname || data?.employee?.name || '사용자'}
+                </p>
+              </div>
+              
+              {/* 로그아웃 버튼 */}
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                title="로그아웃"
               >
-                <LogOut className="h-6 w-6" />
+                <LogOut className="h-5 w-5 md:h-6 md:w-6" />
+              </button>
+              
+              {/* 모바일 메뉴 버튼 */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="md:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors"
+                title="메뉴"
+              >
+                <Menu className="h-5 w-5" />
               </button>
             </div>
           </div>
+          
+          {/* 모바일 날짜/시간 - 상단바 아래에 표시 */}
+          <div className="md:hidden mt-3 text-center">
+            <div className="text-sm text-gray-600 whitespace-pre-line font-medium">
+              {formatDateTime(currentTime)}
+            </div>
+          </div>
+          
+          {/* 모바일 메뉴 드롭다운 */}
+          {showMobileMenu && (
+            <div className="md:hidden mt-3 pt-3 border-t border-gray-200">
+              <div className="flex flex-col space-y-2">
+                <button className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  프로필 설정
+                </button>
+                <button className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  알림 설정
+                </button>
+                <button 
+                  onClick={handleLogout}
+                  className="text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  로그아웃
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 오늘의 미션 */}
