@@ -10,7 +10,8 @@ import { formatDateKR, formatTimeKR, isToday } from '@/utils/dateUtils';
 import { 
   TrendingUp, DollarSign, Users, Clock, Calendar, Target,
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
-  ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2
+  ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
+  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap
 } from 'lucide-react';
 
 interface DashboardData {
@@ -33,6 +34,11 @@ interface DashboardData {
     yoyGrowth: number;
     targetAchievement: number;
     teamMembers: number;
+  };
+  todayMission: {
+    positiveThinking: boolean;
+    creativePassion: boolean;
+    dedication: boolean;
   };
 }
 
@@ -88,7 +94,6 @@ export default function DashboardPage() {
 
       if (employeeError) {
         console.error('직원 정보 조회 오류:', employeeError);
-        // 에러가 있어도 기본 데이터로 계속 진행
       }
 
       // 오늘의 스케줄 가져오기
@@ -108,26 +113,33 @@ export default function DashboardPage() {
 
       // 월간 통계 (실제 데이터 + 더미 데이터)
       const monthlyStats = {
-        totalSales: 12500000,
+        totalSales: 4080000,
         newConsultations: 45,
-        targetAchievement: 87,
+        targetAchievement: 33,
         totalWorkHours: 168
       };
 
       // 개인 KPI (실제 데이터 + 더미 데이터)
       const personalKPI = {
-        phoneSales: 12,
-        offlineSatisfaction: 4.8,
-        onlineSales: 8,
+        phoneSales: 7,
+        offlineSatisfaction: 92,
+        onlineSales: 3,
         contentViews: 1840
       };
 
       // 팀 KPI (실제 데이터 + 더미 데이터)
       const teamKPI = {
-        totalSales: 45000000,
-        yoyGrowth: 15.2,
-        targetAchievement: 92,
+        totalSales: 35000000,
+        yoyGrowth: 12,
+        targetAchievement: 78,
         teamMembers: totalEmployees || 8
+      };
+
+      // 오늘의 미션 (도널드 밀러식 핵심 행동)
+      const todayMission = {
+        positiveThinking: Math.random() > 0.3,
+        creativePassion: Math.random() > 0.4,
+        dedication: Math.random() > 0.2
       };
 
       setData({
@@ -135,7 +147,8 @@ export default function DashboardPage() {
         todaySchedule: scheduleData,
         monthlyStats,
         personalKPI,
-        teamKPI
+        teamKPI,
+        todayMission
       });
 
     } catch (error) {
@@ -145,22 +158,27 @@ export default function DashboardPage() {
         employee: null,
         todaySchedule: null,
         monthlyStats: {
-          totalSales: 12500000,
+          totalSales: 4080000,
           newConsultations: 45,
-          targetAchievement: 87,
+          targetAchievement: 33,
           totalWorkHours: 168
         },
         personalKPI: {
-          phoneSales: 12,
-          offlineSatisfaction: 4.8,
-          onlineSales: 8,
+          phoneSales: 7,
+          offlineSatisfaction: 92,
+          onlineSales: 3,
           contentViews: 1840
         },
         teamKPI: {
-          totalSales: 45000000,
-          yoyGrowth: 15.2,
-          targetAchievement: 92,
+          totalSales: 35000000,
+          yoyGrowth: 12,
+          targetAchievement: 78,
           teamMembers: 8
+        },
+        todayMission: {
+          positiveThinking: true,
+          creativePassion: true,
+          dedication: true
         }
       });
     } finally {
@@ -180,6 +198,24 @@ export default function DashboardPage() {
     }
   };
 
+  // 새로운 시간 형식 함수
+  const formatDateTime = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[date.getDay()];
+    
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    
+    return `${year}년 ${month}월 ${day}일(${weekday})\n${ampm}${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -193,19 +229,27 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-6xl mx-auto">
-        {/* 헤더 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">MASLABS 대시보드</h1>
-              <p className="text-gray-600">
-                {formatDateKR(currentTime)} {formatTimeKR(currentTime)}
-              </p>
+      <div className="max-w-7xl mx-auto">
+        {/* 상단바 */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">MASLABS</h1>
+              <div className="text-sm text-gray-600 whitespace-pre-line">
+                {formatDateTime(currentTime)}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
+              <button className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
+                <Bell className="h-6 w-6" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
               <div className="text-right">
-                <p className="text-sm text-gray-600">안녕하세요,</p>
+                <p className="text-sm text-gray-600">Hi,</p>
                 <p className="font-semibold text-gray-900">
                   {data?.employee?.nickname || data?.employee?.name || '사용자'}님
                 </p>
@@ -218,25 +262,190 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+        </div>
 
-          {/* 상단 통계 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* 오늘의 미션 */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <Trophy className="h-6 w-6 mr-3 text-yellow-600" />
+            오늘의 미션
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.positiveThinking ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">긍정적 사고</h3>
+                  <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
+                </div>
+                {data?.todayMission?.positiveThinking ? (
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-gray-400" />
+                )}
+              </div>
+            </div>
+            <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.creativePassion ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">창의적 열정</h3>
+                  <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
+                </div>
+                {data?.todayMission?.creativePassion ? (
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-gray-400" />
+                )}
+              </div>
+            </div>
+            <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.dedication ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">헌신</h3>
+                  <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
+                </div>
+                {data?.todayMission?.dedication ? (
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 하이라이트 */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <BarChart3 className="h-6 w-6 mr-3 text-blue-600" />
+            KPI 하이라이트
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100">콘텐츠 조회수</p>
-                  <p className="text-2xl font-bold">{formatCurrency(data?.personalKPI?.contentViews || 0)}</p>
+                  <p className="text-blue-100 text-sm">오늘의 매출</p>
+                  <p className="text-2xl font-bold">{formatCurrency(950000)}</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-blue-200" />
+                <DollarSign className="h-8 w-8 text-blue-200" />
               </div>
             </div>
             <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100">팀원 수</p>
-                  <p className="text-2xl font-bold">{data?.teamKPI?.teamMembers || 0}명</p>
+                  <p className="text-green-100 text-sm">월 누적 매출</p>
+                  <p className="text-2xl font-bold">{formatCurrency(data?.monthlyStats?.totalSales || 0)}</p>
                 </div>
-                <Users className="h-8 w-8 text-green-200" />
+                <TrendingUp className="h-8 w-8 text-green-200" />
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm">신규 상담</p>
+                  <p className="text-2xl font-bold">{data?.monthlyStats?.newConsultations || 0}건</p>
+                </div>
+                <Phone className="h-8 w-8 text-purple-200" />
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm">목표 달성률</p>
+                  <p className="text-2xl font-bold">{data?.monthlyStats?.targetAchievement || 0}%</p>
+                </div>
+                <Target className="h-8 w-8 text-orange-200" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 개인 KPI */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <User className="h-6 w-6 mr-3 text-indigo-600" />
+            개인 KPI
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-indigo-600">전화 판매 건수</p>
+                  <p className="text-2xl font-bold text-indigo-900">{data?.personalKPI?.phoneSales || 0}건</p>
+                </div>
+                <Phone className="h-8 w-8 text-indigo-600" />
+              </div>
+            </div>
+            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600">오프라인 시타 만족도</p>
+                  <p className="text-2xl font-bold text-green-900">{data?.personalKPI?.offlineSatisfaction || 0}%</p>
+                </div>
+                <Star className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600">온라인 판매 성사</p>
+                  <p className="text-2xl font-bold text-blue-900">{data?.personalKPI?.onlineSales || 0}건</p>
+                </div>
+                <ShoppingCart className="h-8 w-8 text-blue-600" />
+              </div>
+            </div>
+            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600">콘텐츠 조회수</p>
+                  <p className="text-2xl font-bold text-purple-900">{formatCurrency(data?.personalKPI?.contentViews || 0)}</p>
+                </div>
+                <BarChart3 className="h-8 w-8 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 팀 KPI */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <Users className="h-6 w-6 mr-3 text-green-600" />
+            팀 KPI
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600">OP팀 전체 매출</p>
+                  <p className="text-2xl font-bold text-green-900">{formatCurrency(data?.teamKPI?.totalSales || 0)}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600">YOY 성장률</p>
+                  <p className="text-2xl font-bold text-blue-900">+{data?.teamKPI?.yoyGrowth || 0}%</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-blue-600" />
+              </div>
+            </div>
+            <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-orange-600">팀 목표 달성률</p>
+                  <p className="text-2xl font-bold text-orange-900">{data?.teamKPI?.targetAchievement || 0}%</p>
+                </div>
+                <Target className="h-8 w-8 text-orange-600" />
+              </div>
+            </div>
+            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600">팀원 수</p>
+                  <p className="text-2xl font-bold text-purple-900">{data?.teamKPI?.teamMembers || 0}명</p>
+                </div>
+                <Users className="h-8 w-8 text-purple-600" />
               </div>
             </div>
           </div>
@@ -397,24 +606,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-
-        {/* 알림 섹션 */}
-        {notifications.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Bell className="h-5 w-5 mr-2 text-yellow-600" />
-              최근 알림
-            </h3>
-            <div className="space-y-3">
-              {notifications.slice(0, 3).map((notification, index) => (
-                <div key={index} className="flex items-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3"></div>
-                  <p className="text-sm text-gray-700">{notification.message}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
