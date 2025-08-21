@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface Schedule {
   id: string;
@@ -12,303 +15,237 @@ interface Schedule {
   scheduled_end: string;
   status: string;
   employee_note?: string;
-  employee: {
+  employees: {
     name: string;
-    nickname?: string;
+    employee_id: string;
   };
 }
 
 export default function SchedulesPage() {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const router = useRouter();
+  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { locale: ko }));
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentWeek, setCurrentWeek] = useState<Date[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const supabaseClient = supabase;
-
-  // 현재 주의 날짜들 계산
   useEffect(() => {
-    const week = [];
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-    
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek);
-      day.setDate(startOfWeek.getDate() + i);
-      week.push(day);
-    }
-    setCurrentWeek(week);
-  }, [currentDate]);
+    const fetchUserAndSchedules = async () => {
+      const user = await getCurrentUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      setCurrentUser(user);
+      fetchSchedules(currentWeek);
+    };
+    fetchUserAndSchedules();
+  }, [currentWeek, router]);
 
-  // 스케줄 데이터 로드
-  useEffect(() => {
-    loadSchedules();
-  }, [currentDate]);
-
-  const loadSchedules = async () => {
-    try {
-      setLoading(true);
+  const getCurrentUser = async () => {
+    if (typeof window !== 'undefined') {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const employeeData = localStorage.getItem('currentEmployee');
       
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      if (isLoggedIn === 'true' && employeeData) {
+        return JSON.parse(employeeData);
+      }
+    }
+    return null;
+  };
 
+  const fetchSchedules = async (weekStart: Date) => {
+    setLoading(true);
+    const weekEnd = endOfWeek(weekStart, { locale: ko });
+    
+    try {
       const { data, error } = await supabase
         .from('schedules')
         .select(`
-          id,
-          employee_id,
-          schedule_date,
-          scheduled_start,
-          scheduled_end,
-          status,
-          employee_note,
-          employee:employees(name, nickname)
+          *,
+          employees(name, employee_id)
         `)
-        .gte('schedule_date', startOfWeek.toISOString().split('T')[0])
-        .lte('schedule_date', endOfWeek.toISOString().split('T')[0])
-        .order('schedule_date', { ascending: true });
+        .gte('schedule_date', format(weekStart, 'yyyy-MM-dd'))
+        .lte('schedule_date', format(weekEnd, 'yyyy-MM-dd'))
+        .order('schedule_date', { ascending: true })
+        .order('scheduled_start', { ascending: true });
 
-      if (error) throw error;
-      setSchedules(data || []);
+      if (error) {
+        console.error('Error fetching schedules:', error);
+        setSchedules([]);
+      } else {
+        setSchedules(data || []);
+      }
     } catch (error) {
-      console.error('스케줄 로드 오류:', error);
+      console.error('Error fetching schedules:', error);
+      setSchedules([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatTime = (time: string) => {
-    return time.substring(0, 5);
-  };
+  const daysInWeek = Array.from({ length: 7 }).map((_, i) => addDays(currentWeek, i));
+
+  const handlePrevWeek = () => setCurrentWeek(addDays(currentWeek, -7));
+  const handleNextWeek = () => setCurrentWeek(addDays(currentWeek, 7));
 
   const getSchedulesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return schedules.filter(schedule => schedule.schedule_date === dateStr);
+    return schedules.filter(s => isSameDay(parseISO(s.schedule_date), date));
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const handleAddSchedule = () => {
+    router.push('/schedules/add');
   };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'approved': return '승인됨';
-      case 'pending': return '대기중';
-      case 'rejected': return '거부됨';
-      default: return status;
-    }
-  };
-
-  const prevWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 7);
-    setCurrentDate(newDate);
-  };
-
-  const nextWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 7);
-    setCurrentDate(newDate);
-  };
-
-  const today = new Date();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8">
         {/* 헤더 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-              <Calendar className="h-8 w-8 mr-3 text-blue-600" />
-              근무 스케줄
-            </h1>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'calendar' 
-                    ? 'bg-blue-100 text-blue-600' 
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                <CalendarDays className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-blue-100 text-blue-600' 
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                <List className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-900 flex items-center">
+            <Calendar className="h-8 w-8 mr-3 text-blue-600" />
+            근무 스케줄
+          </h1>
+          
+          {/* 스케줄 추가 버튼 */}
+          <button
+            onClick={handleAddSchedule}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg flex items-center transition-all duration-200 transform hover:scale-105"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            스케줄 추가
+          </button>
+        </div>
 
-          {/* 주간 네비게이션 */}
-          <div className="flex items-center justify-between mb-4">
+        {/* 주간 네비게이션 */}
+        <div className="flex items-center justify-between mb-6 bg-gray-50 p-3 rounded-xl shadow-sm">
+          <button 
+            onClick={handlePrevWeek} 
+            className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-700" />
+          </button>
+          <h2 className="text-xl font-semibold text-gray-800">
+            {format(currentWeek, 'yyyy년 MM월 dd일', { locale: ko })} - {format(endOfWeek(currentWeek, { locale: ko }), 'yyyy년 MM월 dd일', { locale: ko })}
+          </h2>
+          <button 
+            onClick={handleNextWeek} 
+            className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+          >
+            <ChevronRight className="w-6 h-6 text-gray-700" />
+          </button>
+        </div>
+
+        {/* 뷰 모드 토글 */}
+        <div className="flex justify-center mb-6">
+          <div className="flex space-x-2 bg-gray-100 p-1 rounded-xl">
             <button
-              onClick={prevWeek}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+              onClick={() => setViewMode('calendar')}
+              className={`p-3 rounded-xl transition-all duration-200 flex items-center ${
+                viewMode === 'calendar' 
+                  ? 'bg-white text-blue-600 shadow-md' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <Calendar className="w-5 h-5 mr-2" />
+              달력
             </button>
-            <h2 className="text-lg font-semibold text-gray-800">
-              {currentWeek[0]?.toLocaleDateString('ko-KR', { month: 'long', year: 'numeric' })} 
-              {currentWeek[0]?.toLocaleDateString('ko-KR', { day: 'numeric' })} - 
-              {currentWeek[6]?.toLocaleDateString('ko-KR', { day: 'numeric' })}주
-            </h2>
             <button
-              onClick={nextWeek}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+              onClick={() => setViewMode('list')}
+              className={`p-3 rounded-xl transition-all duration-200 flex items-center ${
+                viewMode === 'list' 
+                  ? 'bg-white text-blue-600 shadow-md' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
             >
-              <ChevronRight className="h-5 w-5" />
+              <List className="w-5 h-5 mr-2" />
+              리스트
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">스케줄을 불러오는 중...</p>
-          </div>
-        ) : viewMode === 'calendar' ? (
-          /* 달력 뷰 */
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 bg-gray-50 border-b">
-              {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
-                <div key={day} className="p-4 text-center font-semibold text-gray-700">
-                  {day}
-                </div>
-              ))}
-            </div>
-            
-            {/* 날짜 그리드 */}
-            <div className="grid grid-cols-7">
-              {currentWeek.map((date, index) => {
-                const daySchedules = getSchedulesForDate(date);
-                const isToday = date.toDateString() === today.toDateString();
-                
-                return (
-                  <div
-                    key={index}
-                    className={`min-h-32 border-r border-b border-gray-200 p-2 ${
-                      isToday ? 'bg-blue-50' : ''
-                    }`}
-                  >
-                    <div className={`text-sm font-medium mb-2 ${
-                      isToday ? 'text-blue-600' : 'text-gray-700'
-                    }`}>
-                      {date.getDate()}
-                    </div>
-                    
-                    <div className="space-y-1">
-                      {daySchedules.map((schedule) => (
-                        <div
-                          key={schedule.id}
-                          className="text-xs p-1 rounded bg-blue-100 text-blue-800 truncate"
-                        >
-                          <div className="font-medium">
-                            {schedule.employee.nickname || schedule.employee.name}
-                          </div>
-                          <div className="text-blue-600">
-                            {formatTime(schedule.scheduled_start)} - {formatTime(schedule.scheduled_end)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">스케줄을 불러오는 중...</p>
           </div>
         ) : (
-          /* 리스트 뷰 */
-          <div className="space-y-4">
-            {currentWeek.map((date) => {
-              const daySchedules = getSchedulesForDate(date);
-              const isToday = date.toDateString() === today.toDateString();
-              
-              return (
-                <div
-                  key={date.toISOString()}
-                  className={`bg-white rounded-2xl shadow-lg p-6 ${
-                    isToday ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className={`text-lg font-semibold ${
-                      isToday ? 'text-blue-600' : 'text-gray-800'
-                    }`}>
-                      {date.toLocaleDateString('ko-KR', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        weekday: 'long' 
-                      })}
-                    </h3>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      isToday ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {daySchedules.length}명 출근
-                    </span>
+          <>
+            {viewMode === 'calendar' ? (
+              // 달력 뷰
+              <div className="grid grid-cols-7 gap-2 text-center">
+                {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+                  <div key={day} className="font-bold text-gray-700 text-sm mb-2 p-2">
+                    {day}
                   </div>
-                  
-                  {daySchedules.length > 0 ? (
-                    <div className="space-y-3">
-                      {daySchedules.map((schedule) => (
-                        <div
-                          key={schedule.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <Users className="h-5 w-5 text-blue-600" />
-                            </div>
+                ))}
+                {daysInWeek.map(date => (
+                  <div
+                    key={format(date, 'yyyy-MM-dd')}
+                    className={`p-2 rounded-lg min-h-[120px] ${
+                      isSameDay(date, new Date()) 
+                        ? 'bg-blue-100 border-2 border-blue-500' 
+                        : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="font-semibold text-lg mb-1">
+                      {format(date, 'd')}
+                    </div>
+                    {getSchedulesForDate(date).map(schedule => (
+                      <div 
+                        key={schedule.id} 
+                        className="text-xs bg-blue-200 text-blue-800 rounded-md px-1 py-0.5 mb-0.5 truncate"
+                      >
+                        {schedule.employees?.name} ({schedule.scheduled_start?.substring(0, 5)}~{schedule.scheduled_end?.substring(0, 5)})
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // 리스트 뷰
+              <div className="space-y-4">
+                {daysInWeek.map(date => (
+                  <div key={format(date, 'yyyy-MM-dd')} className="bg-gray-50 rounded-xl p-4">
+                    <h3 className={`text-lg font-bold mb-3 ${
+                      isSameDay(date, new Date()) ? 'text-blue-600' : 'text-gray-800'
+                    }`}>
+                      {format(date, 'yyyy년 MM월 dd일 (EEE)', { locale: ko })}
+                      {isSameDay(date, new Date()) && (
+                        <span className="ml-2 text-sm text-blue-500">(오늘)</span>
+                      )}
+                    </h3>
+                    {getSchedulesForDate(date).length > 0 ? (
+                      <ul className="space-y-2">
+                        {getSchedulesForDate(date).map(schedule => (
+                          <li key={schedule.id} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
                             <div>
-                              <div className="font-medium text-gray-900">
-                                {schedule.employee.nickname || schedule.employee.name}
-                              </div>
-                              <div className="text-sm text-gray-600">
-                                {schedule.employee_note || '정상 근무'}
-                              </div>
+                              <p className="font-semibold text-gray-900">
+                                {schedule.employees?.name}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {schedule.scheduled_start?.substring(0, 5)} - {schedule.scheduled_end?.substring(0, 5)}
+                                {schedule.employee_note && ` (${schedule.employee_note})`}
+                              </p>
                             </div>
-                          </div>
-                          
-                          <div className="text-right">
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
-                              <Clock className="h-4 w-4" />
-                              <span>
-                                {formatTime(schedule.scheduled_start)} - {formatTime(schedule.scheduled_end)}
-                              </span>
-                            </div>
-                            <div className={`mt-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(schedule.status)}`}>
-                              {getStatusText(schedule.status)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>해당 날짜에 출근 예정인 직원이 없습니다.</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              schedule.status === 'approved' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {schedule.status === 'approved' ? '승인됨' : '대기중'}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 text-sm">스케줄 없음</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
