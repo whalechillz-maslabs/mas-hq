@@ -1,39 +1,25 @@
 import { test, expect } from '@playwright/test';
 
 test('간단한 로그인 테스트', async ({ page }) => {
-  console.log('🔍 간단한 로그인 테스트 시작');
-  
-  // 로그인 페이지로 이동
+  // 1. 로그인 페이지로 이동
   await page.goto('http://localhost:3000/login');
+  await page.waitForLoadState('networkidle');
   
-  // 페이지 로드 확인
-  await expect(page.locator('text=로그인')).toBeVisible();
+  // 2. 페이지가 로드되었는지 확인
+  await expect(page.locator('text=직원 로그인')).toBeVisible();
   
-  console.log('✅ 로그인 페이지 로드 완료');
+  // 3. 전화번호 탭 클릭 (버튼으로 구체적으로 선택)
+  await page.click('button:has-text("전화번호")');
   
-  // 전화번호 입력
-  await page.fill('input[type="tel"]', '010-6669-9000');
+  // 4. 로그인 정보 입력 (관리자 계정)
+  await page.fill('input[placeholder="010-1234-5678"]', '010-6669-9000');
+  await page.fill('input[placeholder="비밀번호"]', '66699000');
   
-  // 비밀번호 입력
-  await page.fill('input[type="password"]', 'admin123');
+  // 5. 로그인 버튼 클릭
+  await page.click('button:has-text("로그인")');
   
-  // 로그인 버튼 클릭
-  await page.click('button[type="submit"]');
+  // 6. 대시보드로 이동했는지 확인
+  await page.waitForURL('**/dashboard', { timeout: 10000 });
   
-  console.log('✅ 로그인 버튼 클릭 완료');
-  
-  // 잠시 대기
-  await page.waitForTimeout(3000);
-  
-  // 현재 URL 확인
-  const currentUrl = page.url();
-  console.log('현재 URL:', currentUrl);
-  
-  // 스크린샷 캡처
-  await page.screenshot({ 
-    path: 'simple-login-test.png', 
-    fullPage: true 
-  });
-  
-  console.log('🎉 간단한 로그인 테스트 완료!');
+  console.log('✅ 로그인 테스트 성공');
 });

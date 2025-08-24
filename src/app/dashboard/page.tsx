@@ -244,8 +244,8 @@ export default function DashboardPage() {
               <div className="text-sm text-gray-600 whitespace-pre-line font-medium">
                 {formatDateTime(currentTime)}
               </div>
-            </div>
-            
+              </div>
+              
             {/* 우측 사용자 영역 */}
             <div className="flex items-center space-x-2 md:space-x-4">
               {/* 알림 아이콘 - 알림 개수 뱃지 추가 */}
@@ -283,7 +283,7 @@ export default function DashboardPage() {
               </button>
               
               {/* 모바일 메뉴 버튼 */}
-              <button
+                <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="md:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors"
                 title="메뉴"
@@ -310,7 +310,7 @@ export default function DashboardPage() {
                 <button className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                   알림 설정
                 </button>
-                <button 
+                <button
                   onClick={handleLogout}
                   className="text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900">창의적 열정</h3>
                   <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
-                </div>
+              </div>
                 {data?.todayMission?.creativePassion ? (
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 ) : (
@@ -355,17 +355,17 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.dedication ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-              <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900">헌신</h3>
                   <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
                 </div>
                 {data?.todayMission?.dedication ? (
                   <CheckCircle className="h-6 w-6 text-green-600" />
-                ) : (
+              ) : (
                   <AlertCircle className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
+              )}
+            </div>
             </div>
           </div>
         </div>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{formatCurrency(data?.monthlyStats?.totalSales || 0)}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-200" />
-              </div>
+          </div>
             </div>
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
@@ -402,25 +402,25 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{data?.monthlyStats?.newConsultations || 0}건</p>
                 </div>
                 <Phone className="h-8 w-8 text-purple-200" />
-              </div>
+          </div>
             </div>
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-orange-100 text-sm">목표 달성률</p>
                   <p className="text-2xl font-bold">{data?.monthlyStats?.targetAchievement || 0}%</p>
-                </div>
+          </div>
                 <Target className="h-8 w-8 text-orange-200" />
-              </div>
+            </div>
             </div>
           </div>
         </div>
 
-        {/* 개인 KPI */}
+          {/* 개인 KPI */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <User className="h-6 w-6 mr-3 text-indigo-600" />
-            개인 KPI
+              개인 KPI
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
@@ -458,11 +458,11 @@ export default function DashboardPage() {
                 </div>
                 <BarChart3 className="h-8 w-8 text-purple-600" />
               </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* 팀 KPI */}
+          {/* 팀 KPI */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <Users className="h-6 w-6 mr-3 text-green-600" />
@@ -549,15 +549,24 @@ export default function DashboardPage() {
               <h3 className="font-bold text-lg text-purple-900 mb-2">조직도</h3>
               <p className="text-sm text-purple-700">조직 구조 및 팀원 정보</p>
             </button>
-            
+
             <button 
+              onClick={() => router.push('/attendance')}
+              className="p-6 bg-indigo-50 border-2 border-indigo-200 rounded-2xl hover:bg-indigo-100 transition-all duration-200 text-left"
+            >
+              <Clock className="h-10 w-10 text-indigo-600 mb-3" />
+              <h3 className="font-bold text-lg text-indigo-900 mb-2">출근 관리</h3>
+              <p className="text-sm text-indigo-700">출근 체크 및 근무 기록</p>
+            </button>
+            
+                  <button
               onClick={() => router.push('/profile')}
               className="p-6 bg-pink-50 border-2 border-pink-200 rounded-2xl hover:bg-pink-100 transition-all duration-200 text-left"
             >
               <User className="h-10 w-10 text-pink-600 mb-3" />
               <h3 className="font-bold text-lg text-pink-900 mb-2">개인정보 관리</h3>
               <p className="text-sm text-pink-700">프로필 및 설정 관리</p>
-            </button>
+                  </button>
           </div>
 
           {/* 관리자 전용 메뉴 */}
@@ -592,8 +601,16 @@ export default function DashboardPage() {
                   <h3 className="font-bold text-lg text-purple-900 mb-2">부서 관리</h3>
                   <p className="text-sm text-purple-700">부서 추가/수정/삭제</p>
                 </button>
-              </div>
-            </div>
+                <button 
+                  onClick={() => router.push('/admin/employee-schedules')}
+                  className="p-6 bg-teal-50 border-2 border-teal-200 rounded-2xl hover:bg-teal-100 transition-all duration-200 text-left"
+                >
+                  <Calendar className="h-10 w-10 text-teal-600 mb-3" />
+                  <h3 className="font-bold text-lg text-teal-900 mb-2">직원별 스케줄 관리</h3>
+                  <p className="text-sm text-teal-700">모든 직원의 스케줄 관리</p>
+                </button>
+          </div>
+        </div>
           )}
 
           {/* 관리자 + 매니저 메뉴 */}
@@ -603,35 +620,35 @@ export default function DashboardPage() {
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Award className="h-6 w-6 mr-3 text-blue-600" />
                 관리자 + 매니저 기능
-              </h3>
+            </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <button 
-                  onClick={() => router.push('/admin/hr-policy')}
+              <button 
+                onClick={() => router.push('/admin/hr-policy')}
                   className="p-6 bg-indigo-50 border-2 border-indigo-200 rounded-2xl hover:bg-indigo-100 transition-all duration-200 text-left"
-                >
+              >
                   <Award className="h-10 w-10 text-indigo-600 mb-3" />
                   <h3 className="font-bold text-lg text-indigo-900 mb-2">인사정책 관리</h3>
-                  <p className="text-sm text-indigo-700">성과급 체계 및 KPI 관리</p>
-                </button>
-                <button 
-                  onClick={() => router.push('/admin/team-management')}
+                <p className="text-sm text-indigo-700">성과급 체계 및 KPI 관리</p>
+              </button>
+              <button 
+                onClick={() => router.push('/admin/team-management')}
                   className="p-6 bg-orange-50 border-2 border-orange-200 rounded-2xl hover:bg-orange-100 transition-all duration-200 text-left"
-                >
+              >
                   <Users className="h-10 w-10 text-orange-600 mb-3" />
                   <h3 className="font-bold text-lg text-orange-900 mb-2">OP 팀장 설정</h3>
-                  <p className="text-sm text-orange-700">팀장 지정 및 팀 구조 관리</p>
-                </button>
-                <button 
-                  onClick={() => router.push('/admin/employee-management')}
+                <p className="text-sm text-orange-700">팀장 지정 및 팀 구조 관리</p>
+              </button>
+              <button 
+                onClick={() => router.push('/admin/employee-management')}
                   className="p-6 bg-blue-50 border-2 border-blue-200 rounded-2xl hover:bg-blue-100 transition-all duration-200 text-left"
-                >
+              >
                   <UserPlus className="h-10 w-10 text-blue-600 mb-3" />
                   <h3 className="font-bold text-lg text-blue-900 mb-2">직원 관리</h3>
-                  <p className="text-sm text-blue-700">직원 정보 및 권한 관리</p>
-                </button>
+                <p className="text-sm text-blue-700">직원 정보 및 권한 관리</p>
+              </button>
               </div>
-            </div>
-          )}
+          </div>
+        )}
 
           {/* 관리자 + 매니저 + 팀장 메뉴 */}
           {((data?.employee?.role_id === 'admin' || data?.employee?.role?.name === 'admin') ||
@@ -641,27 +658,27 @@ export default function DashboardPage() {
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Users className="h-6 w-6 mr-3 text-green-600" />
                 팀 관리 기능
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button 
-                  onClick={() => router.push('/admin/team-evaluation')}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button 
+                onClick={() => router.push('/admin/team-evaluation')}
                   className="p-6 bg-green-50 border-2 border-green-200 rounded-2xl hover:bg-green-100 transition-all duration-200 text-left"
-                >
+              >
                   <Users className="h-10 w-10 text-green-600 mb-3" />
                   <h3 className="font-bold text-lg text-green-900 mb-2">팀원 평가</h3>
-                  <p className="text-sm text-green-700">팀원 KPI 측정 및 평가</p>
-                </button>
-                <button 
-                  onClick={() => router.push('/admin/attendance-management')}
+                <p className="text-sm text-green-700">팀원 KPI 측정 및 평가</p>
+              </button>
+              <button 
+                onClick={() => router.push('/admin/attendance-management')}
                   className="p-6 bg-purple-50 border-2 border-purple-200 rounded-2xl hover:bg-purple-100 transition-all duration-200 text-left"
                 >
                   <Clock className="h-10 w-10 text-purple-600 mb-3" />
                   <h3 className="font-bold text-lg text-purple-900 mb-2">출근 관리</h3>
                   <p className="text-sm text-purple-700">직원 출근체크 위치/시간 확인</p>
-                </button>
-              </div>
+              </button>
             </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </div>
