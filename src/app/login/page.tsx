@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/supabase';
 import { formatPhoneNumberOnInput } from '@/utils/phoneUtils';
-import { Phone, IdCard, Lock, Eye, EyeOff, Loader2, User } from 'lucide-react';
+import { Phone, IdCard, Lock, Eye, EyeOff, Loader2, User, TestTube } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loginType, setLoginType] = useState<'phone' | 'employeeId' | 'pin'>('phone');
   const [formData, setFormData] = useState({
     phone: '',
@@ -21,6 +22,37 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [autoLogoutTimer, setAutoLogoutTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [testUserInfo, setTestUserInfo] = useState<{
+    name: string;
+    phone: string;
+    password: string;
+  } | null>(null);
+
+  // 테스트 모드 확인 및 설정
+  useEffect(() => {
+    const testUser = searchParams.get('test_user');
+    const testPassword = searchParams.get('test_password');
+    const testName = searchParams.get('test_name');
+
+    if (testUser && testPassword && testName) {
+      setIsTestMode(true);
+      setTestUserInfo({
+        name: decodeURIComponent(testName),
+        phone: decodeURIComponent(testUser),
+        password: decodeURIComponent(testPassword)
+      });
+
+      // 폼에 테스트 데이터 자동 입력
+      setFormData({
+        phone: decodeURIComponent(testUser),
+        employeeId: '',
+        password: decodeURIComponent(testPassword),
+        pinUserId: decodeURIComponent(testUser),
+        pinCode: '1234' // 기본 핀번호
+      });
+    }
+  }, [searchParams]);
 
   // 자동 로그오프 타이머 설정 (5분)
   useEffect(() => {
@@ -97,60 +129,71 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* 테스트 모드 배너 */}
+        {isTestMode && testUserInfo && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+            <div className="flex items-center">
+              <TestTube className="h-5 w-5 text-yellow-600 mr-2" />
+              <div>
+                <h3 className="text-sm font-medium text-yellow-800">테스트 모드</h3>
+                <p className="text-sm text-yellow-700">
+                  {testUserInfo.name} ({testUserInfo.phone}) 계정으로 테스트 중입니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 로고 및 타이틀 */}
         <div>
-          <Link href="/" className="flex justify-center">
-            <h1 className="text-3xl font-bold text-indigo-600">MASLABS</h1>
-          </Link>
+          <div className="mx-auto h-12 w-12 bg-indigo-600 rounded-full flex items-center justify-center">
+            <User className="h-8 w-8 text-white" />
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            직원 로그인
+            {isTestMode ? '테스트 로그인' : '로그인'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            전화번호 또는 사번으로 로그인하세요
+            {isTestMode ? '테스트 계정으로 로그인합니다' : 'MASLABS 직원 포털에 로그인하세요'}
           </p>
         </div>
 
         {/* 로그인 타입 선택 */}
-        <div className="flex rounded-lg bg-gray-100 p-1">
+        <div className="flex rounded-md shadow-sm">
           <button
             type="button"
-            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              loginType === 'phone'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
             onClick={() => setLoginType('phone')}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-l-md border ${
+              loginType === 'phone'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
-            <Phone className="w-4 h-4 mr-2" />
             전화번호
           </button>
           <button
             type="button"
-            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              loginType === 'employeeId'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
             onClick={() => setLoginType('employeeId')}
+            className={`flex-1 py-2 px-4 text-sm font-medium border-t border-b ${
+              loginType === 'employeeId'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
-            <IdCard className="w-4 h-4 mr-2" />
             사번
           </button>
           <button
             type="button"
-            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${
-              loginType === 'pin'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
             onClick={() => setLoginType('pin')}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-r-md border ${
+              loginType === 'pin'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
-            <Lock className="w-4 h-4 mr-2" />
             핀번호
           </button>
         </div>
 
-        {/* 로그인 폼 */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             {loginType === 'phone' ? (
@@ -169,9 +212,10 @@ export default function LoginPage() {
                     autoComplete="tel"
                     required
                     className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="010-1234-5678"
+                    placeholder="010-0000-0000"
                     value={formData.phone}
                     onChange={handlePhoneChange}
+                    readOnly={isTestMode}
                   />
                 </div>
               </div>
@@ -191,9 +235,10 @@ export default function LoginPage() {
                     autoComplete="username"
                     required
                     className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="MASLABS-001"
+                    placeholder="MASLABS-XXX"
                     value={formData.employeeId}
                     onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                    readOnly={isTestMode}
                   />
                 </div>
               </div>
@@ -218,6 +263,7 @@ export default function LoginPage() {
                       placeholder="전화번호 또는 사번"
                       value={formData.pinUserId}
                       onChange={(e) => setFormData({ ...formData, pinUserId: e.target.value })}
+                      readOnly={isTestMode}
                     />
                   </div>
                 </div>
@@ -245,6 +291,7 @@ export default function LoginPage() {
                           setFormData({ ...formData, pinCode: numericValue });
                         }
                       }}
+                      readOnly={isTestMode}
                     />
                   </div>
                 </div>
@@ -270,6 +317,7 @@ export default function LoginPage() {
                     placeholder="비밀번호"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    readOnly={isTestMode}
                   />
                   <button
                     type="button"
@@ -334,16 +382,18 @@ export default function LoginPage() {
               {isLoading ? (
                 <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
               ) : null}
-              로그인
+              {isTestMode ? '테스트 로그인' : '로그인'}
             </button>
           </div>
 
-          {/* 회원가입 링크 */}
-          <div className="text-center">
-            <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-              계정이 없으신가요? 회원가입
-            </Link>
-          </div>
+          {/* 회원가입 링크 (테스트 모드에서는 숨김) */}
+          {!isTestMode && (
+            <div className="text-center">
+              <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+                계정이 없으신가요? 회원가입
+              </Link>
+            </div>
+          )}
         </form>
 
         {/* 로그인 안내 */}
@@ -355,9 +405,27 @@ export default function LoginPage() {
             <li>• 핀번호: 전화번호/사번 + 4자리 핀번호로 간편 로그인</li>
             <li>• 비밀번호: 초기 비밀번호는 관리자에게 문의하세요</li>
             <li>• 자동 로그오프: 5분간 활동이 없으면 자동 로그아웃됩니다</li>
+            {isTestMode && (
+              <li className="text-yellow-700 font-medium">• 테스트 모드: 관리자가 테스트를 위해 임시로 로그인한 상태입니다</li>
+            )}
           </ul>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

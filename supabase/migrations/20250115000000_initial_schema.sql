@@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS departments (
 
 -- 기본 부서 데이터
 INSERT INTO departments (name, code, description) VALUES 
-('경영지원팀', 'MGMT', '경영 및 행정 지원'),
+('운영팀', 'HQ', '본사 운영 관리'),
 ('개발팀', 'DEV', '소프트웨어 개발'),
 ('디자인팀', 'DESIGN', '디자인 및 UI/UX'),
 ('마케팅팀', 'MARKETING', '마케팅 및 홍보'),
-('매장운영팀', 'STORE', '매장 운영 및 관리'),
-('본사', 'HQ', '본사 직원')
+('싱싱팀', 'SING', '싱싱 관련 업무'),
+('마스팀', 'MAS', '마스 관련 업무')
 ON CONFLICT (code) DO NOTHING;
 
 -- ====================================
@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS employees (
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20) UNIQUE NOT NULL, -- 로그인 키
     password_hash TEXT, -- 비밀번호 해시
+    pin_code VARCHAR(10), -- 핀번호 (로그인용)
     department_id UUID REFERENCES departments(id),
     position_id UUID REFERENCES positions(id),
     role_id UUID REFERENCES roles(id),
@@ -106,6 +107,7 @@ CREATE TABLE IF NOT EXISTS employees (
     is_active BOOLEAN DEFAULT true,
     
     -- 프로필
+    nickname VARCHAR(50), -- 닉네임
     profile_image_url TEXT,
     bio TEXT,
     skills JSONB, -- ["스킬1", "스킬2"]
@@ -703,30 +705,76 @@ CREATE POLICY "View own contracts" ON contracts
 -- 초기 데이터 설정
 -- ====================================
 
--- 관리자 계정 생성 (비밀번호는 애플리케이션에서 해시 처리)
+-- 초기 직원 데이터 생성
 INSERT INTO employees (
     employee_id,
     email,
     name,
     phone,
+    password_hash,
+    pin_code,
     department_id,
     position_id,
     role_id,
     hire_date,
     employment_type,
-    status
-) VALUES (
+    status,
+    is_active,
+    nickname
+) VALUES 
+(
     'MASLABS-001',
     'admin@maslabs.kr',
     '시스템 관리자',
-    '010-0000-0000',
+    '010-6669-9000',
+    '66699000',
+    '1234',
     (SELECT id FROM departments WHERE code = 'HQ'),
     (SELECT id FROM positions WHERE name = '대표이사'),
     (SELECT id FROM roles WHERE name = 'admin'),
-    CURRENT_DATE,
+    '2025-08-19',
     'full_time',
-    'active'
-) ON CONFLICT (employee_id) DO NOTHING;
+    'active',
+    true,
+    '관리자'
+),
+(
+    'MASLABS-004',
+    'eunjung@maslabs.kr',
+    '이은정',
+    '010-1234-5678',
+    '12345678',
+    '1234',
+    (SELECT id FROM departments WHERE code = 'HQ'),
+    (SELECT id FROM positions WHERE name = '사원'),
+    (SELECT id FROM roles WHERE name = 'employee'),
+    '2025-08-19',
+    'full_time',
+    'active',
+    true,
+    '은정'
+),
+(
+    'MASLABS-005',
+    'park.jin@maslabs.kr',
+    '박진',
+    '010-9876-5432',
+    '12345678',
+    '1234',
+    (SELECT id FROM departments WHERE code = 'MAS'),
+    (SELECT id FROM positions WHERE name = '파트타임'),
+    (SELECT id FROM roles WHERE name = 'employee'),
+    '2025-08-20',
+    'part_time',
+    'active',
+    true,
+    '박진'
+) ON CONFLICT (employee_id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    pin_code = EXCLUDED.pin_code,
+    updated_at = NOW();
 
 -- ====================================
 -- 인덱스 최적화

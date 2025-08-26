@@ -16,6 +16,7 @@ interface OperationType {
   name: string;
   category: string;
   points: number;
+  target_roles?: string[];
 }
 
 interface Task {
@@ -45,6 +46,7 @@ export default function TasksPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [filter, setFilter] = useState('all');
+  const [selectedOperationType, setSelectedOperationType] = useState<OperationType | null>(null);
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -136,6 +138,42 @@ export default function TasksPage() {
     } catch (error) {
       console.error('업무 추가 실패:', error);
     }
+  };
+
+  const showOperationTypeDetails = (opType: OperationType) => {
+    setSelectedOperationType(opType);
+  };
+
+  const getOperationTypeDescription = (code: string): string => {
+    const descriptions: { [key: string]: string } = {
+      'OP1': '신규 고객에게 전화로 제품을 설명하고 결제를 유도하는 업무입니다.',
+      'OP2': '기존 고객의 재구매나 부품 구매를 전화로 처리하는 업무입니다.',
+      'OP3': '신규 고객을 대상으로 오프라인에서 제품을 설명하고 구매를 성사시키는 업무입니다.',
+      'OP4': '기존 고객의 재구매나 부품 구매를 오프라인에서 처리하는 업무입니다.',
+      'OP5': '고객 문의에 대한 기본적인 응대와 정보 제공 업무입니다.',
+      'OP6': '고급 A/S 처리 및 기술적 문제 해결 업무입니다.',
+      'OP7': '고객의 환불 요청을 방어하고 유지하는 업무입니다.',
+      'OP8': '환불 처리를 담당하는 업무입니다. 기존 판매 점수가 차감됩니다.',
+      'OP9': '상품 관련 택배의 입고, 출고, 회수를 처리하는 업무입니다.',
+      'OP10': '음료, 소모품, 선물 등 기타 택배 및 서비스를 처리하는 업무입니다.'
+    };
+    return descriptions[code] || '업무 설명이 없습니다.';
+  };
+
+  const getOperationTypePointsInfo = (code: string): string => {
+    const pointsInfo: { [key: string]: string } = {
+      'OP1': '건당 20점이 부여됩니다. 신규 고객 판매 성공 시에만 인정됩니다.',
+      'OP2': '건당 15점이 부여됩니다. 재구매 및 부품 판매에 적용됩니다.',
+      'OP3': '건당 40점이 부여됩니다. 신규 고객 오프라인 판매 성공 시에만 인정됩니다.',
+      'OP4': '건당 30점이 부여됩니다. 재구매 및 부품 오프라인 판매에 적용됩니다.',
+      'OP5': '건당 8점이 부여됩니다. 기본적인 고객 응대 업무입니다.',
+      'OP6': '건당 15점이 부여됩니다. 고급 기술 지원이 필요한 경우에만 인정됩니다.',
+      'OP7': '건당 25점이 부여됩니다. 환불 방어 성공 시에만 인정됩니다.',
+      'OP8': '기존 판매 점수가 그대로 차감됩니다. 환불 처리 담당자에게는 점수가 부여되지 않습니다.',
+      'OP9': '건당 8점이 부여됩니다. 상품 관련 택배 처리 업무입니다.',
+      'OP10': '건당 5점이 부여됩니다. 기타 택배 및 서비스 업무입니다.'
+    };
+    return pointsInfo[code] || '점수 정보가 없습니다.';
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
@@ -404,7 +442,7 @@ export default function TasksPage() {
         {/* 업무 유형별 통계 */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">업무 유형별 분포</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {operationTypes.slice(0, 10).map((opType) => {
               const count = tasks.filter(t => t.operation_type_id === opType.id).length;
               const points = tasks
@@ -412,16 +450,95 @@ export default function TasksPage() {
                 .reduce((sum, t) => sum + t.points_earned, 0);
               
               return (
-                <div key={opType.id} className="text-center p-3 border rounded-lg">
-                  <p className="text-lg font-bold text-indigo-600">{opType.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">{opType.code}</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    {count}건 / {points}점
+                <div 
+                  key={opType.id} 
+                  className="text-center p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50"
+                  title={`${opType.name} - ${opType.points}점`}
+                  onClick={() => showOperationTypeDetails(opType)}
+                >
+                  <div className="flex items-center justify-center mb-2">
+                    <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full font-medium">
+                      {opType.code}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-800 mb-1 leading-tight">
+                    {opType.name}
                   </p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    {opType.points}점
+                  </p>
+                  <div className="text-xs text-gray-500 bg-white rounded px-2 py-1">
+                    {count}건 / {points}점
+                  </div>
                 </div>
               );
             })}
           </div>
+          
+          {/* 업무 유형 상세 정보 모달 */}
+          {selectedOperationType && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">업무 상세 정보</h3>
+                  <button
+                    onClick={() => setSelectedOperationType(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm bg-indigo-100 text-indigo-800 px-2 py-1 rounded font-medium">
+                      {selectedOperationType.code}
+                    </span>
+                    <h4 className="text-lg font-semibold">{selectedOperationType.name}</h4>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>업무 설명:</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {getOperationTypeDescription(selectedOperationType.code)}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>점수 계산:</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {getOperationTypePointsInfo(selectedOperationType.code)}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-yellow-50 p-3 rounded-lg">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>대상 직급:</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {selectedOperationType.target_roles?.join(', ') || '모든 직급'}
+                    </p>
+                  </div>
+                  
+                  <div className="text-center">
+                    <button
+                      onClick={() => {
+                        setSelectedOperationType(null);
+                        setShowAddModal(true);
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    >
+                      이 업무로 기록하기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

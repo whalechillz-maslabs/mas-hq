@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "playwright test",
+    "test:deployment": "playwright test tests/deployment-test.spec.ts --headed",
+    "test:admin-login": "playwright test tests/admin-test-login.spec.ts --headed",
     "test:park-jin": "playwright test tests/park-jin-test.spec.ts --headed",
     "test:park-jin-nickname": "playwright test tests/park-jin-nickname-test.spec.ts --headed",
     "test:admin": "playwright test tests/admin-permission-test.spec.ts --headed",
@@ -17,7 +19,10 @@
     "db:fix-admin": "bash scripts/auto-supabase.sh db reset --linked && bash scripts/auto-supabase.sh db push",
     "db:reset": "bash scripts/auto-supabase.sh db reset --linked",
     "db:push": "bash scripts/auto-supabase.sh db push",
-    "db:auto": "bash scripts/auto-supabase.sh"
+    "db:auto": "bash scripts/auto-supabase.sh",
+    "deploy:build": "npm run build",
+    "deploy:test": "npm run test:deployment",
+    "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",

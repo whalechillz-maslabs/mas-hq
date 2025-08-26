@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, auth } from '@/lib/supabase';
 import { 
   Users, UserPlus, UserCheck, Settings, Save, 
-  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw
+  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw, ExternalLink
 } from 'lucide-react';
 
 interface Employee {
@@ -320,6 +320,24 @@ export default function EmployeeManagementPage() {
     }
   };
 
+  // 테스트 로그인 함수 추가
+  const handleTestLogin = (employee: Employee) => {
+    // 새창에서 로그인 페이지를 열고, 직원 정보를 URL 파라미터로 전달
+    const loginUrl = `${window.location.origin}/login?test_user=${encodeURIComponent(employee.phone)}&test_password=${encodeURIComponent(employee.password_hash || '')}&test_name=${encodeURIComponent(employee.name)}`;
+    
+    // 새창 열기
+    const newWindow = window.open(loginUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    
+    if (newWindow) {
+      // 새창이 차단되었을 경우 알림
+      setTimeout(() => {
+        if (newWindow.closed) {
+          alert('팝업이 차단되었습니다. 팝업 차단을 해제하고 다시 시도해주세요.');
+        }
+      }, 1000);
+    }
+  };
+
   const filteredEmployees = employees.filter(employee =>
     employee.name.includes(searchTerm) ||
     employee.employee_id.includes(searchTerm) ||
@@ -483,6 +501,13 @@ export default function EmployeeManagementPage() {
                         <RefreshCw className="h-4 w-4" />
                       </button>
                       <button 
+                        onClick={() => handleTestLogin(employee)}
+                        className="text-green-600 hover:text-green-900 mr-2"
+                        title="테스트 로그인"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                      <button 
                         onClick={() => handleDeleteEmployee(employee)}
                         className="text-red-600 hover:text-red-900"
                         title="삭제"
@@ -637,7 +662,7 @@ export default function EmployeeManagementPage() {
                       phone: e.target.value
                     })}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="010-0000-0000"
+                    placeholder="010-6669-9000"
                   />
                 </div>
                 <div>

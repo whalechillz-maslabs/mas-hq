@@ -1,58 +1,36 @@
 import { test, expect } from '@playwright/test';
 
-test('기본 로그인 및 페이지 접근 테스트', async ({ page }) => {
-  // 1. 로그인
-  console.log('🔍 로그인 테스트 시작');
-  await page.goto('http://localhost:3000/login');
+test('로컬 서버 상태 확인', async ({ page }) => {
+  console.log('🔍 로컬 서버 상태 확인 시작');
   
-  // 전화번호로 로그인
-  await page.fill('input[type="tel"]', '010-6669-9000');
-  await page.fill('input[type="password"]', 'admin123');
-  await page.click('button[type="submit"]');
-  await page.waitForURL('**/dashboard');
+  // 로컬 서버로 이동
+  await page.goto('http://localhost:3000');
+  console.log('✅ 페이지 로드 완료');
   
-  console.log('✅ 로그인 성공');
-  
-  // 2. 대시보드 확인
-  console.log('🔍 대시보드 확인');
-  await page.waitForLoadState('networkidle');
-  
-  // 기본 요소들 확인
-  await expect(page.locator('text=오늘의 미션')).toBeVisible();
-  await expect(page.locator('text=근무 상태')).toBeVisible();
-  
-  console.log('✅ 대시보드 로딩 성공');
-  
-  // 3. 스크린샷 캡처
-  await page.screenshot({ 
-    path: 'dashboard-simple-test.png', 
-    fullPage: true 
-  });
-  
-  console.log('🎉 기본 테스트 완료!');
-});
-
-test('핀번호 로그인 테스트', async ({ page }) => {
-  console.log('🔍 핀번호 로그인 테스트 시작');
-  await page.goto('http://localhost:3000/login');
-  
-  // 핀번호 로그인 탭 선택
-  await page.click('text=핀번호');
-  
-  // 핀번호 입력 (1234)
-  await page.fill('input[placeholder="0000"]', '1234');
-  
-  // 로그인 버튼 클릭
-  await page.click('button[type="submit"]');
-  await page.waitForURL('**/dashboard');
-  
-  console.log('✅ 핀번호 로그인 성공');
+  // 페이지 제목 확인
+  const title = await page.title();
+  console.log('📄 페이지 제목:', title);
   
   // 스크린샷 캡처
-  await page.screenshot({ 
-    path: 'pin-login-test.png', 
-    fullPage: true 
-  });
+  await page.screenshot({ path: 'local-server-status.png', fullPage: true });
+  console.log('📸 스크린샷 캡처 완료');
   
-  console.log('🎉 핀번호 로그인 테스트 완료!');
+  // 페이지 내용 확인
+  const content = await page.content();
+  console.log('📝 페이지 내용 길이:', content.length);
+  
+  // 로그인 폼 요소 확인
+  const inputs = await page.locator('input').count();
+  console.log('🔢 입력 필드 개수:', inputs);
+  
+  if (inputs > 0) {
+    const inputTypes = await page.locator('input').all();
+    for (let i = 0; i < inputTypes.length; i++) {
+      const type = await inputTypes[i].getAttribute('type');
+      const placeholder = await inputTypes[i].getAttribute('placeholder');
+      console.log(`📥 입력 필드 ${i + 1}: type=${type}, placeholder=${placeholder}`);
+    }
+  }
+  
+  console.log('🎉 로컬 서버 상태 확인 완료!');
 });

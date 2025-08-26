@@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS departments (
 
 -- 기본 부서 데이터
 INSERT INTO departments (name, code, description) VALUES 
-('경영지원팀', 'MGMT', '경영 및 행정 지원'),
+('운영팀', 'HQ', '본사 운영 관리'),
 ('개발팀', 'DEV', '소프트웨어 개발'),
 ('디자인팀', 'DESIGN', '디자인 및 UI/UX'),
 ('마케팅팀', 'MARKETING', '마케팅 및 홍보'),
-('매장운영팀', 'STORE', '매장 운영 및 관리'),
-('본사', 'HQ', '본사 직원')
+('싱싱팀', 'SING', '싱싱 관련 업무'),
+('마스팀', 'MAS', '마스 관련 업무')
 ON CONFLICT (code) DO NOTHING;
 
 -- ====================================
