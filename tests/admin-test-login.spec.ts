@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('관리자 테스트 로그인 기능', () => {
   test('관리자 로그인 후 직원 관리 페이지 접근', async ({ page }) => {
     // 관리자 로그인
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     await page.fill('input[type="text"]', '010-6669-9000');
     await page.fill('input[type="password"]', '66699000');
     await page.click('button[type="submit"]');
@@ -18,7 +18,7 @@ test.describe('관리자 테스트 로그인 기능', () => {
 
   test('직원 목록에서 테스트 로그인 버튼 확인', async ({ page }) => {
     // 관리자 로그인
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     await page.fill('input[type="text"]', '010-6669-9000');
     await page.fill('input[type="password"]', '66699000');
     await page.click('button[type="submit"]');
@@ -36,7 +36,7 @@ test.describe('관리자 테스트 로그인 기능', () => {
 
   test('테스트 로그인 버튼 클릭 시 새창 열기', async ({ page, context }) => {
     // 관리자 로그인
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     await page.fill('input[type="text"]', '010-6669-9000');
     await page.fill('input[type="password"]', '66699000');
     await page.click('button[type="submit"]');
@@ -67,7 +67,7 @@ test.describe('관리자 테스트 로그인 기능', () => {
 
   test('테스트 로그인 페이지에서 자동 입력 확인', async ({ page, context }) => {
     // 관리자 로그인
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     await page.fill('input[type="text"]', '010-6669-9000');
     await page.fill('input[type="password"]', '66699000');
     await page.click('button[type="submit"]');

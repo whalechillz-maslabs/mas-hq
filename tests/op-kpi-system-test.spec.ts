@@ -14,7 +14,7 @@ test.describe('OP KPI 시스템 테스트', () => {
     console.log('🔍 OP1~OP10 업무 유형 확인 테스트 시작');
     
     // 업무 기록 페이지로 이동
-    await page.goto('http://localhost:3000/tasks');
+    await page.goto('https://www.maslabs.kr/tasks');
     
     console.log('✅ 업무 기록 페이지 접근 완료');
     
@@ -62,7 +62,7 @@ test.describe('OP KPI 시스템 테스트', () => {
     console.log('🔍 업무 기록 입력 및 저장 테스트 시작');
     
     // 업무 기록 페이지로 이동
-    await page.goto('http://localhost:3000/tasks');
+    await page.goto('https://www.maslabs.kr/tasks');
     
     // 업무 추가 버튼 클릭
     await page.click('text=업무 추가');
@@ -95,7 +95,7 @@ test.describe('OP KPI 시스템 테스트', () => {
     console.log('🔍 성과 요약 페이지 확인 테스트 시작');
     
     // 성과 요약 페이지로 이동 (가상의 경로)
-    await page.goto('http://localhost:3000/performance');
+    await page.goto('https://www.maslabs.kr/performance');
     
     // 페이지 로드 확인
     const isLoaded = await page.locator('body').isVisible();
@@ -124,7 +124,7 @@ test.describe('OP KPI 시스템 테스트', () => {
     console.log('🔍 업무 유형별 점수 확인 테스트 시작');
     
     // 업무 기록 페이지로 이동
-    await page.goto('http://localhost:3000/tasks');
+    await page.goto('https://www.maslabs.kr/tasks');
     
     // 업무 추가 버튼 클릭
     await page.click('text=업무 추가');

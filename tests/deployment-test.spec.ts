@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('배포 확인 테스트', () => {
   test('메인 페이지 로드 확인', async ({ page }) => {
-    // 로컬 개발 서버 테스트
-    await page.goto('http://localhost:3000');
+    // 원격 배포 서버 테스트
+    await page.goto('https://www.maslabs.kr');
     
     // 페이지가 로드되었는지 확인
     await expect(page).toHaveTitle(/MASLABS/);
@@ -13,7 +13,7 @@ test.describe('배포 확인 테스트', () => {
   });
 
   test('로그인 페이지 UI 확인', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     
     // 로그인 폼 요소들이 존재하는지 확인
     await expect(page.locator('input[type="text"]')).toBeVisible();
@@ -25,7 +25,7 @@ test.describe('배포 확인 테스트', () => {
   });
 
   test('직원 로그인 테스트', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     
     // 김탁수(WHA) 로그인 테스트
     await page.fill('input[type="text"]', '010-6669-9000');
@@ -39,7 +39,7 @@ test.describe('배포 확인 테스트', () => {
 
   test('관리자 페이지 접근 테스트', async ({ page }) => {
     // 먼저 로그인
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     await page.fill('input[type="text"]', '010-6669-9000');
     await page.fill('input[type="password"]', '66699000');
     await page.click('button[type="submit"]');
@@ -56,7 +56,7 @@ test.describe('배포 확인 테스트', () => {
 
   test('스케줄 관리 페이지 테스트', async ({ page }) => {
     // 먼저 로그인
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     await page.fill('input[type="text"]', '010-6669-9000');
     await page.fill('input[type="password"]', '66699000');
     await page.click('button[type="submit"]');
@@ -73,7 +73,7 @@ test.describe('배포 확인 테스트', () => {
   });
 
   test('반응형 디자인 확인', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
+    await page.goto('https://www.maslabs.kr/login');
     
     // 데스크톱 뷰
     await page.setViewportSize({ width: 1920, height: 1080 });
@@ -90,7 +90,7 @@ test.describe('배포 확인 테스트', () => {
 
   test('에러 페이지 처리 확인', async ({ page }) => {
     // 존재하지 않는 페이지 접근
-    await page.goto('http://localhost:3000/nonexistent-page');
+    await page.goto('https://www.maslabs.kr/nonexistent-page');
     
     // 404 페이지가 표시되는지 확인
     await expect(page.locator('h1')).toContainText('404');
