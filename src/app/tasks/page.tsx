@@ -32,6 +32,7 @@ interface Task {
   updated_at: string;
   
   // 새로운 필드들
+  task_date?: string;
   task_time?: string;
   customer_name?: string;
   sales_amount?: number;
@@ -47,6 +48,8 @@ export default function TasksPage() {
   const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [filter, setFilter] = useState('all');
   const [selectedOperationType, setSelectedOperationType] = useState<OperationType | null>(null);
@@ -138,7 +141,8 @@ export default function TasksPage() {
           ...taskData,
           achievement_status: 'pending',
           task_priority: taskData.task_priority || 'normal',
-          sales_amount: taskData.sales_amount || 0
+          sales_amount: taskData.sales_amount || 0,
+          created_at: taskData.task_date ? new Date(taskData.task_date).toISOString() : new Date().toISOString()
         })
         .select()
         .single();
@@ -201,9 +205,36 @@ export default function TasksPage() {
         .eq('id', taskId);
 
       if (error) throw error;
+      
       loadTasksData();
     } catch (error) {
-      console.error('상태 업데이트 실패:', error);
+      console.error('업무 상태 업데이트 실패:', error);
+    }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateTask = async (taskData: any) => {
+    try {
+      const { error } = await supabase
+        .from('employee_tasks')
+        .update({
+          ...taskData,
+          updated_at: new Date().toISOString(),
+          sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0
+        })
+        .eq('id', editingTask?.id);
+
+      if (error) throw error;
+      
+      setShowEditModal(false);
+      setEditingTask(null);
+      loadTasksData();
+    } catch (error) {
+      console.error('업무 수정 실패:', error);
     }
   };
 
@@ -374,7 +405,7 @@ export default function TasksPage() {
               {tasks.map((task) => (
                 <tr key={task.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDateKR(task.created_at)}
+                    {task.task_date ? formatDateKR(task.task_date) : formatDateKR(task.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
@@ -434,6 +465,15 @@ export default function TasksPage() {
                           title="완료"
                         >
                           완료
+                        </button>
+                      )}
+                      {task.achievement_status === 'pending' && (
+                        <button
+                          onClick={() => handleEditTask(task)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="수정"
+                        >
+                          <Edit className="h-4 w-4" />
                         </button>
                       )}
                       {task.achievement_status === 'pending' && (
@@ -569,6 +609,7 @@ export default function TasksPage() {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 handleAddTask({
+                  task_date: formData.get('task_date') as string,
                   operation_type_id: formData.get('operation_type_id'),
                   title: formData.get('title') || '',
                   notes: formData.get('notes') || '',
@@ -576,12 +617,25 @@ export default function TasksPage() {
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
-                  sales_amount: parseFloat(formData.get('sales_amount') as string) || 0,
+                  sales_amount: parseFloat((formData.get('sales_amount') as string).replace(/,/g, '')) || 0,
                   task_priority: formData.get('task_priority') || 'normal'
                 });
               }}
             >
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무 날짜
+                  </label>
+                  <input
+                    type="date"
+                    name="task_date"
+                    required
+                    defaultValue={formatDateISO(new Date())}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     업무 유형
@@ -667,6 +721,13 @@ export default function TasksPage() {
                       name="task_time"
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
                       placeholder="09:00"
+                      step="600"
+                      defaultValue={(() => {
+                        const now = new Date();
+                        const minutes = Math.floor(now.getMinutes() / 10) * 10;
+                        now.setMinutes(minutes, 0, 0);
+                        return now.toTimeString().slice(0, 5);
+                      })()}
                     />
                   </div>
 
@@ -688,13 +749,29 @@ export default function TasksPage() {
                     매출 금액
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="sales_amount"
-                    min="0"
-                    step="0.01"
                     defaultValue="0"
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     placeholder="판매 시에만 입력 (원)"
+                    onChange={(e) => {
+                      // 숫자와 쉼표만 허용
+                      const value = e.target.value.replace(/[^\d,]/g, '');
+                      // 쉼표 제거 후 숫자로 변환
+                      const numValue = value.replace(/,/g, '');
+                      if (numValue === '' || !isNaN(Number(numValue))) {
+                        // 천단위 쉼표 추가
+                        const formattedValue = numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        e.target.value = formattedValue;
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // 포커스 아웃 시 숫자만 남기고 쉼표 제거
+                      const numValue = e.target.value.replace(/,/g, '');
+                      if (numValue === '') {
+                        e.target.value = '0';
+                      }
+                    }}
                   />
                 </div>
 
@@ -724,6 +801,218 @@ export default function TasksPage() {
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                 >
                   추가
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 업무 수정 모달 */}
+      {showEditModal && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">업무 수정</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleUpdateTask({
+                  task_date: formData.get('task_date') as string,
+                  operation_type_id: formData.get('operation_type_id'),
+                  title: formData.get('title') || '',
+                  notes: formData.get('notes') || '',
+                  quantity: parseInt(formData.get('quantity') as string) || 1,
+                  memo: formData.get('memo') || '',
+                  task_time: formData.get('task_time') || null,
+                  customer_name: formData.get('customer_name') || '',
+                  sales_amount: formData.get('sales_amount') as string,
+                  task_priority: formData.get('task_priority') || 'normal'
+                });
+              }}
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무 날짜
+                  </label>
+                  <input
+                    type="date"
+                    name="task_date"
+                    required
+                    defaultValue={editingTask.task_date || formatDateISO(new Date(editingTask.created_at))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무 유형
+                  </label>
+                  <select
+                    name="operation_type_id"
+                    required
+                    defaultValue={editingTask.operation_type_id}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="">선택하세요</option>
+                    {operationTypes.map((opType) => (
+                      <option key={opType.id} value={opType.id}>
+                        {opType.code} - {opType.name} ({opType.points}점)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무명
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    required
+                    defaultValue={editingTask.title}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="업무 제목을 입력하세요"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    설명
+                  </label>
+                  <textarea
+                    name="notes"
+                    rows={3}
+                    defaultValue={editingTask.notes || ''}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="업무 내용 설명 (선택)"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      수량
+                    </label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      min="1"
+                      defaultValue={editingTask.quantity || 1}
+                      required
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      우선순위
+                    </label>
+                    <select
+                      name="task_priority"
+                      defaultValue={editingTask.task_priority || 'normal'}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      <option value="low">낮음</option>
+                      <option value="normal">보통</option>
+                      <option value="high">높음</option>
+                      <option value="urgent">긴급</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      업무 수행 시각
+                    </label>
+                    <input
+                      type="time"
+                      name="task_time"
+                      defaultValue={editingTask.task_time || ''}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="09:00"
+                      step="600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      고객명
+                    </label>
+                    <input
+                      type="text"
+                      name="customer_name"
+                      defaultValue={editingTask.customer_name || ''}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="VIP0000 (선택)"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    매출 금액
+                  </label>
+                  <input
+                    type="text"
+                    name="sales_amount"
+                    defaultValue={editingTask.sales_amount ? editingTask.sales_amount.toLocaleString() : '0'}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="판매 시에만 입력 (원)"
+                    onChange={(e) => {
+                      // 숫자와 쉼표만 허용
+                      const value = e.target.value.replace(/[^\d,]/g, '');
+                      // 쉼표 제거 후 숫자로 변환
+                      const numValue = value.replace(/,/g, '');
+                      if (numValue === '' || !isNaN(Number(numValue))) {
+                        // 천단위 쉼표 추가
+                        const formattedValue = numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        e.target.value = formattedValue;
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // 포커스 아웃 시 숫자만 남기고 쉼표 제거
+                      const numValue = e.target.value.replace(/,/g, '');
+                      if (numValue === '') {
+                        e.target.value = '0';
+                      }
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    메모
+                  </label>
+                  <textarea
+                    name="memo"
+                    rows={2}
+                    defaultValue={editingTask.memo || ''}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="추가 메모 (선택)"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingTask(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  수정
                 </button>
               </div>
             </form>
