@@ -643,17 +643,26 @@ export default function TasksPage() {
                     </p>
                   </div>
                   
-                  <div className="text-center">
-                    <button
-                      onClick={() => {
-                        setSelectedOperationType(null);
-                        setShowAddModal(true);
-                      }}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                    >
-                      이 업무로 기록하기
-                    </button>
-                  </div>
+                  {selectedOperationType.code !== 'OP8' && (
+                    <div className="text-center">
+                      <button
+                        onClick={() => {
+                          setSelectedOperationType(null);
+                          setShowAddModal(true);
+                        }}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                      >
+                        이 업무로 기록하기
+                      </button>
+                    </div>
+                  )}
+                  {selectedOperationType.code === 'OP8' && (
+                    <div className="text-center">
+                      <p className="text-sm text-gray-500 italic">
+                        환불 처리는 완료된 업무의 "환불" 버튼을 통해 진행됩니다.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
