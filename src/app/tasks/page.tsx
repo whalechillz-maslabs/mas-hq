@@ -75,7 +75,15 @@ export default function TasksPage() {
         .order('code');
 
       if (opError) throw opError;
-      setOperationTypes(opTypes || []);
+
+      // OP 순서를 올바르게 정렬 (OP1, OP2, OP3, ..., OP10)
+      const sortedOpTypes = (opTypes || []).sort((a, b) => {
+        const aNum = parseInt(a.code.replace('OP', ''));
+        const bNum = parseInt(b.code.replace('OP', ''));
+        return aNum - bNum;
+      });
+
+      setOperationTypes(sortedOpTypes);
 
       // 업무 기록 로드
       const startDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
@@ -150,7 +158,7 @@ export default function TasksPage() {
       'OP2': '기존 고객의 재구매나 부품 구매를 전화로 처리하는 업무입니다.',
       'OP3': '신규 고객을 대상으로 오프라인에서 제품을 설명하고 구매를 성사시키는 업무입니다.',
       'OP4': '기존 고객의 재구매나 부품 구매를 오프라인에서 처리하는 업무입니다.',
-      'OP5': '1. 오프라인 판매(시타 동반/보조): 매장 방문 고객 응대 보조, 팀장 리드하에 보조 참여\n2. 인트라넷 등록 업무: 거래 성사를 위한 팀장 연결 전까지 통화\n3. 프로모션 설명, 인트라넷/노션 정보 입력, 시타예약 입력',
+      'OP5': '1. 오프라인 판매(시타 동반/보조): 매장 방문 고객 응대 보조, 팀장 리드하에 보조 참여<br/>2. 인트라넷 등록 업무: 거래 성사를 위한 팀장 연결 전까지 통화<br/>3. 프로모션 설명, 인트라넷/노션 정보 입력, 시타예약 입력',
       'OP6': '고급 A/S 처리 및 기술적 문제 해결 업무입니다.',
       'OP7': '고객의 환불 요청을 방어하고 유지하는 업무입니다.',
       'OP8': '환불 처리를 담당하는 업무입니다. 기존 판매 점수가 차감됩니다.',
