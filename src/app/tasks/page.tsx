@@ -39,6 +39,7 @@ interface Task {
   performer_id?: string;
   achievement_status?: string;
   task_priority?: string;
+  refund_reference_task_id?: string;
 }
 
 export default function TasksPage() {
@@ -49,10 +50,13 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [filter, setFilter] = useState('all');
   const [selectedOperationType, setSelectedOperationType] = useState<OperationType | null>(null);
+  const [previousTasks, setPreviousTasks] = useState<Task[]>([]);
+  const [selectedPreviousTask, setSelectedPreviousTask] = useState<Task | null>(null);
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -238,6 +242,66 @@ export default function TasksPage() {
     }
   };
 
+  const handleRefundTask = async (taskData: any) => {
+    try {
+      if (!selectedPreviousTask) {
+        alert('환불할 기존 업무를 선택해주세요.');
+        return;
+      }
+
+      // 기존 업무의 점수를 음수로 변환
+      const refundPoints = -(selectedPreviousTask.operation_type?.points || 0) * (selectedPreviousTask.quantity || 1);
+
+      const { error } = await supabase
+        .from('employee_tasks')
+        .insert({
+          employee_id: currentUser.id,
+          ...taskData,
+          achievement_status: 'pending',
+          task_priority: taskData.task_priority || 'normal',
+          sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0,
+          created_at: taskData.task_date ? new Date(taskData.task_date).toISOString() : new Date().toISOString(),
+          refund_reference_task_id: selectedPreviousTask.id // 환불 참조 업무 ID
+        });
+
+      if (error) throw error;
+      
+      setShowRefundModal(false);
+      setSelectedPreviousTask(null);
+      loadTasksData();
+    } catch (error) {
+      console.error('환불 업무 추가 실패:', error);
+    }
+  };
+
+  const loadPreviousTasks = async () => {
+    try {
+      // 최근 6개월간의 완료된 판매 업무들을 가져오기
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      const { data: previousTasksData, error } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points)
+        `)
+        .gte('created_at', sixMonthsAgo.toISOString())
+        .eq('employee_id', currentUser.id)
+        .eq('achievement_status', 'completed')
+        .in('operation_type_id', operationTypes
+          .filter(op => ['OP1', 'OP2', 'OP3', 'OP4'].includes(op.code))
+          .map(op => op.id)
+        )
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPreviousTasks(previousTasksData || []);
+    } catch (error) {
+      console.error('기존 업무 로드 실패:', error);
+    }
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
@@ -278,13 +342,24 @@ export default function TasksPage() {
               <h1 className="text-xl font-semibold">업무 기록</h1>
             </div>
             
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              업무 추가
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                업무 추가
+              </button>
+              <button
+                onClick={() => {
+                  loadPreviousTasks();
+                  setShowRefundModal(true);
+                }}
+                className="ml-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+              >
+                환불 처리
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1013,6 +1088,218 @@ export default function TasksPage() {
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                 >
                   수정
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 환불 처리 모달 */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">환불 처리</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleRefundTask({
+                  task_date: formData.get('task_date') as string,
+                  operation_type_id: operationTypes.find(op => op.code === 'OP8')?.id,
+                  title: formData.get('title') || '',
+                  notes: formData.get('notes') || '',
+                  quantity: 1,
+                  memo: formData.get('memo') || '',
+                  task_time: formData.get('task_time') || null,
+                  customer_name: formData.get('customer_name') || '',
+                  sales_amount: formData.get('sales_amount') as string,
+                  task_priority: formData.get('task_priority') || 'normal'
+                });
+              }}
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    환불할 기존 업무 선택
+                  </label>
+                  <select
+                    name="previous_task"
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    onChange={(e) => {
+                      const selectedTask = previousTasks.find(task => task.id === e.target.value);
+                      setSelectedPreviousTask(selectedTask || null);
+                    }}
+                  >
+                    <option value="">환불할 기존 업무를 선택하세요</option>
+                    {previousTasks.map((task) => (
+                      <option key={task.id} value={task.id}>
+                        {task.operation_type?.code} - {task.title} ({task.operation_type?.points}점) - {formatDateKR(task.created_at)}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedPreviousTask && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p className="text-sm text-yellow-800">
+                        <strong>선택된 업무:</strong> {selectedPreviousTask.operation_type?.code} - {selectedPreviousTask.title}
+                      </p>
+                      <p className="text-sm text-yellow-700">
+                        <strong>차감될 점수:</strong> -{(selectedPreviousTask.operation_type?.points || 0) * (selectedPreviousTask.quantity || 1)}점
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무 날짜
+                  </label>
+                  <input
+                    type="date"
+                    name="task_date"
+                    required
+                    defaultValue={formatDateISO(new Date())}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    환불 업무명
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="환불 업무 제목을 입력하세요"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    환불 사유
+                  </label>
+                  <textarea
+                    name="notes"
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="환불 사유를 상세히 입력하세요"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      우선순위
+                    </label>
+                    <select
+                      name="task_priority"
+                      defaultValue="high"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      <option value="low">낮음</option>
+                      <option value="normal">보통</option>
+                      <option value="high">높음</option>
+                      <option value="urgent">긴급</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      환불 처리 시각
+                    </label>
+                    <input
+                      type="time"
+                      name="task_time"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="09:00"
+                      step="600"
+                      defaultValue={(() => {
+                        const now = new Date();
+                        const minutes = Math.floor(now.getMinutes() / 10) * 10;
+                        now.setMinutes(minutes, 0, 0);
+                        return now.toTimeString().slice(0, 5);
+                      })()}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      고객명
+                    </label>
+                    <input
+                      type="text"
+                      name="customer_name"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="환불 고객명"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      환불 금액
+                    </label>
+                    <input
+                      type="text"
+                      name="sales_amount"
+                      defaultValue="0"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="환불 금액 (원)"
+                      onChange={(e) => {
+                        // 숫자와 쉼표만 허용
+                        const value = e.target.value.replace(/[^\d,]/g, '');
+                        // 쉼표 제거 후 숫자로 변환
+                        const numValue = value.replace(/,/g, '');
+                        if (numValue === '' || !isNaN(Number(numValue))) {
+                          // 천단위 쉼표 추가
+                          const formattedValue = numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                          e.target.value = formattedValue;
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // 포커스 아웃 시 숫자만 남기고 쉼표 제거
+                        const numValue = e.target.value.replace(/,/g, '');
+                        if (numValue === '') {
+                          e.target.value = '0';
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    메모
+                  </label>
+                  <textarea
+                    name="memo"
+                    rows={2}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="추가 메모 (선택)"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRefundModal(false);
+                    setSelectedPreviousTask(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  환불 처리
                 </button>
               </div>
             </form>
