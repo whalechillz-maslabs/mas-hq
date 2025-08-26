@@ -509,9 +509,12 @@ export default function TasksPage() {
                     <p className="text-sm text-gray-700 mb-2">
                       <strong>업무 설명:</strong>
                     </p>
-                    <p className="text-sm text-gray-600">
-                      {getOperationTypeDescription(selectedOperationType.code)}
-                    </p>
+                    <p 
+                      className="text-sm text-gray-600"
+                      dangerouslySetInnerHTML={{ 
+                        __html: getOperationTypeDescription(selectedOperationType.code) 
+                      }}
+                    />
                   </div>
                   
                   <div className="bg-green-50 p-3 rounded-lg">
