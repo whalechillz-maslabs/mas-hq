@@ -40,6 +40,7 @@ interface DashboardData {
     creativePassion: boolean;
     dedication: boolean;
   };
+  todaySales: number;
 }
 
 export default function DashboardPage() {
@@ -97,13 +98,21 @@ export default function DashboardPage() {
         console.error('직원 정보 조회 오류:', employeeError);
       }
 
+      // 오늘 날짜와 이번 달 날짜 범위 계산
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      const todayStr = today.toISOString().split('T')[0];
+      const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+      const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
+
       // 오늘의 스케줄 가져오기
-      const today = new Date().toISOString().split('T')[0];
       const { data: scheduleData } = await supabase
         .from('schedules')
         .select('*')
         .eq('employee_id', currentUser.id)
-        .eq('schedule_date', today)
+        .eq('schedule_date', todayStr)
         .single();
 
       // 전체 직원 수 가져오기
@@ -112,20 +121,68 @@ export default function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // 월간 통계 (실제 데이터 + 더미 데이터)
+      // 오늘의 업무 데이터 가져오기
+      const { data: todayTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points)
+        `)
+        .gte('created_at', todayStr + 'T00:00:00')
+        .lte('created_at', todayStr + 'T23:59:59')
+        .eq('employee_id', currentUser.id);
+
+      // 이번 달 업무 데이터 가져오기
+      const { data: monthlyTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points)
+        `)
+        .gte('created_at', startOfMonthStr + 'T00:00:00')
+        .lte('created_at', endOfMonthStr + 'T23:59:59')
+        .eq('employee_id', currentUser.id);
+
+      // 오늘의 매출 계산
+      const todaySales = todayTasks?.reduce((sum, task) => {
+        return sum + (task.sales_amount || 0);
+      }, 0) || 0;
+
+      // 이번 달 매출 계산
+      const monthlySales = monthlyTasks?.reduce((sum, task) => {
+        return sum + (task.sales_amount || 0);
+      }, 0) || 0;
+
+      // 신규 상담 건수 계산 (OP1, OP3 - 신규 고객 관련 업무)
+      const newConsultations = monthlyTasks?.filter(task => 
+        task.operation_type?.code === 'OP1' || task.operation_type?.code === 'OP3'
+      ).length || 0;
+
+      // 월간 통계 (실제 데이터)
       const monthlyStats = {
-        totalSales: 4080000,
-        newConsultations: 45,
-        targetAchievement: 33,
+        totalSales: monthlySales,
+        newConsultations: newConsultations,
+        targetAchievement: Math.round((monthlySales / 5000000) * 100), // 목표 500만원 기준
         totalWorkHours: 168
       };
 
-      // 개인 KPI (실제 데이터 + 더미 데이터)
+      // 오늘의 매출 데이터
+      const todaySalesData = todaySales;
+
+      // 개인 KPI (실제 데이터)
+      const phoneSales = monthlyTasks?.filter(task => 
+        task.operation_type?.code === 'OP1' || task.operation_type?.code === 'OP2'
+      ).length || 0;
+
+      const offlineSales = monthlyTasks?.filter(task => 
+        task.operation_type?.code === 'OP3' || task.operation_type?.code === 'OP4'
+      ).length || 0;
+
       const personalKPI = {
-        phoneSales: 7,
-        offlineSatisfaction: 92,
-        onlineSales: 3,
-        contentViews: 1840
+        phoneSales: phoneSales,
+        offlineSatisfaction: 92, // 만족도는 별도 데이터 필요
+        onlineSales: offlineSales,
+        contentViews: 1840 // 콘텐츠 조회수는 별도 데이터 필요
       };
 
       // 팀 KPI (실제 데이터 + 더미 데이터)
@@ -149,7 +206,8 @@ export default function DashboardPage() {
         monthlyStats,
         personalKPI,
         teamKPI,
-        todayMission
+        todayMission,
+        todaySales: todaySales
       });
 
     } catch (error) {
@@ -180,7 +238,8 @@ export default function DashboardPage() {
           positiveThinking: true,
           creativePassion: true,
           dedication: true
-        }
+        },
+        todaySales: 0
       });
     } finally {
       setLoading(false);
@@ -381,7 +440,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm">오늘의 매출</p>
-                  <p className="text-2xl font-bold">{formatCurrency(950000)}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(data?.todaySales || 0)}</p>
                 </div>
                 <DollarSign className="h-8 w-8 text-blue-200" />
               </div>
