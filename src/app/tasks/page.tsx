@@ -24,17 +24,20 @@ interface Task {
   employee_id: string;
   operation_type_id: string;
   operation_type?: OperationType;
-  task_date: string;
-  task_name: string;
-  description: string;
+  title: string;
+  notes?: string;
   quantity: number;
-  points_earned: number;
-  status: string;
-  priority: string;
-  employee_memo: string;
-  manager_memo?: string;
-  verified_by?: string;
-  verified_at?: string;
+  memo?: string;
+  created_at: string;
+  updated_at: string;
+  
+  // 새로운 필드들
+  task_time?: string;
+  customer_name?: string;
+  sales_amount?: number;
+  performer_id?: string;
+  achievement_status?: string;
+  task_priority?: string;
 }
 
 export default function TasksPage() {
@@ -95,13 +98,13 @@ export default function TasksPage() {
           *,
           operation_type:operation_types(code, name, category, points)
         `)
-        .gte('task_date', formatDateISO(startDate))
-        .lte('task_date', formatDateISO(endDate))
+        .gte('created_at', formatDateISO(startDate))
+        .lte('created_at', formatDateISO(endDate))
         .eq('employee_id', user.id)
-        .order('task_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (filter !== 'all') {
-        query = query.eq('status', filter);
+        query = query.eq('achievement_status', filter);
       }
 
       const { data: tasksData, error: tasksError } = await query;
@@ -111,9 +114,12 @@ export default function TasksPage() {
 
       // 통계 계산
       const totalTasks = tasksData?.length || 0;
-      const completedTasks = tasksData?.filter((t: Task) => t.status === 'completed' || t.status === 'verified').length || 0;
-      const totalPoints = tasksData?.reduce((sum: number, t: Task) => sum + t.points_earned, 0) || 0;
-      const pendingTasks = tasksData?.filter((t: Task) => t.status === 'pending').length || 0;
+      const completedTasks = tasksData?.filter((t: Task) => t.achievement_status === 'completed').length || 0;
+      const totalPoints = tasksData?.reduce((sum: number, t: Task) => {
+        const opType = t.operation_type;
+        return sum + ((opType?.points || 0) * (t.quantity || 1));
+      }, 0) || 0;
+      const pendingTasks = tasksData?.filter((t: Task) => t.achievement_status === 'pending').length || 0;
 
       setStats({ totalTasks, completedTasks, totalPoints, pendingTasks });
     } catch (error) {
@@ -125,16 +131,14 @@ export default function TasksPage() {
 
   const handleAddTask = async (taskData: any) => {
     try {
-      const operationType = operationTypes.find(op => op.id === taskData.operation_type_id);
-      const pointsEarned = (operationType?.points || 0) * taskData.quantity;
-
       const { data, error } = await supabase
         .from('employee_tasks')
         .insert({
           employee_id: currentUser.id,
           ...taskData,
-          points_earned: pointsEarned,
-          status: 'pending'
+          achievement_status: 'pending',
+          task_priority: taskData.task_priority || 'normal',
+          sales_amount: taskData.sales_amount || 0
         })
         .select()
         .single();
@@ -186,11 +190,10 @@ export default function TasksPage() {
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
     try {
-      const updateData: any = { status: newStatus };
-      
-      if (newStatus === 'completed') {
-        updateData.completed_at = new Date().toISOString();
-      }
+      const updateData: any = { 
+        achievement_status: newStatus,
+        updated_at: new Date().toISOString()
+      };
 
       const { error } = await supabase
         .from('employee_tasks')
@@ -345,6 +348,12 @@ export default function TasksPage() {
                   업무명
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  고객명
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  매출
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   수량
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -365,7 +374,7 @@ export default function TasksPage() {
               {tasks.map((task) => (
                 <tr key={task.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDateKR(task.task_date)}
+                    {formatDateKR(task.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
@@ -380,14 +389,20 @@ export default function TasksPage() {
                   <td className="px-6 py-4">
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {task.task_name || '-'}
+                        {task.title || '-'}
                       </p>
-                      {task.description && (
+                      {task.notes && (
                         <p className="text-sm text-gray-500 truncate max-w-xs">
-                          {task.description}
+                          {task.notes}
                         </p>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {task.customer_name || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {task.sales_amount ? `${task.sales_amount.toLocaleString()}원` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {task.quantity}
@@ -396,32 +411,23 @@ export default function TasksPage() {
                     <div className="flex items-center">
                       <Award className="h-4 w-4 mr-1 text-purple-500" />
                       <span className="text-sm font-medium text-purple-600">
-                        {task.points_earned}점
+                        {(task.operation_type?.points || 0) * (task.quantity || 1)}점
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(task.priority)}`}>
-                      {getPriorityLabel(task.priority)}
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(task.task_priority || 'normal')}`}>
+                      {getPriorityLabel(task.task_priority || 'normal')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(task.status)}`}>
-                      {getStatusLabel(task.status)}
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(task.achievement_status || 'pending')}`}>
+                      {getStatusLabel(task.achievement_status || 'pending')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      {task.status === 'pending' && (
-                        <button
-                          onClick={() => handleUpdateStatus(task.id, 'in_progress')}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="시작"
-                        >
-                          시작
-                        </button>
-                      )}
-                      {task.status === 'in_progress' && (
+                      {task.achievement_status === 'pending' && (
                         <button
                           onClick={() => handleUpdateStatus(task.id, 'completed')}
                           className="text-green-600 hover:text-green-900"
@@ -430,7 +436,7 @@ export default function TasksPage() {
                           완료
                         </button>
                       )}
-                      {(task.status === 'pending' || task.status === 'in_progress') && (
+                      {task.achievement_status === 'pending' && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
                           className="text-red-600 hover:text-red-900"
@@ -455,7 +461,7 @@ export default function TasksPage() {
               const count = tasks.filter(t => t.operation_type_id === opType.id).length;
               const points = tasks
                 .filter(t => t.operation_type_id === opType.id)
-                .reduce((sum, t) => sum + t.points_earned, 0);
+                .reduce((sum, t) => sum + ((t.operation_type?.points || 0) * (t.quantity || 1)), 0);
               
               return (
                 <div 
@@ -564,29 +570,18 @@ export default function TasksPage() {
                 const formData = new FormData(e.currentTarget);
                 handleAddTask({
                   operation_type_id: formData.get('operation_type_id'),
-                  task_date: formData.get('task_date'),
-                  task_name: formData.get('task_name'),
-                  description: formData.get('description'),
-                  quantity: parseInt(formData.get('quantity') as string),
-                  priority: formData.get('priority'),
-                  employee_memo: formData.get('employee_memo')
+                  title: formData.get('title') || '',
+                  notes: formData.get('notes') || '',
+                  quantity: parseInt(formData.get('quantity') as string) || 1,
+                  memo: formData.get('memo') || '',
+                  task_time: formData.get('task_time') || null,
+                  customer_name: formData.get('customer_name') || '',
+                  sales_amount: parseFloat(formData.get('sales_amount') as string) || 0,
+                  task_priority: formData.get('task_priority') || 'normal'
                 });
               }}
             >
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    업무 날짜
-                  </label>
-                  <input
-                    type="date"
-                    name="task_date"
-                    required
-                    defaultValue={formatDateISO(new Date())}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     업무 유형
@@ -611,9 +606,10 @@ export default function TasksPage() {
                   </label>
                   <input
                     type="text"
-                    name="task_name"
+                    name="title"
+                    required
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="업무 제목 (선택)"
+                    placeholder="업무 제목을 입력하세요"
                   />
                 </div>
 
@@ -622,7 +618,7 @@ export default function TasksPage() {
                     설명
                   </label>
                   <textarea
-                    name="description"
+                    name="notes"
                     rows={3}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     placeholder="업무 내용 설명 (선택)"
@@ -649,7 +645,7 @@ export default function TasksPage() {
                       우선순위
                     </label>
                     <select
-                      name="priority"
+                      name="task_priority"
                       defaultValue="normal"
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
                     >
@@ -661,12 +657,53 @@ export default function TasksPage() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      업무 수행 시각
+                    </label>
+                    <input
+                      type="time"
+                      name="task_time"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="09:00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      고객명
+                    </label>
+                    <input
+                      type="text"
+                      name="customer_name"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="VIP0000 (선택)"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    매출 금액
+                  </label>
+                  <input
+                    type="number"
+                    name="sales_amount"
+                    min="0"
+                    step="0.01"
+                    defaultValue="0"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="판매 시에만 입력 (원)"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     메모
                   </label>
                   <textarea
-                    name="employee_memo"
+                    name="memo"
                     rows={2}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     placeholder="추가 메모 (선택)"
