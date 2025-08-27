@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, auth, db } from '@/lib/supabase';
-import { formatDateKR, formatDateISO } from '@/utils/dateUtils';
+import { formatDateKR, formatDateISO, formatDateSimple } from '@/utils/dateUtils';
 import { getStatusLabel, getStatusColor, getPriorityLabel, getPriorityColor } from '@/utils/formatUtils';
 import { 
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
@@ -479,7 +479,7 @@ export default function TasksPage() {
               {tasks.map((task) => (
                 <tr key={task.id}>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {task.task_date ? formatDateKR(task.task_date) : formatDateKR(task.created_at)}
+                    {task.task_date ? formatDateSimple(task.task_date) : formatDateSimple(task.created_at)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div>
@@ -549,8 +549,9 @@ export default function TasksPage() {
                         <Edit className="h-4 w-4" />
                       </button>
                       
-                      {/* 환불 버튼 - 완료 상태일 때만 */}
-                      {task.achievement_status === 'completed' && (
+                      {/* 환불 버튼 - 완료 상태이고 OP1-4인 경우만 */}
+                      {task.achievement_status === 'completed' && 
+                       ['OP1', 'OP2', 'OP3', 'OP4'].includes(task.operation_type?.code || '') && (
                         <button
                           onClick={() => handleRefundTask(task)}
                           className="text-orange-600 hover:text-orange-900"
