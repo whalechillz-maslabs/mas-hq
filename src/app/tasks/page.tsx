@@ -249,13 +249,6 @@ export default function TasksPage() {
     try {
       if (!refundTargetTask) return;
 
-      // 환불 처리 업무 생성 (OP8)
-      const op8Type = operationTypes.find(op => op.code === 'OP8');
-      if (!op8Type) {
-        console.error('OP8 업무 유형을 찾을 수 없습니다.');
-        return;
-      }
-
       // 원본 업무의 점수를 음수로 변환하기 위해 quantity를 음수로 설정
       const originalQuantity = refundTargetTask.quantity || 1;
       const refundQuantity = -originalQuantity; // 음수로 설정하여 점수가 음수가 되도록
@@ -264,7 +257,7 @@ export default function TasksPage() {
         .from('employee_tasks')
         .insert({
           employee_id: currentUser.id,
-          operation_type_id: op8Type.id,
+          operation_type_id: refundTargetTask.operation_type_id, // 원본 업무의 operation_type_id 사용
           title: `환불 처리 - ${refundTargetTask.title}`,
           notes: `원본 업무: ${refundTargetTask.operation_type?.code} - ${refundTargetTask.operation_type?.name}\n${refundData.notes || ''}`,
           quantity: refundQuantity, // 음수로 설정
