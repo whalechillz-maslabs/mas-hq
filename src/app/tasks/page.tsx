@@ -467,7 +467,8 @@ export default function TasksPage() {
                           완료
                         </button>
                       )}
-                      {task.achievement_status === 'pending' && (
+                      {/* 수정 버튼 - pending 상태이거나 OP8 환불 업무인 경우 */}
+                      {(task.achievement_status === 'pending' || task.operation_type?.code === 'OP8') && (
                         <button
                           onClick={() => handleEditTask(task)}
                           className="text-blue-600 hover:text-blue-900"
@@ -476,7 +477,7 @@ export default function TasksPage() {
                           <Edit className="h-4 w-4" />
                         </button>
                       )}
-                      {/* 환불 처리는 완료된 업무에만 가능 */}
+                      {/* 환불 처리는 완료된 업무에만 가능 (OP8 제외) */}
                       {task.achievement_status === 'completed' && task.operation_type?.code !== 'OP8' && (
                         <button
                           onClick={() => handleRefundTask(task)}
@@ -486,16 +487,14 @@ export default function TasksPage() {
                           환불
                         </button>
                       )}
-                      {/* 삭제 버튼 - 모든 상태의 업무에 표시 (환불된 업무 제외) */}
-                      {task.operation_type?.code !== 'OP8' && (
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="삭제"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
+                      {/* 삭제 버튼 - 모든 업무에 표시 */}
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="삭제"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
