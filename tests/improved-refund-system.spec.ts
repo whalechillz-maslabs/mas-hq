@@ -57,6 +57,10 @@ test.describe('개선된 환불 시스템 테스트', () => {
     
     console.log('✅ OP3 업무 추가 완료');
     
+    // 페이지 새로고침으로 업무 목록 업데이트
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    
     // 3. 업무 완료 처리
     await page.click('button:has-text("완료")');
     await page.waitForLoadState('networkidle');

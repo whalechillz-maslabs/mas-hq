@@ -155,16 +155,16 @@ export default function TasksPage() {
 
   const getOperationTypeDescription = (code: string): string => {
     const descriptions: { [key: string]: string } = {
-      'OP1': '신규 고객에게 전화로 제품을 설명하고 결제를 유도하는 업무입니다.',
-      'OP2': '기존 고객의 재구매나 부품 구매를 전화로 처리하는 업무입니다.',
-      'OP3': '신규 고객을 대상으로 오프라인에서 제품을 설명하고 구매를 성사시키는 업무입니다.',
-      'OP4': '기존 고객의 재구매나 부품 구매를 오프라인에서 처리하는 업무입니다.',
-      'OP5': '1. 오프라인 판매(시타 동반/보조): 매장 방문 고객 응대 보조, 팀장 리드하에 보조 참여<br/>2. 인트라넷 등록 업무: 거래 성사를 위한 팀장 연결 전까지 통화<br/>3. 프로모션 설명, 인트라넷/노션 정보 입력, 시타예약 입력',
-      'OP6': '고급 A/S 처리 및 기술적 문제 해결 업무입니다.',
-      'OP7': '고객의 환불 요청을 방어하고 유지하는 업무입니다.',
-      'OP8': '환불 처리를 담당하는 업무입니다. 기존 판매 점수가 차감됩니다.',
-      'OP9': '상품 관련 택배의 입고, 출고, 회수를 처리하는 업무입니다.',
-      'OP10': '음료, 소모품, 선물 등 기타 택배 및 서비스를 처리하는 업무입니다.'
+      'OP1': '신규 고객에게 전화로 제품을 설명하고 결제를 유도하는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP2': '기존 고객의 재구매나 부품 구매를 전화로 처리하는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP3': '신규 고객을 대상으로 오프라인에서 제품을 설명하고 구매를 성사시키는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP4': '기존 고객의 재구매나 부품 구매를 오프라인에서 처리하는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP5': '1. 오프라인 판매(시타 동반/보조): 매장 방문 고객 응대 보조, 팀장 리드하에 보조 참여<br/>2. 인트라넷 등록 업무: 거래 성사를 위한 팀장 연결 전까지 통화<br/>3. 프로모션 설명, 인트라넷/노션 정보 입력, 시타예약 입력<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP6': '고급 A/S 처리 및 기술적 문제 해결 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP7': '고객의 환불 요청을 방어하고 유지하는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP8': '환불 처리를 담당하는 업무입니다. 기존 판매 점수가 차감됩니다.<br/><br/><strong>환불 처리 방법:</strong><br/>1. 완료된 업무를 찾습니다<br/>2. "환불" 버튼을 클릭합니다<br/>3. 환불 사유를 입력합니다<br/>4. 원본 업무가 환불 상태로 변경됩니다',
+      'OP9': '상품 관련 택배의 입고, 출고, 회수를 처리하는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.',
+      'OP10': '음료, 소모품, 선물 등 기타 택배 및 서비스를 처리하는 업무입니다.<br/><br/><strong>환불 처리:</strong> 완료된 업무의 "환불" 버튼을 통해 환불 처리할 수 있습니다.'
     };
     return descriptions[code] || '업무 설명이 없습니다.';
   };
@@ -542,8 +542,7 @@ export default function TasksPage() {
           <h3 className="text-lg font-semibold mb-4">업무 유형별 분포</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {operationTypes
-              .filter(opType => opType.code !== 'OP8') // OP8 제외
-              .slice(0, 9) // OP8 제외 후 9개만 표시
+              .slice(0, 10) // 모든 OP 카드 표시 (OP8 포함)
               .map((opType) => {
               const count = tasks.filter(t => t.operation_type_id === opType.id).length;
               const points = tasks
@@ -650,6 +649,17 @@ export default function TasksPage() {
                   )}
                   {selectedOperationType.code === 'OP8' && (
                     <div className="text-center">
+                      <div className="bg-orange-50 p-3 rounded-lg mb-4">
+                        <p className="text-sm text-orange-800 font-medium mb-2">
+                          💡 환불 처리 방법
+                        </p>
+                        <p className="text-sm text-orange-700">
+                          1. 완료된 업무를 찾습니다<br/>
+                          2. "환불" 버튼을 클릭합니다<br/>
+                          3. 환불 사유를 입력합니다<br/>
+                          4. 원본 업무가 환불 상태로 변경됩니다
+                        </p>
+                      </div>
                       <p className="text-sm text-gray-500 italic">
                         환불 처리는 완료된 업무의 "환불" 버튼을 통해 진행됩니다.
                       </p>
