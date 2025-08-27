@@ -612,7 +612,7 @@ export default function TasksPage() {
                     {opType.name}
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    {points}점
+                    {opType.points}점
                   </p>
                   <div className="text-xs text-gray-500 bg-white rounded px-2 py-1">
                     {count}건 / {points}점
