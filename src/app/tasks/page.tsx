@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, auth, db } from '@/lib/supabase';
-import { formatDateKR, formatDateISO, formatDateSimple } from '@/utils/dateUtils';
+import { formatDateKR, formatDateISO } from '@/utils/dateUtils';
 import { getStatusLabel, getStatusColor, getPriorityLabel, getPriorityColor } from '@/utils/formatUtils';
 import { 
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
@@ -479,7 +479,7 @@ export default function TasksPage() {
               {tasks.map((task) => (
                 <tr key={task.id}>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {task.task_date ? formatDateSimple(task.task_date) : formatDateSimple(task.created_at)}
+                    {task.task_date ? formatDateKR(task.task_date) : formatDateKR(task.created_at)}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div>
