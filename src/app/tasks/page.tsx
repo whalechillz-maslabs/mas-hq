@@ -165,7 +165,9 @@ export default function TasksPage() {
           memo: taskData.memo,
           task_time: taskData.task_time,
           customer_name: taskData.customer_name,
-          sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0,
+          sales_amount: typeof taskData.sales_amount === 'string' 
+            ? parseFloat(taskData.sales_amount.replace(/,/g, '')) || 0
+            : taskData.sales_amount || 0,
           task_priority: taskData.task_priority || 'normal',
           achievement_status: 'pending',
           task_date: taskData.task_date,
