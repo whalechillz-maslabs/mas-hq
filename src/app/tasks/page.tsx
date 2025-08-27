@@ -256,9 +256,9 @@ export default function TasksPage() {
         return;
       }
 
-      // 원본 업무의 점수를 음수로 변환
-      const originalPoints = (refundTargetTask.operation_type?.points || 0) * (refundTargetTask.quantity || 1);
-      const refundPoints = -originalPoints;
+      // 원본 업무의 점수를 음수로 변환하기 위해 quantity를 음수로 설정
+      const originalQuantity = refundTargetTask.quantity || 1;
+      const refundQuantity = -originalQuantity; // 음수로 설정하여 점수가 음수가 되도록
 
       const { error } = await supabase
         .from('employee_tasks')
@@ -267,7 +267,7 @@ export default function TasksPage() {
           operation_type_id: op8Type.id,
           title: `환불 처리 - ${refundTargetTask.title}`,
           notes: `원본 업무: ${refundTargetTask.operation_type?.code} - ${refundTargetTask.operation_type?.name}\n${refundData.notes || ''}`,
-          quantity: 1,
+          quantity: refundQuantity, // 음수로 설정
           memo: refundData.memo || '',
           task_time: refundData.task_time || null,
           customer_name: refundTargetTask.customer_name || '',
@@ -537,7 +537,8 @@ export default function TasksPage() {
                           환불
                         </button>
                       )}
-                      {task.achievement_status === 'pending' && (
+                      {/* 삭제 버튼 - 모든 상태의 업무에 표시 (환불된 업무 제외) */}
+                      {task.operation_type?.code !== 'OP8' && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
                           className="text-red-600 hover:text-red-900"
