@@ -153,21 +153,31 @@ export default function TasksPage() {
         return;
       }
 
+      console.log('현재 사용자 ID:', user.id);
+
       const { data, error } = await supabase
         .from('employee_tasks')
         .insert({
           employee_id: user.id,
-          ...taskData,
-          achievement_status: 'pending',
+          operation_type_id: taskData.operation_type_id,
+          title: taskData.title,
+          notes: taskData.notes,
+          memo: taskData.memo,
+          task_time: taskData.task_time,
+          customer_name: taskData.customer_name,
+          sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0,
           task_priority: taskData.task_priority || 'normal',
-          sales_amount: taskData.sales_amount || 0,
-          created_at: taskData.task_date ? new Date(taskData.task_date).toISOString() : new Date().toISOString()
+          achievement_status: 'pending',
+          task_date: taskData.task_date,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();
 
       if (error) throw error;
       
+      console.log('업무 추가 성공:', data);
       setShowAddModal(false);
       loadTasksData();
     } catch (error) {
