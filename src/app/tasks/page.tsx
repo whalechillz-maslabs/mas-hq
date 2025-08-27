@@ -23,22 +23,25 @@ interface Task {
   id: string;
   employee_id: string;
   operation_type_id: string;
-  operation_type?: OperationType;
   title: string;
   notes?: string;
-  quantity: number;
   memo?: string;
-  created_at: string;
-  updated_at: string;
-  
-  // 새로운 필드들
-  task_date?: string;
   task_time?: string;
   customer_name?: string;
   sales_amount?: number;
   performer_id?: string;
   achievement_status?: string;
   task_priority?: string;
+  task_date?: string;
+  created_at: string;
+  updated_at: string;
+  operation_type?: {
+    id: string;
+    code: string;
+    name: string;
+    points: number;
+    description: string;
+  };
 }
 
 export default function TasksPage() {
@@ -57,9 +60,7 @@ export default function TasksPage() {
   const [refundTargetTask, setRefundTargetTask] = useState<Task | null>(null);
   const [stats, setStats] = useState({
     totalTasks: 0,
-    completedTasks: 0,
-    totalPoints: 0,
-    pendingTasks: 0
+    totalPoints: 0
   });
 
   useEffect(() => {
@@ -68,67 +69,49 @@ export default function TasksPage() {
 
   const loadTasksData = async () => {
     try {
-      const user = await auth.getCurrentUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      setCurrentUser(user);
-
-      // 업무 유형 로드
-      const { data: opTypes, error: opError } = await supabase
+      setLoading(true);
+      
+      // 업무 유형 데이터 로드
+      const { data: operationTypesData, error: opError } = await supabase
         .from('operation_types')
         .select('*')
-        .eq('is_active', true)
         .order('code');
 
       if (opError) throw opError;
 
-      // OP 순서를 올바르게 정렬 (OP1, OP2, OP3, ..., OP10)
-      const sortedOpTypes = (opTypes || []).sort((a, b) => {
+      // 수정된 정렬 로직: OP 코드의 숫자 부분을 추출하여 정렬
+      const sortedOperationTypes = operationTypesData.sort((a, b) => {
         const aNum = parseInt(a.code.replace('OP', ''));
         const bNum = parseInt(b.code.replace('OP', ''));
         return aNum - bNum;
       });
 
-      setOperationTypes(sortedOpTypes);
+      setOperationTypes(sortedOperationTypes);
 
-      // 업무 기록 로드
-      const startDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
-      const endDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
-
-      let query = supabase
+      // 업무 데이터 로드
+      const { data: tasksData, error: tasksError } = await supabase
         .from('employee_tasks')
         .select(`
           *,
-          operation_type:operation_types(code, name, category, points)
+          operation_type:operation_types(*)
         `)
-        .gte('created_at', formatDateISO(startDate))
-        .lte('created_at', formatDateISO(endDate))
-        .eq('employee_id', user.id)
+        .eq('employee_id', currentUser.id)
         .order('created_at', { ascending: false });
 
-      if (filter !== 'all') {
-        query = query.eq('achievement_status', filter);
-      }
-
-      const { data: tasksData, error: tasksError } = await query;
-      
       if (tasksError) throw tasksError;
+
       setTasks(tasksData || []);
 
       // 통계 계산
       const totalTasks = tasksData?.length || 0;
-      const completedTasks = tasksData?.filter((t: Task) => t.achievement_status === 'completed').length || 0;
-      const totalPoints = tasksData?.reduce((sum: number, t: Task) => {
-        const opType = t.operation_type;
-        return sum + ((opType?.points || 0) * (t.quantity || 1));
+      const totalPoints = tasksData?.reduce((sum, t) => {
+        const opType = sortedOperationTypes.find(op => op.id === t.operation_type_id);
+        return sum + (opType?.points || 0);
       }, 0) || 0;
-      const pendingTasks = tasksData?.filter((t: Task) => t.achievement_status === 'pending').length || 0;
 
-      setStats({ totalTasks, completedTasks, totalPoints, pendingTasks });
+      setStats({ totalTasks, totalPoints });
     } catch (error) {
-      console.error('업무 데이터 로딩 실패:', error);
+      console.error('데이터 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -250,7 +233,7 @@ export default function TasksPage() {
       if (!refundTargetTask) return;
 
       // 원본 업무의 점수를 그대로 음수로 설정
-      const originalPoints = (refundTargetTask.operation_type?.points || 0) * (refundTargetTask.quantity || 1);
+      const originalPoints = (refundTargetTask.operation_type?.points || 0);
       const refundPoints = -originalPoints;
 
       const { error } = await supabase
@@ -260,7 +243,6 @@ export default function TasksPage() {
           operation_type_id: refundTargetTask.operation_type_id, // 원본 업무의 operation_type_id 사용
           title: `환불 처리 - ${refundTargetTask.title}`,
           notes: `원본 업무: ${refundTargetTask.operation_type?.code} - ${refundTargetTask.operation_type?.name}\n${refundData.notes || ''}`,
-          quantity: 1, // 수량은 1로 고정
           memo: refundData.memo || '',
           task_time: refundData.task_time || null,
           customer_name: refundTargetTask.customer_name || '',
@@ -346,31 +328,11 @@ export default function TasksPage() {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">완료 업무</span>
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            </div>
-            <p className="text-2xl font-bold text-green-600">{stats.completedTasks}건</p>
-            <p className="text-sm text-gray-500 mt-1">
-              달성률 {stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0}%
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">획득 포인트</span>
               <Award className="h-5 w-5 text-purple-500" />
             </div>
             <p className="text-2xl font-bold text-purple-600">{stats.totalPoints}점</p>
             <p className="text-sm text-gray-500 mt-1">성과 포인트</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">대기 중</span>
-              <Clock className="h-5 w-5 text-yellow-500" />
-            </div>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pendingTasks}건</p>
-            <p className="text-sm text-gray-500 mt-1">처리 대기</p>
           </div>
         </div>
 
@@ -428,9 +390,6 @@ export default function TasksPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                   매출
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  수량
-                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   포인트
                 </th>
@@ -479,14 +438,11 @@ export default function TasksPage() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                     {task.sales_amount ? `${task.sales_amount.toLocaleString()}원` : '-'}
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {task.quantity}
-                  </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Award className="h-4 w-4 mr-1 text-purple-500" />
                       <span className="text-sm font-medium text-purple-600">
-                        {(task.operation_type?.points || 0) * (task.quantity || 1)}점
+                        {task.operation_type?.points || 0}점
                       </span>
                     </div>
                   </td>
@@ -557,7 +513,7 @@ export default function TasksPage() {
               const count = tasks.filter(t => t.operation_type_id === opType.id).length;
               const points = tasks
                 .filter(t => t.operation_type_id === opType.id)
-                .reduce((sum, t) => sum + ((t.operation_type?.points || 0) * (t.quantity || 1)), 0);
+                .reduce((sum, t) => sum + (t.operation_type?.points || 0), 0);
               
               return (
                 <div 
@@ -678,7 +634,6 @@ export default function TasksPage() {
                   operation_type_id: formData.get('operation_type_id'),
                   title: formData.get('title') || '',
                   notes: formData.get('notes') || '',
-                  quantity: 1, // 항상 1로 고정
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
@@ -873,7 +828,6 @@ export default function TasksPage() {
                   operation_type_id: formData.get('operation_type_id'),
                   title: formData.get('title') || '',
                   notes: formData.get('notes') || '',
-                  quantity: 1, // 항상 1로 고정
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
@@ -1071,7 +1025,7 @@ export default function TasksPage() {
                 <p><strong>제목:</strong> {refundTargetTask.title}</p>
                 <p><strong>고객:</strong> {refundTargetTask.customer_name || '-'}</p>
                 <p><strong>매출:</strong> {refundTargetTask.sales_amount ? `${refundTargetTask.sales_amount.toLocaleString()}원` : '-'}</p>
-                <p><strong>차감될 점수:</strong> <span className="text-red-600 font-medium">-{(refundTargetTask.operation_type?.points || 0) * (refundTargetTask.quantity || 1)}점</span></p>
+                <p><strong>차감될 점수:</strong> <span className="text-red-600 font-medium">-{(refundTargetTask.operation_type?.points || 0)}점</span></p>
               </div>
             </div>
 
