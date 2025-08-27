@@ -249,9 +249,9 @@ export default function TasksPage() {
     try {
       if (!refundTargetTask) return;
 
-      // 원본 업무의 점수를 음수로 변환하기 위해 quantity를 음수로 설정
-      const originalQuantity = refundTargetTask.quantity || 1;
-      const refundQuantity = -originalQuantity; // 음수로 설정하여 점수가 음수가 되도록
+      // 원본 업무의 점수를 그대로 음수로 설정
+      const originalPoints = (refundTargetTask.operation_type?.points || 0) * (refundTargetTask.quantity || 1);
+      const refundPoints = -originalPoints;
 
       const { error } = await supabase
         .from('employee_tasks')
@@ -260,7 +260,7 @@ export default function TasksPage() {
           operation_type_id: refundTargetTask.operation_type_id, // 원본 업무의 operation_type_id 사용
           title: `환불 처리 - ${refundTargetTask.title}`,
           notes: `원본 업무: ${refundTargetTask.operation_type?.code} - ${refundTargetTask.operation_type?.name}\n${refundData.notes || ''}`,
-          quantity: refundQuantity, // 음수로 설정
+          quantity: 1, // 수량은 1로 고정
           memo: refundData.memo || '',
           task_time: refundData.task_time || null,
           customer_name: refundTargetTask.customer_name || '',
@@ -678,7 +678,7 @@ export default function TasksPage() {
                   operation_type_id: formData.get('operation_type_id'),
                   title: formData.get('title') || '',
                   notes: formData.get('notes') || '',
-                  quantity: parseInt(formData.get('quantity') as string) || 1,
+                  quantity: 1, // 항상 1로 고정
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
@@ -747,20 +747,6 @@ export default function TasksPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      수량
-                    </label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      min="1"
-                      defaultValue="1"
-                      required
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       우선순위
                     </label>
                     <select
@@ -774,9 +760,7 @@ export default function TasksPage() {
                       <option value="urgent">긴급</option>
                     </select>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       업무 수행 시각
@@ -795,7 +779,9 @@ export default function TasksPage() {
                       })()}
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       고객명
@@ -887,7 +873,7 @@ export default function TasksPage() {
                   operation_type_id: formData.get('operation_type_id'),
                   title: formData.get('title') || '',
                   notes: formData.get('notes') || '',
-                  quantity: parseInt(formData.get('quantity') as string) || 1,
+                  quantity: 1, // 항상 1로 고정
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
@@ -959,20 +945,6 @@ export default function TasksPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      수량
-                    </label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      min="1"
-                      defaultValue={editingTask.quantity || 1}
-                      required
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       우선순위
                     </label>
                     <select
@@ -986,9 +958,7 @@ export default function TasksPage() {
                       <option value="urgent">긴급</option>
                     </select>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       업무 수행 시각
@@ -1002,7 +972,9 @@ export default function TasksPage() {
                       step="600"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       고객명
