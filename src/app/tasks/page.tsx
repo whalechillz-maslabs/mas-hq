@@ -73,6 +73,14 @@ export default function TasksPage() {
     try {
       setLoading(true);
       
+      // 현재 사용자 로드
+      const user = await auth.getCurrentUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      setCurrentUser(user);
+      
       // 업무 유형 데이터 로드
       const { data: operationTypesData, error: opError } = await supabase
         .from('operation_types')
@@ -97,7 +105,7 @@ export default function TasksPage() {
           *,
           operation_type:operation_types(*)
         `)
-        .eq('employee_id', currentUser.id)
+        .eq('employee_id', user.id)
         .order('created_at', { ascending: false });
 
       if (tasksError) throw tasksError;
@@ -127,10 +135,17 @@ export default function TasksPage() {
 
   const handleAddTask = async (taskData: any) => {
     try {
+      // 현재 사용자 확인
+      const user = await auth.getCurrentUser();
+      if (!user) {
+        console.error('사용자가 로그인되지 않았습니다.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('employee_tasks')
         .insert({
-          employee_id: currentUser.id,
+          employee_id: user.id,
           ...taskData,
           achievement_status: 'pending',
           task_priority: taskData.task_priority || 'normal',
