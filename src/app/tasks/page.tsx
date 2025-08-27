@@ -58,6 +58,8 @@ export default function TasksPage() {
   const [selectedOperationType, setSelectedOperationType] = useState<OperationType | null>(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundTargetTask, setRefundTargetTask] = useState<Task | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusTargetTask, setStatusTargetTask] = useState<Task | null>(null);
   const [stats, setStats] = useState({
     totalTasks: 0,
     totalPoints: 0
@@ -106,7 +108,13 @@ export default function TasksPage() {
       const totalTasks = tasksData?.length || 0;
       const totalPoints = tasksData?.reduce((sum, t) => {
         const opType = sortedOperationTypes.find(op => op.id === t.operation_type_id);
-        return sum + (opType?.points || 0);
+        const points = opType?.points || 0;
+        
+        // 환불된 업무는 음수로 계산
+        if (t.achievement_status === 'refunded') {
+          return sum - points;
+        }
+        return sum + points;
       }, 0) || 0;
 
       setStats({ totalTasks, totalPoints });
@@ -228,30 +236,47 @@ export default function TasksPage() {
     setShowRefundModal(true);
   };
 
+  const handleStatusChange = (task: Task) => {
+    setStatusTargetTask(task);
+    setShowStatusModal(true);
+  };
+
+  const handleUpdateTaskStatus = async (newStatus: string) => {
+    try {
+      if (!statusTargetTask) return;
+
+      const { error } = await supabase
+        .from('employee_tasks')
+        .update({
+          achievement_status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', statusTargetTask.id);
+
+      if (error) throw error;
+      
+      setShowStatusModal(false);
+      setStatusTargetTask(null);
+      loadTasksData();
+    } catch (error) {
+      console.error('상태 변경 실패:', error);
+    }
+  };
+
   const handleCreateRefund = async (refundData: any) => {
     try {
       if (!refundTargetTask) return;
 
-      // 원본 업무의 점수를 그대로 음수로 설정
-      const originalPoints = (refundTargetTask.operation_type?.points || 0);
-      const refundPoints = -originalPoints;
-
+      // 원본 업무를 환불 상태로 변경
       const { error } = await supabase
         .from('employee_tasks')
-        .insert({
-          employee_id: currentUser.id,
-          operation_type_id: refundTargetTask.operation_type_id, // 원본 업무의 operation_type_id 사용
-          title: `환불 처리 - ${refundTargetTask.title}`,
-          notes: `원본 업무: ${refundTargetTask.operation_type?.code} - ${refundTargetTask.operation_type?.name}\n${refundData.notes || ''}`,
-          memo: refundData.memo || '',
-          task_time: refundData.task_time || null,
-          customer_name: refundTargetTask.customer_name || '',
-          sales_amount: -(refundTargetTask.sales_amount || 0), // 매출도 음수로
-          task_priority: refundData.task_priority || 'normal',
-          achievement_status: 'pending',
-          task_date: refundData.task_date,
-          created_at: refundData.task_date ? new Date(refundData.task_date).toISOString() : new Date().toISOString()
-        });
+        .update({
+          achievement_status: 'refunded',
+          notes: `${refundTargetTask.notes || ''}\n\n[환불 처리] ${refundData.notes || ''}`,
+          sales_amount: -(refundTargetTask.sales_amount || 0), // 매출을 음수로 변경
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', refundTargetTask.id);
 
       if (error) throw error;
       
@@ -467,6 +492,14 @@ export default function TasksPage() {
                           완료
                         </button>
                       )}
+                      {/* 상태 변경 버튼 */}
+                      <button
+                        onClick={() => handleStatusChange(task)}
+                        className="text-purple-600 hover:text-purple-900"
+                        title="상태 변경"
+                      >
+                        상태
+                      </button>
                       {/* 수정 버튼 - pending 상태이거나 OP8 환불 업무인 경우 */}
                       {(task.achievement_status === 'pending' || task.operation_type?.code === 'OP8') && (
                         <button
@@ -512,13 +545,20 @@ export default function TasksPage() {
               const count = tasks.filter(t => t.operation_type_id === opType.id).length;
               const points = tasks
                 .filter(t => t.operation_type_id === opType.id)
-                .reduce((sum, t) => sum + (t.operation_type?.points || 0), 0);
+                .reduce((sum, t) => {
+                  const points = opType.points || 0;
+                  // 환불된 업무는 음수로 계산
+                  if (t.achievement_status === 'refunded') {
+                    return sum - points;
+                  }
+                  return sum + points;
+                }, 0);
               
               return (
                 <div 
                   key={opType.id} 
                   className="text-center p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50"
-                  title={`${opType.name} - ${opType.points}점`}
+                  title={`${opType.name} - ${points}점`}
                   onClick={() => showOperationTypeDetails(opType)}
                 >
                   <div className="flex items-center justify-center mb-2">
@@ -530,7 +570,7 @@ export default function TasksPage() {
                     {opType.name}
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    {opType.points}점
+                    {points}점
                   </p>
                   <div className="text-xs text-gray-500 bg-white rounded px-2 py-1">
                     {count}건 / {points}점
@@ -1137,6 +1177,80 @@ export default function TasksPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 상태 변경 모달 */}
+      {showStatusModal && statusTargetTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">상태 변경</h3>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">업무 정보:</p>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p><strong>업무명:</strong> {statusTargetTask.title}</p>
+                <p><strong>현재 상태:</strong> 
+                  <span className={`ml-2 px-2 py-1 text-xs rounded-full ${getStatusColor(statusTargetTask.achievement_status || 'pending')}`}>
+                    {getStatusLabel(statusTargetTask.achievement_status || 'pending')}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                변경할 상태
+              </label>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleUpdateTaskStatus('pending')}
+                  className={`w-full text-left px-3 py-2 rounded-md border ${
+                    statusTargetTask.achievement_status === 'pending' 
+                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusColor('pending').split(' ')[0]}`}></span>
+                  대기
+                </button>
+                <button
+                  onClick={() => handleUpdateTaskStatus('completed')}
+                  className={`w-full text-left px-3 py-2 rounded-md border ${
+                    statusTargetTask.achievement_status === 'completed' 
+                      ? 'bg-green-50 border-green-300 text-green-700' 
+                      : 'bg-white border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusColor('completed').split(' ')[0]}`}></span>
+                  완료
+                </button>
+                <button
+                  onClick={() => handleUpdateTaskStatus('refunded')}
+                  className={`w-full text-left px-3 py-2 rounded-md border ${
+                    statusTargetTask.achievement_status === 'refunded' 
+                      ? 'bg-red-50 border-red-300 text-red-700' 
+                      : 'bg-white border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`inline-block w-3 h-3 rounded-full mr-2 ${getStatusColor('refunded').split(' ')[0]}`}></span>
+                  환불
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setShowStatusModal(false);
+                  setStatusTargetTask(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                취소
+              </button>
+            </div>
           </div>
         </div>
       )}
