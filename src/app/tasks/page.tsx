@@ -7,7 +7,7 @@ import { formatDateKR, formatDateISO } from '@/utils/dateUtils';
 import { getStatusLabel, getStatusColor, getPriorityLabel, getPriorityColor } from '@/utils/formatUtils';
 import { 
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
-  Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2
+  Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2, DollarSign, RotateCcw
 } from 'lucide-react';
 
 interface OperationType {
@@ -60,9 +60,14 @@ export default function TasksPage() {
   const [refundTargetTask, setRefundTargetTask] = useState<Task | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusTargetTask, setStatusTargetTask] = useState<Task | null>(null);
+  const [selectedOperationTypeForAdd, setSelectedOperationTypeForAdd] = useState<string>('');
   const [stats, setStats] = useState({
     totalTasks: 0,
-    totalPoints: 0
+    totalPoints: 0,
+    totalSales: 0,
+    pendingTasks: 0,
+    completedTasks: 0,
+    refundedTasks: 0
   });
 
   useEffect(() => {
@@ -125,7 +130,14 @@ export default function TasksPage() {
         return sum + points;
       }, 0) || 0;
 
-      setStats({ totalTasks, totalPoints });
+      setStats({
+        totalTasks,
+        totalPoints,
+        totalSales: tasksData?.reduce((sum, t) => sum + (t.sales_amount || 0), 0) || 0,
+        pendingTasks: tasksData?.filter(t => t.achievement_status === 'pending').length || 0,
+        completedTasks: tasksData?.filter(t => t.achievement_status === 'completed').length || 0,
+        refundedTasks: tasksData?.filter(t => t.achievement_status === 'refunded').length || 0
+      });
     } catch (error) {
       console.error('데이터 로드 실패:', error);
     } finally {
@@ -165,7 +177,14 @@ export default function TasksPage() {
   };
 
   const showOperationTypeDetails = (opType: OperationType) => {
-    setSelectedOperationType(opType);
+    if (opType.code === 'OP8') {
+      // OP8은 상세 정보 모달만 표시
+      setSelectedOperationType(opType);
+    } else {
+      // 다른 OP는 업무 추가 모달을 열고 해당 업무 유형 선택
+      setSelectedOperationTypeForAdd(opType.id);
+      setShowAddModal(true);
+    }
   };
 
   const getOperationTypeDescription = (code: string): string => {
@@ -356,23 +375,61 @@ export default function TasksPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 통계 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">총 업무</span>
-              <BarChart3 className="h-5 w-5 text-gray-400" />
+              <BarChart3 className="h-4 w-4 text-gray-400" />
             </div>
-            <p className="text-2xl font-bold">{stats.totalTasks}건</p>
-            <p className="text-sm text-gray-500 mt-1">이번 달</p>
+            <p className="text-xl font-bold">{stats.totalTasks}건</p>
+            <p className="text-xs text-gray-500 mt-1">이번 달</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">획득 포인트</span>
-              <Award className="h-5 w-5 text-purple-500" />
+              <Award className="h-4 w-4 text-purple-500" />
             </div>
-            <p className="text-2xl font-bold text-purple-600">{stats.totalPoints}점</p>
-            <p className="text-sm text-gray-500 mt-1">성과 포인트</p>
+            <p className="text-xl font-bold text-purple-600">{stats.totalPoints}점</p>
+            <p className="text-xs text-gray-500 mt-1">성과 포인트</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">개인 매출</span>
+              <DollarSign className="h-4 w-4 text-green-500" />
+            </div>
+            <p className="text-xl font-bold text-green-600">
+              {stats.totalSales.toLocaleString()}원
+            </p>
+            <p className="text-xs text-gray-500 mt-1">총 매출액</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">대기 중</span>
+              <Clock className="h-4 w-4 text-yellow-500" />
+            </div>
+            <p className="text-xl font-bold text-yellow-600">{stats.pendingTasks}건</p>
+            <p className="text-xs text-gray-500 mt-1">처리 대기</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">완료</span>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </div>
+            <p className="text-xl font-bold text-green-600">{stats.completedTasks}건</p>
+            <p className="text-xs text-gray-500 mt-1">처리 완료</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">환불</span>
+              <RotateCcw className="h-4 w-4 text-red-500" />
+            </div>
+            <p className="text-xl font-bold text-red-600">{stats.refundedTasks}건</p>
+            <p className="text-xs text-gray-500 mt-1">환불 처리</p>
           </div>
         </div>
 
@@ -730,10 +787,14 @@ export default function TasksPage() {
                   <select
                     name="operation_type_id"
                     required
+                    value={selectedOperationTypeForAdd}
+                    onChange={(e) => setSelectedOperationTypeForAdd(e.target.value)}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   >
                     <option value="">선택하세요</option>
-                    {operationTypes.map((opType) => (
+                    {operationTypes
+                      .filter(opType => opType.code !== 'OP8') // OP8 제외
+                      .map((opType) => (
                       <option key={opType.id} value={opType.id}>
                         {opType.code} - {opType.name} ({opType.points}점)
                       </option>
