@@ -91,7 +91,10 @@ export default function TasksPage() {
         .select('*')
         .order('code');
 
-      if (opError) throw opError;
+      if (opError) {
+        console.error('업무 유형 로드 실패:', opError);
+        return;
+      }
 
       // 수정된 정렬 로직: OP 코드의 숫자 부분을 추출하여 정렬
       const sortedOperationTypes = operationTypesData.sort((a, b) => {
@@ -112,7 +115,10 @@ export default function TasksPage() {
         .eq('employee_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error('업무 데이터 로드 실패:', tasksError);
+        return;
+      }
 
       setTasks(tasksData || []);
 
