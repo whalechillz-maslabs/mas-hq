@@ -176,7 +176,7 @@ export default function QuickTaskPage() {
         sales_amount: 0,
         notes: ''
       });
-      // setSelectedOperationType(null); // 폼 유지
+      setSelectedOperationType(null);
 
       // 통계 업데이트
       await loadTodayStats(currentUser.id);
