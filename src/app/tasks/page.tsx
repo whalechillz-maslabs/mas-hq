@@ -138,10 +138,16 @@ export default function TasksPage() {
       setStats({
         totalTasks,
         totalPoints,
-        totalSales: tasksData?.reduce((sum, t) => sum + (t.sales_amount || 0), 0) || 0,
+        totalSales: tasksData?.reduce((sum, t) => {
+          // 환불 업무는 음수로 계산
+          if (t.title && t.title.includes('[환불]')) {
+            return sum - Math.abs(t.sales_amount || 0);
+          }
+          return sum + (t.sales_amount || 0);
+        }, 0) || 0,
         pendingTasks: tasksData?.filter(t => t.achievement_status === 'pending').length || 0,
         completedTasks: tasksData?.filter(t => t.achievement_status === 'completed').length || 0,
-        refundedTasks: tasksData?.filter(t => t.achievement_status === 'refunded').length || 0
+        refundedTasks: tasksData?.filter(t => t.title && t.title.includes('[환불]')).length || 0
       });
     } catch (error) {
       console.error('데이터 로드 실패:', error);
@@ -310,7 +316,7 @@ export default function TasksPage() {
           notes: `원본 업무: ${refundTargetTask.title}\n환불 사유: ${refundData.notes || ''}`,
           task_time: refundData.task_time,
           customer_name: refundTargetTask.customer_name,
-          sales_amount: -(refundTargetTask.sales_amount || 0), // 매출을 음수로 설정
+          sales_amount: -(refundData.refund_amount || refundTargetTask.sales_amount || 0), // 환불 금액을 음수로 설정
           task_priority: refundData.task_priority || 'high',
           achievement_status: 'completed', // 환불 업무는 바로 완료 상태
           task_date: refundData.task_date,
@@ -542,7 +548,11 @@ export default function TasksPage() {
                     {task.customer_name || '-'}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {task.sales_amount ? `${task.sales_amount.toLocaleString()}원` : '-'}
+                    {task.sales_amount ? (
+                      <span className={task.sales_amount < 0 ? 'text-red-600' : ''}>
+                        {task.sales_amount.toLocaleString()}원
+                      </span>
+                    ) : '-'}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -1165,12 +1175,16 @@ export default function TasksPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
+                const refundAmount = formData.get('refund_amount') as string;
+                const parsedRefundAmount = refundAmount ? parseFloat(refundAmount.replace(/,/g, '')) : 0;
+                
                 handleCreateRefund({
                   task_date: formData.get('task_date') as string,
                   notes: formData.get('notes') || '',
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
-                  task_priority: formData.get('task_priority') || 'normal'
+                  task_priority: formData.get('task_priority') || 'normal',
+                  refund_amount: parsedRefundAmount
                 });
               }}
             >
@@ -1199,6 +1213,33 @@ export default function TasksPage() {
                     placeholder="환불 사유를 입력하세요 (필수)"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    환불 금액
+                  </label>
+                  <input
+                    type="text"
+                    name="refund_amount"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="환불할 금액을 입력하세요 (원)"
+                    defaultValue={refundTargetTask.sales_amount ? refundTargetTask.sales_amount.toString() : '0'}
+                    onChange={(e) => {
+                      // 숫자와 쉼표만 허용
+                      const value = e.target.value.replace(/[^\d,]/g, '');
+                      // 쉼표 제거 후 숫자로 변환
+                      const numValue = value.replace(/,/g, '');
+                      if (numValue === '' || !isNaN(Number(numValue))) {
+                        // 천단위 쉼표 추가
+                        const formattedValue = numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        e.target.value = formattedValue;
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    원본 매출: {refundTargetTask.sales_amount ? `${refundTargetTask.sales_amount.toLocaleString()}원` : '0원'}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
