@@ -550,7 +550,7 @@ export default function TasksPage() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                     {task.sales_amount ? (
                       <span className={task.sales_amount < 0 ? 'text-red-600' : ''}>
-                        {task.sales_amount.toLocaleString()}원
+                        {task.sales_amount < 0 ? `-${Math.abs(task.sales_amount).toLocaleString()}` : task.sales_amount.toLocaleString()}원
                       </span>
                     ) : '-'}
                   </td>
