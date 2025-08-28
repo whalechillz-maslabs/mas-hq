@@ -658,7 +658,7 @@ export default function TasksPage() {
                     {opType.name}
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    {opType.points}점
+                    {opType.code === 'OP8' ? '환불 처리' : `${opType.points}점`}
                   </p>
                   <div className="text-xs text-gray-500 bg-white rounded px-2 py-1">
                     {count}건 / {points}점
@@ -1003,7 +1003,9 @@ export default function TasksPage() {
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   >
                     <option value="">선택하세요</option>
-                    {operationTypes.map((opType) => (
+                    {operationTypes
+                      .filter(opType => opType.code !== 'OP8') // OP8 제외
+                      .map((opType) => (
                       <option key={opType.id} value={opType.id}>
                         {opType.code} - {opType.name} ({opType.points}점)
                       </option>
