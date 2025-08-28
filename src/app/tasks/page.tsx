@@ -128,8 +128,8 @@ export default function TasksPage() {
         const opType = sortedOperationTypes.find(op => op.id === t.operation_type_id);
         const points = opType?.points || 0;
         
-        // 환불된 업무는 음수로 계산
-        if (t.achievement_status === 'refunded') {
+        // 환불 업무는 제목에 [환불]이 포함되어 있음
+        if (t.title && t.title.includes('[환불]')) {
           return sum - points;
         }
         return sum + points;
@@ -547,8 +547,8 @@ export default function TasksPage() {
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Award className="h-4 w-4 mr-1 text-purple-500" />
-                      <span className="text-sm font-medium text-purple-600">
-                        {task.operation_type?.points || 0}점
+                      <span className={`text-sm font-medium ${task.title && task.title.includes('[환불]') ? 'text-red-600' : 'text-purple-600'}`}>
+                        {task.title && task.title.includes('[환불]') ? `-${task.operation_type?.points || 0}` : task.operation_type?.points || 0}점
                       </span>
                     </div>
                   </td>
@@ -625,8 +625,8 @@ export default function TasksPage() {
                 .filter(t => t.operation_type_id === opType.id)
                 .reduce((sum, t) => {
                   const points = opType.points || 0;
-                  // 환불된 업무는 음수로 계산
-                  if (t.achievement_status === 'refunded') {
+                  // 환불 업무는 제목에 [환불]이 포함되어 있음
+                  if (t.title && t.title.includes('[환불]')) {
                     return sum - points;
                   }
                   return sum + points;
