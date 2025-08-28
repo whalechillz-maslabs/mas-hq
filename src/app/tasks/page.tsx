@@ -293,19 +293,36 @@ export default function TasksPage() {
     try {
       if (!refundTargetTask) return;
 
-      // 원본 업무를 환불 상태로 변경
-      const { error } = await supabase
+      // 현재 사용자 확인
+      const user = await auth.getCurrentUser();
+      if (!user) {
+        console.error('사용자가 로그인되지 않았습니다.');
+        return;
+      }
+
+      // 새로운 환불 업무 로우 생성
+      const { data, error } = await supabase
         .from('employee_tasks')
-        .update({
-          achievement_status: 'refunded',
-          notes: `${refundTargetTask.notes || ''}\n\n[환불 처리] ${refundData.notes || ''}`,
-          sales_amount: -(refundTargetTask.sales_amount || 0), // 매출을 음수로 변경
+        .insert({
+          employee_id: user.id,
+          operation_type_id: refundTargetTask.operation_type_id, // 원본과 같은 업무 유형
+          title: `[환불] ${refundTargetTask.title}`,
+          notes: `원본 업무: ${refundTargetTask.title}\n환불 사유: ${refundData.notes || ''}`,
+          task_time: refundData.task_time,
+          customer_name: refundTargetTask.customer_name,
+          sales_amount: -(refundTargetTask.sales_amount || 0), // 매출을 음수로 설정
+          task_priority: refundData.task_priority || 'high',
+          achievement_status: 'completed', // 환불 업무는 바로 완료 상태
+          task_date: refundData.task_date,
+          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('id', refundTargetTask.id);
+        .select()
+        .single();
 
       if (error) throw error;
       
+      console.log('환불 업무 생성 성공:', data);
       setShowRefundModal(false);
       setRefundTargetTask(null);
       loadTasksData();
