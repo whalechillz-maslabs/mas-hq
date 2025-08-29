@@ -25,14 +25,14 @@ interface DashboardData {
   };
   personalKPI: {
     phoneSales: number;
-    offlineSatisfaction: number;
+    offlineSatisfaction: number | string;
     onlineSales: number;
-    contentViews: number;
+    contentViews: number | string;
   };
   teamKPI: {
     totalSales: number;
-    yoyGrowth: number;
-    targetAchievement: number;
+    yoyGrowth: number | string;
+    targetAchievement: number | string;
     teamMembers: number;
   };
   todayMission: {
@@ -143,13 +143,21 @@ export default function DashboardPage() {
         .lte('created_at', endOfMonthStr + 'T23:59:59')
         .eq('employee_id', currentUser.id);
 
-      // 오늘의 매출 계산
+      // 오늘의 매출 계산 (OP5 제외)
       const todaySales = todayTasks?.reduce((sum, task) => {
+        // OP5는 개인매출에서 제외
+        if (task.operation_type?.code === 'OP5') {
+          return sum;
+        }
         return sum + (task.sales_amount || 0);
       }, 0) || 0;
 
-      // 이번 달 매출 계산
+      // 이번 달 매출 계산 (OP5 제외)
       const monthlySales = monthlyTasks?.reduce((sum, task) => {
+        // OP5는 개인매출에서 제외
+        if (task.operation_type?.code === 'OP5') {
+          return sum;
+        }
         return sum + (task.sales_amount || 0);
       }, 0) || 0;
 
@@ -180,16 +188,16 @@ export default function DashboardPage() {
 
       const personalKPI = {
         phoneSales: phoneSales,
-        offlineSatisfaction: 92, // 만족도는 별도 데이터 필요
+        offlineSatisfaction: 'Na', // 만족도는 별도 데이터 필요
         onlineSales: offlineSales,
-        contentViews: 1840 // 콘텐츠 조회수는 별도 데이터 필요
+        contentViews: 'Na' // 콘텐츠 조회수는 별도 데이터 필요
       };
 
       // 팀 KPI (실제 데이터 + 더미 데이터)
       const teamKPI = {
         totalSales: 35000000,
-        yoyGrowth: 12,
-        targetAchievement: 78,
+        yoyGrowth: 'Na',
+        targetAchievement: 'Na',
         teamMembers: totalEmployees || 8
       };
 
@@ -224,14 +232,14 @@ export default function DashboardPage() {
         },
         personalKPI: {
           phoneSales: 7,
-          offlineSatisfaction: 92,
+          offlineSatisfaction: 'Na',
           onlineSales: 3,
-          contentViews: 1840
+          contentViews: 'Na'
         },
         teamKPI: {
           totalSales: 35000000,
-          yoyGrowth: 12,
-          targetAchievement: 78,
+          yoyGrowth: 'Na',
+          targetAchievement: 'Na',
           teamMembers: 8
         },
         todayMission: {
@@ -495,7 +503,11 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-green-600">오프라인 시타 만족도</p>
-                  <p className="text-2xl font-bold text-green-900">{data?.personalKPI?.offlineSatisfaction || 0}%</p>
+                  <p className="text-2xl font-bold text-green-900">
+                  {typeof data?.personalKPI?.offlineSatisfaction === 'number' 
+                    ? `${data.personalKPI.offlineSatisfaction}%` 
+                    : data?.personalKPI?.offlineSatisfaction || 'Na'}
+                </p>
                 </div>
                 <Star className="h-8 w-8 text-green-600" />
               </div>
@@ -513,7 +525,11 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-purple-600">콘텐츠 조회수</p>
-                  <p className="text-2xl font-bold text-purple-900">{formatCurrency(data?.personalKPI?.contentViews || 0)}</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                  {typeof data?.personalKPI?.contentViews === 'number' 
+                    ? formatCurrency(data.personalKPI.contentViews) 
+                    : data?.personalKPI?.contentViews || 'Na'}
+                </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-purple-600" />
               </div>
@@ -541,7 +557,11 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-blue-600">YOY 성장률</p>
-                  <p className="text-2xl font-bold text-blue-900">+{data?.teamKPI?.yoyGrowth || 0}%</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                  {typeof data?.teamKPI?.yoyGrowth === 'number' 
+                    ? `+${data.teamKPI.yoyGrowth}%` 
+                    : data?.teamKPI?.yoyGrowth || 'Na'}
+                </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-blue-600" />
               </div>
@@ -550,7 +570,11 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-orange-600">팀 목표 달성률</p>
-                  <p className="text-2xl font-bold text-orange-900">{data?.teamKPI?.targetAchievement || 0}%</p>
+                  <p className="text-2xl font-bold text-orange-900">
+                  {typeof data?.teamKPI?.targetAchievement === 'number' 
+                    ? `${data.teamKPI.targetAchievement}%` 
+                    : data?.teamKPI?.targetAchievement || 'Na'}
+                </p>
                 </div>
                 <Target className="h-8 w-8 text-orange-600" />
               </div>
