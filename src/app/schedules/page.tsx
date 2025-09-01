@@ -680,7 +680,7 @@ export default function SchedulesPage() {
                     </div>
                     {getDaysInView().map(date => {
                       const daySchedules = getSchedulesForDateAndTime(date, timeSlot);
-                      const isCurrentUser = daySchedules.some(s => s.employee_id === currentUser?.id);
+                      const isCurrentUser = daySchedules.some(s => s.employee_id === currentUser?.employee_id);
                       const colorClass = getColorIntensity(daySchedules.length, timeSlot.isLunch, isCurrentUser);
                       const canModify = canModifySchedule(date, timeSlot);
                       const isUpdating = updating === `${format(date, 'yyyy-MM-dd')}-${timeSlot.time}`;

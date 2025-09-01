@@ -109,7 +109,7 @@ export default function ScheduleManagement() {
       const { data, error } = await supabase
         .from('schedules')
         .insert({
-          employee_id: currentEmployee.id,
+          employee_id: currentEmployee.employee_id,
           schedule_date: newSchedule.date,
           scheduled_start: newSchedule.startTime,
           scheduled_end: newSchedule.endTime,

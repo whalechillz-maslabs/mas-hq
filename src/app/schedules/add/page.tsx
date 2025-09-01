@@ -134,7 +134,7 @@ export default function AddSchedulePage() {
     const selectedEnd = endTime;
     
     const conflicts = existingSchedules.filter(schedule => {
-      if (schedule.employee_id === currentUser?.id) return false; // 본인 스케줄은 제외
+      if (schedule.employee_id === currentUser?.employee_id) return false; // 본인 스케줄은 제외
       
       const existingStart = schedule.scheduled_start;
       const existingEnd = schedule.scheduled_end;
@@ -152,7 +152,7 @@ export default function AddSchedulePage() {
     setError(null);
     setSuccess(null);
 
-    if (!currentUser?.id) {
+    if (!currentUser?.employee_id) {
       setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
       setSubmitting(false);
       return;
@@ -169,7 +169,7 @@ export default function AddSchedulePage() {
       const { data, error: insertError } = await supabase
         .from('schedules')
         .insert({
-          employee_id: currentUser.id,
+          employee_id: currentUser.employee_id,
           schedule_date: scheduleDate,
           scheduled_start: startTime,
           scheduled_end: endTime,
@@ -208,7 +208,7 @@ export default function AddSchedulePage() {
       const { data, error: insertError } = await supabase
         .from('schedules')
         .insert({
-          employee_id: currentUser.id,
+          employee_id: currentUser.employee_id,
           schedule_date: scheduleDate,
           scheduled_start: startTime,
           scheduled_end: endTime,
@@ -403,7 +403,7 @@ export default function AddSchedulePage() {
                     <div 
                       key={schedule.id} 
                       className={`p-3 rounded-lg border ${
-                        schedule.employee_id === currentUser?.id 
+                        schedule.employee_id === currentUser?.employee_id 
                           ? 'bg-blue-100 border-blue-300' 
                           : 'bg-white border-gray-200'
                       }`}
@@ -411,12 +411,12 @@ export default function AddSchedulePage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className={`font-semibold ${
-                            schedule.employee_id === currentUser?.id 
+                            schedule.employee_id === currentUser?.employee_id 
                               ? 'text-blue-800' 
                               : 'text-gray-900'
                           }`}>
                             {schedule.employee?.name}
-                            {schedule.employee_id === currentUser?.id && (
+                            {schedule.employee_id === currentUser?.employee_id && (
                               <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
                                 나
                               </span>
