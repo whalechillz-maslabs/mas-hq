@@ -62,7 +62,7 @@ export default function AttendancePage() {
         const { data: todayData, error: todayError } = await supabase
           .from('schedules')
           .select('*')
-          .eq('employee_id', user.id)
+          .eq('employee_id', user.employee_id)
           .eq('schedule_date', today);
 
         if (todayError) {
@@ -104,6 +104,9 @@ export default function AttendancePage() {
       } catch (error) {
         console.error('❌ 전체 로딩 과정 실패:', error);
         setLoading(false);
+        // 에러 발생 시 기본값 설정
+        setTodaySchedules([]);
+        setMonthlyRecords([]);
       }
     };
     
