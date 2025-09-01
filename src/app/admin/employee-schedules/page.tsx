@@ -239,6 +239,27 @@ export default function EmployeeSchedulesPage() {
     return 'bg-blue-500';
   };
 
+  // 빠른 스케줄 삭제 (모달 없이)
+  const handleQuickDelete = async (scheduleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', scheduleId);
+
+      if (error) throw error;
+
+      // 스케줄 데이터 즉시 업데이트
+      await fetchSchedules();
+      
+      // 로컬 상태도 즉시 업데이트
+      setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+    } catch (error: any) {
+      console.error('스케줄 삭제 실패:', error);
+      alert(`스케줄 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    }
+  };
+
   // 빠른 스케줄 추가 (모달 없이) - "내 스케줄" 페이지 방식 참고
   const handleQuickAdd = async (date: Date, timeSlot: TimeSlot, employeeId: string) => {
     if (!employeeId) {
@@ -288,8 +309,7 @@ export default function EmployeeSchedulesPage() {
 
       console.log('스케줄 추가 완료:', data);
 
-      // 성공 메시지 표시
-      alert('스케줄이 추가되었습니다.');
+      // 성공 메시지 없이 바로 추가
       
       // 스케줄 데이터 즉시 업데이트
       await fetchSchedules();
@@ -467,12 +487,12 @@ export default function EmployeeSchedulesPage() {
     const existingSchedules = getSchedulesForDateAndTime(date, timeSlot, targetEmployeeId);
     
     if (existingSchedules.length > 0) {
-      // 기존 스케줄이 있으면 수정/삭제 모달
+      // 기존 스케줄이 있으면 바로 삭제
       const schedule = existingSchedules[0];
-      openScheduleModal(date, timeSlot, 'edit', schedule, targetEmployeeId);
+      await handleQuickDelete(schedule.id);
     } else {
-      // 새 스케줄이면 바로 추가 (빠른 추가)
-      handleQuickAdd(date, timeSlot, targetEmployeeId);
+      // 새 스케줄이면 바로 추가
+      await handleQuickAdd(date, timeSlot, targetEmployeeId);
     }
   };
 
@@ -803,16 +823,7 @@ export default function EmployeeSchedulesPage() {
                                   {/* 전체보기에서 수정/삭제 버튼 */}
                                   <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <div className="flex space-x-1">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openScheduleModal(date, timeSlot, 'edit', daySchedules[0], daySchedules[0].employee_id);
-                                        }}
-                                        className="p-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-                                        title="수정"
-                                      >
-                                        <Edit className="h-3 w-3" />
-                                      </button>
+
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
