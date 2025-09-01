@@ -85,10 +85,12 @@ export default function AttendanceManagementPage() {
           id,
           employee_id,
           schedule_date,
-          start_time,
-          end_time,
+          scheduled_start,
+          scheduled_end,
+          actual_start,
+          actual_end,
           status,
-          notes,
+          employee_note,
           employees!inner(
             id,
             name,
@@ -115,14 +117,18 @@ export default function AttendanceManagementPage() {
         department: schedule.employees.departments?.name || "미지정",
         position: schedule.employees.positions?.name || "미지정",
         schedule_date: schedule.schedule_date,
-        actual_start: schedule.start_time ? `${selectedDate}T${schedule.start_time}` : null,
-        actual_end: schedule.end_time ? `${selectedDate}T${schedule.end_time}` : null,
-        total_hours: schedule.start_time && schedule.end_time ? 
-          calculateHours(schedule.start_time, schedule.end_time) : 0,
+        actual_start: schedule.actual_start ? schedule.actual_start : 
+                     schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
+        actual_end: schedule.actual_end ? schedule.actual_end : 
+                   schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
+        total_hours: schedule.actual_start && schedule.actual_end ? 
+          calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
+          schedule.scheduled_start && schedule.scheduled_end ?
+          calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0,
         overtime_hours: 0,
         status: schedule.status === "checked_out" ? "completed" : 
                 schedule.status === "checked_in" ? "confirmed" : "pending",
-        employee_note: schedule.notes || ""
+        employee_note: schedule.employee_note || ""
       })) || [];
       
       setAttendanceRecords(attendanceRecords);
@@ -132,19 +138,19 @@ export default function AttendanceManagementPage() {
     } finally {
       setIsLoading(false);
     }
-    setAttendanceRecords(sampleRecords);
-    setIsLoading(false);
   };
 
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return '-';
   // 시간 계산 함수 추가
   const calculateHours = (startTime: string, endTime: string): number => {
     const start = new Date(`2000-01-01T${startTime}`);
     const end = new Date(`2000-01-01T${endTime}`);
     const diffMs = end.getTime() - start.getTime();
-    return Math.round((diffMs / (1000 * 60 * 60) * 100) / 100;
-  };    return new Date(timeString).toLocaleTimeString('ko-KR', {
+    return Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
+  };
+
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return '-';
+    return new Date(timeString).toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit'
     });
