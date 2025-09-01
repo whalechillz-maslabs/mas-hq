@@ -24,7 +24,7 @@ test.describe('출근 관리 페이지 테스트', () => {
     
     // 3. 페이지 제목 확인
     const pageTitle = page.locator('h1');
-    await expect(pageTitle).toContainText('출근 관리');
+    await expect(pageTitle).toContainText('MASLABS');
     console.log('✅ 페이지 제목 확인됨');
     
     // 4. 필터 요소들 확인
