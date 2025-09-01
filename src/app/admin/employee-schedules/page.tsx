@@ -511,6 +511,22 @@ export default function EmployeeSchedulesPage() {
     return `${month}월 ${weekNumber}주차`;
   };
 
+  // 스케줄 정보를 직원별로 분리하여 표시하는 함수
+  const formatScheduleDisplay = (schedules: Schedule[]) => {
+    if (schedules.length === 0) return '';
+    if (schedules.length === 1) return `1명 ${schedules[0].employee?.name || 'Unknown'}`;
+    
+    // 2명 이상일 때는 각 직원 이름을 개별적으로 표시
+    const employeeNames = schedules.map(s => s.employee?.name || 'Unknown');
+    return `${schedules.length}명 ${employeeNames.join(', ')}`;
+  };
+
+  // 특정 시간대의 스케줄을 직원별로 그룹화하는 함수
+  const getSchedulesByEmployee = (date: Date, timeSlot: TimeSlot) => {
+    const daySchedules = getSchedulesForDateAndTime(date, timeSlot);
+    return daySchedules;
+  };
+
   const filteredEmployees = employees.filter(employee =>
     employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -820,20 +836,23 @@ export default function EmployeeSchedulesPage() {
                                     )}
                                   </div>
                                   
-                                  {/* 전체보기에서 수정/삭제 버튼 */}
+                                  {/* 전체보기에서 개별 직원 삭제 버튼들 */}
                                   <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="flex space-x-1">
-
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openScheduleModal(date, timeSlot, 'delete', daySchedules[0], daySchedules[0].employee_id);
-                                        }}
-                                        className="p-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                                        title="삭제"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </button>
+                                    <div className="flex flex-col space-y-1">
+                                      {daySchedules.map((schedule, index) => (
+                                        <button
+                                          key={schedule.id}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleQuickDelete(schedule.id);
+                                          }}
+                                          className="p-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 flex items-center space-x-1"
+                                          title={`${schedule.employee?.name || 'Unknown'} 삭제`}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                          <span className="text-xs">{schedule.employee?.name || 'Unknown'}</span>
+                                        </button>
+                                      ))}
                                     </div>
                                   </div>
                                 </div>
