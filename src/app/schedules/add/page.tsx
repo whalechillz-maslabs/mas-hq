@@ -169,7 +169,7 @@ export default function AddSchedulePage() {
       const { data, error: insertError } = await supabase
         .from('schedules')
         .insert({
-          employee_id: currentUser.employee_id,
+          employee_id: currentUser.id,
           schedule_date: scheduleDate,
           scheduled_start: startTime,
           scheduled_end: endTime,
@@ -208,7 +208,7 @@ export default function AddSchedulePage() {
       const { data, error: insertError } = await supabase
         .from('schedules')
         .insert({
-          employee_id: currentUser.employee_id,
+          employee_id: currentUser.id,
           schedule_date: scheduleDate,
           scheduled_start: startTime,
           scheduled_end: endTime,

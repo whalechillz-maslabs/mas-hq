@@ -111,7 +111,7 @@ export default function DashboardPage() {
       const { data: scheduleData } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', currentUser.employee_id)
+        .eq('employee_id', currentUser.id)
         .eq('schedule_date', todayStr)
         .single();
 

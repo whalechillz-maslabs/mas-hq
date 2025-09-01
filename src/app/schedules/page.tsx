@@ -97,11 +97,11 @@ export default function SchedulesPage() {
   const getCurrentUser = async () => {
     try {
       // localStorage 기반 인증 사용
-      if (typeof window !== 'undefined') {
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        const employeeData = localStorage.getItem('currentEmployee');
-        
-        if (isLoggedIn === 'true' && employeeData) {
+    if (typeof window !== 'undefined') {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const employeeData = localStorage.getItem('currentEmployee');
+      
+      if (isLoggedIn === 'true' && employeeData) {
           const employee = JSON.parse(employeeData);
           console.log('✅ getCurrentUser - localStorage에서 사용자 정보 로드됨:', employee.name);
           return employee;
@@ -114,10 +114,10 @@ export default function SchedulesPage() {
   };
 
   const fetchSchedules = async () => {
-    if (!currentUser?.employee_id) {
-      console.log('사용자 정보가 없어서 스케줄을 가져올 수 없습니다.');
-      return;
-    }
+          if (!currentUser?.id) {
+        console.log('사용자 정보가 없어서 스케줄을 가져올 수 없습니다.');
+        return;
+      }
     
     setLoading(true);
     
@@ -138,7 +138,7 @@ export default function SchedulesPage() {
           *,
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
-        .eq('employee_id', currentUser.employee_id)
+        .eq('employee_id', currentUser.id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .order('schedule_date', { ascending: true })
@@ -429,7 +429,7 @@ export default function SchedulesPage() {
         supabase
           .from('schedules')
           .delete()
-          .eq('employee_id', currentUser.employee_id)
+          .eq('employee_id', currentUser.id)
           .eq('schedule_date', schedule.schedule_date)
           .eq('scheduled_start', schedule.scheduled_start)
       );
