@@ -138,7 +138,6 @@ export default function SchedulesPage() {
           *,
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
-        .eq('employee_id', currentUser.id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .order('schedule_date', { ascending: true })
@@ -220,12 +219,16 @@ export default function SchedulesPage() {
       return isLunch ? 'bg-orange-50' : 'bg-gray-50';
     }
     
-    // 본인 포함 여부에 따른 색상 (단순화)
-    if (hasCurrentUser) {
-      return 'bg-blue-300'; // 본인 스케줄이 있으면 파란색
-    } else {
-      return 'bg-gray-300'; // 다른 사람 스케줄이 있으면 회색
+    // 근무자 수에 따른 색상 강도
+    if (scheduleCount === 1) {
+      return hasCurrentUser ? 'bg-blue-300' : 'bg-gray-300'; // 본인: 파란색, 다른 사람: 회색
+    } else if (scheduleCount === 2) {
+      return hasCurrentUser ? 'bg-blue-400' : 'bg-gray-400'; // 본인 포함: 진한 파란색, 다른 사람만: 진한 회색
+    } else if (scheduleCount >= 3) {
+      return hasCurrentUser ? 'bg-blue-500' : 'bg-gray-500'; // 본인 포함: 가장 진한 파란색, 다른 사람만: 가장 진한 회색
     }
+    
+    return 'bg-blue-300';
   };
 
   // 시간 경과 확인 (과거 시간인지)
@@ -241,7 +244,7 @@ export default function SchedulesPage() {
   const canModifySchedule = (date: Date, timeSlot: TimeSlot, targetEmployeeId?: string) => {
     const isPassed = isTimePassed(date, timeSlot);
     const userRole = currentUser?.role?.name;
-    const isOwnSchedule = !targetEmployeeId || targetEmployeeId === currentUser?.employee_id;
+    const isOwnSchedule = !targetEmployeeId || targetEmployeeId === currentUser?.id;
     
     // 미래 시간은 모든 사용자가 본인 스케줄 수정 가능
     if (!isPassed && isOwnSchedule) return true;
@@ -680,7 +683,7 @@ export default function SchedulesPage() {
                     </div>
                     {getDaysInView().map(date => {
                       const daySchedules = getSchedulesForDateAndTime(date, timeSlot);
-                      const isCurrentUser = daySchedules.some(s => s.employee_id === currentUser?.employee_id);
+                      const isCurrentUser = daySchedules.some(s => s.employee_id === currentUser?.id);
                       const colorClass = getColorIntensity(daySchedules.length, timeSlot.isLunch, isCurrentUser);
                       const canModify = canModifySchedule(date, timeSlot);
                       const isUpdating = updating === `${format(date, 'yyyy-MM-dd')}-${timeSlot.time}`;
