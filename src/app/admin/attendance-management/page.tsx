@@ -57,36 +57,25 @@ export default function AttendanceManagementPage() {
     if (!user) {
       router.push('/login');
       return;
-  const checkAuth = async () => {
-    const user = await auth.getCurrentUser();
-    console.log("Current user:", user); // 디버깅용
-    
-    if (!user) {
-      router.push("/login");
-      return;
     }
     
-    // 관리자/매니저 권한 확인 - 더 유연하게 수정
-    const isManager = user.role_id === "admin" || 
-                     user.role_id === "manager" || 
-                     user.role_id === "team_lead" || 
-                     user.employee_id === "MASLABS-001" || 
-                     user.name === "김탁수" || 
-                     user.name === "시스템 관리자";
-    
-    console.log("User role_id:", user.role_id);
-    console.log("User employee_id:", user.employee_id);
-    console.log("User name:", user.name);
-    console.log("Is manager:", isManager);
+    // 관리자/매니저 권한 확인
+    const isManager = user.role_id === 'admin' || 
+                     user.role_id === 'manager' ||
+                     user.employee_id === 'MASLABS-001' ||
+                     user.name === '시스템 관리자';
     
     if (!isManager) {
-      alert("관리자 또는 매니저 권한이 필요합니다.");
-      router.push("/dashboard");
+      alert('관리자 또는 매니저 권한이 필요합니다.');
+      router.push('/dashboard');
       return;
     }
     
     setCurrentUser(user);
-  };    try {
+  };
+
+  const loadData = async () => {
+    try {
       setIsLoading(true);
       
       // 실제 데이터베이스에서 스케줄 데이터 가져오기
@@ -143,18 +132,19 @@ export default function AttendanceManagementPage() {
     } finally {
       setIsLoading(false);
     }
+    setAttendanceRecords(sampleRecords);
+    setIsLoading(false);
   };
-  
+
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return '-';
   // 시간 계산 함수 추가
   const calculateHours = (startTime: string, endTime: string): number => {
     const start = new Date(`2000-01-01T${startTime}`);
     const end = new Date(`2000-01-01T${endTime}`);
     const diffMs = end.getTime() - start.getTime();
     return Math.round((diffMs / (1000 * 60 * 60) * 100) / 100;
-  };
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return '-';
-    return new Date(timeString).toLocaleTimeString('ko-KR', {
+  };    return new Date(timeString).toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit'
     });
