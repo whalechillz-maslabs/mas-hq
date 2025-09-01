@@ -63,7 +63,9 @@ export default function AttendanceManagementPage() {
     const isManager = user.role_id === 'admin' || 
                      user.role_id === 'manager' ||
                      user.employee_id === 'MASLABS-001' ||
-                     user.name === '시스템 관리자';
+                     user.name === '시스템 관리자' ||
+                     user.name === '김탁수' ||
+                     user.employee_id === 'WHA';
     
     if (!isManager) {
       alert('관리자 또는 매니저 권한이 필요합니다.');
