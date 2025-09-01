@@ -45,7 +45,7 @@ interface ScheduleModal {
   date: Date | null;
   timeSlot: TimeSlot | null;
   schedule: Schedule | null;
-  mode: 'add' | 'edit' | 'delete';
+  mode: 'add' | 'edit' | 'delete' | 'overview';
   employeeId?: string; // 전체보기에서 사용할 직원 ID
 }
 
@@ -300,7 +300,13 @@ export default function EmployeeSchedulesPage() {
         .upsert(scheduleData, {
           onConflict: 'employee_id,schedule_date,scheduled_start'
         })
-        .select();
+        .select(`
+          *,
+          employee:employees!schedules_employee_id_fkey(
+            name,
+            employee_id
+          )
+        `);
 
       if (error) {
         console.error('Insert error:', error);
@@ -567,6 +573,27 @@ export default function EmployeeSchedulesPage() {
       console.error('스케줄 추가 실패:', error);
       alert(`스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
+  };
+
+  // 전체보기에서 스케줄 셀 클릭 시 상세 관리 모달 열기
+  const openOverviewScheduleModal = (date: Date, timeSlot: TimeSlot) => {
+    const daySchedules = getSchedulesForDateAndTime(date, timeSlot);
+    
+    if (daySchedules.length === 0) {
+      // 빈 셀이면 바로 추가
+      handleOverviewAddSchedule(date, timeSlot);
+      return;
+    }
+    
+    // 스케줄이 있는 셀이면 상세 관리 모달 열기
+    setScheduleModal({
+      isOpen: true,
+      mode: 'overview',
+      date,
+      timeSlot,
+      schedule: null,
+      employeeId: undefined
+    });
   };
 
   if (loading) {
@@ -854,7 +881,9 @@ export default function EmployeeSchedulesPage() {
                           return (
                             <div
                               key={`${format(date, 'yyyy-MM-dd')}-${timeSlot.time}`}
-                              className={`p-2 rounded-sm ${colorClass} min-h-[40px] flex items-center justify-center relative group`}
+                              className={`p-2 rounded-sm ${colorClass} min-h-[40px] flex items-center justify-center relative group cursor-pointer hover:opacity-90 transition-opacity`}
+                              onClick={() => openOverviewScheduleModal(date, timeSlot)}
+                              title="클릭하여 상세 관리"
                             >
                               {daySchedules.length > 0 && (
                                 <div className="text-center">
@@ -970,7 +999,8 @@ export default function EmployeeSchedulesPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 {scheduleModal.mode === 'add' ? '스케줄 추가' : 
-                 scheduleModal.mode === 'edit' ? '스케줄 수정' : '스케줄 삭제'}
+                 scheduleModal.mode === 'edit' ? '스케줄 수정' : 
+                 scheduleModal.mode === 'overview' ? '스케줄 상세 관리' : '스케줄 삭제'}
               </h3>
               <button
                 onClick={closeScheduleModal}
@@ -980,7 +1010,78 @@ export default function EmployeeSchedulesPage() {
               </button>
             </div>
 
-            {scheduleModal.mode !== 'delete' ? (
+            {scheduleModal.mode === 'overview' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    날짜 및 시간
+                  </label>
+                  <input
+                    type="text"
+                    value={scheduleModal.date && scheduleModal.timeSlot ? 
+                      `${format(scheduleModal.date, 'yyyy년 MM월 dd일 (E)', { locale: ko })} ${scheduleModal.timeSlot.time}` : ''}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    현재 근무 직원
+                  </label>
+                  <div className="space-y-2">
+                    {scheduleModal.date && scheduleModal.timeSlot && 
+                     getSchedulesForDateAndTime(scheduleModal.date, scheduleModal.timeSlot).map((schedule, index) => (
+                      <div key={schedule.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-sm">{schedule.employee?.name || 'Unknown'}</span>
+                        <button
+                          onClick={() => {
+                            handleQuickDelete(schedule.id);
+                            closeScheduleModal();
+                          }}
+                          className="p-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                          title="삭제"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    새 직원 추가
+                  </label>
+                  <div className="flex space-x-2">
+                    {selectedEmployee && (
+                      <button
+                        onClick={async () => {
+                          if (scheduleModal.date && scheduleModal.timeSlot) {
+                            await handleQuickAdd(scheduleModal.date, scheduleModal.timeSlot, selectedEmployee.id);
+                            closeScheduleModal();
+                          }
+                        }}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                      >
+                        {selectedEmployee.name} 추가
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => {
+                        if (scheduleModal.date && scheduleModal.timeSlot) {
+                          await handleOverviewAddSchedule(scheduleModal.date, scheduleModal.timeSlot);
+                          closeScheduleModal();
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                    >
+                      다른 직원 추가
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : scheduleModal.mode !== 'delete' ? (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -999,7 +1100,7 @@ export default function EmployeeSchedulesPage() {
                     시작 시간
                   </label>
                   <input
-                    type="time"
+                    type="text"
                     value={modalInputs.startTime}
                     onChange={(e) => setModalInputs(prev => ({ ...prev, startTime: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1011,7 +1112,7 @@ export default function EmployeeSchedulesPage() {
                     종료 시간
                   </label>
                   <input
-                    type="time"
+                    type="text"
                     value={modalInputs.endTime}
                     onChange={(e) => setModalInputs(prev => ({ ...prev, endTime: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1047,21 +1148,23 @@ export default function EmployeeSchedulesPage() {
                 onClick={closeScheduleModal}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
               >
-                취소
+                {scheduleModal.mode === 'overview' ? '닫기' : '취소'}
               </button>
-              <button
-                onClick={handleScheduleAction}
-                disabled={updating !== null}
-                className={`px-4 py-2 text-white rounded-md ${
-                  scheduleModal.mode === 'delete' 
-                    ? 'bg-red-600 hover:bg-red-700' 
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {updating ? '처리 중...' : 
-                 scheduleModal.mode === 'add' ? '추가' : 
-                 scheduleModal.mode === 'edit' ? '수정' : '삭제'}
-              </button>
+              {scheduleModal.mode !== 'overview' && (
+                <button
+                  onClick={handleScheduleAction}
+                  disabled={updating !== null}
+                  className={`px-4 py-2 text-white rounded-md ${
+                    scheduleModal.mode === 'delete' 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {updating ? '처리 중...' : 
+                   scheduleModal.mode === 'add' ? '추가' : 
+                   scheduleModal.mode === 'edit' ? '수정' : '삭제'}
+                </button>
+              )}
             </div>
           </div>
         </div>
