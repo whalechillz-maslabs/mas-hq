@@ -53,6 +53,10 @@ export default function AttendanceManagementPage() {
   const checkAuth = async () => {
     const user = await auth.getCurrentUser();
     console.log('Current user:', user); // 디버깅용
+    console.log('User ID:', user?.id);
+    console.log('User employee_id:', user?.employee_id);
+    console.log('User name:', user?.name);
+    console.log('User role_id:', user?.role_id);
     
     if (!user) {
       router.push('/login');
