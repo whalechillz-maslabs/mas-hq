@@ -152,7 +152,7 @@ export default function AddSchedulePage() {
     const selectedEnd = endTime;
     
     const conflicts = existingSchedules.filter(schedule => {
-      if (schedule.employee_id === currentUser?.employee_id) return false; // 본인 스케줄은 제외
+      if (schedule.employee_id === currentUser?.id) return false; // 본인 스케줄은 제외 (UUID 사용)
       
       const existingStart = schedule.scheduled_start;
       const existingEnd = schedule.scheduled_end;
@@ -170,7 +170,9 @@ export default function AddSchedulePage() {
     setError(null);
     setSuccess(null);
 
-    if (!currentUser?.employee_id) {
+    console.log('🔍 handleSubmit 시작:', { currentUser, scheduleDate, startTime, endTime, note });
+
+    if (!currentUser?.id) {
       setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
       setSubmitting(false);
       return;
@@ -184,6 +186,15 @@ export default function AddSchedulePage() {
     }
 
     try {
+      console.log('📝 Supabase insert 시작:', {
+        employee_id: currentUser.id,
+        schedule_date: scheduleDate,
+        scheduled_start: startTime,
+        scheduled_end: endTime,
+        employee_note: note,
+        status: 'approved'
+      });
+
       const { data, error: insertError } = await supabase
         .from('schedules')
         .insert({
@@ -196,6 +207,8 @@ export default function AddSchedulePage() {
         })
         .select()
         .single();
+
+      console.log('📊 Supabase insert 결과:', { data, error: insertError });
 
       if (insertError) {
         throw insertError;
