@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, supabase } from '@/lib/supabase';
+import { auth } from '@/lib/supabase';
 import { 
   Clock, MapPin, Users, Calendar, Filter, Download,
   Search, Eye, CheckCircle, XCircle, AlertCircle,
@@ -72,73 +72,77 @@ export default function AttendanceManagementPage() {
     }
     
     setCurrentUser(user);
+  };
+
   const loadData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // 실제 데이터베이스에서 스케줄 데이터 가져오기
-      const { data: schedules, error } = await supabase
-        .from("schedules")
-        .select(`
-          id,
-          employee_id,
-          schedule_date,
-          start_time,
-          end_time,
-          status,
-          notes,
-          employees!inner(
-            id,
-            name,
-            employee_id,
-            departments(name),
-            positions(name)
-          )
-        `)
-        .eq("schedule_date", selectedDate)
-        .order("employees.name");
-      
-      if (error) {
-        console.error("출근 데이터 로딩 오류:", error);
-        setAttendanceRecords([]);
-        return;
-      }
-      
-      // 데이터 변환
-      const attendanceRecords: AttendanceRecord[] = schedules?.map(schedule => ({
-        id: schedule.id,
-        employee_id: schedule.employee_id,
-        employee_name: schedule.employees.name,
-        employee_id_code: schedule.employees.employee_id,
-        department: schedule.employees.departments?.name || "미지정",
-        position: schedule.employees.positions?.name || "미지정",
-        schedule_date: schedule.schedule_date,
-        actual_start: schedule.start_time ? `${selectedDate}T${schedule.start_time}` : null,
-        actual_end: schedule.end_time ? `${selectedDate}T${schedule.end_time}` : null,
-        total_hours: schedule.start_time && schedule.end_time ? 
-          calculateHours(schedule.start_time, schedule.end_time) : 0,
+    // 샘플 출근 데이터
+    const sampleRecords: AttendanceRecord[] = [
+      {
+        id: '1',
+        employee_id: '1',
+        employee_name: '김영희',
+        employee_id_code: 'OP-001',
+        department: '마쓰구',
+        position: 'OP팀원',
+        schedule_date: selectedDate,
+        actual_start: '2025-01-15T09:05:00Z',
+        actual_end: '2025-01-15T18:30:00Z',
+        total_hours: 8.5,
+        overtime_hours: 0.5,
+        status: 'completed',
+        check_in_location: {
+          latitude: 37.5665,
+          longitude: 126.9780,
+          address: '서울시 강남구 테헤란로 123'
+        },
+        check_out_location: {
+          latitude: 37.5665,
+          longitude: 126.9780,
+          address: '서울시 강남구 테헤란로 123'
+        },
+        employee_note: '정상 출근'
+      },
+      {
+        id: '2',
+        employee_id: '2',
+        employee_name: '박철수',
+        employee_id_code: 'OP-002',
+        department: '싱싱',
+        position: 'OP팀원',
+        schedule_date: selectedDate,
+        actual_start: '2025-01-15T09:00:00Z',
+        actual_end: null,
+        total_hours: 0,
         overtime_hours: 0,
-        status: schedule.status === "checked_out" ? "completed" : 
-                schedule.status === "checked_in" ? "confirmed" : "pending",
-        employee_note: schedule.notes || ""
-      })) || [];
-      
-      setAttendanceRecords(attendanceRecords);
-    } catch (error) {
-      console.error("출근 데이터 로딩 중 오류:", error);
-      setAttendanceRecords([]);
-    } finally {
-      setIsLoading(false);
-    }
+        status: 'confirmed',
+        check_in_location: {
+          latitude: 37.5665,
+          longitude: 126.9780,
+          address: '서울시 강남구 테헤란로 456'
+        },
+        employee_note: '현재 근무 중'
+      },
+      {
+        id: '3',
+        employee_id: '3',
+        employee_name: '이민수',
+        employee_id_code: 'OP-003',
+        department: '마쓰구',
+        position: 'OP팀원',
+        schedule_date: selectedDate,
+        actual_start: null,
+        actual_end: null,
+        total_hours: 0,
+        overtime_hours: 0,
+        status: 'pending',
+        employee_note: '연차 사용'
+      }
+    ];
+
+    setAttendanceRecords(sampleRecords);
+    setIsLoading(false);
   };
-  
-  // 시간 계산 함수 추가
-  const calculateHours = (startTime: string, endTime: string): number => {
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    const diffMs = end.getTime() - start.getTime();
-    return Math.round((diffMs / (1000 * 60 * 60) * 100) / 100;
-  };
+
   const formatTime = (timeString: string | null) => {
     if (!timeString) return '-';
     return new Date(timeString).toLocaleTimeString('ko-KR', {
