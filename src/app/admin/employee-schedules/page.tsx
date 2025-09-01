@@ -52,17 +52,29 @@ export default function EmployeeSchedulesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'individual' | 'overview'>('individual');
 
-  // 시간대 정의
+  // 시간대 정의 (30분 단위, 18-19시까지 확장)
   const timeSlots: TimeSlot[] = [
-    { time: '09:00', label: '9', isLunch: false },
-    { time: '10:00', label: '10', isLunch: false },
-    { time: '11:00', label: '11', isLunch: false },
-    { time: '12:00', label: '12', isLunch: true },
-    { time: '13:00', label: '13', isLunch: false },
-    { time: '14:00', label: '14', isLunch: false },
-    { time: '15:00', label: '15', isLunch: false },
-    { time: '16:00', label: '16', isLunch: false },
-    { time: '17:00', label: '17', isLunch: false },
+    { time: '09:00', label: '9:00', isLunch: false },
+    { time: '09:30', label: '9:30', isLunch: false },
+    { time: '10:00', label: '10:00', isLunch: false },
+    { time: '10:30', label: '10:30', isLunch: false },
+    { time: '11:00', label: '11:00', isLunch: false },
+    { time: '11:30', label: '11:30', isLunch: false },
+    { time: '12:00', label: '12:00', isLunch: true },
+    { time: '12:30', label: '12:30', isLunch: true },
+    { time: '13:00', label: '13:00', isLunch: false },
+    { time: '13:30', label: '13:30', isLunch: false },
+    { time: '14:00', label: '14:00', isLunch: false },
+    { time: '14:30', label: '14:30', isLunch: false },
+    { time: '15:00', label: '15:00', isLunch: false },
+    { time: '15:30', label: '15:30', isLunch: false },
+    { time: '16:00', label: '16:00', isLunch: false },
+    { time: '16:30', label: '16:30', isLunch: false },
+    { time: '17:00', label: '17:00', isLunch: false },
+    { time: '17:30', label: '17:30', isLunch: false },
+    { time: '18:00', label: '18:00', isLunch: false },
+    { time: '18:30', label: '18:30', isLunch: false },
+    { time: '19:00', label: '19:00', isLunch: false },
   ];
 
   const weekDays = [
@@ -274,10 +286,17 @@ export default function EmployeeSchedulesPage() {
           throw error;
         }
       } else {
-        // 새 스케줄 추가
-        const startHour = parseInt(timeSlot.time.split(':')[0]);
-        const endHour = startHour + 1;
-        const endTimeStr = `${endHour.toString().padStart(2, '0')}:00:00`;
+        // 새 스케줄 추가 - 정확히 해당 시간에 30분 스케줄 생성
+        const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
+        let endHour = startHour;
+        let endMinute = startMinute + 30;
+        
+        if (endMinute >= 60) {
+          endHour += 1;
+          endMinute = 0;
+        }
+        
+        const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}:00`;
         
         const scheduleData = {
           employee_id: targetEmployeeId,
