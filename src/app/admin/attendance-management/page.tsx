@@ -79,7 +79,7 @@ export default function AttendanceManagementPage() {
       setIsLoading(true);
       
       // 실제 데이터베이스에서 스케줄 데이터 가져오기
-      const { data: schedules, error } = await supabase
+      const { data: schedules, error: schedulesError } = await supabase
         .from("schedules")
         .select(`
           id,
@@ -90,46 +90,65 @@ export default function AttendanceManagementPage() {
           actual_start,
           actual_end,
           status,
-          employee_note,
-          employees!inner(
-            id,
-            name,
-            employee_id,
-            departments(name),
-            positions(name)
-          )
+          employee_note
         `)
-        .eq("schedule_date", selectedDate)
-        .order("employees.name");
+        .eq("schedule_date", selectedDate);
       
-      if (error) {
-        console.error("출근 데이터 로딩 오류:", error);
+      if (schedulesError) {
+        console.error("스케줄 데이터 로딩 오류:", schedulesError);
+        setAttendanceRecords([]);
+        return;
+      }
+      
+      if (!schedules || schedules.length === 0) {
+        setAttendanceRecords([]);
+        return;
+      }
+      
+      // 직원 정보 가져오기
+      const employeeIds = schedules.map(s => s.employee_id);
+      const { data: employees, error: employeesError } = await supabase
+        .from("employees")
+        .select(`
+          id,
+          name,
+          employee_id,
+          departments(name),
+          positions(name)
+        `)
+        .in("id", employeeIds);
+      
+      if (employeesError) {
+        console.error("직원 데이터 로딩 오류:", employeesError);
         setAttendanceRecords([]);
         return;
       }
       
       // 데이터 변환
-      const attendanceRecords: AttendanceRecord[] = schedules?.map(schedule => ({
-        id: schedule.id,
-        employee_id: schedule.employee_id,
-        employee_name: schedule.employees.name,
-        employee_id_code: schedule.employees.employee_id,
-        department: schedule.employees.departments?.name || "미지정",
-        position: schedule.employees.positions?.name || "미지정",
-        schedule_date: schedule.schedule_date,
-        actual_start: schedule.actual_start ? schedule.actual_start : 
-                     schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
-        actual_end: schedule.actual_end ? schedule.actual_end : 
-                   schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
-        total_hours: schedule.actual_start && schedule.actual_end ? 
-          calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
-          schedule.scheduled_start && schedule.scheduled_end ?
-          calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0,
-        overtime_hours: 0,
-        status: schedule.status === "checked_out" ? "completed" : 
-                schedule.status === "checked_in" ? "confirmed" : "pending",
-        employee_note: schedule.employee_note || ""
-      })) || [];
+      const attendanceRecords: AttendanceRecord[] = schedules.map(schedule => {
+        const employee = employees?.find(emp => emp.id === schedule.employee_id);
+        return {
+          id: schedule.id,
+          employee_id: schedule.employee_id,
+          employee_name: employee?.name || "알 수 없음",
+          employee_id_code: employee?.employee_id || "알 수 없음",
+          department: employee?.departments?.name || "미지정",
+          position: employee?.positions?.name || "미지정",
+          schedule_date: schedule.schedule_date,
+          actual_start: schedule.actual_start ? schedule.actual_start : 
+                       schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
+          actual_end: schedule.actual_end ? schedule.actual_end : 
+                     schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
+          total_hours: schedule.actual_start && schedule.actual_end ? 
+            calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
+            schedule.scheduled_start && schedule.scheduled_end ?
+            calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0,
+          overtime_hours: 0,
+          status: schedule.status === "checked_out" ? "completed" : 
+                  schedule.status === "checked_in" ? "confirmed" : "pending",
+          employee_note: schedule.employee_note || ""
+        };
+      });
       
       setAttendanceRecords(attendanceRecords);
     } catch (error) {
