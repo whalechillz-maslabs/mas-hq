@@ -100,20 +100,29 @@ MASLABS 직원 포털의 핵심 기능 개발 및 문제 해결
 - **해결된 문제**: 406 (Not Acceptable) 네트워크 에러
 
 ### 12. 모든 currentUser?.id 문제 해결 ⭐
-- **파일**: `src/app/schedules/page.tsx`, `src/app/attendance/page.tsx`, `src/app/admin/team-evaluation/page.tsx`
+- **파일**: 여러 페이지 파일들
 - **완료 항목**:
-  - ✅ 모든 `currentUser?.id`를 `currentUser?.employee_id`로 변경
-  - ✅ 데이터베이스 컬럼 사용 통일
-  - ✅ 백업 파일 정리
-- **해결된 문제**: 데이터베이스 매핑 불일치
+  - ✅ `currentUser?.id` → `currentUser?.employee_id` 변경
+  - ✅ UUID와 직원 코드 구분 명확화
+  - ✅ 데이터베이스 쿼리 일관성 확보
+- **해결된 문제**: UUID와 직원 코드 혼동으로 인한 데이터 오류
 
-### 13. UUID 타입 오류 해결 ⭐ **최근 해결됨**
-- **파일**: 모든 `schedules` 관련 파일들
+### 13. 스케줄 관리 UX 개선 ⭐
+- **파일**: `src/app/admin/employee-schedules/page.tsx`
 - **완료 항목**:
-  - ✅ `schedules` 테이블의 `employee_id` 컬럼이 UUID 타입임을 확인
-  - ✅ 모든 `schedules` 쿼리에서 `currentUser.employee_id` → `currentUser.id` (UUID)로 변경
-  - ✅ `invalid input syntax for type uuid: "HA"` 오류 해결
-- **해결된 문제**: UUID 타입 불일치로 인한 스케줄 입력/수정 실패
+  - ✅ 직원별 스케줄 관리: 시간 클릭 시 바로 스케줄 추가 (모달 없이)
+  - ✅ 개별 관리: 직원 선택 후 바로 스케줄 추가 가능
+  - ✅ 전체보기: 스케줄 수정/삭제 기능 추가
+  - ✅ 빠른 스케줄 추가: 30분 단위 기본 설정
+- **해결된 문제**: 불필요한 모달로 인한 UX 복잡성
+
+### 14. 대시보드 네비게이션 정리 ⭐
+- **파일**: `src/app/dashboard/page.tsx`
+- **완료 항목**:
+  - ✅ 상단 고정 네비게이션에서 "직원별 스케줄 관리" 버튼 삭제
+  - ✅ 하단 관리자 전용 기능과 중복 제거
+  - ✅ 네비게이션 구조 단순화
+- **해결된 문제**: 중복된 기능 버튼으로 인한 혼란
 
 ## 🔄 **현재 진행 중인 문제**
 

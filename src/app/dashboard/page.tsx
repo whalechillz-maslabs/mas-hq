@@ -340,17 +340,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               
-              {/* 관리자 기능 링크 */}
-              {data?.employee?.role?.name === 'admin' && (
-                <button
-                  onClick={() => router.push('/admin/employee-schedules')}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1 mr-2"
-                  title="직원별 스케줄 관리"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>직원별 스케줄 관리</span>
-                </button>
-              )}
+
               
               {/* 로그아웃 버튼 */}
               <button

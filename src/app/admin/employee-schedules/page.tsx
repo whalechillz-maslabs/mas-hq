@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, Search, User, Building, X } from 'lucide-react';
+import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, Search, User, Building, X, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, addWeeks, subWeeks, getWeek } from 'date-fns';
@@ -46,6 +46,7 @@ interface ScheduleModal {
   timeSlot: TimeSlot | null;
   schedule: Schedule | null;
   mode: 'add' | 'edit' | 'delete';
+  employeeId?: string; // 전체보기에서 사용할 직원 ID
 }
 
 export default function EmployeeSchedulesPage() {
@@ -74,6 +75,19 @@ export default function EmployeeSchedulesPage() {
     startTime: '',
     endTime: '',
     note: ''
+  });
+
+  // 빠른 스케줄 추가 상태 (모달 없이 바로 추가)
+  const [quickAdd, setQuickAdd] = useState<{
+    isActive: boolean;
+    date: Date | null;
+    timeSlot: TimeSlot | null;
+    employeeId: string | null;
+  }>({
+    isActive: false,
+    date: null,
+    timeSlot: null,
+    employeeId: null
   });
 
   // 시간대 정의 (30분 단위, 18-19시까지 확장)
@@ -108,91 +122,30 @@ export default function EmployeeSchedulesPage() {
     { day: 3, label: '수', name: 'wednesday' },
     { day: 4, label: '목', name: 'thursday' },
     { day: 5, label: '금', name: 'friday' },
-    { day: 6, label: '토', name: 'saturday' },
+    { day: 6, label: '토', name: 'saturday' }
   ];
 
   useEffect(() => {
-    const fetchUserAndData = async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      
-      // 관리자 권한 확인 - 데이터베이스에서 role 정보 가져와서 체크
-      try {
-        const { data: roleData, error: roleError } = await supabase
-          .from('employees')
-          .select(`
-            role:roles!employees_role_id_fkey(name)
-          `)
-          .eq('id', user.id)
-          .single();
-
-        if (roleError) {
-          console.error('Role fetch error:', roleError);
-          router.push('/dashboard');
-          return;
-        }
-
-        console.log('🔍 권한 확인 - roleData:', roleData);
-
-        // 관리자 또는 매니저 권한 확인 (타입 안전성 확보)
-        const roleName = (roleData?.role as any)?.name;
-        if (!roleName || (roleName !== 'admin' && roleName !== 'manager')) {
-          console.log('❌ 권한 부족:', roleName);
-          router.push('/dashboard');
-          return;
-        }
-
-        console.log('✅ 권한 확인 성공:', roleName);
-
-        setCurrentUser(user);
-        await fetchEmployees();
-        // fetchSchedules는 currentUser가 설정된 후에 호출해야 함
-        // useEffect에서 currentUser 변경을 감지하여 호출하도록 수정
-        
-        // 로딩 상태 해제
-        setLoading(false);
-      } catch (error) {
-        console.error('Error in fetchUserAndData:', error);
-        router.push('/dashboard');
-      }
-    };
-
-    fetchUserAndData();
+    loadCurrentUser();
+    loadEmployees();
   }, []);
 
-  // currentUser가 설정된 후 스케줄 데이터 로딩
   useEffect(() => {
-    if (currentUser) {
-      console.log('🔄 currentUser 설정됨, 스케줄 데이터 로딩 시작...');
-      fetchSchedules().finally(() => {
-        // 스케줄 로딩 완료 후 로딩 상태 해제
-        setLoading(false);
-      });
+    if (selectedEmployee || viewMode === 'overview') {
+      fetchSchedules();
     }
-  }, [currentUser]);
+  }, [selectedEmployee, currentDate, viewMode]);
 
-  const getCurrentUser = async () => {
+  const loadCurrentUser = async () => {
     try {
-      if (typeof window !== 'undefined') {
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        const employeeData = localStorage.getItem('currentEmployee');
-        
-        if (isLoggedIn === 'true' && employeeData) {
-          const employee = JSON.parse(employeeData);
-          console.log('✅ getCurrentUser - localStorage에서 사용자 정보 로드됨:', employee.name);
-          return employee;
-        }
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
     } catch (error) {
-      console.error('사용자 인증 오류:', error);
+      console.error('사용자 로드 실패:', error);
     }
-    return null;
   };
 
-  const fetchEmployees = async () => {
+  const loadEmployees = async () => {
     try {
       const { data, error } = await supabase
         .from('employees')
@@ -204,95 +157,75 @@ export default function EmployeeSchedulesPage() {
           department:departments(name),
           position:positions(name)
         `)
-        .eq('status', 'active')
         .order('name');
 
-      if (error) {
-        console.error('Error fetching employees:', error);
-        setEmployees([]);
-      } else {
-        setEmployees(data || []);
-      }
+      if (error) throw error;
+      setEmployees(data || []);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      setEmployees([]);
+      console.error('직원 목록 로드 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchSchedules = async () => {
-    if (!currentUser) return;
-
     try {
-      const startDate = startOfWeek(currentDate, { locale: ko });
-      const endDate = endOfWeek(currentDate, { locale: ko });
-
+      const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 1 });
+      
       let query = supabase
         .from('schedules')
         .select(`
           *,
-          employee:employees!schedules_employee_id_fkey(name, employee_id)
+          employee:employees(
+            name,
+            employee_id
+          )
         `)
-        .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
-        .order('schedule_date', { ascending: true })
-        .order('scheduled_start', { ascending: true });
+        .gte('schedule_date', format(startOfWeekDate, 'yyyy-MM-dd'))
+        .lte('schedule_date', format(endOfWeekDate, 'yyyy-MM-dd'))
+        .order('schedule_date', { ascending: true });
 
       if (viewMode === 'individual' && selectedEmployee) {
-        query = query.eq('employee_id', selectedEmployee.id); // UUID 사용
+        query = query.eq('employee_id', selectedEmployee.id);
       }
 
       const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching schedules:', error);
-        setSchedules([]);
-      } else {
-        // 클라이언트 사이드에서 시간순, 이름순으로 정렬
-        const sortedSchedules = (data || []).sort((a, b) => {
-          // 1순위: 날짜순
-          if (a.schedule_date !== b.schedule_date) {
-            return a.schedule_date.localeCompare(b.schedule_date);
-          }
-          // 2순위: 시작 시간순
-          if (a.scheduled_start !== b.scheduled_start) {
-            return a.scheduled_start.localeCompare(b.scheduled_start);
-          }
-          // 3순위: 이름순 (한글 가나다순)
-          const nameA = a.employee?.name || '';
-          const nameB = b.employee?.name || '';
-          return nameA.localeCompare(nameB, 'ko');
-        });
-        setSchedules(sortedSchedules);
-      }
+      if (error) throw error;
+      setSchedules(data || []);
     } catch (error) {
-      console.error('Error fetching schedules:', error);
-      setSchedules([]);
+      console.error('스케줄 로드 실패:', error);
     }
   };
 
   const getDaysInView = () => {
-    return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko }), i));
+    const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const days = [];
+    
+    for (let i = 0; i < 7; i++) {
+      days.push(addDays(startOfWeekDate, i));
+    }
+    
+    return days;
   };
 
   const getSchedulesForDateAndTime = (date: Date, timeSlot: TimeSlot, employeeId?: string) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const timeStr = timeSlot.time + ':00';
     
-    return schedules.filter(schedule => {
-      const scheduleDate = schedule.schedule_date;
-      const startTime = schedule.scheduled_start;
-      const matchesDateAndTime = scheduleDate === dateStr && startTime === timeStr;
-      
-      if (employeeId) {
-        // employeeId가 UUID인지 직원 코드인지 확인하여 비교
-        return matchesDateAndTime && (
-          schedule.employee_id === employeeId || 
-          schedule.employee?.employee_id === employeeId
-        );
-      }
-      
-      return matchesDateAndTime;
-    });
+    let filteredSchedules = schedules.filter(schedule => 
+      schedule.schedule_date === dateStr &&
+      schedule.scheduled_start <= timeStr &&
+      schedule.scheduled_end > timeStr
+    );
+
+    if (employeeId) {
+      filteredSchedules = filteredSchedules.filter(schedule => 
+        schedule.employee_id === employeeId
+      );
+    }
+
+    return filteredSchedules;
   };
 
   const getColorIntensity = (scheduleCount: number, isLunch: boolean) => {
@@ -306,8 +239,60 @@ export default function EmployeeSchedulesPage() {
     return 'bg-blue-500';
   };
 
+  // 빠른 스케줄 추가 (모달 없이)
+  const handleQuickAdd = async (date: Date, timeSlot: TimeSlot, employeeId: string) => {
+    if (!employeeId) {
+      alert('직원을 선택해주세요.');
+      return;
+    }
+
+    const updateKey = `${format(date, 'yyyy-MM-dd')}-${timeSlot.time}-${employeeId}`;
+    setUpdating(updateKey);
+
+    try {
+      // 기본값 설정: 30분 단위
+      const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
+      let endHour = startHour;
+      let endMinute = startMinute + 30;
+      
+      if (endMinute >= 60) {
+        endHour += 1;
+        endMinute = 0;
+      }
+      
+      const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+
+      const scheduleData = {
+        employee_id: employeeId,
+        schedule_date: format(date, 'yyyy-MM-dd'),
+        scheduled_start: timeSlot.time + ':00',
+        scheduled_end: endTimeStr + ':00',
+        status: 'approved',
+        employee_note: '관리자가 추가함'
+      };
+
+      const { error } = await supabase
+        .from('schedules')
+        .upsert(scheduleData, {
+          onConflict: 'employee_id,schedule_date,scheduled_start'
+        });
+
+      if (error) throw error;
+
+      await fetchSchedules();
+      alert('스케줄이 추가되었습니다.');
+    } catch (error: any) {
+      console.error('스케줄 추가 실패:', error);
+      alert(`스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+
+
   // 스케줄 모달 열기 함수
-  const openScheduleModal = (date: Date, timeSlot: TimeSlot, mode: 'add' | 'edit' | 'delete', schedule?: Schedule) => {
+  const openScheduleModal = (date: Date, timeSlot: TimeSlot, mode: 'add' | 'edit' | 'delete', schedule?: Schedule, employeeId?: string) => {
     if (mode === 'add') {
       // 기본값 설정: 30분 단위
       const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
@@ -339,7 +324,8 @@ export default function EmployeeSchedulesPage() {
       date,
       timeSlot,
       schedule: schedule || null,
-      mode
+      mode,
+      employeeId
     });
   };
 
@@ -361,8 +347,14 @@ export default function EmployeeSchedulesPage() {
 
   // 스케줄 저장/수정/삭제
   const handleScheduleAction = async () => {
-    if (!scheduleModal.date || !scheduleModal.timeSlot || !selectedEmployee) {
+    if (!scheduleModal.date || !scheduleModal.timeSlot) {
       alert('필수 정보가 누락되었습니다.');
+      return;
+    }
+
+    const targetEmployeeId = scheduleModal.employeeId || selectedEmployee?.id;
+    if (!targetEmployeeId) {
+      alert('직원 정보가 누락되었습니다.');
       return;
     }
 
@@ -385,7 +377,7 @@ export default function EmployeeSchedulesPage() {
       } else if (scheduleModal.mode === 'add' || scheduleModal.mode === 'edit') {
         // 스케줄 추가/수정
         const scheduleData = {
-          employee_id: selectedEmployee.id, // UUID 사용
+          employee_id: targetEmployeeId,
           schedule_date: dateStr,
           scheduled_start: modalInputs.startTime + ':00',
           scheduled_end: modalInputs.endTime + ':00',
@@ -431,7 +423,7 @@ export default function EmployeeSchedulesPage() {
 
   // 기존 toggleSchedule 함수를 openScheduleModal 호출로 변경
   const toggleSchedule = async (date: Date, timeSlot: TimeSlot, employeeId?: string) => {
-    const targetEmployeeId = employeeId || selectedEmployee?.id; // UUID 사용
+    const targetEmployeeId = employeeId || selectedEmployee?.id;
     
     if (!targetEmployeeId) {
       alert('직원을 선택해주세요.');
@@ -443,10 +435,10 @@ export default function EmployeeSchedulesPage() {
     if (existingSchedules.length > 0) {
       // 기존 스케줄이 있으면 수정/삭제 모달
       const schedule = existingSchedules[0];
-      openScheduleModal(date, timeSlot, 'edit', schedule);
+      openScheduleModal(date, timeSlot, 'edit', schedule, targetEmployeeId);
     } else {
-      // 새 스케줄이면 추가 모달
-      openScheduleModal(date, timeSlot, 'add');
+      // 새 스케줄이면 바로 추가 (빠른 추가)
+      handleQuickAdd(date, timeSlot, targetEmployeeId);
     }
   };
 
@@ -565,9 +557,9 @@ export default function EmployeeSchedulesPage() {
                 >
                   <div className="font-medium text-gray-900">{employee.name}</div>
                   <div className="text-sm text-gray-600">{employee.employee_id}</div>
-                                      <div className="text-xs text-gray-500">
-                      {employee.department?.[0]?.name} • {employee.position?.[0]?.name}
-                    </div>
+                  <div className="text-xs text-gray-500">
+                    {employee.department?.[0]?.name} • {employee.position?.[0]?.name}
+                  </div>
                 </button>
               ))}
             </div>
@@ -696,7 +688,7 @@ export default function EmployeeSchedulesPage() {
                     전체 직원 스케줄 보기
                   </h3>
                   <p className="text-green-700">
-                    모든 직원의 스케줄을 한눈에 확인하고 관리할 수 있습니다.
+                    모든 직원의 스케줄을 한눈에 확인하고 관리할 수 있습니다. 시간을 클릭하면 해당 직원의 스케줄을 바로 추가/수정할 수 있습니다.
                   </p>
                 </div>
 
@@ -750,7 +742,7 @@ export default function EmployeeSchedulesPage() {
                           return (
                             <div
                               key={`${format(date, 'yyyy-MM-dd')}-${timeSlot.time}`}
-                              className={`p-2 rounded-sm ${colorClass} min-h-[40px] flex items-center justify-center`}
+                              className={`p-2 rounded-sm ${colorClass} min-h-[40px] flex items-center justify-center relative group`}
                             >
                               {daySchedules.length > 0 && (
                                 <div className="text-center">
@@ -767,7 +759,67 @@ export default function EmployeeSchedulesPage() {
                                       <div className="text-xs">+{daySchedules.length - 2}</div>
                                     )}
                                   </div>
+                                  
+                                  {/* 전체보기에서 수정/삭제 버튼 */}
+                                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex space-x-1">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openScheduleModal(date, timeSlot, 'edit', daySchedules[0], daySchedules[0].employee_id);
+                                        }}
+                                        className="p-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                                        title="수정"
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openScheduleModal(date, timeSlot, 'delete', daySchedules[0], daySchedules[0].employee_id);
+                                        }}
+                                        className="p-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                                        title="삭제"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
+                              )}
+                              
+                              {/* 전체보기에서 새 스케줄 추가 버튼 */}
+                              {daySchedules.length === 0 && (
+                                <button
+                                  onClick={() => {
+                                    // 직원 선택 모달 또는 드롭다운 표시
+                                    const employee = employees[0]; // 첫 번째 직원으로 기본 설정
+                                    if (employee) {
+                                      handleQuickAdd(date, timeSlot, employee.id);
+                                    }
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                  title="스케줄 추가"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              )}
+                              
+                              {/* 전체보기에서 새 스케줄 추가 버튼 */}
+                              {daySchedules.length === 0 && (
+                                <button
+                                  onClick={() => {
+                                    // 직원 선택 모달 또는 드롭다운 표시
+                                    const employee = employees[0]; // 첫 번째 직원으로 기본 설정
+                                    if (employee) {
+                                      handleQuickAdd(date, timeSlot, employee.id);
+                                    }
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                  title="스케줄 추가"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
                               )}
                             </div>
                           );
