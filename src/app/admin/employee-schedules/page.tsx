@@ -279,8 +279,38 @@ export default function EmployeeSchedulesPage() {
 
       if (error) throw error;
 
+      // 스케줄 추가 후 즉시 화면 업데이트
       await fetchSchedules();
+      
+      // 성공 메시지 표시
       alert('스케줄이 추가되었습니다.');
+      
+      // 선택된 직원의 스케줄만 다시 로드
+      if (selectedEmployee) {
+        const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 1 });
+        
+        const { data: newSchedules, error: scheduleError } = await supabase
+          .from('schedules')
+          .select(`
+            *,
+            employee:employees(
+              name,
+              employee_id
+            )
+          `)
+          .eq('employee_id', selectedEmployee.id)
+          .gte('schedule_date', format(startOfWeekDate, 'yyyy-MM-dd'))
+          .lte('schedule_date', format(endOfWeekDate, 'yyyy-MM-dd'))
+          .order('schedule_date', { ascending: true });
+
+        if (!scheduleError) {
+          setSchedules(prev => {
+            const filtered = prev.filter(s => s.employee_id !== selectedEmployee.id);
+            return [...filtered, ...(newSchedules || [])];
+          });
+        }
+      }
     } catch (error: any) {
       console.error('스케줄 추가 실패:', error);
       alert(`스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
@@ -558,7 +588,10 @@ export default function EmployeeSchedulesPage() {
                   <div className="font-medium text-gray-900">{employee.name}</div>
                   <div className="text-sm text-gray-600">{employee.employee_id}</div>
                   <div className="text-xs text-gray-500">
-                    {employee.department?.[0]?.name} • {employee.position?.[0]?.name}
+                    {employee.department?.[0]?.name && employee.position?.[0]?.name ? 
+                      `${employee.department[0].name} • ${employee.position[0].name}` : 
+                      employee.department?.[0]?.name || employee.position?.[0]?.name || ''
+                    }
                   </div>
                 </button>
               ))}
