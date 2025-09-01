@@ -239,7 +239,7 @@ export default function EmployeeSchedulesPage() {
     return 'bg-blue-500';
   };
 
-  // 빠른 스케줄 추가 (모달 없이)
+  // 빠른 스케줄 추가 (모달 없이) - "내 스케줄" 페이지 방식 참고
   const handleQuickAdd = async (date: Date, timeSlot: TimeSlot, employeeId: string) => {
     if (!employeeId) {
       alert('직원을 선택해주세요.');
@@ -271,45 +271,49 @@ export default function EmployeeSchedulesPage() {
         employee_note: '관리자가 추가함'
       };
 
-      const { error } = await supabase
+      console.log('스케줄 추가 시작:', scheduleData);
+
+      // "내 스케줄" 페이지와 동일한 방식으로 upsert 실행
+      const { data, error } = await supabase
         .from('schedules')
         .upsert(scheduleData, {
           onConflict: 'employee_id,schedule_date,scheduled_start'
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
-      // 스케줄 추가 후 즉시 화면 업데이트
-      await fetchSchedules();
-      
+      console.log('스케줄 추가 완료:', data);
+
       // 성공 메시지 표시
       alert('스케줄이 추가되었습니다.');
       
-      // 선택된 직원의 스케줄만 다시 로드
-      if (selectedEmployee) {
-        const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 });
-        const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 1 });
-        
-        const { data: newSchedules, error: scheduleError } = await supabase
-          .from('schedules')
-          .select(`
-            *,
-            employee:employees(
-              name,
-              employee_id
-            )
-          `)
-          .eq('employee_id', selectedEmployee.id)
-          .gte('schedule_date', format(startOfWeekDate, 'yyyy-MM-dd'))
-          .lte('schedule_date', format(endOfWeekDate, 'yyyy-MM-dd'))
-          .order('schedule_date', { ascending: true });
-
-        if (!scheduleError) {
-          setSchedules(prev => {
-            const filtered = prev.filter(s => s.employee_id !== selectedEmployee.id);
-            return [...filtered, ...(newSchedules || [])];
-          });
-        }
+      // 스케줄 데이터 즉시 업데이트
+      await fetchSchedules();
+      
+      // 로컬 상태도 즉시 업데이트
+      if (data && data.length > 0) {
+        setSchedules(prev => {
+          const newSchedule = data[0];
+          const existingIndex = prev.findIndex(s => 
+            s.employee_id === newSchedule.employee_id && 
+            s.schedule_date === newSchedule.schedule_date && 
+            s.scheduled_start === newSchedule.scheduled_start
+          );
+          
+          if (existingIndex >= 0) {
+            // 기존 스케줄 업데이트
+            const updated = [...prev];
+            updated[existingIndex] = newSchedule;
+            return updated;
+          } else {
+            // 새 스케줄 추가
+            return [...prev, newSchedule];
+          }
+        });
       }
     } catch (error: any) {
       console.error('스케줄 추가 실패:', error);
@@ -608,7 +612,10 @@ export default function EmployeeSchedulesPage() {
                     {selectedEmployee.name} ({selectedEmployee.employee_id})
                   </h3>
                   <p className="text-blue-700">
-                    {selectedEmployee.department?.[0]?.name} • {selectedEmployee.position?.[0]?.name}
+                    {selectedEmployee.department?.[0]?.name && selectedEmployee.position?.[0]?.name ? 
+                      `${selectedEmployee.department[0].name} • ${selectedEmployee.position[0].name}` : 
+                      selectedEmployee.department?.[0]?.name || selectedEmployee.position?.[0]?.name || ''
+                    }
                   </p>
                 </div>
 
