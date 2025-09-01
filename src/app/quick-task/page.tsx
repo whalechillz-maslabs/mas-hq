@@ -150,7 +150,7 @@ export default function QuickTaskPage() {
       const { data, error } = await supabase
         .from('employee_tasks')
         .insert({
-          employee_id: currentUser.employee_id,
+          employee_id: currentUser.id,
           operation_type_id: selectedOperationType.id,
           title: taskData.title,
           notes: taskData.notes,
