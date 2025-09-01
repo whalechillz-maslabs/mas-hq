@@ -77,6 +77,7 @@ export default function AttendanceManagementPage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      console.log("출근 데이터 로딩 시작...", { selectedDate });
       
       // 실제 데이터베이스에서 스케줄 데이터 가져오기
       const { data: schedules, error: schedulesError } = await supabase
@@ -94,6 +95,8 @@ export default function AttendanceManagementPage() {
         `)
         .eq("schedule_date", selectedDate);
       
+      console.log("스케줄 데이터 결과:", { schedules, schedulesError });
+      
       if (schedulesError) {
         console.error("스케줄 데이터 로딩 오류:", schedulesError);
         setAttendanceRecords([]);
@@ -101,12 +104,15 @@ export default function AttendanceManagementPage() {
       }
       
       if (!schedules || schedules.length === 0) {
+        console.log("스케줄 데이터 없음");
         setAttendanceRecords([]);
         return;
       }
       
       // 직원 정보 가져오기
       const employeeIds = schedules.map(s => s.employee_id);
+      console.log("직원 ID 목록:", employeeIds);
+      
       const { data: employees, error: employeesError } = await supabase
         .from("employees")
         .select(`
@@ -118,6 +124,8 @@ export default function AttendanceManagementPage() {
         `)
         .in("id", employeeIds);
       
+      console.log("직원 데이터 결과:", { employees, employeesError });
+      
       if (employeesError) {
         console.error("직원 데이터 로딩 오류:", employeesError);
         setAttendanceRecords([]);
@@ -127,6 +135,7 @@ export default function AttendanceManagementPage() {
       // 데이터 변환
       const attendanceRecords: AttendanceRecord[] = schedules.map(schedule => {
         const employee = employees?.find(emp => emp.id === schedule.employee_id);
+        console.log("스케줄 변환:", { schedule, employee });
         return {
           id: schedule.id,
           employee_id: schedule.employee_id,
@@ -150,6 +159,7 @@ export default function AttendanceManagementPage() {
         };
       });
       
+      console.log("최종 출근 기록:", attendanceRecords);
       setAttendanceRecords(attendanceRecords);
     } catch (error) {
       console.error("출근 데이터 로딩 중 오류:", error);
