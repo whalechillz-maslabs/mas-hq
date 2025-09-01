@@ -194,42 +194,72 @@ export interface PerformanceMetric {
 // 인증 관련 헬퍼 함수
 export const auth = {
   /**
-   * 전화번호로 로그인 (간단한 버전)
+   * 전화번호로 로그인 (Supabase 인증 사용)
    */
   async signInWithPhone(phone: string, password: string) {
-    // 전화번호로 직원 정보 조회
-    const { data: employee, error: fetchError } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('phone', phone)
-      .eq('status', 'active')
-      .single();
-
-    if (fetchError || !employee) {
-      throw new Error('전화번호를 찾을 수 없습니다.');
-    }
-
-    // 기본 패스워드: 전화번호 뒷 8자리 (예: 010-6669-9000 -> 66699000)
-    const defaultPassword = phone.replace(/\D/g, '').slice(-8);
-    
-    // 비밀번호 확인 (개발용 - 실제로는 해시 비교)
-    if (password === employee.password_hash || 
-        password === defaultPassword) {
-      // 로그인 성공 - 세션 저장
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('currentEmployee', JSON.stringify(employee));
-        localStorage.setItem('isLoggedIn', 'true');
-      }
-      
-      // 마지막 로그인 시간 업데이트
-      await supabase
+    try {
+      // 전화번호로 직원 정보 조회
+      const { data: employee, error: fetchError } = await supabase
         .from('employees')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', employee.id);
+        .select('*')
+        .eq('phone', phone)
+        .eq('status', 'active')
+        .single();
 
-      return { user: employee, session: { access_token: 'dev-token' } };
-    } else {
-      throw new Error('비밀번호가 올바르지 않습니다.');
+      if (fetchError || !employee) {
+        throw new Error('전화번호를 찾을 수 없습니다.');
+      }
+
+      // 기본 패스워드: 전화번호 뒷 8자리 (예: 010-6669-9000 -> 66699000)
+      const defaultPassword = phone.replace(/\D/g, '').slice(-8);
+      
+      // 비밀번호 확인 (개발용 - 실제로는 해시 비교)
+      if (password === employee.password_hash || 
+          password === defaultPassword) {
+        
+        // Supabase 인증으로 로그인 (이메일을 사용자명으로 사용)
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: employee.email || `${employee.employee_id}@maslabs.kr`,
+          password: password
+        });
+
+        if (authError) {
+          // Supabase 인증 실패 시, 기존 방식으로 fallback
+          console.warn('Supabase 인증 실패, 기존 방식으로 fallback:', authError);
+          
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('currentEmployee', JSON.stringify(employee));
+            localStorage.setItem('isLoggedIn', 'true');
+          }
+          
+          // 마지막 로그인 시간 업데이트
+          await supabase
+            .from('employees')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', employee.id);
+
+          return { user: employee, session: { access_token: 'dev-token' } };
+        }
+
+        // Supabase 인증 성공
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('currentEmployee', JSON.stringify(employee));
+          localStorage.setItem('isLoggedIn', 'true');
+        }
+        
+        // 마지막 로그인 시간 업데이트
+        await supabase
+          .from('employees')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', employee.id);
+
+        return { user: employee, session: authData.session };
+      } else {
+        throw new Error('비밀번호가 올바르지 않습니다.');
+      }
+    } catch (error) {
+      console.error('로그인 오류:', error);
+      throw error;
     }
   },
 
