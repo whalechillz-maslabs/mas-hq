@@ -151,4 +151,60 @@ test.describe('직원별 스케줄 관리 - 개선된 전체보기 UX 테스트'
     // 스케줄이 삭제되었는지 확인
     expect(finalText).not.toContain('1명');
   });
+
+  test('개선된 직원 선택 기능 테스트', async ({ page }) => {
+    // 페이지가 로드될 때까지 대기
+    await page.waitForTimeout(5000);
+    
+    // 빈 시간대 찾기 (예: 19:00)
+    const emptyTimeSlot = page.locator('div').filter({ hasText: '19:00' }).first();
+    await expect(emptyTimeSlot).toBeVisible();
+    
+    // 빈 시간대에 호버하여 추가 버튼 표시
+    await emptyTimeSlot.hover();
+    
+    // 추가 버튼 클릭
+    const addButton = page.locator('button[title="스케줄 추가"]').first();
+    await expect(addButton).toBeVisible();
+    await addButton.click();
+    
+    // 추가 후 대기
+    await page.waitForTimeout(2000);
+    
+    // 추가된 스케줄 정보 확인
+    const scheduleText = await emptyTimeSlot.textContent();
+    console.log('개선된 직원 선택으로 추가 후:', scheduleText);
+    
+    // "Unknown"이 아닌 실제 직원 이름이 표시되어야 함
+    expect(scheduleText).not.toContain('Unknown');
+  });
+
+  test('기존 스케줄 셀에 직원 추가 기능 테스트', async ({ page }) => {
+    // 페이지가 로드될 때까지 대기
+    await page.waitForTimeout(5000);
+    
+    // 이미 사람이 들어있는 셀 찾기 (예: 2명이 근무하는 시간대)
+    const occupiedCell = page.locator('div').filter({ hasText: '2명' }).first();
+    await expect(occupiedCell).toBeVisible();
+    
+    // 기존 스케줄 셀에 호버
+    await occupiedCell.hover();
+    
+    // 직원 추가 버튼이 표시되는지 확인
+    const addEmployeeButton = page.locator('button[title="직원 추가"]').first();
+    await expect(addEmployeeButton).toBeVisible();
+    
+    console.log('기존 스케줄 셀에 직원 추가 버튼이 표시됨');
+    
+    // 직원 추가 버튼 클릭
+    await addEmployeeButton.click();
+    await page.waitForTimeout(2000);
+    
+    // 추가 후 스케줄 정보 확인
+    const afterText = await occupiedCell.textContent();
+    console.log('기존 셀에 직원 추가 후:', afterText);
+    
+    // 직원 수가 증가했는지 확인
+    expect(afterText).toContain('3명');
+  });
 });

@@ -533,6 +533,34 @@ export default function EmployeeSchedulesPage() {
     employee.department?.[0]?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 전체보기에서 새 스케줄 추가 시 직원 선택 함수
+  const handleOverviewAddSchedule = async (date: Date, timeSlot: TimeSlot) => {
+    try {
+      // 사용자에게 직원 선택 옵션 제공
+      const selectedEmployeeName = prompt('추가할 직원의 이름을 입력하세요 (예: 하상희, 허상원, 최형호):');
+      
+      if (!selectedEmployeeName) return;
+      
+      // 입력된 이름으로 직원 찾기
+      const selectedEmployee = employees.find(emp => 
+        emp.name.includes(selectedEmployeeName) || 
+        selectedEmployeeName.includes(emp.name)
+      );
+      
+      if (!selectedEmployee) {
+        alert(`직원 "${selectedEmployeeName}"을 찾을 수 없습니다.`);
+        return;
+      }
+      
+      // 스케줄 추가
+      await handleQuickAdd(date, timeSlot, selectedEmployee.id);
+      
+    } catch (error: any) {
+      console.error('스케줄 추가 실패:', error);
+      alert(`스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -836,9 +864,10 @@ export default function EmployeeSchedulesPage() {
                                     )}
                                   </div>
                                   
-                                  {/* 전체보기에서 개별 직원 삭제 버튼들 */}
+                                  {/* 전체보기에서 개별 직원 삭제 버튼들과 추가 버튼 */}
                                   <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <div className="flex flex-col space-y-1">
+                                      {/* 기존 직원 삭제 버튼들 */}
                                       {daySchedules.map((schedule, index) => (
                                         <button
                                           key={schedule.id}
@@ -853,38 +882,28 @@ export default function EmployeeSchedulesPage() {
                                           <span className="text-xs">{schedule.employee?.name || 'Unknown'}</span>
                                         </button>
                                       ))}
+                                      
+                                      {/* 추가 직원 추가 버튼 */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOverviewAddSchedule(date, timeSlot);
+                                        }}
+                                        className="p-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 flex items-center space-x-1"
+                                        title="직원 추가"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        <span className="text-xs">추가</span>
+                                      </button>
                                     </div>
                                   </div>
                                 </div>
                               )}
                               
-                              {/* 전체보기에서 새 스케줄 추가 버튼 */}
+                              {/* 전체보기에서 새 스케줄 추가 버튼 (빈 시간대용) */}
                               {daySchedules.length === 0 && (
                                 <button
-                                  onClick={() => {
-                                    // 직원 선택 모달 또는 드롭다운 표시
-                                    const employee = employees[0]; // 첫 번째 직원으로 기본 설정
-                                    if (employee) {
-                                      handleQuickAdd(date, timeSlot, employee.id);
-                                    }
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                                  title="스케줄 추가"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </button>
-                              )}
-                              
-                              {/* 전체보기에서 새 스케줄 추가 버튼 */}
-                              {daySchedules.length === 0 && (
-                                <button
-                                  onClick={() => {
-                                    // 직원 선택 모달 또는 드롭다운 표시
-                                    const employee = employees[0]; // 첫 번째 직원으로 기본 설정
-                                    if (employee) {
-                                      handleQuickAdd(date, timeSlot, employee.id);
-                                    }
-                                  }}
+                                  onClick={() => handleOverviewAddSchedule(date, timeSlot)}
                                   className="opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
                                   title="스케줄 추가"
                                 >
