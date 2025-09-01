@@ -31,7 +31,7 @@ interface TimeSlot {
 export default function AddSchedulePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [scheduleDate, setScheduleDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [scheduleDate, setScheduleDate] = useState('2025-09-02'); // 테스트용으로 9월 2일로 설정
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
   const [note, setNote] = useState('');
@@ -87,6 +87,8 @@ export default function AddSchedulePage() {
   };
 
   const fetchExistingSchedules = async () => {
+    console.log('🔍 fetchExistingSchedules 호출됨, scheduleDate:', scheduleDate);
+    
     try {
       const { data, error } = await supabase
         .from('schedules')
@@ -98,8 +100,10 @@ export default function AddSchedulePage() {
         .order('scheduled_start', { ascending: true })
         .order('employee:employees!schedules_employee_id_fkey(name)', { ascending: true });
 
+      console.log('📊 Supabase 쿼리 결과:', { data, error, count: data?.length || 0 });
+
       if (error) {
-        console.error('Error fetching existing schedules:', error);
+        console.error('❌ Error fetching existing schedules:', error);
         setExistingSchedules([]);
       } else {
         // 클라이언트 사이드에서 시간순, 이름순으로 정렬
@@ -113,10 +117,12 @@ export default function AddSchedulePage() {
           const nameB = b.employee?.name || '';
           return nameA.localeCompare(nameB, 'ko');
         });
+        
+        console.log('✅ 정렬된 스케줄:', sortedSchedules);
         setExistingSchedules(sortedSchedules);
       }
     } catch (error) {
-      console.error('Error fetching existing schedules:', error);
+      console.error('❌ Error fetching existing schedules:', error);
       setExistingSchedules([]);
     }
   };
