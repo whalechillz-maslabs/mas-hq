@@ -170,8 +170,8 @@ export default function EmployeeSchedulesPage() {
 
   const fetchSchedules = async () => {
     try {
-      const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 });
-      const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 1 });
+      const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 0 });
       
       let query = supabase
         .from('schedules')
@@ -199,7 +199,7 @@ export default function EmployeeSchedulesPage() {
   };
 
   const getDaysInView = () => {
-    const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 });
     const days = [];
     
     for (let i = 0; i < 7; i++) {
@@ -512,9 +512,17 @@ export default function EmployeeSchedulesPage() {
 
   // 월과 주차를 포함한 주차 표시 형식
   const getWeekDisplay = (date: Date) => {
-    const month = format(date, 'M', { locale: ko });
     const weekNumber = getWeek(date, { locale: ko });
-    return `${month}월 ${weekNumber}주차`;
+    
+    // 해당 주의 시작일(일요일)과 끝일(토요일) 계산
+    const weekStart = startOfWeek(date, { locale: ko });
+    const weekEnd = endOfWeek(date, { locale: ko });
+    
+    // 시작일과 끝일을 MM/DD 형식으로 포맷
+    const startDate = format(weekStart, 'MM/dd', { locale: ko });
+    const endDate = format(weekEnd, 'MM/dd', { locale: ko });
+    
+    return `${startDate} - ${endDate} (${weekNumber}주차)`;
   };
 
   // 스케줄 정보를 직원별로 분리하여 표시하는 함수
