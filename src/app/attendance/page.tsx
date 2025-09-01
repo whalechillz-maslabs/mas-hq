@@ -34,29 +34,41 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   // getCurrentUser 함수 정의
   const getCurrentUser = async () => {
-    if (typeof window !== 'undefined') {
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      const employeeData = localStorage.getItem('currentEmployee');
-      
-      if (isLoggedIn === 'true' && employeeData) {
-        return JSON.parse(employeeData);
+    try {
+      if (typeof window !== 'undefined') {
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        const employeeData = localStorage.getItem('currentEmployee');
+        
+        if (isLoggedIn === 'true' && employeeData) {
+          return JSON.parse(employeeData);
+        }
       }
+      return null;
+    } catch (error) {
+      console.error('사용자 정보 파싱 오류:', error);
+      return null;
     }
-    return null;
   };
 
   // 컴포넌트 마운트 시 즉시 실행
   useEffect(() => {
     console.log('🚀 개인별 출근 관리 페이지 마운트됨');
     
+    let isMounted = true; // 컴포넌트 마운트 상태 추적
+    
     // 즉시 실행되는 함수
     const loadData = async () => {
       try {
+        setError(null); // 에러 상태 초기화
+        
         const user = await getCurrentUser();
         console.log('👤 사용자 정보:', user);
+        
+        if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
         
         if (!user) {
           console.log('❌ 사용자 정보 없음 - 로그인 페이지로 이동');
@@ -78,6 +90,8 @@ export default function AttendancePage() {
           .eq('employee_id', user.id)
           .eq('schedule_date', today);
 
+        if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
+        
         if (todayError) {
           console.error('❌ 오늘 스케줄 조회 오류:', todayError);
           setTodaySchedules([]);
@@ -101,6 +115,8 @@ export default function AttendancePage() {
           .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
           .not('actual_start', 'is', null);
 
+        if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
+        
         if (monthlyError) {
           console.error('❌ 월간 기록 조회 오류:', monthlyError);
           setMonthlyRecords([]);
@@ -110,16 +126,21 @@ export default function AttendancePage() {
           setMonthlyRecords(monthlyData || []);
         }
         
-        console.log('🔄 로딩 상태 해제');
-        setLoading(false);
-        console.log('✅ 모든 데이터 로딩 완료');
+        if (isMounted) {
+          console.log('🔄 로딩 상태 해제');
+          setLoading(false);
+          console.log('✅ 모든 데이터 로딩 완료');
+        }
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ 전체 로딩 과정 실패:', error);
-        setLoading(false);
-        // 에러 발생 시 기본값 설정
-        setTodaySchedules([]);
-        setMonthlyRecords([]);
+        if (isMounted) {
+          setError(error.message || '데이터 로딩 중 오류가 발생했습니다.');
+          setLoading(false);
+          // 에러 발생 시 기본값 설정
+          setTodaySchedules([]);
+          setMonthlyRecords([]);
+        }
       }
     };
     
@@ -127,10 +148,36 @@ export default function AttendancePage() {
     loadData();
 
     // 시간 업데이트
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    const timer = setInterval(() => {
+      if (isMounted) {
+        setCurrentTime(new Date());
+      }
+    }, 1000);
+    
+    return () => {
+      isMounted = false; // 컴포넌트 언마운트 시 플래그 설정
+      clearInterval(timer);
+    };
+  }, [router]);
 
+  // 에러가 발생한 경우 에러 화면 표시
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">오류가 발생했습니다</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+          >
+            페이지 새로고침
+          </button>
+        </div>
+      </div>
+    );
+  }
 
 
   const fetchTodaySchedules = async (user: any) => {
@@ -307,21 +354,38 @@ export default function AttendancePage() {
   };
 
   const getAttendanceStatus = (schedule: AttendanceRecord) => {
-    if (schedule.actual_start && schedule.actual_end) {
-      return { status: 'completed', text: '완료', color: 'text-green-600 bg-green-100' };
-    } else if (schedule.actual_start) {
-      return { status: 'in_progress', text: '근무중', color: 'text-blue-600 bg-blue-100' };
-    } else {
-      return { status: 'pending', text: '대기', color: 'text-gray-600 bg-gray-100' };
+    try {
+      if (schedule.actual_start && schedule.actual_end) {
+        return { status: 'completed', text: '완료', color: 'text-green-600 bg-green-100' };
+      } else if (schedule.actual_start) {
+        return { status: 'in_progress', text: '근무중', color: 'text-blue-600 bg-blue-100' };
+      } else {
+        return { status: 'pending', text: '대기', color: 'text-gray-600 bg-gray-100' };
+      }
+    } catch (error) {
+      console.error('출근 상태 확인 오류:', error);
+      return { status: 'error', text: '오류', color: 'text-red-600 bg-red-100' };
     }
   };
 
   const formatTime = (timeString: string) => {
-    return format(new Date(timeString), 'HH:mm', { locale: ko });
+    try {
+      if (!timeString) return '--:--';
+      return format(new Date(timeString), 'HH:mm', { locale: ko });
+    } catch (error) {
+      console.error('시간 포맷 오류:', error);
+      return '--:--';
+    }
   };
 
   const formatDateTime = (dateTimeString: string) => {
-    return format(new Date(dateTimeString), 'MM/dd HH:mm', { locale: ko });
+    try {
+      if (!dateTimeString) return '--/-- --:--';
+      return format(new Date(dateTimeString), 'MM/dd HH:mm', { locale: ko });
+    } catch (error) {
+      console.error('날짜시간 포맷 오류:', error);
+      return '--/-- --:--';
+    }
   };
 
   return (
