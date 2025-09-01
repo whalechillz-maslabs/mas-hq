@@ -149,7 +149,11 @@ export default function EmployeeSchedulesPage() {
 
         setCurrentUser(user);
         await fetchEmployees();
-        await fetchSchedules();
+        // fetchSchedules는 currentUser가 설정된 후에 호출해야 함
+        // useEffect에서 currentUser 변경을 감지하여 호출하도록 수정
+        
+        // 로딩 상태 해제
+        setLoading(false);
       } catch (error) {
         console.error('Error in fetchUserAndData:', error);
         router.push('/dashboard');
@@ -158,6 +162,17 @@ export default function EmployeeSchedulesPage() {
 
     fetchUserAndData();
   }, []);
+
+  // currentUser가 설정된 후 스케줄 데이터 로딩
+  useEffect(() => {
+    if (currentUser) {
+      console.log('🔄 currentUser 설정됨, 스케줄 데이터 로딩 시작...');
+      fetchSchedules().finally(() => {
+        // 스케줄 로딩 완료 후 로딩 상태 해제
+        setLoading(false);
+      });
+    }
+  }, [currentUser]);
 
   const getCurrentUser = async () => {
     try {
