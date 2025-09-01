@@ -257,7 +257,7 @@ export default function SchedulesPage() {
     const dateStr = format(date, 'yyyy-MM-dd');
     const timeStr = timeSlot.time + ':00'; // HH:MM:SS 형식으로 변경
     const existingSchedules = getSchedulesForDateAndTime(date, timeSlot);
-    const mySchedule = existingSchedules.find(s => s.employee_id === currentUser.id);
+            const mySchedule = existingSchedules.find(s => s.employee_id === currentUser.employee_id);
     
     // 권한 체크
     if (!canModifySchedule(date, timeSlot)) {
@@ -304,7 +304,7 @@ export default function SchedulesPage() {
         const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}:00`;
         
         const scheduleData = {
-          employee_id: currentUser.id,
+          employee_id: currentUser.employee_id,
           schedule_date: dateStr,
           scheduled_start: timeStr, // 예: "11:00:00"
           scheduled_end: endTimeStr, // 예: "12:00:00"
@@ -385,7 +385,7 @@ export default function SchedulesPage() {
             const endTimeStr = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}:00`;
             
             schedulesToAdd.push({
-              employee_id: currentUser.id,
+              employee_id: currentUser.employee_id,
               schedule_date: format(day, 'yyyy-MM-dd'),
               scheduled_start: timeStr,
               scheduled_end: endTimeStr,
@@ -410,7 +410,7 @@ export default function SchedulesPage() {
         supabase
           .from('schedules')
           .delete()
-          .eq('employee_id', currentUser.id)
+          .eq('employee_id', currentUser.employee_id)
           .eq('schedule_date', schedule.schedule_date)
           .eq('scheduled_start', schedule.scheduled_start)
       );
