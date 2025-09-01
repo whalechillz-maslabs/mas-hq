@@ -163,3 +163,28 @@ MASLABS 직원들을 위한 종합 관리 포털 시스템 개발 및 최적화
 ---
 
 *마지막 업데이트: 2025년 9월 1일*
+
+### 9. 하상희 스케줄 문제 해결 ⭐
+- **파일**: `src/app/schedules/add/page.tsx`, `src/app/schedules/page.tsx`, `src/components/ScheduleManagement.tsx`
+- **완료 항목**:
+  - ✅ 스케줄 입력 시 `currentUser.id` (UUID) → `currentUser.employee_id` (직원 코드) 변경
+  - ✅ 스케줄 조회 시 올바른 `employee_id` 사용
+  - ✅ 일괄 스케줄 입력 함수 수정
+  - ✅ ScheduleManagement 컴포넌트 수정
+- **해결된 문제**:
+  - ❌ 하상희 스케줄이 표시되지 않던 문제
+  - ❌ 모든 직원의 스케줄 입력/조회 오류
+  - ❌ 데이터베이스 `employee_id` 컬럼 매핑 오류
+
+### 10. 전체 시스템 406 에러 해결 ⭐
+- **파일**: 여러 페이지 파일들
+- **완료 항목**:
+  - ✅ `schedules` 테이블 쿼리에서 `employee_id` 컬럼 올바른 사용
+  - ✅ 개인별 출근 관리 페이지 클라이언트 측 예외 해결
+  - ✅ 출근 관리 페이지 중복 데이터 제거 로직 추가
+  - ✅ 에러 처리 강화
+- **해결된 문제**:
+  - ❌ 406 (Not Acceptable) 네트워크 에러
+  - ❌ 출근 체크 페이지 "Application error" 문제
+  - ❌ 하상희를 포함한 모든 직원의 중복 출근 기록 표시
+

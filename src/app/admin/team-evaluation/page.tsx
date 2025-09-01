@@ -128,7 +128,7 @@ export default function TeamEvaluationPage() {
       {
         id: '1',
         employee_id: '1',
-        evaluator_id: currentUser?.id || 'admin',
+        evaluator_id: currentUser?.employee_id || 'admin',
         evaluation_date: '2025-08-01',
         period: 'monthly',
         phone_sales_score: 85,

@@ -89,7 +89,7 @@ export default function SchedulesPage() {
 
   // currentUser가 설정된 후 스케줄 로딩
   useEffect(() => {
-    if (currentUser?.id) {
+    if (currentUser?.employee_id) {
       fetchSchedules();
     }
   }, [currentUser]);
@@ -114,7 +114,7 @@ export default function SchedulesPage() {
   };
 
   const fetchSchedules = async () => {
-    if (!currentUser?.id) {
+    if (!currentUser?.employee_id) {
       console.log('사용자 정보가 없어서 스케줄을 가져올 수 없습니다.');
       return;
     }
@@ -241,7 +241,7 @@ export default function SchedulesPage() {
   const canModifySchedule = (date: Date, timeSlot: TimeSlot, targetEmployeeId?: string) => {
     const isPassed = isTimePassed(date, timeSlot);
     const userRole = currentUser?.role?.name;
-    const isOwnSchedule = !targetEmployeeId || targetEmployeeId === currentUser?.id;
+    const isOwnSchedule = !targetEmployeeId || targetEmployeeId === currentUser?.employee_id;
     
     // 미래 시간은 모든 사용자가 본인 스케줄 수정 가능
     if (!isPassed && isOwnSchedule) return true;
@@ -268,7 +268,7 @@ export default function SchedulesPage() {
       return;
     }
 
-    if (!currentUser?.id) {
+    if (!currentUser?.employee_id) {
       alert('로그인이 필요합니다.');
       return;
     }
@@ -359,7 +359,7 @@ export default function SchedulesPage() {
 
   // 일괄 스케줄 추가
   const addBulkSchedules = async () => {
-    if (!currentUser?.id) {
+    if (!currentUser?.employee_id) {
       alert('로그인이 필요합니다.');
       return;
     }

@@ -349,7 +349,7 @@ export default function AttendancePage() {
         {/* 디버깅 정보 */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs">
           <p><strong>디버깅 정보:</strong></p>
-          <p>사용자 ID: {currentUser?.id || '없음'}</p>
+          <p>사용자 ID: {currentUser?.employee_id || '없음'}</p>
           <p>사용자 이름: {currentUser?.name || '없음'}</p>
           <p>오늘 스케줄 수: {todaySchedules.length}개</p>
           <p>월간 기록 수: {monthlyRecords.length}개</p>
