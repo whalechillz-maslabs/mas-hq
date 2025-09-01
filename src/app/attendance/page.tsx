@@ -35,6 +35,19 @@ export default function AttendancePage() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // getCurrentUser 함수 정의
+  const getCurrentUser = async () => {
+    if (typeof window !== 'undefined') {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const employeeData = localStorage.getItem('currentEmployee');
+      
+      if (isLoggedIn === 'true' && employeeData) {
+        return JSON.parse(employeeData);
+      }
+    }
+    return null;
+  };
+
   // 컴포넌트 마운트 시 즉시 실행
   useEffect(() => {
     console.log('🚀 개인별 출근 관리 페이지 마운트됨');
@@ -74,7 +87,7 @@ export default function AttendancePage() {
           setTodaySchedules(todayData || []);
         }
         
-        console.log('📊 월간 기록 조회 시작...');
+        // 월간 기록 조회 시작...
         const startDate = startOfMonth(new Date());
         const endDate = endOfMonth(new Date());
         
@@ -118,24 +131,7 @@ export default function AttendancePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const getCurrentUser = async () => {
-    try {
-      // localStorage 기반 인증 사용
-      if (typeof window !== 'undefined') {
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        const employeeData = localStorage.getItem('currentEmployee');
-        
-        if (isLoggedIn === 'true' && employeeData) {
-          const employee = JSON.parse(employeeData);
-          console.log('🔍 개인별 출근 관리 - 현재 사용자:', employee);
-          return employee;
-        }
-      }
-    } catch (error) {
-      console.error('사용자 인증 오류:', error);
-    }
-    return null;
-  };
+
 
   const fetchTodaySchedules = async (user: any) => {
     if (!user?.id) {
