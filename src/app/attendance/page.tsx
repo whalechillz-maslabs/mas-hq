@@ -35,23 +35,85 @@ export default function AttendancePage() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // 컴포넌트 마운트 시 즉시 실행
   useEffect(() => {
-    const fetchUserAndRecords = async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        router.push('/login');
-        return;
+    console.log('🚀 개인별 출근 관리 페이지 마운트됨');
+    
+    // 즉시 실행되는 함수
+    const loadData = async () => {
+      try {
+        const user = await getCurrentUser();
+        console.log('👤 사용자 정보:', user);
+        
+        if (!user) {
+          console.log('❌ 사용자 정보 없음 - 로그인 페이지로 이동');
+          router.push('/login');
+          return;
+        }
+        
+        console.log('✅ 사용자 정보 설정 완료:', user.id);
+        setCurrentUser(user);
+        
+        // 스케줄 데이터 로딩
+        console.log('📅 오늘 스케줄 조회 시작...');
+        const today = format(new Date(), 'yyyy-MM-dd');
+        console.log('📅 오늘 날짜:', today, '사용자 ID:', user.id);
+        
+        const { data: todayData, error: todayError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('employee_id', user.id)
+          .eq('schedule_date', today);
+
+        if (todayError) {
+          console.error('❌ 오늘 스케줄 조회 오류:', todayError);
+          setTodaySchedules([]);
+        } else {
+          console.log('✅ 오늘 스케줄 조회 성공:', todayData?.length || 0, '개');
+          console.log('📊 스케줄 데이터:', todayData);
+          setTodaySchedules(todayData || []);
+        }
+        
+        console.log('📊 월간 기록 조회 시작...');
+        const startDate = startOfMonth(new Date());
+        const endDate = endOfMonth(new Date());
+        
+        console.log('📅 월간 조회 기간:', format(startDate, 'yyyy-MM-dd'), '~', format(endDate, 'yyyy-MM-dd'));
+        
+        const { data: monthlyData, error: monthlyError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('employee_id', user.id)
+          .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
+          .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
+          .not('actual_start', 'is', null);
+
+        if (monthlyError) {
+          console.error('❌ 월간 기록 조회 오류:', monthlyError);
+          setMonthlyRecords([]);
+        } else {
+          console.log('✅ 월간 기록 조회 성공:', monthlyData?.length || 0, '개');
+          console.log('📊 월간 데이터:', monthlyData);
+          setMonthlyRecords(monthlyData || []);
+        }
+        
+        console.log('🔄 로딩 상태 해제');
+        setLoading(false);
+        console.log('✅ 모든 데이터 로딩 완료');
+        
+      } catch (error) {
+        console.error('❌ 전체 로딩 과정 실패:', error);
+        setLoading(false);
       }
-      setCurrentUser(user);
-      await fetchTodaySchedules();
-      await fetchMonthlyRecords();
     };
-    fetchUserAndRecords();
+    
+    // 즉시 실행
+    loadData();
 
     // 시간 업데이트
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, [router]);
+  }, []);
 
   const getCurrentUser = async () => {
     try {
@@ -72,63 +134,74 @@ export default function AttendancePage() {
     return null;
   };
 
-  const fetchTodaySchedules = async () => {
-    if (!currentUser?.id) return;
+  const fetchTodaySchedules = async (user: any) => {
+    if (!user?.id) {
+      console.log('❌ fetchTodaySchedules: 사용자 ID 없음');
+      setTodaySchedules([]);
+      return;
+    }
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
+      console.log('📅 오늘 날짜:', today, '사용자 ID:', user.id);
+      
+      // 단순한 쿼리로 테스트
       const { data, error } = await supabase
         .from('schedules')
-        .select(`
-          *,
-          employee:employees!schedules_employee_id_fkey(name, employee_id)
-        `)
-        .eq('employee_id', currentUser.id)
-        .eq('schedule_date', today)
-        .order('scheduled_start', { ascending: true });
+        .select('*')
+        .eq('employee_id', user.id)
+        .eq('schedule_date', today);
 
       if (error) {
-        console.error('Error fetching today schedules:', error);
+        console.error('❌ 오늘 스케줄 조회 오류:', error);
         setTodaySchedules([]);
       } else {
+        console.log('✅ 오늘 스케줄 조회 성공:', data?.length || 0, '개');
+        console.log('📊 스케줄 데이터:', data);
         setTodaySchedules(data || []);
       }
     } catch (error) {
-      console.error('Error fetching today schedules:', error);
+      console.error('❌ 오늘 스케줄 조회 예외:', error);
       setTodaySchedules([]);
     }
   };
 
-  const fetchMonthlyRecords = async () => {
-    if (!currentUser?.id) return;
+  const fetchMonthlyRecords = async (user: any) => {
+    if (!user?.id) {
+      console.log('❌ fetchMonthlyRecords: 사용자 ID 없음');
+      setMonthlyRecords([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       const startDate = startOfMonth(new Date());
       const endDate = endOfMonth(new Date());
       
+      console.log('📅 월간 조회 기간:', format(startDate, 'yyyy-MM-dd'), '~', format(endDate, 'yyyy-MM-dd'));
+      
+      // 단순한 쿼리로 테스트
       const { data, error } = await supabase
         .from('schedules')
-        .select(`
-          *,
-          employee:employees!schedules_employee_id_fkey(name, employee_id)
-        `)
-        .eq('employee_id', currentUser.id)
+        .select('*')
+        .eq('employee_id', user.id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
-        .not('actual_start', 'is', null)
-        .order('schedule_date', { ascending: false })
-        .order('scheduled_start', { ascending: true });
+        .not('actual_start', 'is', null);
 
       if (error) {
-        console.error('Error fetching monthly records:', error);
+        console.error('❌ 월간 기록 조회 오류:', error);
         setMonthlyRecords([]);
       } else {
+        console.log('✅ 월간 기록 조회 성공:', data?.length || 0, '개');
+        console.log('📊 월간 데이터:', data);
         setMonthlyRecords(data || []);
       }
     } catch (error) {
-      console.error('Error fetching monthly records:', error);
+      console.error('❌ 월간 기록 조회 예외:', error);
       setMonthlyRecords([]);
     } finally {
+      console.log('🔄 로딩 상태 해제');
       setLoading(false);
     }
   };
@@ -181,8 +254,8 @@ export default function AttendancePage() {
       }
 
       alert('출근 체크가 완료되었습니다!');
-      await fetchTodaySchedules();
-      await fetchMonthlyRecords();
+      await fetchTodaySchedules(currentUser);
+      await fetchMonthlyRecords(currentUser);
     } catch (error: any) {
       console.error('출근 체크 오류:', error);
       alert(`출근 체크에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
@@ -224,8 +297,8 @@ export default function AttendancePage() {
       }
 
       alert('퇴근 체크가 완료되었습니다!');
-      await fetchTodaySchedules();
-      await fetchMonthlyRecords();
+      await fetchTodaySchedules(currentUser);
+      await fetchMonthlyRecords(currentUser);
     } catch (error: any) {
       console.error('퇴근 체크 오류:', error);
       alert(`퇴근 체크에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
@@ -268,6 +341,16 @@ export default function AttendancePage() {
               {format(currentTime, 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
             </p>
           </div>
+        </div>
+
+        {/* 디버깅 정보 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs">
+          <p><strong>디버깅 정보:</strong></p>
+          <p>사용자 ID: {currentUser?.id || '없음'}</p>
+          <p>사용자 이름: {currentUser?.name || '없음'}</p>
+          <p>오늘 스케줄 수: {todaySchedules.length}개</p>
+          <p>월간 기록 수: {monthlyRecords.length}개</p>
+          <p>로딩 상태: {loading ? '로딩 중' : '완료'}</p>
         </div>
 
         {loading ? (

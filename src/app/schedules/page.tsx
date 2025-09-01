@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays, Grid, Settings, Repeat } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { auth, supabase } from '@/lib/supabase';
@@ -83,29 +83,29 @@ export default function SchedulesPage() {
         return;
       }
       setCurrentUser(user);
-      fetchSchedules();
     };
     fetchUserAndSchedules();
-  }, [currentDate, viewMode, router]);
+  }, [router]);
+
+  // currentUser가 설정된 후 스케줄 로딩
+  useEffect(() => {
+    if (currentUser?.id) {
+      fetchSchedules();
+    }
+  }, [currentUser]);
 
   const getCurrentUser = async () => {
     try {
-      // Supabase 인증 사용
-      const user = await auth.getCurrentUser();
-      
-      if (user) {
-        // 사용자 정보 가져오기
-        const { data: employee, error } = await supabase
-          .from('employees')
-          .eq('id', user.id)
-          .single();
+      // localStorage 기반 인증 사용
+      if (typeof window !== 'undefined') {
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        const employeeData = localStorage.getItem('currentEmployee');
         
-        if (error) {
-          console.error('직원 정보 조회 오류:', error);
-          return null;
+        if (isLoggedIn === 'true' && employeeData) {
+          const employee = JSON.parse(employeeData);
+          console.log('✅ getCurrentUser - localStorage에서 사용자 정보 로드됨:', employee.name);
+          return employee;
         }
-        
-        return employee;
       }
     } catch (error) {
       console.error('사용자 인증 오류:', error);
@@ -114,6 +114,11 @@ export default function SchedulesPage() {
   };
 
   const fetchSchedules = async () => {
+    if (!currentUser?.id) {
+      console.log('사용자 정보가 없어서 스케줄을 가져올 수 없습니다.');
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -133,6 +138,7 @@ export default function SchedulesPage() {
           *,
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
+        .eq('employee_id', currentUser.id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .order('schedule_date', { ascending: true })
