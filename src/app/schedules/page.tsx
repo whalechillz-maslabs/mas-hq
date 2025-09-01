@@ -138,7 +138,7 @@ export default function SchedulesPage() {
           *,
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
-        .eq('employee_id', currentUser.id)
+        .eq('employee_id', currentUser.employee_id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .order('schedule_date', { ascending: true })

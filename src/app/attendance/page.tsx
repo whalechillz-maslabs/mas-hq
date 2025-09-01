@@ -83,7 +83,7 @@ export default function AttendancePage() {
         const { data: monthlyData, error: monthlyError } = await supabase
           .from('schedules')
           .select('*')
-          .eq('employee_id', user.id)
+          .eq('employee_id', user.employee_id)
           .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
           .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
           .not('actual_start', 'is', null);
@@ -149,7 +149,7 @@ export default function AttendancePage() {
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', user.employee_id)
         .eq('schedule_date', today);
 
       if (error) {

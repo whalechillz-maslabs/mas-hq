@@ -203,7 +203,7 @@ export default function EmployeeSchedulesPage() {
         .order('scheduled_start', { ascending: true });
 
       if (viewMode === 'individual') {
-        query = query.eq('employee_id', selectedEmployee.id);
+        query = query.eq('employee_id', selectedEmployee.employee_id);
       }
 
       const { data, error } = await query;
@@ -253,7 +253,7 @@ export default function EmployeeSchedulesPage() {
   };
 
   const toggleSchedule = async (date: Date, timeSlot: TimeSlot, employeeId?: string) => {
-    const targetEmployeeId = employeeId || selectedEmployee?.id;
+    const targetEmployeeId = employeeId || selectedEmployee?.employee_id;
     
     if (!targetEmployeeId) {
       alert('직원을 선택해주세요.');
