@@ -54,13 +54,27 @@ export default function AttendancePage() {
   }, [router]);
 
   const getCurrentUser = async () => {
-    if (typeof window !== 'undefined') {
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      const employeeData = localStorage.getItem('currentEmployee');
+    try {
+      // Supabase 인증 사용
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (isLoggedIn === 'true' && employeeData) {
-        return JSON.parse(employeeData);
+      if (user) {
+        // 사용자 정보 가져오기
+        const { data: employee, error } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('직원 정보 조회 오류:', error);
+          return null;
+        }
+        
+        return employee;
       }
+    } catch (error) {
+      console.error('사용자 인증 오류:', error);
     }
     return null;
   };
@@ -76,7 +90,7 @@ export default function AttendancePage() {
           *,
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
-        .eq('employee_id', currentUser.employee_id)
+        .eq('employee_id', currentUser.id)
         .eq('schedule_date', today)
         .order('scheduled_start', { ascending: true });
 
@@ -105,7 +119,7 @@ export default function AttendancePage() {
           *,
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
-        .eq('employee_id', currentUser.employee_id)
+        .eq('employee_id', currentUser.id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .not('actual_start', 'is', null)
