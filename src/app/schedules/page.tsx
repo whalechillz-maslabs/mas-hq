@@ -36,21 +36,33 @@ export default function SchedulesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showBulkInput, setShowBulkInput] = useState(false);
   const [bulkStartTime, setBulkStartTime] = useState('09:00');
-  const [bulkEndTime, setBulkEndTime] = useState('18:00');
+  const [bulkEndTime, setBulkEndTime] = useState('19:00');
   const [bulkDays, setBulkDays] = useState<number[]>([]);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  // 시간대 정의 (간소화)
+  // 시간대 정의 (30분 단위, 18-19시까지 확장)
   const timeSlots: TimeSlot[] = [
-    { time: '09:00', label: '9', isLunch: false },
-    { time: '10:00', label: '10', isLunch: false },
-    { time: '11:00', label: '11', isLunch: false },
-    { time: '12:00', label: '12', isLunch: true },
-    { time: '13:00', label: '13', isLunch: false },
-    { time: '14:00', label: '14', isLunch: false },
-    { time: '15:00', label: '15', isLunch: false },
-    { time: '16:00', label: '16', isLunch: false },
-    { time: '17:00', label: '17', isLunch: false },
+    { time: '09:00', label: '9:00', isLunch: false },
+    { time: '09:30', label: '9:30', isLunch: false },
+    { time: '10:00', label: '10:00', isLunch: false },
+    { time: '10:30', label: '10:30', isLunch: false },
+    { time: '11:00', label: '11:00', isLunch: false },
+    { time: '11:30', label: '11:30', isLunch: false },
+    { time: '12:00', label: '12:00', isLunch: true },
+    { time: '12:30', label: '12:30', isLunch: true },
+    { time: '13:00', label: '13:00', isLunch: false },
+    { time: '13:30', label: '13:30', isLunch: false },
+    { time: '14:00', label: '14:00', isLunch: false },
+    { time: '14:30', label: '14:30', isLunch: false },
+    { time: '15:00', label: '15:00', isLunch: false },
+    { time: '15:30', label: '15:30', isLunch: false },
+    { time: '16:00', label: '16:00', isLunch: false },
+    { time: '16:30', label: '16:30', isLunch: false },
+    { time: '17:00', label: '17:00', isLunch: false },
+    { time: '17:30', label: '17:30', isLunch: false },
+    { time: '18:00', label: '18:00', isLunch: false },
+    { time: '18:30', label: '18:30', isLunch: false },
+    { time: '19:00', label: '19:00', isLunch: false },
   ];
 
   const weekDays = [
@@ -279,10 +291,17 @@ export default function SchedulesPage() {
         }
         console.log('스케줄 삭제 완료:', mySchedule.id);
       } else {
-        // 새 스케줄 추가 - 정확히 해당 시간에 1시간 스케줄 생성
-        const startHour = parseInt(timeSlot.time.split(':')[0]);
-        const endHour = startHour + 1;
-        const endTimeStr = `${endHour.toString().padStart(2, '0')}:00:00`;
+        // 새 스케줄 추가 - 정확히 해당 시간에 30분 스케줄 생성
+        const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
+        let endHour = startHour;
+        let endMinute = startMinute + 30;
+        
+        if (endMinute >= 60) {
+          endHour += 1;
+          endMinute = 0;
+        }
+        
+        const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}:00`;
         
         const scheduleData = {
           employee_id: currentUser.id,
@@ -337,9 +356,9 @@ export default function SchedulesPage() {
       const weekStart = startOfWeek(currentDate, { locale: ko });
       const schedulesToAdd = [];
 
-      // 선택된 시간 범위를 1시간 단위로 분할
-      const startHour = parseInt(bulkStartTime.split(':')[0]);
-      const endHour = parseInt(bulkEndTime.split(':')[0]);
+      // 선택된 시간 범위를 30분 단위로 분할
+      const [startHour, startMinute] = bulkStartTime.split(':').map(Number);
+      const [endHour, endMinute] = bulkEndTime.split(':').map(Number);
       
       // 선택된 요일들에 대해 시간대별로 스케줄 생성
       for (let i = 0; i < 7; i++) {
@@ -347,10 +366,23 @@ export default function SchedulesPage() {
         const dayOfWeek = day.getDay();
         
         if (bulkDays.includes(dayOfWeek)) {
-          // 각 시간대별로 스케줄 생성
-          for (let hour = startHour; hour < endHour; hour++) {
-            const timeStr = `${hour.toString().padStart(2, '0')}:00:00`;
-            const endTimeStr = `${(hour + 1).toString().padStart(2, '0')}:00:00`;
+          // 30분 단위로 스케줄 생성
+          let currentHour = startHour;
+          let currentMinute = startMinute;
+          
+          while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+            const timeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}:00`;
+            
+            // 30분 후 시간 계산
+            let nextHour = currentHour;
+            let nextMinute = currentMinute + 30;
+            
+            if (nextMinute >= 60) {
+              nextHour += 1;
+              nextMinute = 0;
+            }
+            
+            const endTimeStr = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}:00`;
             
             schedulesToAdd.push({
               employee_id: currentUser.id,
@@ -360,6 +392,13 @@ export default function SchedulesPage() {
               status: 'approved',
               employee_note: '일괄 입력'
             });
+            
+            // 다음 30분으로 이동
+            currentMinute += 30;
+            if (currentMinute >= 60) {
+              currentHour += 1;
+              currentMinute = 0;
+            }
           }
         }
       }
@@ -400,7 +439,7 @@ export default function SchedulesPage() {
       await fetchSchedules();
       setShowBulkInput(false);
       setBulkDays([]);
-      alert(`일괄 스케줄이 성공적으로 추가되었습니다. (${schedulesToAdd.length}개 시간대)`);
+      alert(`일괄 스케줄이 성공적으로 추가되었습니다. (${schedulesToAdd.length}개 30분 단위)`);
     } catch (error: any) {
       console.error('일괄 스케줄 추가 오류:', error);
       alert(`일괄 스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
@@ -483,7 +522,7 @@ export default function SchedulesPage() {
           <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
             <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
               <Repeat className="h-4 w-4 mr-1" />
-              일괄 스케줄 입력 (시간대별로 자동 분할)
+              일괄 스케줄 입력 (30분 단위로 자동 분할)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
