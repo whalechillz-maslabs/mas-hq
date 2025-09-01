@@ -138,34 +138,68 @@ export default function AttendanceManagementPage() {
         return;
       }
       
-      // 데이터 변환
-      const attendanceRecords: AttendanceRecord[] = schedules.map(schedule => {
+      // 직원별로 스케줄을 그룹화하여 중복 제거
+      const employeeScheduleMap = new Map();
+      
+      schedules.forEach(schedule => {
         const employee = employees?.find(emp => emp.id === schedule.employee_id);
-        console.log("스케줄 변환:", { schedule, employee });
-        return {
-          id: schedule.id,
-          employee_id: schedule.employee_id,
-          employee_name: employee?.name || "알 수 없음",
-          employee_id_code: employee?.employee_id || "알 수 없음",
-          department: employee?.departments?.name || "미지정",
-          position: employee?.positions?.name || "미지정",
-          schedule_date: schedule.schedule_date,
-          actual_start: schedule.actual_start ? schedule.actual_start : 
-                       schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
-          actual_end: schedule.actual_end ? schedule.actual_end : 
-                     schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
-          total_hours: schedule.actual_start && schedule.actual_end ? 
+        if (!employee) return;
+        
+        const employeeKey = schedule.employee_id;
+        
+        if (!employeeScheduleMap.has(employeeKey)) {
+          // 새로운 직원의 첫 번째 스케줄
+          employeeScheduleMap.set(employeeKey, {
+            id: schedule.id,
+            employee_id: schedule.employee_id,
+            employee_name: employee.name,
+            employee_id_code: employee.employee_id,
+            department: employee.departments?.[0]?.name || "미지정",
+            position: employee.positions?.[0]?.name || "미지정",
+            schedule_date: schedule.schedule_date,
+            actual_start: schedule.actual_start ? schedule.actual_start : 
+                         schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
+            actual_end: schedule.actual_end ? schedule.actual_end : 
+                       schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
+            total_hours: schedule.actual_start && schedule.actual_end ? 
+              calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
+              schedule.scheduled_start && schedule.scheduled_end ?
+              calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0,
+            overtime_hours: 0,
+            status: schedule.status === "checked_out" ? "completed" : 
+                    schedule.status === "checked_in" ? "confirmed" : "pending",
+            employee_note: schedule.employee_note || "",
+            schedule_count: 1 // 스케줄 개수
+          });
+        } else {
+          // 기존 직원의 추가 스케줄 - 시간을 합산하고 상태를 업데이트
+          const existingRecord = employeeScheduleMap.get(employeeKey);
+          const currentHours = schedule.actual_start && schedule.actual_end ? 
             calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
             schedule.scheduled_start && schedule.scheduled_end ?
-            calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0,
-          overtime_hours: 0,
-          status: schedule.status === "checked_out" ? "completed" : 
-                  schedule.status === "checked_in" ? "confirmed" : "pending",
-          employee_note: schedule.employee_note || ""
-        };
+            calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0;
+          
+          existingRecord.total_hours += currentHours;
+          existingRecord.schedule_count += 1;
+          
+          // 상태 우선순위: completed > confirmed > pending
+          if (schedule.status === "checked_out" || existingRecord.status === "completed") {
+            existingRecord.status = "completed";
+          } else if (schedule.status === "checked_in" || existingRecord.status === "confirmed") {
+            existingRecord.status = "confirmed";
+          }
+          
+          // 노트가 있으면 추가
+          if (schedule.employee_note) {
+            existingRecord.employee_note += existingRecord.employee_note ? ` | ${schedule.employee_note}` : schedule.employee_note;
+          }
+        }
       });
       
-      console.log("최종 출근 기록:", attendanceRecords);
+      // Map을 배열로 변환
+      const attendanceRecords: AttendanceRecord[] = Array.from(employeeScheduleMap.values());
+      
+      console.log("중복 제거된 출근 기록:", attendanceRecords);
       setAttendanceRecords(attendanceRecords);
     } catch (error) {
       console.error("출근 데이터 로딩 중 오류:", error);
