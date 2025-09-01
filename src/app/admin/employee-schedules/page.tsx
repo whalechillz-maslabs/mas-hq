@@ -536,24 +536,32 @@ export default function EmployeeSchedulesPage() {
   // 전체보기에서 새 스케줄 추가 시 직원 선택 함수
   const handleOverviewAddSchedule = async (date: Date, timeSlot: TimeSlot) => {
     try {
-      // 사용자에게 직원 선택 옵션 제공
+      // 왼쪽에서 이미 직원이 선택되어 있는지 확인
+      if (selectedEmployee) {
+        // 선택된 직원이 있으면 바로 추가
+        console.log(`선택된 직원 "${selectedEmployee.name}"을 바로 추가합니다.`);
+        await handleQuickAdd(date, timeSlot, selectedEmployee.id);
+        return;
+      }
+      
+      // 선택된 직원이 없을 때만 이름 입력 프롬프트 표시
       const selectedEmployeeName = prompt('추가할 직원의 이름을 입력하세요 (예: 하상희, 허상원, 최형호):');
       
       if (!selectedEmployeeName) return;
       
       // 입력된 이름으로 직원 찾기
-      const selectedEmployee = employees.find(emp => 
+      const selectedEmployeeFromPrompt = employees.find(emp => 
         emp.name.includes(selectedEmployeeName) || 
         selectedEmployeeName.includes(emp.name)
       );
       
-      if (!selectedEmployee) {
+      if (!selectedEmployeeFromPrompt) {
         alert(`직원 "${selectedEmployeeName}"을 찾을 수 없습니다.`);
         return;
       }
       
       // 스케줄 추가
-      await handleQuickAdd(date, timeSlot, selectedEmployee.id);
+      await handleQuickAdd(date, timeSlot, selectedEmployeeFromPrompt.id);
       
     } catch (error: any) {
       console.error('스케줄 추가 실패:', error);
