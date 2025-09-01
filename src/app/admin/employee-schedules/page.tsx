@@ -123,7 +123,9 @@ export default function EmployeeSchedulesPage() {
       try {
         const { data: roleData, error: roleError } = await supabase
           .from('employees')
-          .select('role')
+          .select(`
+            role:roles!employees_role_id_fkey(name)
+          `)
           .eq('id', user.id)
           .single();
 
@@ -133,12 +135,17 @@ export default function EmployeeSchedulesPage() {
           return;
         }
 
-        // 관리자 또는 매니저 권한 확인
-        if (!roleData?.role || (roleData.role !== 'admin' && roleData.role !== 'manager')) {
-          console.log('권한 부족:', roleData?.role);
+        console.log('🔍 권한 확인 - roleData:', roleData);
+
+        // 관리자 또는 매니저 권한 확인 (타입 안전성 확보)
+        const roleName = (roleData?.role as any)?.name;
+        if (!roleName || (roleName !== 'admin' && roleName !== 'manager')) {
+          console.log('❌ 권한 부족:', roleName);
           router.push('/dashboard');
           return;
         }
+
+        console.log('✅ 권한 확인 성공:', roleName);
 
         setCurrentUser(user);
         await fetchEmployees();
