@@ -342,65 +342,54 @@ export const auth = {
    * 현재 사용자 정보 가져오기
    */
   async getCurrentUser() {
-    if (typeof window !== 'undefined') {
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      const employeeData = localStorage.getItem('currentEmployee');
+    try {
+      // Supabase 인증에서 현재 사용자 가져오기
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (isLoggedIn === 'true' && employeeData) {
-        try {
-          const employee = JSON.parse(employeeData);
-          
-          // 데이터베이스에서 최신 정보 가져오기
-          const { data: freshEmployee, error } = await supabase
-            .from('employees')
-            .select(`
-              *,
-              department:departments(name),
-              position:positions(name),
-              role:roles(name)
-            `)
-            .eq('id', employee.id)
-            .single();
-          
-          if (error) {
-            console.error('사용자 정보 조회 오류:', error);
-            // 로컬 스토리지 정보 사용
-            return employee;
-          }
-          
-          if (freshEmployee) {
-            // 최신 정보로 로컬 스토리지 업데이트
-            const updatedEmployee = {
-              ...freshEmployee,
-              department_name: freshEmployee.department?.name,
-              position_name: freshEmployee.position?.name,
-              role_name: freshEmployee.role?.name
-            };
-            
-            localStorage.setItem('currentEmployee', JSON.stringify(updatedEmployee));
-            return updatedEmployee;
-          }
-          
-          return employee;
-        } catch (error) {
-          console.error('사용자 정보 처리 오류:', error);
-          // 로컬 스토리지 정보 사용
-          const employee = JSON.parse(employeeData);
-          
-          // role_id가 없으면 기본값 설정
-          if (!employee.role_id) {
-            if (employee.employee_id === 'MASLABS-001') {
-              employee.role_id = 'admin';
-            } else {
-              employee.role_id = 'employee';
-            }
-          }
-          
-          return employee;
-        }
+      if (userError) {
+        console.error('사용자 인증 오류:', userError);
+        return null;
       }
+      
+      if (!user) {
+        console.log('인증된 사용자가 없습니다.');
+        return null;
+      }
+      
+      // 데이터베이스에서 직원 정보 가져오기
+      const { data: employee, error: employeeError } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          department:departments(name),
+          position:positions(name),
+          role:roles(name)
+        `)
+        .eq('id', user.id)
+        .single();
+      
+      if (employeeError) {
+        console.error('직원 정보 조회 오류:', employeeError);
+        return null;
+      }
+      
+      if (employee) {
+        // 추가 정보 포함하여 반환
+        const enrichedEmployee = {
+          ...employee,
+          department_name: employee.department?.name,
+          position_name: employee.position?.name,
+          role_name: employee.role?.name
+        };
+        
+        return enrichedEmployee;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('getCurrentUser 오류:', error);
+      return null;
     }
-    return null;
   },
 
   /**
