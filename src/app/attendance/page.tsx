@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, MapPin, CheckCircle, XCircle, Calendar, User, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { auth, supabase } from '@/lib/supabase';
 import { format, isToday, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -56,13 +56,12 @@ export default function AttendancePage() {
   const getCurrentUser = async () => {
     try {
       // Supabase 인증 사용
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await auth.getCurrentUser();
       
       if (user) {
         // 사용자 정보 가져오기
         const { data: employee, error } = await supabase
           .from('employees')
-          .select('*')
           .eq('id', user.id)
           .single();
         

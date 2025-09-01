@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays, Grid, Settings, Repeat } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { auth, supabase } from '@/lib/supabase';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, parseISO, addWeeks, subWeeks, addMonths, subMonths, isAfter, isBefore, startOfDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -89,13 +89,26 @@ export default function SchedulesPage() {
   }, [currentDate, viewMode, router]);
 
   const getCurrentUser = async () => {
-    if (typeof window !== 'undefined') {
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      const employeeData = localStorage.getItem('currentEmployee');
+    try {
+      // Supabase 인증 사용
+      const user = await auth.getCurrentUser();
       
-      if (isLoggedIn === 'true' && employeeData) {
-        return JSON.parse(employeeData);
+      if (user) {
+        // 사용자 정보 가져오기
+        const { data: employee, error } = await supabase
+          .from('employees')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('직원 정보 조회 오류:', error);
+          return null;
+        }
+        
+        return employee;
       }
+    } catch (error) {
+      console.error('사용자 인증 오류:', error);
     }
     return null;
   };
