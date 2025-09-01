@@ -177,7 +177,7 @@ export default function EmployeeSchedulesPage() {
         .from('schedules')
         .select(`
           *,
-          employee:employees(
+          employee:employees!schedules_employee_id_fkey(
             name,
             employee_id
           )
