@@ -147,7 +147,22 @@ export default function SchedulesPage() {
         console.error('Error fetching schedules:', error);
         setSchedules([]);
       } else {
-        setSchedules(data || []);
+        // 클라이언트 사이드에서 시간순, 이름순으로 정렬
+        const sortedSchedules = (data || []).sort((a, b) => {
+          // 1순위: 날짜순
+          if (a.schedule_date !== b.schedule_date) {
+            return a.schedule_date.localeCompare(b.schedule_date);
+          }
+          // 2순위: 시작 시간순
+          if (a.scheduled_start !== b.scheduled_start) {
+            return a.scheduled_start.localeCompare(b.scheduled_start);
+          }
+          // 3순위: 이름순 (한글 가나다순)
+          const nameA = a.employee?.name || '';
+          const nameB = b.employee?.name || '';
+          return nameA.localeCompare(nameB, 'ko');
+        });
+        setSchedules(sortedSchedules);
       }
     } catch (error) {
       console.error('Error fetching schedules:', error);

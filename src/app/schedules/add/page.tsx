@@ -95,13 +95,25 @@ export default function AddSchedulePage() {
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
         .eq('schedule_date', scheduleDate)
-        .order('scheduled_start', { ascending: true });
+        .order('scheduled_start', { ascending: true })
+        .order('employee:employees!schedules_employee_id_fkey(name)', { ascending: true });
 
       if (error) {
         console.error('Error fetching existing schedules:', error);
         setExistingSchedules([]);
       } else {
-        setExistingSchedules(data || []);
+        // 클라이언트 사이드에서 시간순, 이름순으로 정렬
+        const sortedSchedules = (data || []).sort((a, b) => {
+          // 1순위: 시작 시간순
+          if (a.scheduled_start !== b.scheduled_start) {
+            return a.scheduled_start.localeCompare(b.scheduled_start);
+          }
+          // 2순위: 이름순 (한글 가나다순)
+          const nameA = a.employee?.name || '';
+          const nameB = b.employee?.name || '';
+          return nameA.localeCompare(nameB, 'ko');
+        });
+        setExistingSchedules(sortedSchedules);
       }
     } catch (error) {
       console.error('Error fetching existing schedules:', error);
