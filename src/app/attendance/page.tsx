@@ -167,6 +167,20 @@ export default function AttendancePage() {
           console.log('✅ 오늘 스케줄 조회 성공:', todayData?.length || 0, '개');
           console.log('📊 스케줄 데이터:', todayData);
           setTodaySchedules(todayData || []);
+          
+          // 일일 출근 상태 분석 및 설정
+          if (todayData && todayData.length > 0) {
+            const analysis = analyzeDailyAttendance(todayData);
+            const hasBreak = todayData.some(s => s.status === 'break');
+            
+            setDailyAttendance({
+              isCheckedIn: analysis.hasCheckedIn,
+              checkInTime: analysis.checkInTime,
+              checkOutTime: analysis.hasCheckedOut ? analysis.checkOutTime : null,
+              totalWorkTime: null,
+              hasBreak: hasBreak
+            });
+          }
         }
         
         // 월간 기록 조회 시작...
@@ -681,13 +695,16 @@ export default function AttendancePage() {
               <div>
                 <span className="font-medium">현재 상태: </span>
                 <span className={`px-2 py-1 rounded-full text-sm ${
-                  dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime 
+                  dailyAttendance.hasBreak 
+                    ? "bg-yellow-100 text-yellow-800"
+                    : dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime 
                     ? "bg-green-100 text-green-800" 
                     : dailyAttendance.checkOutTime 
                     ? "bg-blue-100 text-blue-800"
                     : "bg-gray-100 text-gray-800"
                 }`}>
-                  {dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime ? "근무 중" : 
+                  {dailyAttendance.hasBreak ? "휴식 중" :
+                   dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime ? "근무 중" : 
                    dailyAttendance.checkOutTime ? "근무 완료" : "출근 전"}
                 </span>
               </div>
@@ -699,39 +716,61 @@ export default function AttendancePage() {
               )}
             </div>
             
-            {/* 출근/퇴근 버튼 */}
-            <div className="flex space-x-4 justify-center">
-              {!dailyAttendance.isCheckedIn && (
+            {/* 출근/퇴근/휴식 버튼 */}
+            <div className="flex flex-col space-y-3">
+              {!dailyAttendance.isCheckedIn && !dailyAttendance.hasBreak && (
                 <button
                   onClick={handleSimpleCheckIn}
                   disabled={checkingIn}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50"
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
                 >
                   <CheckCircle className="h-5 w-5 mr-2" />
                   {checkingIn ? "처리중..." : "출근 체크"}
                 </button>
               )}
               
-              {dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime && (
-                <>
+              {dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime && !dailyAttendance.hasBreak && (
+                <div className="space-y-3">
                   <button
-                    onClick={handleBreakReturn}
+                    onClick={handleBreakStart}
                     disabled={checkingIn}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-lg font-medium disabled:opacity-50"
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
                   >
                     <Coffee className="h-5 w-5 mr-2" />
-                    휴식 후 복귀
+                    {checkingIn ? "처리중..." : "휴식 시작"}
                   </button>
                   
                   <button
                     onClick={handleSimpleCheckOut}
                     disabled={checkingIn}
-                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50"
+                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
                   >
                     <XCircle className="h-5 w-5 mr-2" />
                     {checkingIn ? "처리중..." : "퇴근 체크"}
                   </button>
-                </>
+                </div>
+              )}
+
+              {dailyAttendance.hasBreak && (
+                <div className="space-y-3">
+                  <button
+                    onClick={handleBreakReturn}
+                    disabled={checkingIn}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                  >
+                    <Coffee className="h-5 w-5 mr-2" />
+                    {checkingIn ? "처리중..." : "휴식 후 복귀"}
+                  </button>
+                  
+                  <button
+                    onClick={handleSimpleCheckOut}
+                    disabled={checkingIn}
+                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                  >
+                    <XCircle className="h-5 w-5 mr-2" />
+                    {checkingIn ? "처리중..." : "퇴근 체크"}
+                  </button>
+                </div>
               )}
             </div>
             
