@@ -40,7 +40,22 @@
 - **Git 커밋**: 휴식 시작 기능 완성 및 테스트 파일 추가
 - **GitHub 푸시**: 원격 저장소에 최신 코드 반영
 - **Vercel 자동 배포**: GitHub 연동으로 자동 배포 완료
-- **배포 URL**: https://mas-mau1suona-whalechillz-maslabs-projects.vercel.app
+- **배포 URL**: https://mas-jwmhyh5fo-whalechillz-maslabs-projects.vercel.app
+
+### 🔧 김탁수 스케줄 문제 해결
+- **Supabase 쿼리 개선**: schedules와 employees 테이블 조인으로 정확한 데이터 조회
+- **외래 키 명시**: `schedules_employee_id_fkey` 사용으로 관계 명확화
+- **디버깅 정보 추가**: 스케줄 조회 과정 상세 로깅
+- **SQL 스크립트 생성**: 테스트용 스케줄 데이터 추가 스크립트
+- **배포 완료**: 수정된 코드가 Vercel에 성공적으로 배포됨
+
+### 🗓️ 스케줄 추가 페이지 날짜 문제 해결
+- **하드코딩된 날짜 수정**: `'2025-09-02'` → 현재 날짜 자동 설정
+- **동적 날짜 초기화**: 컴포넌트 마운트 시 현재 날짜로 자동 설정
+- **데이터베이스 쿼리 개선**: 더 정확한 스케줄 데이터 조회
+- **Git 커밋 및 푸시**: 수정된 코드를 원격 저장소에 반영
+- **Vercel 자동 배포**: 새로운 배포 URL 생성 완료
+- **새 배포 URL**: https://mas-k4khi7snf-whalechillz-maslabs-projects.vercel.app
 
 ## 🔄 진행 중인 작업
 
