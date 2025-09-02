@@ -144,18 +144,18 @@ export default function AttendancePage() {
           return;
         }
         
-        console.log('✅ 사용자 정보 설정 완료:', user.id);
+        console.log('✅ 사용자 정보 설정 완료:', user.employee_id);
         setCurrentUser(user);
         
         // 스케줄 데이터 로딩
         console.log('📅 오늘 스케줄 조회 시작...');
         const today = format(new Date(), 'yyyy-MM-dd');
-        console.log('📅 오늘 날짜:', today, '사용자 ID:', user.id);
+        console.log('📅 오늘 날짜:', today, '사용자 ID:', user.employee_id);
         
         const { data: todayData, error: todayError } = await supabase
           .from('schedules')
           .select('*')
-          .eq('employee_id', user.id)
+          .eq('employee_id', user.employee_id)
           .eq('schedule_date', today);
 
         if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
@@ -192,7 +192,7 @@ export default function AttendancePage() {
         const { data: monthlyData, error: monthlyError } = await supabase
           .from('schedules')
           .select('*')
-          .eq('employee_id', user.id)
+          .eq('employee_id', user.employee_id)
           .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
           .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
           .not('actual_start', 'is', null);
@@ -263,7 +263,7 @@ export default function AttendancePage() {
 
 
   const fetchTodaySchedules = async (user: any) => {
-    if (!user?.id) {
+    if (!user?.employee_id) {
       console.log('❌ fetchTodaySchedules: 사용자 ID 없음');
       setTodaySchedules([]);
       return;
@@ -271,13 +271,13 @@ export default function AttendancePage() {
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      console.log('📅 오늘 날짜:', today, '사용자 ID:', user.id);
+      console.log('📅 오늘 날짜:', today, '사용자 ID:', user.employee_id);
       
       // 단순한 쿼리로 테스트
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', user.employee_id)
         .eq('schedule_date', today);
 
       if (error) {
@@ -295,7 +295,7 @@ export default function AttendancePage() {
   };
 
   const fetchMonthlyRecords = async (user: any) => {
-    if (!user?.id) {
+    if (!user?.employee_id) {
       console.log('❌ fetchMonthlyRecords: 사용자 ID 없음');
       setMonthlyRecords([]);
       setLoading(false);
@@ -312,7 +312,7 @@ export default function AttendancePage() {
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', user.employee_id)
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .not('actual_start', 'is', null);
@@ -527,10 +527,10 @@ export default function AttendancePage() {
       
       setDailyAttendance(prev => ({
         ...prev,
-        hasBreak: true
+        hasBreak: false,
+        isCheckedIn: true
       }));
       
-      alert("휴식 후 복귀가 기록되었습니다!");
       await fetchTodaySchedules(currentUser);
       
     } catch (error: any) {
@@ -540,6 +540,47 @@ export default function AttendancePage() {
       setCheckingIn(false);
     }
   };
+
+  // 휴식 시작 함수 추가
+  const handleBreakStart = async () => {
+    try {
+      setCheckingIn(true);
+      const now = new Date().toISOString();
+      
+      // 현재 진행 중인 스케줄들을 휴식 상태로 변경
+      const inProgressSchedules = todaySchedules.filter(s => 
+        s.actual_start && !s.actual_end
+      );
+      
+      for (const schedule of inProgressSchedules) {
+        const { error } = await supabase
+          .from('schedules')
+          .update({
+            actual_end: now,
+            status: 'break',
+            employee_note: '휴식 시작'
+          })
+          .eq('id', schedule.id);
+        
+        if (error) throw error;
+      }
+      
+      setDailyAttendance(prev => ({
+        ...prev,
+        isCheckedIn: false,
+        hasBreak: true
+      }));
+      
+      await fetchTodaySchedules(currentUser);
+      
+    } catch (error: any) {
+      console.error('휴식 시작 오류:', error);
+      alert(`휴식 시작에 실패했습니다: ${error.message}`);
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   const handleCheckOut = async (scheduleId: string) => {
     setCheckingIn(true);
 
