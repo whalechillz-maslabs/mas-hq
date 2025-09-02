@@ -154,7 +154,14 @@ export default function AttendancePage() {
         
         const { data: todayData, error: todayError } = await supabase
           .from('schedules')
-          .select('*')
+          .select(`
+            *,
+            employee:employees!schedules_employee_id_fkey (
+              id,
+              employee_id,
+              name
+            )
+          `)
           .eq('employee_id', user.employee_id)
           .eq('schedule_date', today);
 
@@ -191,7 +198,14 @@ export default function AttendancePage() {
         
         const { data: monthlyData, error: monthlyError } = await supabase
           .from('schedules')
-          .select('*')
+          .select(`
+            *,
+            employee:employees!schedules_employee_id_fkey (
+              id,
+              employee_id,
+              name
+            )
+          `)
           .eq('employee_id', user.employee_id)
           .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
           .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
@@ -693,6 +707,10 @@ export default function AttendancePage() {
             employee_id: currentUser.employee_id, 
             name: currentUser.name 
           } : null)}</p>
+          <p><strong>🔍 추가 디버깅:</strong></p>
+          <p>Supabase 쿼리: schedules 테이블 + employee 관계 조인</p>
+          <p>조회 조건: employee_id = {currentUser?.employee_id || 'N/A'}, date = {format(new Date(), 'yyyy-MM-dd')}</p>
+          <p>관계 설정: schedules.employee_id → employees.employee_id</p>
         </div>
 
         {/* 일일 근무 요약 */}
