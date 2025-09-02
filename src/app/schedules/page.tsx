@@ -209,10 +209,49 @@ export default function SchedulesPage() {
     const dateStr = format(date, 'yyyy-MM-dd');
     const timeStr = timeSlot.time + ':00';
     
+    console.log('🔍 getSchedulesForDateAndTimeMonthly 호출:', { dateStr, timeStr });
+    
     return schedules.filter(schedule => {
       const scheduleDate = schedule.schedule_date;
       const startTime = schedule.scheduled_start;
-      return scheduleDate === dateStr && startTime === timeStr;
+      const endTime = schedule.scheduled_end;
+      
+      // 날짜가 일치하는지 확인
+      if (scheduleDate !== dateStr) return false;
+      
+      // 시간 형식 정규화 (HH:MM 형식으로 변환)
+      const normalizeTime = (timeStr: string) => {
+        if (!timeStr) return null;
+        
+        // "09:00:00" -> "09:00", "09:00" -> "09:00"
+        const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+        if (match) {
+          const hours = match[1].padStart(2, '0');
+          const minutes = match[2];
+          return `${hours}:${minutes}`;
+        }
+        return null;
+      };
+      
+      const normalizedStart = normalizeTime(startTime);
+      const normalizedEnd = normalizeTime(endTime);
+      const normalizedSlot = normalizeTime(timeStr);
+      
+      if (!normalizedStart || !normalizedEnd || !normalizedSlot) {
+        console.log('⚠️ 시간 형식 변환 실패:', { startTime, endTime, timeStr });
+        return false;
+      }
+      
+      // 해당 시간대에 근무 중인지 확인 (시간 범위 기반)
+      const isInTimeSlot = normalizedStart <= normalizedSlot && normalizedEnd > normalizedSlot;
+      
+      console.log('⏰ 월간 뷰 시간 비교:', { 
+        schedule: `${schedule.employee?.name} (${normalizedStart}-${normalizedEnd})`, 
+        slotTime: normalizedSlot, 
+        isInTimeSlot 
+      });
+      
+      return isInTimeSlot;
     });
   };
 
@@ -220,12 +259,49 @@ export default function SchedulesPage() {
     const dateStr = format(date, 'yyyy-MM-dd');
     const timeStr = timeSlot.time + ':00'; // HH:MM:SS 형식으로 맞춤
     
+    console.log('🔍 getSchedulesForDateAndTime 호출:', { dateStr, timeStr });
+    
     return schedules.filter(schedule => {
       const scheduleDate = schedule.schedule_date;
       const startTime = schedule.scheduled_start;
+      const endTime = schedule.scheduled_end;
       
-      // 정확히 해당 시간에 시작하는 스케줄만 찾기
-      return scheduleDate === dateStr && startTime === timeStr;
+      // 날짜가 일치하는지 확인
+      if (scheduleDate !== dateStr) return false;
+      
+      // 시간 형식 정규화 (HH:MM 형식으로 변환)
+      const normalizeTime = (timeStr: string) => {
+        if (!timeStr) return null;
+        
+        // "09:00:00" -> "09:00", "09:00" -> "09:00"
+        const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+        if (match) {
+          const hours = match[1].padStart(2, '0');
+          const minutes = match[2];
+          return `${hours}:${minutes}`;
+        }
+        return null;
+      };
+      
+      const normalizedStart = normalizeTime(startTime);
+      const normalizedEnd = normalizeTime(endTime);
+      const normalizedSlot = normalizeTime(timeStr);
+      
+      if (!normalizedStart || !normalizedEnd || !normalizedSlot) {
+        console.log('⚠️ 시간 형식 변환 실패:', { startTime, endTime, timeStr });
+        return false;
+      }
+      
+      // 해당 시간대에 근무 중인지 확인 (시간 범위 기반)
+      const isInTimeSlot = normalizedStart <= normalizedSlot && normalizedEnd > normalizedSlot;
+      
+      console.log('⏰ 시간 비교:', { 
+        schedule: `${schedule.employee?.name} (${normalizedStart}-${normalizedEnd})`, 
+        slotTime: normalizedSlot, 
+        isInTimeSlot 
+      });
+      
+      return isInTimeSlot;
     });
   };
 
