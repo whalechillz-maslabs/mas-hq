@@ -5,7 +5,7 @@
       "maxDuration": 30
     }
   },
-  "routes": [
+  "rewrites": [
     {
       "source": "/rd/(.*)",
       "destination": "/rd/$1"
