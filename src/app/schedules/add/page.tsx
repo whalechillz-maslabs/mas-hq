@@ -32,8 +32,12 @@ export default function AddSchedulePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [scheduleDate, setScheduleDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    // 초기 상태에서도 한국 시간 기준으로 설정
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+    const todayStr = koreaTime.toISOString().split('T')[0];
+    console.log('🕐 초기 상태 한국 시간 기준 날짜 설정:', todayStr);
+    return todayStr; // YYYY-MM-DD 형식
   });
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
@@ -70,11 +74,41 @@ export default function AddSchedulePage() {
     };
     fetchUser();
     
-    // 현재 날짜로 초기화
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    // 현재 날짜로 초기화 (한국 시간 기준)
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+    const todayStr = koreaTime.toISOString().split('T')[0];
+    console.log('🕐 현재 한국 시간 기준 날짜 설정:', todayStr);
     setScheduleDate(todayStr);
   }, [router]);
+
+  // 추가: 컴포넌트 마운트 후 날짜 강제 업데이트
+  useEffect(() => {
+    // 컴포넌트가 마운트된 후 현재 날짜로 강제 설정
+    const updateDate = () => {
+      const now = new Date();
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+      const todayStr = koreaTime.toISOString().split('T')[0];
+      console.log('🔄 컴포넌트 마운트 후 날짜 강제 업데이트:', todayStr);
+      setScheduleDate(todayStr);
+    };
+    
+    // 즉시 실행
+    updateDate();
+    
+    // 여러 번 실행하여 SSR/SSG 문제 해결
+    const timer1 = setTimeout(updateDate, 100);
+    const timer2 = setTimeout(updateDate, 500);
+    const timer3 = setTimeout(updateDate, 1000);
+    const timer4 = setTimeout(updateDate, 2000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+    };
+  }, []);
 
   useEffect(() => {
     if (scheduleDate) {
@@ -338,6 +372,7 @@ export default function AddSchedulePage() {
                   onChange={(e) => setScheduleDate(e.target.value)}
                   required
                   className="mt-1 block w-full p-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg"
+                  key={scheduleDate} // 강제 리렌더링을 위한 key 추가
                 />
               </div>
 

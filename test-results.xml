@@ -1,0 +1,37 @@
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="4.605485000000001">
+<testsuite name="schedules-date-fix-test.spec.ts" timestamp="2025-09-02T23:01:21.282Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="3.108" errors="0">
+<testcase name="스케줄 추가 페이지에서 날짜 고정 문제 확인 및 수정 테스트" classname="schedules-date-fix-test.spec.ts" time="3.108">
+<system-out>
+<![CDATA[=== 날짜 고정 문제 확인 테스트 시작 ===
+=== 1. 현재 날짜 확인 ===
+현재 날짜 (YYYY-MM-DD): 2025-09-02
+현재 날짜 (한국 시간): 2025. 9. 3.
+=== 2. 날짜 입력 필드 확인 ===
+날짜 입력 필드 수: [33m1[39m
+현재 설정된 날짜 값: 2025-09-02
+날짜 입력 필드 placeholder: [1mnull[22m
+=== 3. 날짜 고정 여부 확인 ===
+❌ 문제 발견: 날짜가 2025-09-02로 고정되어 있습니다!
+현재 날짜로 수정이 필요한 상황입니다.
+=== 4. 날짜 수정 시도 ===
+✅ 날짜를 현재 날짜로 변경했습니다: 2025-09-02
+변경된 날짜 값: 2025-09-02
+✅ 날짜 수정이 성공했습니다!
+=== 5. 다른 날짜 변경 테스트 ===
+✅ 내일 날짜로 변경 시도: 2025-09-03
+내일 날짜 설정 결과: 2025-09-03
+✅ 다른 날짜로도 변경이 가능합니다!
+✅ 현재 날짜로 복원 완료
+=== 6. 페이지 소스에서 하드코딩된 날짜 검색 ===
+❌ 하드코딩된 날짜를 발견했습니다: [ [32m'2025-09-02'[39m ]
+이 날짜들이 코드에 고정되어 있을 수 있습니다.
+=== 7. 콘솔 로그 확인 ===
+콘솔 로그가 없습니다.
+=== 8. 스크린샷 저장 ===
+✅ 스크린샷이 저장되었습니다: playwright-report/schedules-date-fix-test.png
+=== 날짜 고정 문제 확인 테스트 완료 ===
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

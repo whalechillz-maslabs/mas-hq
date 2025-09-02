@@ -1,0 +1,253 @@
+{
+  "config": {
+    "configFile": "/Users/m2/MASLABS/www.maslabs.kr/playwright.config.ts",
+    "rootDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-nightly",
+        "name": "chromium-nightly",
+        "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-stable",
+        "name": "chromium-stable",
+        "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.0",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "schedules-date-fix-test.spec.ts",
+      "file": "schedules-date-fix-test.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "스케줄 추가 페이지에서 날짜 고정 문제 확인 및 수정 테스트",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-stable",
+              "projectName": "chromium-stable",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3108,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "=== 날짜 고정 문제 확인 테스트 시작 ===\n"
+                    },
+                    {
+                      "text": "=== 1. 현재 날짜 확인 ===\n"
+                    },
+                    {
+                      "text": "현재 날짜 (YYYY-MM-DD): 2025-09-02\n"
+                    },
+                    {
+                      "text": "현재 날짜 (한국 시간): 2025. 9. 3.\n"
+                    },
+                    {
+                      "text": "=== 2. 날짜 입력 필드 확인 ===\n"
+                    },
+                    {
+                      "text": "날짜 입력 필드 수: \u001b[33m1\u001b[39m\n"
+                    },
+                    {
+                      "text": "현재 설정된 날짜 값: 2025-09-02\n"
+                    },
+                    {
+                      "text": "날짜 입력 필드 placeholder: \u001b[1mnull\u001b[22m\n"
+                    },
+                    {
+                      "text": "=== 3. 날짜 고정 여부 확인 ===\n"
+                    },
+                    {
+                      "text": "❌ 문제 발견: 날짜가 2025-09-02로 고정되어 있습니다!\n"
+                    },
+                    {
+                      "text": "현재 날짜로 수정이 필요한 상황입니다.\n"
+                    },
+                    {
+                      "text": "=== 4. 날짜 수정 시도 ===\n"
+                    },
+                    {
+                      "text": "✅ 날짜를 현재 날짜로 변경했습니다: 2025-09-02\n"
+                    },
+                    {
+                      "text": "변경된 날짜 값: 2025-09-02\n"
+                    },
+                    {
+                      "text": "✅ 날짜 수정이 성공했습니다!\n"
+                    },
+                    {
+                      "text": "=== 5. 다른 날짜 변경 테스트 ===\n"
+                    },
+                    {
+                      "text": "✅ 내일 날짜로 변경 시도: 2025-09-03\n"
+                    },
+                    {
+                      "text": "내일 날짜 설정 결과: 2025-09-03\n"
+                    },
+                    {
+                      "text": "✅ 다른 날짜로도 변경이 가능합니다!\n"
+                    },
+                    {
+                      "text": "✅ 현재 날짜로 복원 완료\n"
+                    },
+                    {
+                      "text": "=== 6. 페이지 소스에서 하드코딩된 날짜 검색 ===\n"
+                    },
+                    {
+                      "text": "❌ 하드코딩된 날짜를 발견했습니다: [ \u001b[32m'2025-09-02'\u001b[39m ]\n"
+                    },
+                    {
+                      "text": "이 날짜들이 코드에 고정되어 있을 수 있습니다.\n"
+                    },
+                    {
+                      "text": "=== 7. 콘솔 로그 확인 ===\n"
+                    },
+                    {
+                      "text": "콘솔 로그가 없습니다.\n"
+                    },
+                    {
+                      "text": "=== 8. 스크린샷 저장 ===\n"
+                    },
+                    {
+                      "text": "✅ 스크린샷이 저장되었습니다: playwright-report/schedules-date-fix-test.png\n"
+                    },
+                    {
+                      "text": "=== 날짜 고정 문제 확인 테스트 완료 ===\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-09-02T23:01:21.571Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc4edcbd780136984d3c-41c41297753f632580e5",
+          "file": "schedules-date-fix-test.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-09-02T23:01:21.265Z",
+    "duration": 4605.485000000001,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
