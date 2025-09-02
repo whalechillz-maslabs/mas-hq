@@ -31,6 +31,8 @@ export default function AttendancePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [todaySchedules, setTodaySchedules] = useState<AttendanceRecord[]>([]);
   const [monthlyRecords, setMonthlyRecords] = useState<AttendanceRecord[]>([]);
+  const [simpleData, setSimpleData] = useState<any[]>([]);
+  const [simpleError, setSimpleError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -152,6 +154,23 @@ export default function AttendancePage() {
         const today = format(new Date(), 'yyyy-MM-dd');
         console.log('📅 오늘 날짜:', today, '사용자 ID:', user.employee_id);
         
+        console.log('🔍 Supabase 쿼리 시작...');
+        console.log('📅 조회 조건:', { employee_id: user.employee_id, date: today });
+        
+        // 먼저 간단한 쿼리로 테스트
+        console.log('🔍 1단계: 간단한 쿼리 테스트...');
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('employee_id', user.employee_id)
+          .eq('schedule_date', today);
+        
+        console.log('🔍 간단한 쿼리 결과:', { data: simpleData, error: simpleError });
+        setSimpleData(simpleData || []);
+        setSimpleError(simpleError ? simpleError.message : null);
+        
+        // 그 다음 관계 조인 쿼리
+        console.log('🔍 2단계: 관계 조인 쿼리...');
         const { data: todayData, error: todayError } = await supabase
           .from('schedules')
           .select(`
@@ -164,6 +183,12 @@ export default function AttendancePage() {
           `)
           .eq('employee_id', user.employee_id)
           .eq('schedule_date', today);
+        
+        console.log('🔍 Supabase 쿼리 결과:', { data: todayData, error: todayError });
+        console.log('🔍 데이터 타입:', typeof todayData, '배열 여부:', Array.isArray(todayData));
+        if (todayData) {
+          console.log('🔍 첫 번째 스케줄:', todayData[0]);
+        }
 
         if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
         
@@ -711,6 +736,9 @@ export default function AttendancePage() {
           <p>Supabase 쿼리: schedules 테이블 + employee 관계 조인</p>
           <p>조회 조건: employee_id = {currentUser?.employee_id || 'N/A'}, date = {format(new Date(), 'yyyy-MM-dd')}</p>
           <p>관계 설정: schedules.employee_id → employees.employee_id</p>
+          <p><strong>🔍 간단한 쿼리 테스트:</strong></p>
+          <p>간단한 쿼리 결과: {JSON.stringify(simpleData || [])}</p>
+          <p>간단한 쿼리 에러: {simpleError || '없음'}</p>
         </div>
 
         {/* 일일 근무 요약 */}
