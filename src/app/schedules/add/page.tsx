@@ -667,19 +667,45 @@ export default function AddSchedulePage() {
                   return (
                     <div 
                       key={timeSlot.time}
-                      className={`p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer ${colorClass}`}
+                      className={`p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer ${
+                        schedulesInSlot.length === 0 
+                          ? 'bg-gray-50 border-gray-200 hover:bg-gray-100' 
+                          : colorClass
+                      }`}
                       onClick={() => {
                         // 시간대별 상세 보기 (향후 구현)
                         console.log(`${timeSlot.label} 시간대 상세:`, schedulesInSlot);
                       }}
                     >
                       <div className="text-center">
-                        <div className="font-bold text-lg mb-1">{timeSlot.label}</div>
-                        <div className="text-2xl font-bold mb-1">
+                        <div className={`font-bold text-lg mb-1 ${
+                          timeSlot.label === '9-10' 
+                            ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-lg' 
+                            : ''
+                        }`}>
+                          {timeSlot.label}
+                          {timeSlot.label === '9-10' && (
+                            <span className="ml-1 text-xs bg-blue-200 text-blue-800 px-1 py-0.5 rounded">
+                              시작
+                            </span>
+                          )}
+                        </div>
+                        <div className={`text-2xl font-bold mb-1 ${
+                          schedulesInSlot.length === 0 
+                            ? 'text-gray-400' 
+                            : 'text-gray-800'
+                        }`}>
                           {schedulesInSlot.length}명
                         </div>
-                        <div className="text-xs opacity-75">
-                          {timeSlot.description}
+                        <div className={`text-xs ${
+                          schedulesInSlot.length === 0 
+                            ? 'text-gray-400' 
+                            : 'opacity-75'
+                        }`}>
+                          {schedulesInSlot.length === 0 
+                            ? '스케줄 없음' 
+                            : timeSlot.description
+                          }
                         </div>
                       </div>
                       
