@@ -176,6 +176,86 @@ export default function AddSchedulePage() {
     }
   };
 
+  // 스케줄을 통합하여 표시하는 함수
+  const getConsolidatedSchedules = () => {
+    if (!existingSchedules.length) return [];
+    
+    const employeeSchedules = new Map();
+    
+    // 직원별로 스케줄 그룹화
+    existingSchedules.forEach(schedule => {
+      const employeeId = schedule.employee_id;
+      if (!employeeSchedules.has(employeeId)) {
+        employeeSchedules.set(employeeId, {
+          employee: schedule.employee,
+          employee_id: employeeId,
+          schedules: [],
+          totalHours: 0,
+          status: schedule.status,
+          employee_note: schedule.employee_note
+        });
+      }
+      
+      const employeeData = employeeSchedules.get(employeeId);
+      employeeData.schedules.push(schedule);
+      
+      // 총 근무 시간 계산
+      const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+      const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      employeeData.totalHours += hours;
+    });
+    
+    // 각 직원의 연속 스케줄을 통합
+    const consolidated: any[] = [];
+    
+    employeeSchedules.forEach((employeeData) => {
+      const sortedSchedules = employeeData.schedules.sort((a: Schedule, b: Schedule) => 
+        a.scheduled_start.localeCompare(b.scheduled_start)
+      );
+      
+      if (sortedSchedules.length > 0) {
+        const firstSchedule = sortedSchedules[0];
+        const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+        
+        consolidated.push({
+          id: `${employeeData.employee_id}-consolidated`,
+          employee: employeeData.employee,
+          employee_id: employeeData.employee_id,
+          start_time: firstSchedule.scheduled_start.substring(0, 5),
+          end_time: lastSchedule.scheduled_end.substring(0, 5),
+          total_hours: employeeData.totalHours,
+          schedule_count: sortedSchedules.length,
+          status: employeeData.status,
+          employee_note: employeeData.employee_note,
+          is_continuous: isContinuousSchedule(sortedSchedules)
+        });
+      }
+    });
+    
+    return consolidated.sort((a: any, b: any) => a.start_time.localeCompare(b.start_time));
+  };
+  
+  // 연속 스케줄인지 확인하는 함수
+  const isContinuousSchedule = (schedules: Schedule[]) => {
+    if (schedules.length <= 1) return true;
+    
+    const sorted = schedules.sort((a, b) => 
+      a.scheduled_start.localeCompare(b.scheduled_start)
+    );
+    
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const currentEnd = sorted[i].scheduled_end;
+      const nextStart = sorted[i + 1].scheduled_start;
+      
+      if (currentEnd !== nextStart) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const getSchedulesForTimeSlot = (timeSlot: TimeSlot) => {
     return existingSchedules.filter(schedule => {
       const startTime = schedule.scheduled_start;
@@ -355,10 +435,10 @@ export default function AddSchedulePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
           {/* 스케줄 입력 폼 */}
-          <div>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="order-2 xl:order-1">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               {/* 날짜 선택 */}
               <div>
                 <label htmlFor="scheduleDate" className="block text-lg font-medium text-gray-700 mb-2">
@@ -471,67 +551,115 @@ export default function AddSchedulePage() {
           </div>
 
           {/* 기존 스케줄 표시 */}
-          <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-blue-600" />
-              {format(parseISO(scheduleDate), 'yyyy년 MM월 dd일 (EEE)', { locale: ko })} 기존 스케줄
+          <div className="order-1 xl:order-2">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
+              <span className="text-sm sm:text-base">
+                {format(parseISO(scheduleDate), 'yyyy년 MM월 dd일 (EEE)', { locale: ko })} 기존 스케줄
+              </span>
             </h3>
             
             <div className="bg-gray-50 rounded-xl p-4">
-              {existingSchedules.length > 0 ? (
-                <div className="space-y-3">
-                  {existingSchedules.map(schedule => (
-                    <div 
-                      key={schedule.id} 
-                      className={`p-3 rounded-lg border ${
-                        schedule.employee_id === currentUser?.employee_id 
-                          ? 'bg-blue-100 border-blue-300' 
-                          : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className={`font-semibold ${
-                            schedule.employee_id === currentUser?.employee_id 
-                              ? 'text-blue-800' 
-                              : 'text-gray-900'
-                          }`}>
-                            {schedule.employee?.name}
-                            {schedule.employee_id === currentUser?.employee_id && (
-                              <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                                나
-                              </span>
+              {(() => {
+                const consolidatedSchedules = getConsolidatedSchedules();
+                return consolidatedSchedules.length > 0 ? (
+                  <div className="space-y-3">
+                    {consolidatedSchedules.map(schedule => (
+                      <div 
+                        key={schedule.id} 
+                        className={`p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
+                          schedule.employee_id === currentUser?.employee_id 
+                            ? 'bg-blue-100 border-blue-300' 
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <p className={`font-semibold text-lg ${
+                                schedule.employee_id === currentUser?.employee_id 
+                                  ? 'text-blue-800' 
+                                  : 'text-gray-900'
+                              }`}>
+                                {schedule.employee?.name}
+                              </p>
+                              {schedule.employee_id === currentUser?.employee_id && (
+                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                                  나
+                                </span>
+                              )}
+                              {schedule.is_continuous && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                  연속
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                              <div className="bg-gray-100 rounded-lg p-2 sm:p-3">
+                                <p className="text-xs text-gray-600 mb-1">근무 시간</p>
+                                <p className="font-mono text-xs sm:text-sm font-semibold text-gray-800">
+                                  {schedule.start_time} - {schedule.end_time}
+                                </p>
+                              </div>
+                              <div className="bg-gray-100 rounded-lg p-2 sm:p-3">
+                                <p className="text-xs text-gray-600 mb-1">총 근무</p>
+                                <p className="font-mono text-xs sm:text-sm font-semibold text-gray-800">
+                                  {schedule.total_hours.toFixed(1)}시간
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {schedule.employee_note && (
+                              <p className="text-xs text-gray-500 bg-white rounded px-2 py-1 border">
+                                📝 {schedule.employee_note}
+                              </p>
                             )}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {schedule.scheduled_start?.substring(0, 5)} - {schedule.scheduled_end?.substring(0, 5)}
-                          </p>
-                          {schedule.employee_note && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {schedule.employee_note}
-                            </p>
-                          )}
+                            
+                            {schedule.schedule_count > 1 && (
+                              <p className="text-xs text-gray-500 mt-2">
+                                📅 {schedule.schedule_count}개 시간대 통합
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                              schedule.status === 'approved' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {schedule.status === 'approved' ? '승인됨' : '대기중'}
+                            </span>
+                            
+                            <button 
+                              className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                              onClick={() => {
+                                // 상세 보기 기능 (향후 구현)
+                                console.log('상세 보기:', schedule);
+                              }}
+                            >
+                              상세보기
+                            </button>
+                          </div>
                         </div>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          schedule.status === 'approved' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {schedule.status === 'approved' ? '승인됨' : '대기중'}
-                        </span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">해당 날짜에 등록된 스케줄이 없습니다.</p>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">해당 날짜에 등록된 스케줄이 없습니다.</p>
+                );
+              })()}
             </div>
 
-            {/* 시간대별 요약 */}
+            {/* 시간대별 근무자 현황 */}
             <div className="mt-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">시간대별 근무자 현황</h4>
-              <div className="grid grid-cols-3 gap-2">
+              <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <Clock className="w-5 h-5 mr-2 text-blue-600" />
+                시간대별 근무자 현황
+              </h4>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {timeSlots.map(timeSlot => {
                   const schedulesInSlot = getSchedulesForTimeSlot(timeSlot);
                   const colorClass = getColorIntensity(schedulesInSlot.length, timeSlot.isLunch);
@@ -539,13 +667,60 @@ export default function AddSchedulePage() {
                   return (
                     <div 
                       key={timeSlot.time}
-                      className={`p-2 rounded-lg border text-center text-sm ${colorClass}`}
+                      className={`p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer ${colorClass}`}
+                      onClick={() => {
+                        // 시간대별 상세 보기 (향후 구현)
+                        console.log(`${timeSlot.label} 시간대 상세:`, schedulesInSlot);
+                      }}
                     >
-                      <div className="font-bold">{timeSlot.label}</div>
-                      <div className="text-xs opacity-75">{schedulesInSlot.length}명</div>
+                      <div className="text-center">
+                        <div className="font-bold text-lg mb-1">{timeSlot.label}</div>
+                        <div className="text-2xl font-bold mb-1">
+                          {schedulesInSlot.length}명
+                        </div>
+                        <div className="text-xs opacity-75">
+                          {timeSlot.description}
+                        </div>
+                      </div>
+                      
+                      {/* 시간대별 직원 이름 표시 */}
+                      {schedulesInSlot.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-600 mb-1">근무자:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {schedulesInSlot.slice(0, 3).map((schedule, index) => (
+                              <span 
+                                key={index}
+                                className="text-xs bg-white px-2 py-1 rounded-full border"
+                              >
+                                {schedule.employee?.name}
+                              </span>
+                            ))}
+                            {schedulesInSlot.length > 3 && (
+                              <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                                +{schedulesInSlot.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
+              </div>
+              
+              {/* 전체 요약 */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-blue-800">전체 근무자</span>
+                  <span className="text-lg font-bold text-blue-800">
+                    {existingSchedules.length > 0 ? 
+                      new Set(existingSchedules.map(s => s.employee_id)).size : 0}명
+                  </span>
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  총 {existingSchedules.length}개 시간대 스케줄
+                </div>
               </div>
             </div>
           </div>
