@@ -31,7 +31,10 @@ interface TimeSlot {
 export default function AddSchedulePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [scheduleDate, setScheduleDate] = useState('2025-09-02'); // 테스트용으로 9월 2일로 설정
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+  });
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
   const [note, setNote] = useState('');
@@ -66,6 +69,11 @@ export default function AddSchedulePage() {
       setLoading(false);
     };
     fetchUser();
+    
+    // 현재 날짜로 초기화
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    setScheduleDate(todayStr);
   }, [router]);
 
   useEffect(() => {
@@ -89,37 +97,44 @@ export default function AddSchedulePage() {
   const fetchExistingSchedules = async () => {
     console.log('🔍 fetchExistingSchedules 호출됨, scheduleDate:', scheduleDate);
     
+    if (!scheduleDate) {
+      console.log('⚠️ scheduleDate가 없음');
+      return;
+    }
+    
     try {
-      const { data, error } = await supabase
-        .from('schedules')
-        .select(`
-          *,
-          employee:employees!schedules_employee_id_fkey(name, employee_id)
-        `)
-        .eq('schedule_date', scheduleDate)
-        .order('scheduled_start', { ascending: true })
-        .order('employee:employees!schedules_employee_id_fkey(name)', { ascending: true });
+              // 더 정확한 쿼리로 수정
+        const { data, error } = await supabase
+          .from('schedules')
+          .select(`
+            *,
+            employee:employees!schedules_employee_id_fkey(
+              name,
+              employee_id
+            )
+          `)
+          .eq('schedule_date', scheduleDate)
+          .order('scheduled_start', { ascending: true });
 
-      console.log('📊 Supabase 쿼리 결과:', { data, error, count: data?.length || 0 });
+      console.log('📊 Supabase 쿼리 결과:', { 
+        data, 
+        error, 
+        count: data?.length || 0,
+        queryDate: scheduleDate 
+      });
 
       if (error) {
         console.error('❌ Error fetching existing schedules:', error);
         setExistingSchedules([]);
       } else {
-        // 클라이언트 사이드에서 시간순, 이름순으로 정렬
-        const sortedSchedules = (data || []).sort((a, b) => {
-          // 1순위: 시작 시간순
-          if (a.scheduled_start !== b.scheduled_start) {
-            return a.scheduled_start.localeCompare(b.scheduled_start);
-          }
-          // 2순위: 이름순 (한글 가나다순)
-          const nameA = a.employee?.name || '';
-          const nameB = b.employee?.name || '';
-          return nameA.localeCompare(nameB, 'ko');
-        });
-        
-        console.log('✅ 정렬된 스케줄:', sortedSchedules);
-        setExistingSchedules(sortedSchedules);
+        // 데이터가 있는지 확인
+        if (data && data.length > 0) {
+          console.log('✅ 스케줄 데이터 발견:', data);
+          setExistingSchedules(data);
+        } else {
+          console.log('ℹ️ 해당 날짜에 스케줄 없음:', scheduleDate);
+          setExistingSchedules([]);
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching existing schedules:', error);
