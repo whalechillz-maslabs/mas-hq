@@ -114,14 +114,14 @@
   },
   "suites": [
     {
-      "title": "schedules-time-slot-missing.spec.ts",
-      "file": "schedules-time-slot-missing.spec.ts",
+      "title": "schedules-simple-check.spec.ts",
+      "file": "schedules-simple-check.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "시간대별 근무현황에서 9-10 시간대 누락 원인 확인",
-          "ok": false,
+          "title": "시간대별 카드 구조 간단 확인",
+          "ok": true,
           "tags": [],
           "tests": [
             {
@@ -134,64 +134,12 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 6009,
-                  "error": {
-                    "message": "Error: locator.isVisible: Error: strict mode violation: locator('div:has-text(\"9-10\")') resolved to 9 elements:\n    1) <div class=\"min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6\">…</div> aka locator('div').filter({ hasText: '새 스케줄 추가김탁수 (WHA' }).first()\n    2) <div class=\"max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8\">…</div> aka getByText('새 스케줄 추가김탁수 (WHA')\n    3) <div class=\"grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8\">…</div> aka getByText('근무 날짜시작 시간종료 시간메모 (선택 사항)취소스케줄 추가2025년 09월 03일 (수) 기존 스케줄허상원근무 시간09:00 - 17:30')\n    4) <div class=\"order-1 xl:order-2\">…</div> aka getByText('년 09월 03일 (수) 기존 스케줄허상원근무 시간09:00 - 17:30총 근무7.5시간📝 관리자가 추가함📅 15')\n    5) <div class=\"mt-6\">…</div> aka getByText('시간대별 근무자 현황9-100명오전 근무10-112')\n    6) <div class=\"grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3\">…</div> aka getByText('9-100명오전 근무10-112')\n    7) <div class=\"p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer bg-gray-50\">…</div> aka locator('div').filter({ hasText: /^9-100명오전 근무$/ }).first()\n    8) <div class=\"text-center\">…</div> aka getByText('-100명오전 근무')\n    9) <div class=\"font-bold text-lg mb-1\">9-10</div> aka getByText('-10')\n\nCall log:\n\u001b[2m    - checking visibility of locator('div:has-text(\"9-10\")')\u001b[22m\n",
-                    "stack": "Error: locator.isVisible: Error: strict mode violation: locator('div:has-text(\"9-10\")') resolved to 9 elements:\n    1) <div class=\"min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6\">…</div> aka locator('div').filter({ hasText: '새 스케줄 추가김탁수 (WHA' }).first()\n    2) <div class=\"max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8\">…</div> aka getByText('새 스케줄 추가김탁수 (WHA')\n    3) <div class=\"grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8\">…</div> aka getByText('근무 날짜시작 시간종료 시간메모 (선택 사항)취소스케줄 추가2025년 09월 03일 (수) 기존 스케줄허상원근무 시간09:00 - 17:30')\n    4) <div class=\"order-1 xl:order-2\">…</div> aka getByText('년 09월 03일 (수) 기존 스케줄허상원근무 시간09:00 - 17:30총 근무7.5시간📝 관리자가 추가함📅 15')\n    5) <div class=\"mt-6\">…</div> aka getByText('시간대별 근무자 현황9-100명오전 근무10-112')\n    6) <div class=\"grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3\">…</div> aka getByText('9-100명오전 근무10-112')\n    7) <div class=\"p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer bg-gray-50\">…</div> aka locator('div').filter({ hasText: /^9-100명오전 근무$/ }).first()\n    8) <div class=\"text-center\">…</div> aka getByText('-100명오전 근무')\n    9) <div class=\"font-bold text-lg mb-1\">9-10</div> aka getByText('-10')\n\nCall log:\n\u001b[2m    - checking visibility of locator('div:has-text(\"9-10\")')\u001b[22m\n\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/schedules-time-slot-missing.spec.ts:90:29",
-                    "location": {
-                      "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/schedules-time-slot-missing.spec.ts",
-                      "column": 29,
-                      "line": 90
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 88 |\u001b[39m       \n \u001b[90m 89 |\u001b[39m       \u001b[36mconst\u001b[39m nineTenCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'div:has-text(\"9-10\")'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 90 |\u001b[39m       \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m nineTenCard\u001b[33m.\u001b[39misVisible()) {\n \u001b[90m    |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 91 |\u001b[39m         console\u001b[33m.\u001b[39mlog(\u001b[32m'✅ 9-10 시간대가 정상적으로 표시됩니다'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 92 |\u001b[39m       } \u001b[36melse\u001b[39m {\n \u001b[90m 93 |\u001b[39m         console\u001b[33m.\u001b[39mlog(\u001b[32m'❌ 9-10 시간대가 표시되지 않습니다'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/schedules-time-slot-missing.spec.ts",
-                        "column": 29,
-                        "line": 90
-                      },
-                      "message": "Error: locator.isVisible: Error: strict mode violation: locator('div:has-text(\"9-10\")') resolved to 9 elements:\n    1) <div class=\"min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6\">…</div> aka locator('div').filter({ hasText: '새 스케줄 추가김탁수 (WHA' }).first()\n    2) <div class=\"max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8\">…</div> aka getByText('새 스케줄 추가김탁수 (WHA')\n    3) <div class=\"grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8\">…</div> aka getByText('근무 날짜시작 시간종료 시간메모 (선택 사항)취소스케줄 추가2025년 09월 03일 (수) 기존 스케줄허상원근무 시간09:00 - 17:30')\n    4) <div class=\"order-1 xl:order-2\">…</div> aka getByText('년 09월 03일 (수) 기존 스케줄허상원근무 시간09:00 - 17:30총 근무7.5시간📝 관리자가 추가함📅 15')\n    5) <div class=\"mt-6\">…</div> aka getByText('시간대별 근무자 현황9-100명오전 근무10-112')\n    6) <div class=\"grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3\">…</div> aka getByText('9-100명오전 근무10-112')\n    7) <div class=\"p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer bg-gray-50\">…</div> aka locator('div').filter({ hasText: /^9-100명오전 근무$/ }).first()\n    8) <div class=\"text-center\">…</div> aka getByText('-100명오전 근무')\n    9) <div class=\"font-bold text-lg mb-1\">9-10</div> aka getByText('-10')\n\nCall log:\n\u001b[2m    - checking visibility of locator('div:has-text(\"9-10\")')\u001b[22m\n\n\n\u001b[0m \u001b[90m 88 |\u001b[39m       \n \u001b[90m 89 |\u001b[39m       \u001b[36mconst\u001b[39m nineTenCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'div:has-text(\"9-10\")'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 90 |\u001b[39m       \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m nineTenCard\u001b[33m.\u001b[39misVisible()) {\n \u001b[90m    |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 91 |\u001b[39m         console\u001b[33m.\u001b[39mlog(\u001b[32m'✅ 9-10 시간대가 정상적으로 표시됩니다'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 92 |\u001b[39m       } \u001b[36melse\u001b[39m {\n \u001b[90m 93 |\u001b[39m         console\u001b[33m.\u001b[39mlog(\u001b[32m'❌ 9-10 시간대가 표시되지 않습니다'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Users/m2/MASLABS/www.maslabs.kr/tests/schedules-time-slot-missing.spec.ts:90:29\u001b[22m"
-                    }
-                  ],
+                  "status": "passed",
+                  "duration": 2608,
+                  "errors": [],
                   "stdout": [
                     {
-                      "text": "=== 9-10 시간대 누락 원인 확인 테스트 시작 ===\n"
-                    },
-                    {
-                      "text": "=== 1. timeSlots 배열 확인 ===\n"
-                    },
-                    {
-                      "text": "✅ 09:00.*9-10 패턴 발견\n"
-                    },
-                    {
-                      "text": "❌ 10:00.*10-11 패턴 누락\n"
-                    },
-                    {
-                      "text": "✅ 11:00.*11-12 패턴 발견\n"
-                    },
-                    {
-                      "text": "❌ 12:00.*12-1 패턴 누락\n"
-                    },
-                    {
-                      "text": "❌ 13:00.*1-2 패턴 누락\n"
-                    },
-                    {
-                      "text": "❌ 14:00.*2-3 패턴 누락\n"
-                    },
-                    {
-                      "text": "❌ 15:00.*3-4 패턴 누락\n"
-                    },
-                    {
-                      "text": "✅ 16:00.*4-5 패턴 발견\n"
-                    },
-                    {
-                      "text": "❌ 17:00.*5-6 패턴 누락\n"
-                    },
-                    {
-                      "text": "=== 2. 시간대별 근무자 현황 섹션 확인 ===\n"
+                      "text": "=== 시간대별 카드 구조 확인 시작 ===\n"
                     },
                     {
                       "text": "✅ 시간대별 근무자 현황 섹션이 표시됩니다\n"
@@ -200,156 +148,60 @@
                       "text": "시간대별 카드 수: \u001b[33m9\u001b[39m\n"
                     },
                     {
-                      "text": "=== 시간대별 카드 상세 분석 ===\n"
+                      "text": "=== 첫 번째 카드 구조 분석 ===\n"
                     },
                     {
-                      "text": "시간대 1:\n"
+                      "text": "첫 번째 카드 HTML: <div class=\"text-center\"><div class=\"font-bold text-lg mb-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg\">9-10<span class=\"ml-1 text-xs bg-blue-200 text-blue-800 px-1 py-0.5 rounded\">시작</span></div><div class=\"text-2xl font-bold mb-1 text-gray-400\">0명</div><div class=\"text-xs text-gray-400\">스케줄 없음</div></div>\n"
                     },
                     {
-                      "text": "  - 라벨: 9-10\n"
+                      "text": "=== 9-10 시간대 카드 찾기 ===\n"
                     },
                     {
-                      "text": "  - 근무자: 0명\n"
+                      "text": "🎯 9-10 시간대 카드 발견! (인덱스: 0)\n"
                     },
                     {
-                      "text": "  - 설명: 오전 근무\n"
+                      "text": "카드 텍스트: 9-10시작0명스케줄 없음\n"
                     },
                     {
-                      "text": "🎯 9-10 시간대를 찾았습니다!\n"
+                      "text": "9-10 시간대 근무자 수: 0명\n"
                     },
                     {
-                      "text": "시간대 2:\n"
+                      "text": "9-10 시간대 설명: 스케줄 없음\n"
                     },
                     {
-                      "text": "  - 라벨: 10-11\n"
+                      "text": "=== 모든 시간대 라벨 확인 ===\n"
                     },
                     {
-                      "text": "  - 근무자: 2명\n"
+                      "text": "발견된 시간대 라벨: [\n  \u001b[32m'9-10시작'\u001b[39m, \u001b[32m'10-11'\u001b[39m,\n  \u001b[32m'11-12'\u001b[39m,    \u001b[32m'12-1'\u001b[39m,\n  \u001b[32m'1-2'\u001b[39m,      \u001b[32m'2-3'\u001b[39m,\n  \u001b[32m'3-4'\u001b[39m,      \u001b[32m'4-5'\u001b[39m,\n  \u001b[32m'5-6'\u001b[39m\n]\n"
                     },
                     {
-                      "text": "  - 설명: 오전 근무\n"
+                      "text": "❌ 9-10 시간대가 포함되어 있지 않습니다\n"
                     },
                     {
-                      "text": "시간대 3:\n"
+                      "text": "누락된 시간대: [\n  \u001b[32m'10-11'\u001b[39m, \u001b[32m'11-12'\u001b[39m,\n  \u001b[32m'12-1'\u001b[39m,  \u001b[32m'1-2'\u001b[39m,\n  \u001b[32m'2-3'\u001b[39m,   \u001b[32m'3-4'\u001b[39m,\n  \u001b[32m'4-5'\u001b[39m,   \u001b[32m'5-6'\u001b[39m\n]\n"
                     },
                     {
-                      "text": "  - 라벨: 11-12\n"
+                      "text": "=== 6. 스크린샷 저장 ===\n"
                     },
                     {
-                      "text": "  - 근무자: 2명\n"
+                      "text": "✅ 스크린샷이 저장되었습니다: playwright-report/schedules-simple-check.png\n"
                     },
                     {
-                      "text": "  - 설명: 오전 근무\n"
-                    },
-                    {
-                      "text": "시간대 4:\n"
-                    },
-                    {
-                      "text": "  - 라벨: 12-1\n"
-                    },
-                    {
-                      "text": "  - 근무자: 3명\n"
-                    },
-                    {
-                      "text": "  - 설명: 점심시간 (전화/업무 가능)\n"
-                    },
-                    {
-                      "text": "시간대 5:\n"
-                    },
-                    {
-                      "text": "  - 라벨: 1-2\n"
-                    },
-                    {
-                      "text": "  - 근무자: 1명\n"
-                    },
-                    {
-                      "text": "  - 설명: 오후 근무\n"
-                    },
-                    {
-                      "text": "시간대 6:\n"
-                    },
-                    {
-                      "text": "  - 라벨: 2-3\n"
-                    },
-                    {
-                      "text": "  - 근무자: 3명\n"
-                    },
-                    {
-                      "text": "  - 설명: 오후 근무\n"
-                    },
-                    {
-                      "text": "시간대 7:\n"
-                    },
-                    {
-                      "text": "  - 라벨: 3-4\n"
-                    },
-                    {
-                      "text": "  - 근무자: 3명\n"
-                    },
-                    {
-                      "text": "  - 설명: 오후 근무\n"
-                    },
-                    {
-                      "text": "시간대 8:\n"
-                    },
-                    {
-                      "text": "  - 라벨: 4-5\n"
-                    },
-                    {
-                      "text": "  - 근무자: 3명\n"
-                    },
-                    {
-                      "text": "  - 설명: 오후 근무\n"
-                    },
-                    {
-                      "text": "시간대 9:\n"
-                    },
-                    {
-                      "text": "  - 라벨: 5-6\n"
-                    },
-                    {
-                      "text": "  - 근무자: 2명\n"
-                    },
-                    {
-                      "text": "  - 설명: 오후 근무\n"
-                    },
-                    {
-                      "text": "=== 3. 9-10 시간대 누락 확인 ===\n"
+                      "text": "=== 시간대별 카드 구조 확인 완료 ===\n"
                     }
                   ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2025-09-02T23:20:18.660Z",
+                  "startTime": "2025-09-02T23:29:36.104Z",
                   "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/schedules-time-slot-missing-시간대별-근무현황에서-9-10-시간대-누락-원인-확인-chromium-stable/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/schedules-time-slot-missing-시간대별-근무현황에서-9-10-시간대-누락-원인-확인-chromium-stable/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/schedules-time-slot-missing-시간대별-근무현황에서-9-10-시간대-누락-원인-확인-chromium-stable/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/schedules-time-slot-missing.spec.ts",
-                    "column": 29,
-                    "line": 90
-                  }
+                  "attachments": []
                 }
               ],
-              "status": "unexpected"
+              "status": "expected"
             }
           ],
-          "id": "1da08cbe3d98557796b2-381c5ecc369297ffccd1",
-          "file": "schedules-time-slot-missing.spec.ts",
+          "id": "019f6a405c0df3584d3b-2dc34b4fef0938a5e6c0",
+          "file": "schedules-simple-check.spec.ts",
           "line": 3,
           "column": 5
         }
@@ -358,11 +210,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-02T23:20:18.311Z",
-    "duration": 7912.304,
-    "expected": 0,
+    "startTime": "2025-09-02T23:29:35.743Z",
+    "duration": 4700.177,
+    "expected": 1,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

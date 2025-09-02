@@ -257,12 +257,54 @@ export default function AddSchedulePage() {
   };
 
   const getSchedulesForTimeSlot = (timeSlot: TimeSlot) => {
+    console.log('🔍 getSchedulesForTimeSlot 호출:', { timeSlot, existingSchedulesCount: existingSchedules.length });
+    
     return existingSchedules.filter(schedule => {
       const startTime = schedule.scheduled_start;
       const endTime = schedule.scheduled_end;
       const slotTime = timeSlot.time;
       
-      return startTime <= slotTime && endTime > slotTime;
+      console.log('⏰ 시간 비교:', { 
+        schedule: `${schedule.employee?.name} (${startTime} - ${endTime})`, 
+        slotTime, 
+        startTime, 
+        endTime 
+      });
+      
+      // 시간 형식 정규화 (HH:MM 형식으로 변환)
+      const normalizeTime = (timeStr: string) => {
+        if (!timeStr) return null;
+        
+        // "09:00:00" -> "09:00", "09:00" -> "09:00"
+        const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+        if (match) {
+          const hours = match[1].padStart(2, '0');
+          const minutes = match[2];
+          return `${hours}:${minutes}`;
+        }
+        return null;
+      };
+      
+      const normalizedStart = normalizeTime(startTime);
+      const normalizedEnd = normalizeTime(endTime);
+      const normalizedSlot = normalizeTime(slotTime);
+      
+      if (!normalizedStart || !normalizedEnd || !normalizedSlot) {
+        console.log('⚠️ 시간 형식 변환 실패:', { startTime, endTime, slotTime });
+        return false;
+      }
+      
+      // 시간 비교 (문자열 비교로 충분)
+      const isInSlot = normalizedStart <= normalizedSlot && normalizedEnd > normalizedSlot;
+      
+      console.log('✅ 시간 비교 결과:', { 
+        normalizedStart, 
+        normalizedSlot, 
+        normalizedEnd, 
+        isInSlot 
+      });
+      
+      return isInSlot;
     });
   };
 
@@ -664,48 +706,29 @@ export default function AddSchedulePage() {
                   const schedulesInSlot = getSchedulesForTimeSlot(timeSlot);
                   const colorClass = getColorIntensity(schedulesInSlot.length, timeSlot.isLunch);
                   
+                  console.log(`🎯 시간대 ${timeSlot.label} 렌더링:`, {
+                    timeSlot,
+                    schedulesInSlotCount: schedulesInSlot.length,
+                    schedulesInSlot: schedulesInSlot.map(s => `${s.employee?.name} (${s.scheduled_start}-${s.scheduled_end})`),
+                    colorClass
+                  });
+                  
                   return (
                     <div 
                       key={timeSlot.time}
-                      className={`p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer ${
-                        schedulesInSlot.length === 0 
-                          ? 'bg-gray-50 border-gray-200 hover:bg-gray-100' 
-                          : colorClass
-                      }`}
+                      className={`p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 cursor-pointer ${colorClass}`}
                       onClick={() => {
                         // 시간대별 상세 보기 (향후 구현)
                         console.log(`${timeSlot.label} 시간대 상세:`, schedulesInSlot);
                       }}
                     >
                       <div className="text-center">
-                        <div className={`font-bold text-lg mb-1 ${
-                          timeSlot.label === '9-10' 
-                            ? 'text-blue-600 bg-blue-50 px-2 py-1 rounded-lg' 
-                            : ''
-                        }`}>
-                          {timeSlot.label}
-                          {timeSlot.label === '9-10' && (
-                            <span className="ml-1 text-xs bg-blue-200 text-blue-800 px-1 py-0.5 rounded">
-                              시작
-                            </span>
-                          )}
-                        </div>
-                        <div className={`text-2xl font-bold mb-1 ${
-                          schedulesInSlot.length === 0 
-                            ? 'text-gray-400' 
-                            : 'text-gray-800'
-                        }`}>
+                        <div className="font-bold text-lg mb-1">{timeSlot.label}</div>
+                        <div className="text-2xl font-bold mb-1">
                           {schedulesInSlot.length}명
                         </div>
-                        <div className={`text-xs ${
-                          schedulesInSlot.length === 0 
-                            ? 'text-gray-400' 
-                            : 'opacity-75'
-                        }`}>
-                          {schedulesInSlot.length === 0 
-                            ? '스케줄 없음' 
-                            : timeSlot.description
-                          }
+                        <div className="text-xs opacity-75">
+                          {timeSlot.description}
                         </div>
                       </div>
                       
