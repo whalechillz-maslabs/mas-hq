@@ -682,9 +682,17 @@ export default function AttendancePage() {
           <p><strong>디버깅 정보:</strong></p>
           <p>사용자 ID: {currentUser?.employee_id || '없음'}</p>
           <p>사용자 이름: {currentUser?.name || '없음'}</p>
+          <p>사용자 UUID: {currentUser?.id || '없음'}</p>
           <p>오늘 스케줄 수: {todaySchedules.length}개</p>
           <p>월간 기록 수: {monthlyRecords.length}개</p>
           <p>로딩 상태: {loading ? '로딩 중' : '완료'}</p>
+          <p>오늘 날짜: {format(new Date(), 'yyyy-MM-dd')}</p>
+          <p>스케줄 데이터: {JSON.stringify(todaySchedules.slice(0, 2))}</p>
+          <p>사용자 전체 데이터: {JSON.stringify(currentUser ? { 
+            id: currentUser.id, 
+            employee_id: currentUser.employee_id, 
+            name: currentUser.name 
+          } : null)}</p>
         </div>
 
         {/* 일일 근무 요약 */}
