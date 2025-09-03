@@ -7,7 +7,8 @@ import { formatDateKR, formatDateISO } from '@/utils/dateUtils';
 import { getStatusLabel, getStatusColor, getPriorityLabel, getPriorityColor } from '@/utils/formatUtils';
 import { 
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
-  Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2, DollarSign, RotateCcw
+  Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2, DollarSign, RotateCcw,
+  Phone, ShoppingCart, Store, Headphones, Shield, Truck, Package, Coffee
 } from 'lucide-react';
 
 interface OperationType {
@@ -60,6 +61,14 @@ export default function TasksPage() {
   const [refundTargetTask, setRefundTargetTask] = useState<Task | null>(null);
 
   const [selectedOperationTypeForAdd, setSelectedOperationTypeForAdd] = useState<string>('');
+  const [showQuickTaskForm, setShowQuickTaskForm] = useState(false);
+  const [quickTaskData, setQuickTaskData] = useState({
+    operation_type_id: '',
+    title: '',
+    customer_name: '',
+    sales_amount: 0,
+    notes: ''
+  });
   const [stats, setStats] = useState({
     totalTasks: 0,
     totalPoints: 0,
@@ -72,6 +81,67 @@ export default function TasksPage() {
   useEffect(() => {
     loadTasksData();
   }, [selectedMonth, filter]);
+
+  // 퀵 테스크 관련 함수들
+  const getOperationIcon = (code: string) => {
+    const iconMap: { [key: string]: any } = {
+      'OP1': Phone,
+      'OP2': Phone,
+      'OP3': Store,
+      'OP4': Store,
+      'OP5': Headphones,
+      'OP6': Shield,
+      'OP7': Shield,
+      'OP9': Truck,
+      'OP10': Package
+    };
+    return iconMap[code] || Coffee;
+  };
+
+  const handleQuickTaskSelect = (opType: OperationType) => {
+    setSelectedOperationTypeForAdd(opType.id);
+    setQuickTaskData(prev => ({
+      ...prev,
+      operation_type_id: opType.id,
+      title: opType.name
+    }));
+    setShowQuickTaskForm(true);
+  };
+
+  const handleQuickTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('employee_tasks')
+        .insert({
+          employee_id: currentUser.id,
+          operation_type_id: quickTaskData.operation_type_id,
+          title: quickTaskData.title,
+          customer_name: quickTaskData.customer_name,
+          sales_amount: quickTaskData.sales_amount,
+          notes: quickTaskData.notes,
+          task_date: new Date().toISOString().split('T')[0]
+        });
+
+      if (error) throw error;
+
+      // 성공 후 폼 초기화 및 데이터 새로고침
+      setShowQuickTaskForm(false);
+      setSelectedOperationTypeForAdd('');
+      setQuickTaskData({
+        operation_type_id: '',
+        title: '',
+        customer_name: '',
+        sales_amount: 0,
+        notes: ''
+      });
+      loadTasksData();
+    } catch (error) {
+      console.error('퀵 테스크 등록 실패:', error);
+    }
+  };
 
   const loadTasksData = async () => {
     try {
@@ -389,6 +459,161 @@ export default function TasksPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 오늘 성과 요약 - 퀵 테스크 스타일 적용 */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center">
+              <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+              <div>
+                <p className="text-xs text-gray-500">오늘 매출</p>
+                <p className="text-lg font-bold text-green-600">
+                  {stats.totalSales.toLocaleString()}원
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center">
+              <Award className="h-5 w-5 text-purple-600 mr-2" />
+              <div>
+                <p className="text-xs text-gray-500">오늘 포인트</p>
+                <p className="text-lg font-bold text-purple-600">
+                  {stats.totalPoints}점
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center">
+              <Target className="h-5 w-5 text-blue-600 mr-2" />
+              <div>
+                <p className="text-xs text-gray-500">업무 건수</p>
+                <p className="text-lg font-bold text-blue-600">
+                  {stats.totalTasks}건
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 빠른 업무 입력 - 퀵 테스크 스타일 적용 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">빠른 업무 입력</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {operationTypes
+              .filter(opType => opType.code !== 'OP8')
+              .map((opType) => {
+              const Icon = getOperationIcon(opType.code);
+              const isSelected = selectedOperationTypeForAdd === opType.id;
+              
+              return (
+                <button
+                  key={opType.id}
+                  onClick={() => handleQuickTaskSelect(opType)}
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-25'
+                  }`}
+                >
+                  <div className="flex items-center mb-2">
+                    <Icon className="h-6 w-6 mr-2" />
+                    <span className="text-sm font-medium">{opType.code}</span>
+                  </div>
+                  <p className="text-sm font-semibold mb-1">{opType.name}</p>
+                  <p className="text-xs text-gray-500">{opType.points}점</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 퀵 테스크 입력 폼 */}
+        {showQuickTaskForm && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">빠른 업무 입력</h2>
+              <button
+                onClick={() => setShowQuickTaskForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickTaskSubmit} className="space-y-4">
+              {/* 업무명 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  업무명
+                </label>
+                <input
+                  type="text"
+                  value={quickTaskData.title}
+                  onChange={(e) => setQuickTaskData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="업무 제목을 입력하세요"
+                  required
+                />
+              </div>
+
+              {/* 고객명 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  고객명
+                </label>
+                <input
+                  type="text"
+                  value={quickTaskData.customer_name}
+                  onChange={(e) => setQuickTaskData(prev => ({ ...prev, customer_name: e.target.value }))}
+                  className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="고객명 (선택)"
+                />
+              </div>
+
+              {/* 매출 금액 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  매출 금액
+                </label>
+                <input
+                  type="number"
+                  value={quickTaskData.sales_amount || ''}
+                  onChange={(e) => setQuickTaskData(prev => ({ ...prev, sales_amount: parseInt(e.target.value) || 0 }))}
+                  className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+
+              {/* 업무 내용 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  업무 내용
+                </label>
+                <textarea
+                  value={quickTaskData.notes}
+                  onChange={(e) => setQuickTaskData(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="업무 내용을 입력하세요 (선택)"
+                />
+              </div>
+
+              {/* 제출 버튼 */}
+              <button
+                type="submit"
+                className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <div className="flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 mr-2" />
+                  업무 완료
+                </div>
+              </button>
+            </form>
+          </div>
+        )}
+
         {/* 통계 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-4">

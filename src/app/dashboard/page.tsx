@@ -622,8 +622,8 @@ export default function DashboardPage() {
               className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl hover:bg-yellow-100 transition-all duration-200 text-left"
             >
               <Target className="h-10 w-10 text-yellow-600 mb-3" />
-              <h3 className="font-bold text-lg text-yellow-900 mb-2">업무 기록</h3>
-              <p className="text-sm text-yellow-700">일일 업무 및 성과 기록</p>
+              <h3 className="font-bold text-lg text-yellow-900 mb-2">업무 추가</h3>
+              <p className="text-sm text-yellow-700">빠른 업무 입력 및 기록 관리</p>
             </button>
             
             <button 
