@@ -218,41 +218,11 @@ export default function AttendanceManagementPage() {
   };
 
   const formatTime = (timeString: string | null) => {
-    try {
-      if (!timeString) {
-        console.warn('formatTime: timeString이 비어있음');
-        return '시간 없음';
-      }
-      
-      // ISO 문자열이 아닌 경우 처리
-      let date: Date;
-      if (timeString.includes('T') || timeString.includes('Z')) {
-        // ISO 형식 (예: "2025-09-03T09:00:00Z")
-        date = new Date(timeString);
-      } else if (timeString.includes(':')) {
-        // 시간 형식 (예: "09:00:00" 또는 "09:00")
-        const today = new Date();
-        const [hours, minutes, seconds] = timeString.split(':');
-        date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
-                       parseInt(hours), parseInt(minutes), seconds ? parseInt(seconds) : 0);
-      } else {
-        // 기타 형식
-        date = new Date(timeString);
-      }
-      
-      if (isNaN(date.getTime())) {
-        console.error('formatTime: 유효하지 않은 날짜/시간:', timeString);
-        return '시간 오류';
-      }
-      
-      return date.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      console.error('formatTime 오류:', error, 'timeString:', timeString);
-      return '시간 오류';
-    }
+    if (!timeString) return '-';
+    return new Date(timeString).toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -270,6 +240,57 @@ export default function AttendanceManagementPage() {
       case 'confirmed': return <Clock className="w-4 h-4" />;
       case 'pending': return <AlertCircle className="w-4 h-4" />;
       default: return <XCircle className="w-4 h-4" />;
+    }
+  };
+
+  // 실제 출근/퇴근 시간을 기반으로 상태를 판정하는 함수
+  const getActualStatus = (record: AttendanceRecord) => {
+    // 출근 시간과 퇴근 시간이 모두 있는 경우
+    if (record.actual_start && record.actual_end) {
+      const startTime = new Date(record.actual_start);
+      const endTime = new Date(record.actual_end);
+      
+      // 현재 시간
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // 출근 날짜가 오늘인지 확인
+      const startDate = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate());
+      
+      if (startDate.getTime() === today.getTime()) {
+        // 오늘 출근한 경우
+        if (endTime < now) {
+          return 'completed'; // 퇴근 완료
+        } else {
+          return 'confirmed'; // 근무 중
+        }
+      } else {
+        // 다른 날 출근한 경우
+        return 'completed'; // 완료된 근무
+      }
+    }
+    
+    // 출근 시간만 있고 퇴근 시간이 없는 경우
+    if (record.actual_start && !record.actual_end) {
+      return 'confirmed'; // 근무 중
+    }
+    
+    // 출근 시간이 없는 경우
+    if (!record.actual_start) {
+      return 'pending'; // 미출근
+    }
+    
+    // 기본값
+    return 'pending';
+  };
+
+  // 상태 텍스트를 한글로 변환하는 함수
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed': return '완료';
+      case 'confirmed': return '근무중';
+      case 'pending': return '미출근';
+      default: return '미출근';
     }
   };
 
@@ -381,7 +402,7 @@ export default function AttendanceManagementPage() {
               <div>
                 <p className="text-sm text-gray-600">출근 완료</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {filteredRecords.filter(r => r.status === 'completed').length}명
+                  {filteredRecords.filter(r => getActualStatus(r) === 'completed').length}명
                 </p>
               </div>
             </div>
@@ -392,7 +413,7 @@ export default function AttendanceManagementPage() {
               <div>
                 <p className="text-sm text-gray-600">근무 중</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {filteredRecords.filter(r => r.status === 'confirmed').length}명
+                  {filteredRecords.filter(r => getActualStatus(r) === 'confirmed').length}명
                 </p>
               </div>
             </div>
@@ -403,7 +424,7 @@ export default function AttendanceManagementPage() {
               <div>
                 <p className="text-sm text-gray-600">미출근</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {filteredRecords.filter(r => r.status === 'pending').length}명
+                  {filteredRecords.filter(r => getActualStatus(r) === 'pending').length}명
                 </p>
               </div>
             </div>
@@ -513,11 +534,10 @@ export default function AttendanceManagementPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
-                        {getStatusIcon(record.status)}
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getActualStatus(record))}`}>
+                        {getStatusIcon(getActualStatus(record))}
                         <span className="ml-1">
-                          {record.status === 'completed' ? '완료' : 
-                           record.status === 'confirmed' ? '근무중' : '미출근'}
+                          {getStatusText(getActualStatus(record))}
                         </span>
                       </span>
                     </td>
