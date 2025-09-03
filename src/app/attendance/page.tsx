@@ -71,6 +71,92 @@ export default function AttendancePage() {
     return { totalHours: hours, totalMinutes: minutes };
   };
 
+  // 스케줄을 시간대별로 그룹화하는 함수
+  const groupSchedulesByTimeRange = (schedules: AttendanceRecord[]) => {
+    if (schedules.length === 0) return [];
+    
+    // 스케줄을 시작 시간순으로 정렬
+    const sortedSchedules = [...schedules].sort((a, b) => 
+      a.scheduled_start.localeCompare(b.scheduled_start)
+    );
+    
+    const groups: {
+      startTime: string;
+      endTime: string;
+      schedules: AttendanceRecord[];
+      status: 'completed' | 'in-progress' | 'pending';
+      actualStart?: string;
+      actualEnd?: string;
+    }[] = [];
+    
+    let currentGroup: typeof groups[0] | null = null;
+    
+    sortedSchedules.forEach(schedule => {
+      const startTime = schedule.scheduled_start;
+      const endTime = schedule.scheduled_end;
+      
+      if (!currentGroup) {
+        // 첫 번째 그룹 시작
+        currentGroup = {
+          startTime,
+          endTime,
+          schedules: [schedule],
+          status: schedule.actual_start && schedule.actual_end ? 'completed' 
+                 : schedule.actual_start ? 'in-progress' 
+                 : 'pending',
+          actualStart: schedule.actual_start || undefined,
+          actualEnd: schedule.actual_end || undefined
+        };
+      } else {
+        // 연속된 시간대인지 확인 (30분 단위)
+        const currentEnd = new Date(`2000-01-01T${currentGroup.endTime}`);
+        const nextStart = new Date(`2000-01-01T${startTime}`);
+        const timeDiff = nextStart.getTime() - currentEnd.getTime();
+        
+        if (timeDiff <= 30 * 60 * 1000) { // 30분 이내
+          // 같은 그룹에 추가
+          currentGroup.schedules.push(schedule);
+          currentGroup.endTime = endTime;
+          
+          // 상태 업데이트
+          if (schedule.actual_start && schedule.actual_end) {
+            currentGroup.status = 'completed';
+          } else if (schedule.actual_start && currentGroup.status === 'pending') {
+            currentGroup.status = 'in-progress';
+          }
+          
+          // 실제 시간 업데이트
+          if (schedule.actual_start && !currentGroup.actualStart) {
+            currentGroup.actualStart = schedule.actual_start;
+          }
+          if (schedule.actual_end) {
+            currentGroup.actualEnd = schedule.actual_end;
+          }
+        } else {
+          // 새로운 그룹 시작
+          groups.push(currentGroup);
+          currentGroup = {
+            startTime,
+            endTime,
+            schedules: [schedule],
+            status: schedule.actual_start && schedule.actual_end ? 'completed' 
+                   : schedule.actual_start ? 'in-progress' 
+                   : 'pending',
+            actualStart: schedule.actual_start || undefined,
+            actualEnd: schedule.actual_end || undefined
+          };
+        }
+      }
+    });
+    
+    // 마지막 그룹 추가
+    if (currentGroup) {
+      groups.push(currentGroup);
+    }
+    
+    return groups;
+  };
+
   // 일일 출근 상태 분석
   const analyzeDailyAttendance = (schedules: AttendanceRecord[]) => {
     const completedSchedules = schedules.filter(s => s.actual_start && s.actual_end);
@@ -727,30 +813,21 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* 디버깅 정보 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs">
-          <p><strong>디버깅 정보:</strong></p>
-          <p>사용자 ID: {currentUser?.employee_id || '없음'}</p>
-          <p>사용자 이름: {currentUser?.name || '없음'}</p>
-          <p>UUID: {currentUser?.id || '없음'}</p>
-          <p>오늘 스케줄 수: {todaySchedules.length}개</p>
-          <p>월간 기록 수: {monthlyRecords.length}개</p>
-          <p>로딩 상태: {loading ? '로딩 중' : '완료'}</p>
-          <p>현재 시간: {format(currentTime, 'HH:mm:ss', { locale: ko })}</p>
-          {todaySchedules.length > 0 && (
-            <div className="mt-2 p-2 bg-white rounded border">
-              <p><strong>스케줄 데이터 상세:</strong></p>
-              {todaySchedules.map((schedule, index) => (
-                <div key={index} className="text-xs mt-1">
-                  <p>스케줄 {index + 1}:</p>
-                  <p>  - scheduled_start: "{schedule.scheduled_start}"</p>
-                  <p>  - scheduled_end: "{schedule.scheduled_end}"</p>
-                  <p>  - actual_start: "{schedule.actual_start}"</p>
-                  <p>  - actual_end: "{schedule.actual_end}"</p>
-                </div>
-              ))}
+        {/* 간단한 사용자 정보 */}
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <User className="h-6 w-6 text-blue-600" />
+              <div>
+                <p className="font-medium text-gray-900">{currentUser?.name || '사용자'}</p>
+                <p className="text-sm text-gray-600">{currentUser?.employee_id || 'ID'}</p>
+              </div>
             </div>
-          )}
+            <div className="text-right">
+              <p className="text-xs text-gray-600">오늘 스케줄</p>
+              <p className="text-lg font-semibold text-blue-600">{todaySchedules.length}개</p>
+            </div>
+          </div>
         </div>
 
         {/* 일일 근무 요약 */}
@@ -920,67 +997,114 @@ export default function AttendancePage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {todaySchedules.map((schedule) => {
-                    const status = getAttendanceStatus(schedule);
-                    const canCheckIn = !schedule.actual_start;
-                    const canCheckOut = schedule.actual_start && !schedule.actual_end;
+                  {(() => {
+                    const groupedSchedules = groupSchedulesByTimeRange(todaySchedules);
                     
-                    return (
-                      <div key={schedule.id} className="bg-white rounded-lg border p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <span className="text-sm font-medium text-gray-900">
-                                {formatTime(schedule.scheduled_start)} - {formatTime(schedule.scheduled_end)}
+                    return groupedSchedules.map((group, groupIndex) => {
+                      const totalSlots = group.schedules.length;
+                      const completedSlots = group.schedules.filter(s => s.actual_start && s.actual_end).length;
+                      const inProgressSlots = group.schedules.filter(s => s.actual_start && !s.actual_end).length;
+                      
+                      const getGroupStatusColor = (status: string) => {
+                        switch (status) {
+                          case 'completed': return 'bg-green-100 text-green-800';
+                          case 'in-progress': return 'bg-blue-100 text-blue-800';
+                          case 'pending': return 'bg-yellow-100 text-yellow-800';
+                          default: return 'bg-gray-100 text-gray-800';
+                        }
+                      };
+                      
+                      const getGroupStatusText = (status: string) => {
+                        switch (status) {
+                          case 'completed': return '완료';
+                          case 'in-progress': return '근무중';
+                          case 'pending': return '대기중';
+                          default: return '알 수 없음';
+                        }
+                      };
+                      
+                      return (
+                        <div key={groupIndex} className="bg-white rounded-lg border p-4 shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-lg font-semibold text-gray-900">
+                                {formatTime(group.startTime)} - {formatTime(group.endTime)}
                               </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                                {status.text}
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGroupStatusColor(group.status)}`}>
+                                {getGroupStatusText(group.status)}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                ({totalSlots}개 시간대)
                               </span>
                             </div>
                             
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
-                              {schedule.actual_start && (
-                                <div className="flex items-center">
-                                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                                  출근: {formatDateTime(schedule.actual_start)}
-                                </div>
-                              )}
-                              {schedule.actual_end && (
-                                <div className="flex items-center">
-                                  <XCircle className="h-3 w-3 mr-1 text-red-500" />
-                                  퇴근: {formatDateTime(schedule.actual_end)}
+                            <div className="text-right">
+                              <div className="text-sm text-gray-600">
+                                진행률: {completedSlots}/{totalSlots}
+                              </div>
+                              {inProgressSlots > 0 && (
+                                <div className="text-xs text-blue-600">
+                                  진행 중: {inProgressSlots}개
                                 </div>
                               )}
                             </div>
                           </div>
                           
-                          <div className="flex space-x-2">
-                            {canCheckIn && (
-                              <button
-                                onClick={() => handleCheckIn(schedule.id)}
-                                disabled={checkingIn}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                {checkingIn ? '처리중...' : '출근'}
-                              </button>
-                            )}
-                            
-                            {canCheckOut && (
-                              <button
-                                onClick={() => handleCheckOut(schedule.id)}
-                                disabled={checkingIn}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                {checkingIn ? '처리중...' : '퇴근'}
-                              </button>
-                            )}
+                          {/* 실제 출근/퇴근 시간 표시 */}
+                          {(group.actualStart || group.actualEnd) && (
+                            <div className="mb-3 p-2 bg-gray-50 rounded text-sm">
+                              {group.actualStart && (
+                                <div className="flex items-center text-green-600 mb-1">
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  출근: {formatDateTime(group.actualStart)}
+                                </div>
+                              )}
+                              {group.actualEnd && (
+                                <div className="flex items-center text-red-600">
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  퇴근: {formatDateTime(group.actualEnd)}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* 개별 스케줄 관리 버튼 */}
+                          <div className="flex flex-wrap gap-2">
+                            {group.schedules.map((schedule) => {
+                              const canCheckIn = !schedule.actual_start;
+                              const canCheckOut = schedule.actual_start && !schedule.actual_end;
+                              
+                              return (
+                                <div key={schedule.id} className="flex items-center space-x-2">
+                                  <span className="text-xs text-gray-500">
+                                    {formatTime(schedule.scheduled_start)}-{formatTime(schedule.scheduled_end)}
+                                  </span>
+                                  {canCheckIn && (
+                                    <button
+                                      onClick={() => handleCheckIn(schedule.id)}
+                                      disabled={checkingIn}
+                                      className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                                    >
+                                      출근
+                                    </button>
+                                  )}
+                                  {canCheckOut && (
+                                    <button
+                                      onClick={() => handleCheckOut(schedule.id)}
+                                      disabled={checkingIn}
+                                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
+                                    >
+                                      퇴근
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </div>
