@@ -910,8 +910,23 @@ export default function AttendancePage() {
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
-                  const totalHours = todaySchedules.length * 0.5; // 30분 = 0.5시간
-                  return totalHours.toFixed(1);
+                  if (todaySchedules.length === 0) return '0.0';
+                  
+                  const sortedSchedules = [...todaySchedules].sort((a, b) => 
+                    a.scheduled_start.localeCompare(b.scheduled_start)
+                  );
+                  
+                  const firstSchedule = sortedSchedules[0];
+                  const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+                  
+                  if (firstSchedule && lastSchedule) {
+                    const startTime = new Date(`2000-01-01T${firstSchedule.scheduled_start}`);
+                    const endTime = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
+                    const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                    return totalHours.toFixed(1);
+                  }
+                  
+                  return '0.0';
                 })()}
               </div>
               <div className="text-sm text-gray-500">오늘 근무 시간</div>
@@ -1313,10 +1328,19 @@ export default function AttendancePage() {
                               date,
                               totalSchedules: 0,
                               completedSchedules: 0,
-                              totalHours: 0
+                              totalHours: 0,
+                              scheduledHours: 0
                             };
                           }
                           acc[date].totalSchedules++;
+                          
+                          // 스케줄된 시간 계산 (9:00-12:00 = 3시간)
+                          if (record.scheduled_start && record.scheduled_end) {
+                            const start = new Date(`2000-01-01T${record.scheduled_start}`);
+                            const end = new Date(`2000-01-01T${record.scheduled_end}`);
+                            acc[date].scheduledHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                          }
+                          
                           if (record.actual_start && record.actual_end) {
                             acc[date].completedSchedules++;
                             const start = new Date(record.actual_start);
@@ -1324,7 +1348,7 @@ export default function AttendancePage() {
                             acc[date].totalHours += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                           }
                           return acc;
-                        }, {} as Record<string, { date: string; totalSchedules: number; completedSchedules: number; totalHours: number }>);
+                        }, {} as Record<string, { date: string; totalSchedules: number; completedSchedules: number; totalHours: number; scheduledHours: number }>);
                         
                         return Object.values(dailySummary).map((summary) => (
                           <div key={summary.date} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
@@ -1332,7 +1356,7 @@ export default function AttendancePage() {
                               {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
-                              <span className="text-xs text-gray-500">스케줄: {(summary.totalSchedules * 0.5).toFixed(1)}시간</span>
+                              <span className="text-xs text-gray-500">스케줄: {summary.scheduledHours.toFixed(1)}시간</span>
                               <span className="text-xs text-gray-500">실제: {summary.totalHours.toFixed(1)}시간</span>
                             </div>
                           </div>
