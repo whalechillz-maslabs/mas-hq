@@ -17,11 +17,27 @@ interface AttendanceRecord {
   department: string;
   position: string;
   schedule_date: string;
+  
+  // 스케줄 정보 (업무 예정 시간)
+  scheduled_start: string;
+  scheduled_end: string;
+  
+  // 실제 출근 기록
   actual_start: string;
   actual_end: string;
+  
+  // 점심 휴식 정보
+  break_start?: string;
+  break_end?: string;
+  
+  // 근무 시간 계산
   total_hours: number;
   overtime_hours: number;
+  
+  // 상태 정보
   status: 'confirmed' | 'completed' | 'pending';
+  
+  // 위치 정보
   check_in_location?: {
     latitude: number;
     longitude: number;
@@ -32,6 +48,8 @@ interface AttendanceRecord {
     longitude: number;
     address?: string;
   };
+  
+  // 메모
   employee_note?: string;
   manager_note?: string;
 }
@@ -85,7 +103,7 @@ export default function AttendanceManagementPage() {
       setIsLoading(true);
       console.log("출근 데이터 로딩 시작...", { selectedDate });
       
-      // 실제 데이터베이스에서 스케줄 데이터 가져오기
+      // 실제 데이터베이스에서 스케줄 데이터 가져오기 (스케줄 + 출근 기록 + 휴식 정보)
       const { data: schedules, error: schedulesError } = await supabase
         .from("schedules")
         .select(`
@@ -96,6 +114,8 @@ export default function AttendanceManagementPage() {
           scheduled_end,
           actual_start,
           actual_end,
+          break_start,
+          break_end,
           status,
           employee_note
         `)
@@ -489,10 +509,16 @@ export default function AttendanceManagementPage() {
                     직원 정보
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    출근 시간
+                    스케줄
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    퇴근 시간
+                    실제 출근
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    점심 휴식
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    실제 퇴근
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     근무 시간
@@ -528,22 +554,48 @@ export default function AttendanceManagementPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatTime(record.actual_start)}</div>
-                      {record.check_in_location && (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          {record.check_in_location.address}
+                      <div className="text-sm text-gray-900">
+                        <div className="font-medium">스케줄</div>
+                        <div className="text-xs text-gray-500">
+                          {formatTime(record.scheduled_start)} - {formatTime(record.scheduled_end)}
                         </div>
-                      )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatTime(record.actual_end)}</div>
-                      {record.check_out_location && (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          {record.check_out_location.address}
+                      <div className="text-sm text-gray-900">
+                        <div className="font-medium">실제 출근</div>
+                        <div className="text-xs text-gray-500">
+                          {formatTime(record.actual_start)}
                         </div>
-                      )}
+                        {record.check_in_location && (
+                          <div className="text-xs text-gray-500 flex items-center mt-1">
+                            <MapPin className="w-3 h-3 mr-1" />
+                            {record.check_in_location.address}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        <div className="font-medium">점심 휴식</div>
+                        <div className="text-xs text-gray-500">
+                          {record.break_start ? formatTime(record.break_start) : '-'} - {record.break_end ? formatTime(record.break_end) : '-'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        <div className="font-medium">실제 퇴근</div>
+                        <div className="text-xs text-gray-500">
+                          {formatTime(record.actual_end)}
+                        </div>
+                        {record.check_out_location && (
+                          <div className="text-xs text-gray-500 flex items-center mt-1">
+                            <MapPin className="w-3 h-3 mr-1" />
+                            {record.check_out_location.address}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
