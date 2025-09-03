@@ -48,18 +48,32 @@ export default function AddSchedulePage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [existingSchedules, setExistingSchedules] = useState<Schedule[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
+  
+  // 30분 단위 스케줄 입력을 위한 상태
+  const [use30MinuteSlots, setUse30MinuteSlots] = useState(true);
+  const [hourlyWage, setHourlyWage] = useState(9860); // 2025년 최저시급
+  const [showWageCalculation, setShowWageCalculation] = useState(false);
 
-  // 시간대 정의
+  // 시간대 정의 (30분 단위)
   const timeSlots: TimeSlot[] = [
-    { time: '09:00', label: '9-10', isLunch: false, description: '오전 근무' },
-    { time: '10:00', label: '10-11', isLunch: false, description: '오전 근무' },
-    { time: '11:00', label: '11-12', isLunch: false, description: '오전 근무' },
-    { time: '12:00', label: '12-1', isLunch: true, description: '점심시간 (전화/업무 가능)' },
-    { time: '13:00', label: '1-2', isLunch: false, description: '오후 근무' },
-    { time: '14:00', label: '2-3', isLunch: false, description: '오후 근무' },
-    { time: '15:00', label: '3-4', isLunch: false, description: '오후 근무' },
-    { time: '16:00', label: '4-5', isLunch: false, description: '오후 근무' },
-    { time: '17:00', label: '5-6', isLunch: false, description: '오후 근무' },
+    { time: '09:00', label: '9:00-9:30', isLunch: false, description: '오전 근무' },
+    { time: '09:30', label: '9:30-10:00', isLunch: false, description: '오전 근무' },
+    { time: '10:00', label: '10:00-10:30', isLunch: false, description: '오전 근무' },
+    { time: '10:30', label: '10:30-11:00', isLunch: false, description: '오전 근무' },
+    { time: '11:00', label: '11:00-11:30', isLunch: false, description: '오전 근무' },
+    { time: '11:30', label: '11:30-12:00', isLunch: false, description: '오전 근무' },
+    { time: '12:00', label: '12:00-12:30', isLunch: true, description: '점심시간 (전화/업무 가능)' },
+    { time: '12:30', label: '12:30-13:00', isLunch: true, description: '점심시간 (전화/업무 가능)' },
+    { time: '13:00', label: '13:00-13:30', isLunch: false, description: '오후 근무' },
+    { time: '13:30', label: '13:30-14:00', isLunch: false, description: '오후 근무' },
+    { time: '14:00', label: '14:00-14:30', isLunch: false, description: '오후 근무' },
+    { time: '14:30', label: '14:30-15:00', isLunch: false, description: '오후 근무' },
+    { time: '15:00', label: '15:00-15:30', isLunch: false, description: '오후 근무' },
+    { time: '15:30', label: '15:30-16:00', isLunch: false, description: '오후 근무' },
+    { time: '16:00', label: '16:00-16:30', isLunch: false, description: '오후 근무' },
+    { time: '16:30', label: '16:30-17:00', isLunch: false, description: '오후 근무' },
+    { time: '17:00', label: '17:00-17:30', isLunch: false, description: '오후 근무' },
+    { time: '17:30', label: '17:30-18:00', isLunch: false, description: '오후 근무' },
   ];
 
   useEffect(() => {
@@ -335,13 +349,38 @@ export default function AddSchedulePage() {
     return conflicts.length > 0;
   };
 
+  // 30분 단위 스케줄 생성 함수
+  const generate30MinuteSchedules = (startTime: string, endTime: string) => {
+    const schedules = [];
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    
+    let current = new Date(start);
+    
+    while (current < end) {
+      const slotStart = current.toTimeString().slice(0, 5);
+      current.setMinutes(current.getMinutes() + 30);
+      const slotEnd = current.toTimeString().slice(0, 5);
+      
+      if (current <= end) {
+        schedules.push({
+          start: slotStart,
+          end: slotEnd,
+          duration: 0.5 // 30분 = 0.5시간
+        });
+      }
+    }
+    
+    return schedules;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     setSuccess(null);
 
-    console.log('🔍 handleSubmit 시작:', { currentUser, scheduleDate, startTime, endTime, note });
+    console.log('🔍 handleSubmit 시작:', { currentUser, scheduleDate, startTime, endTime, note, use30MinuteSlots });
 
     if (!currentUser?.id) {
       setError('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
@@ -357,40 +396,76 @@ export default function AddSchedulePage() {
     }
 
     try {
-      console.log('📝 Supabase insert 시작:', {
-        employee_id: currentUser.id,
-        schedule_date: scheduleDate,
-        scheduled_start: startTime,
-        scheduled_end: endTime,
-        employee_note: note,
-        status: 'approved'
-      });
-
-      const { data, error: insertError } = await supabase
-        .from('schedules')
-        .insert({
+      if (use30MinuteSlots) {
+        // 30분 단위 스케줄 생성
+        const timeSlots = generate30MinuteSchedules(startTime, endTime);
+        console.log('30분 단위 스케줄 생성:', timeSlots);
+        
+        // 각 30분 단위로 스케줄 생성
+        const schedulePromises = timeSlots.map(slot => {
+          const scheduleData = {
+            employee_id: currentUser.id,
+            schedule_date: scheduleDate,
+            scheduled_start: slot.start,
+            scheduled_end: slot.end,
+            employee_note: note || null,
+            status: 'approved'
+          };
+          
+          return supabase.from('schedules').insert([scheduleData]);
+        });
+        
+        const results = await Promise.all(schedulePromises);
+        const errors = results.filter(result => result.error);
+        
+        if (errors.length > 0) {
+          console.error('30분 단위 스케줄 생성 오류:', errors);
+          setError(`${errors.length}개의 스케줄 생성 중 오류가 발생했습니다.`);
+        } else {
+          setSuccess(`${timeSlots.length}개의 30분 단위 스케줄이 성공적으로 생성되었습니다!`);
+          setNote('');
+          // 3초 후 스케줄 페이지로 이동
+          setTimeout(() => {
+            router.push('/schedules');
+          }, 3000);
+        }
+      } else {
+        // 기존 방식: 전체 시간대 스케줄 생성
+        console.log('📝 Supabase insert 시작:', {
           employee_id: currentUser.id,
           schedule_date: scheduleDate,
           scheduled_start: startTime,
           scheduled_end: endTime,
           employee_note: note,
-          status: 'approved', // 기본값으로 승인됨
-        })
-        .select()
-        .single();
+          status: 'approved'
+        });
 
-      console.log('📊 Supabase insert 결과:', { data, error: insertError });
+        const { data, error: insertError } = await supabase
+          .from('schedules')
+          .insert({
+            employee_id: currentUser.id,
+            schedule_date: scheduleDate,
+            scheduled_start: startTime,
+            scheduled_end: endTime,
+            employee_note: note,
+            status: 'approved', // 기본값으로 승인됨
+          })
+          .select()
+          .single();
 
-      if (insertError) {
-        throw insertError;
+        console.log('📊 Supabase insert 결과:', { data, error: insertError });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        setSuccess('스케줄이 성공적으로 추가되었습니다!');
+        
+        // 3초 후 스케줄 페이지로 이동
+        setTimeout(() => {
+          router.push('/schedules');
+        }, 3000);
       }
-
-      setSuccess('스케줄이 성공적으로 추가되었습니다!');
-      
-      // 3초 후 스케줄 페이지로 이동
-      setTimeout(() => {
-        router.push('/schedules');
-      }, 3000);
       
     } catch (err: any) {
       console.error('스케줄 추가 오류:', err);
@@ -481,6 +556,27 @@ export default function AddSchedulePage() {
           {/* 스케줄 입력 폼 */}
           <div className="order-2 xl:order-1">
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              {/* 30분 단위 스케줄 옵션 */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={use30MinuteSlots}
+                      onChange={(e) => setUse30MinuteSlots(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-lg font-medium text-blue-900">30분 단위 스케줄 사용</span>
+                  </label>
+                  <span className="text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full font-medium">
+                    알바비 계산용
+                  </span>
+                </div>
+                <p className="text-sm text-blue-700">
+                  30분 단위로 정확한 근무 시간을 기록하여 정확한 알바비 계산이 가능합니다.
+                </p>
+              </div>
+              
               {/* 날짜 선택 */}
               <div>
                 <label htmlFor="scheduleDate" className="block text-lg font-medium text-gray-700 mb-2">
@@ -530,6 +626,27 @@ export default function AddSchedulePage() {
                 </div>
               </div>
 
+              {/* 시급 설정 */}
+              <div>
+                <label htmlFor="hourlyWage" className="block text-lg font-medium text-gray-700 mb-2">
+                  <span className="text-green-600 font-bold">💰</span>
+                  시급 (원/시간)
+                </label>
+                <input
+                  type="number"
+                  id="hourlyWage"
+                  value={hourlyWage}
+                  onChange={(e) => setHourlyWage(Number(e.target.value))}
+                  className="mt-1 block w-full p-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg"
+                  placeholder="9860"
+                  min="0"
+                  step="100"
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  2025년 최저시급: <span className="font-semibold text-green-600">9,860원</span> (변경 가능)
+                </p>
+              </div>
+              
               {/* 메모 */}
               <div>
                 <label htmlFor="note" className="block text-lg font-medium text-gray-700 mb-2">

@@ -87,6 +87,8 @@ export default function AttendancePage() {
       status: 'completed' | 'in-progress' | 'pending';
       actualStart?: string;
       actualEnd?: string;
+      totalHours: number;
+      estimatedWage: number;
     }[] = [];
     
     let currentGroup: typeof groups[0] | null = null;
@@ -105,7 +107,9 @@ export default function AttendancePage() {
                  : schedule.actual_start ? 'in-progress' 
                  : 'pending',
           actualStart: schedule.actual_start || undefined,
-          actualEnd: schedule.actual_end || undefined
+          actualEnd: schedule.actual_end || undefined,
+          totalHours: 0,
+          estimatedWage: 0
         };
       } else {
         // 연속된 시간대인지 확인 (30분 단위)
@@ -143,7 +147,9 @@ export default function AttendancePage() {
                    : schedule.actual_start ? 'in-progress' 
                    : 'pending',
             actualStart: schedule.actual_start || undefined,
-            actualEnd: schedule.actual_end || undefined
+            actualEnd: schedule.actual_end || undefined,
+            totalHours: 0,
+            estimatedWage: 0
           };
         }
       }
@@ -154,7 +160,19 @@ export default function AttendancePage() {
       groups.push(currentGroup);
     }
     
-    return groups;
+    // 각 그룹의 총 근무 시간과 예상 알바비 계산
+    return groups.map(group => {
+      const totalSlots = group.schedules.length;
+      const totalHours = totalSlots * 0.5; // 30분 = 0.5시간
+      const hourlyWage = 9860; // 2025년 최저시급
+      const estimatedWage = totalHours * hourlyWage;
+      
+      return {
+        ...group,
+        totalHours,
+        estimatedWage
+      };
+    });
   };
 
   // 일일 출근 상태 분석
@@ -1029,6 +1047,12 @@ export default function AttendancePage() {
                                 {completedSlots}/{totalSlots}
                               </div>
                               <div className="text-sm text-gray-500">완료</div>
+                              <div className="text-sm font-semibold text-green-600 mt-1">
+                                {group.totalHours}시간
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                예상: {group.estimatedWage.toLocaleString()}원
+                              </div>
                             </div>
                           </div>
                           
