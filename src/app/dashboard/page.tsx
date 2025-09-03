@@ -640,7 +640,7 @@ export default function DashboardPage() {
               className="p-6 bg-indigo-50 border-2 border-indigo-200 rounded-2xl hover:bg-indigo-100 transition-all duration-200 text-left"
             >
               <Clock className="h-10 w-10 text-indigo-600 mb-3" />
-              <h3 className="font-bold text-lg text-indigo-900 mb-2">출근 관리</h3>
+              <h3 className="font-bold text-lg text-indigo-900 mb-2">출근 체크</h3>
               <p className="text-sm text-indigo-700">출근 체크 및 근무 기록</p>
             </button>
             
