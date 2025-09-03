@@ -655,21 +655,57 @@ export default function AttendancePage() {
 
   const formatTime = (timeString: string) => {
     try {
-      if (!timeString) return '--:--';
-      return format(new Date(timeString), 'HH:mm', { locale: ko });
+      if (!timeString) {
+        console.warn('formatTime: timeString이 비어있음');
+        return '시간 없음';
+      }
+      
+      // ISO 문자열이 아닌 경우 처리
+      let date: Date;
+      if (timeString.includes('T') || timeString.includes('Z')) {
+        // ISO 형식 (예: "2025-09-03T09:00:00Z")
+        date = new Date(timeString);
+      } else if (timeString.includes(':')) {
+        // 시간 형식 (예: "09:00:00" 또는 "09:00")
+        const today = new Date();
+        const [hours, minutes, seconds] = timeString.split(':');
+        date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                       parseInt(hours), parseInt(minutes), seconds ? parseInt(seconds) : 0);
+      } else {
+        // 기타 형식
+        date = new Date(timeString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        console.error('formatTime: 유효하지 않은 날짜/시간:', timeString);
+        return '시간 오류';
+      }
+      
+      return format(date, 'HH:mm', { locale: ko });
     } catch (error) {
-      console.error('시간 포맷 오류:', error);
-      return '--:--';
+      console.error('formatTime 오류:', error, 'timeString:', timeString);
+      return '시간 오류';
     }
   };
 
   const formatDateTime = (dateTimeString: string) => {
     try {
-      if (!dateTimeString) return '--/-- --:--';
-      return format(new Date(dateTimeString), 'MM/dd HH:mm', { locale: ko });
+      if (!dateTimeString) {
+        console.warn('formatDateTime: dateTimeString이 비어있음');
+        return '날짜/시간 없음';
+      }
+      
+      const date = new Date(dateTimeString);
+      
+      if (isNaN(date.getTime())) {
+        console.error('formatDateTime: 유효하지 않은 날짜/시간:', dateTimeString);
+        return '날짜/시간 오류';
+      }
+      
+      return format(date, 'MM/dd HH:mm', { locale: ko });
     } catch (error) {
-      console.error('날짜시간 포맷 오류:', error);
-      return '--/-- --:--';
+      console.error('formatDateTime 오류:', error, 'dateTimeString:', dateTimeString);
+      return '날짜/시간 오류';
     }
   };
 
@@ -701,6 +737,20 @@ export default function AttendancePage() {
           <p>월간 기록 수: {monthlyRecords.length}개</p>
           <p>로딩 상태: {loading ? '로딩 중' : '완료'}</p>
           <p>현재 시간: {format(currentTime, 'HH:mm:ss', { locale: ko })}</p>
+          {todaySchedules.length > 0 && (
+            <div className="mt-2 p-2 bg-white rounded border">
+              <p><strong>스케줄 데이터 상세:</strong></p>
+              {todaySchedules.map((schedule, index) => (
+                <div key={index} className="text-xs mt-1">
+                  <p>스케줄 {index + 1}:</p>
+                  <p>  - scheduled_start: "{schedule.scheduled_start}"</p>
+                  <p>  - scheduled_end: "{schedule.scheduled_end}"</p>
+                  <p>  - actual_start: "{schedule.actual_start}"</p>
+                  <p>  - actual_end: "{schedule.actual_end}"</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 일일 근무 요약 */}
