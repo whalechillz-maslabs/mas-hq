@@ -861,7 +861,7 @@ export default function AttendancePage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <h3 className="text-lg font-semibold text-blue-900 mb-3">📊 오늘 근무 요약</h3>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
@@ -869,7 +869,7 @@ export default function AttendancePage() {
                   return totalHours > 0 || totalMinutes > 0 ? `${totalHours}h ${totalMinutes}m` : '0h 0m';
                 })()}
               </div>
-              <div className="text-sm text-blue-700">총 근무 시간</div>
+              <div className="text-sm text-blue-700">스케줄 시간</div>
             </div>
             
             <div>
@@ -885,7 +885,37 @@ export default function AttendancePage() {
                   return totalHours.toFixed(1);
                 })()}
               </div>
-              <div className="text-sm text-green-700">완료된 시간</div>
+              <div className="text-sm text-green-700">실제 근무 시간</div>
+            </div>
+            
+                        <div className="relative group">
+              <div className="text-2xl font-bold text-purple-600">
+                {(() => {
+                  const scheduledHours = todaySchedules.length * 0.5; // 스케줄된 시간
+                  const actualHours = todaySchedules
+                    .filter(s => s.actual_start && s.actual_end)
+                    .reduce((total, s) => {
+                      const start = new Date(s.actual_start!);
+                      const end = new Date(s.actual_end!);
+                      return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                    }, 0);
+                  const difference = actualHours - scheduledHours;
+                  return difference > 0 ? `+${difference.toFixed(1)}` : difference.toFixed(1);
+                })()}
+              </div>
+              <div className="text-sm text-purple-700">시간 차이</div>
+              
+              {/* 툴팁 */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10">
+                <div className="text-center">
+                  <div className="font-medium mb-1">실제 근무 시간 - 스케줄 시간</div>
+                  <div className="text-gray-300">
+                    +값: 초과 근무<br/>
+                    -값: 부족 근무
+                  </div>
+                </div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+              </div>
             </div>
             
 
