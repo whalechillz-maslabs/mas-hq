@@ -16,9 +16,12 @@ export default function Home() {
   });
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+    const checkUser = () => {
+      // localStorage 기반 인증 상태 확인
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      
+      if (isLoggedIn === 'true' && currentEmployee) {
         router.push('/dashboard');
       }
     };
