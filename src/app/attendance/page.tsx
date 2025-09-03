@@ -822,16 +822,26 @@ export default function AttendancePage() {
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center">
-            <Clock className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2 text-green-600" />
-            출근 관리
-          </h1>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="뒤로가기"
+            >
+              <span className="text-2xl">←</span>
+            </button>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2 text-green-600" />
+              출근 관리
+            </h1>
+          </div>
           
           <div className="text-right">
             <p className="text-xs text-gray-600">현재 시간</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {format(currentTime, 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
-            </p>
+            <div className="text-sm font-semibold text-gray-900">
+              <div>{format(currentTime, 'yyyy년 MM월 dd일', { locale: ko })}</div>
+              <div>{format(currentTime, 'HH:mm:ss', { locale: ko })}</div>
+            </div>
           </div>
         </div>
 
@@ -865,8 +875,11 @@ export default function AttendancePage() {
             <div>
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
-                  const { totalHours, totalMinutes } = calculateDailyWorkHours(todaySchedules);
-                  return totalHours > 0 || totalMinutes > 0 ? `${totalHours}h ${totalMinutes}m` : '0h 0m';
+                  // 스케줄된 시간 계산 (30분 단위 스케줄 개수 * 0.5)
+                  const scheduledHours = todaySchedules.length * 0.5;
+                  const hours = Math.floor(scheduledHours);
+                  const minutes = Math.round((scheduledHours - hours) * 60);
+                  return scheduledHours > 0 ? `${hours}h ${minutes}m` : '0h 0m';
                 })()}
               </div>
               <div className="text-sm text-blue-700">스케줄 시간</div>
