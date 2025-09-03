@@ -854,7 +854,10 @@ export default function AttendancePage() {
               </div>
               <div className="text-sm text-gray-500">오늘 근무 시간대</div>
               <div className="text-xs text-gray-400">
-                {todaySchedules.length}개 세부 스케줄
+                {(() => {
+                  const totalHours = todaySchedules.length * 0.5; // 30분 = 0.5시간
+                  return `${totalHours}시간 세부 스케줄`;
+                })()}
               </div>
             </div>
           </div>
