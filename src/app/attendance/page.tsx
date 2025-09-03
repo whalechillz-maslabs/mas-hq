@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, MapPin, CheckCircle, XCircle, Calendar, User, Building, Coffee } from 'lucide-react';
+import { Clock, MapPin, CheckCircle, XCircle, Calendar, User, Building, Coffee, DollarSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { format, isToday, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { getHourlyWage, calculateSimpleWage, formatWageBreakdown } from '@/lib/wage-calculator';
 
 interface AttendanceRecord {
   id: string;
@@ -48,6 +49,14 @@ export default function AttendancePage() {
     totalWorkTime: null,
     hasBreak: false
   });
+  
+  // 급여 계산 관련 상태
+  const [hourlyWage, setHourlyWage] = useState<number>(15000); // 기본 시급
+  const [wageCalculation, setWageCalculation] = useState<{
+    scheduledPay: number;
+    actualPay: number;
+    difference: number;
+  } | null>(null);
   // getCurrentUser 함수 정의
   // 일일 근무 시간 계산 함수
   const calculateDailyWorkHours = (schedules: AttendanceRecord[]) => {
@@ -69,6 +78,47 @@ export default function AttendancePage() {
     const minutes = totalMinutes % 60;
     
     return { totalHours: hours, totalMinutes: minutes };
+  };
+
+  // 급여 계산 함수
+  const calculateWage = async () => {
+    if (!currentUser || todaySchedules.length === 0) return;
+    
+    try {
+      // 사용자의 시급 정보 가져오기
+      const wageInfo = await getHourlyWage(currentUser.id, new Date().toISOString().split('T')[0]);
+      const baseWage = wageInfo?.base_wage || hourlyWage;
+      
+      // 스케줄된 시간과 실제 근무 시간 계산
+      const sortedSchedules = [...todaySchedules].sort((a, b) => 
+        a.scheduled_start.localeCompare(b.scheduled_start)
+      );
+      
+      const firstSchedule = sortedSchedules[0];
+      const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+      
+      let scheduledHours = 0;
+      if (firstSchedule && lastSchedule) {
+        const startTime = new Date(`2000-01-01T${firstSchedule.scheduled_start}`);
+        const endTime = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
+        scheduledHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+      }
+      
+      const actualHours = todaySchedules
+        .filter(s => s.actual_start && s.actual_end)
+        .reduce((total, s) => {
+          const start = new Date(s.actual_start!);
+          const end = new Date(s.actual_end!);
+          return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        }, 0);
+      
+      // 급여 계산
+      const calculation = calculateSimpleWage(baseWage, actualHours, scheduledHours);
+      setWageCalculation(calculation);
+      setHourlyWage(baseWage);
+    } catch (error) {
+      console.error('급여 계산 오류:', error);
+    }
   };
 
   // 스케줄을 시간대별로 그룹화하는 함수 (연속 스케줄 통합)
@@ -295,6 +345,9 @@ export default function AttendancePage() {
               totalWorkTime: null,
               hasBreak: hasBreak
             });
+            
+            // 스케줄 로드 후 급여 계산
+            setTimeout(() => calculateWage(), 100);
           }
         }
         
@@ -968,6 +1021,21 @@ export default function AttendancePage() {
                 })()}
               </div>
               <div className="text-xs text-yellow-600">실제 근무한 시간</div>
+            </div>
+          </div>
+          
+          {/* 시급 정보 */}
+          <div className="mt-3 p-3 bg-white rounded-lg border border-yellow-200">
+            <div className="text-sm text-yellow-700 mb-2">💵 시급 정보</div>
+            <div className="text-xs text-yellow-600 space-y-1">
+              <div>• <strong>현재 시급</strong>: {hourlyWage.toLocaleString()}원/시간</div>
+              {wageCalculation && (
+                <>
+                  <div>• <strong>계약 급여</strong>: {wageCalculation.scheduledPay.toLocaleString()}원</div>
+                  <div>• <strong>실제 급여</strong>: {wageCalculation.actualPay.toLocaleString()}원</div>
+                  <div>• <strong>급여 차이</strong>: {wageCalculation.difference > 0 ? '+' : ''}{wageCalculation.difference.toLocaleString()}원</div>
+                </>
+              )}
             </div>
           </div>
           
