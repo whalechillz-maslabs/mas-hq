@@ -254,20 +254,35 @@ export default function AttendanceManagementPage() {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
-      // 출근 날짜가 오늘인지 확인
+      // 출근 날짜와 퇴근 날짜 확인
       const startDate = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate());
+      const endDate = new Date(endTime.getFullYear(), endTime.getMonth(), endTime.getDate());
       
+      // 출근과 퇴근이 모두 오늘이 아닌 경우 (과거 근무)
+      if (startDate.getTime() !== today.getTime() && endDate.getTime() !== today.getTime()) {
+        return 'completed'; // 완료된 근무
+      }
+      
+      // 오늘 출근한 경우
       if (startDate.getTime() === today.getTime()) {
-        // 오늘 출근한 경우
         if (endTime < now) {
           return 'completed'; // 퇴근 완료
         } else {
           return 'confirmed'; // 근무 중
         }
-      } else {
-        // 다른 날 출근한 경우
-        return 'completed'; // 완료된 근무
       }
+      
+      // 오늘 퇴근한 경우 (어제 출근, 오늘 퇴근)
+      if (endDate.getTime() === today.getTime()) {
+        if (endTime < now) {
+          return 'completed'; // 퇴근 완료
+        } else {
+          return 'confirmed'; // 근무 중
+        }
+      }
+      
+      // 기본적으로 완료된 근무로 처리
+      return 'completed';
     }
     
     // 출근 시간만 있고 퇴근 시간이 없는 경우
