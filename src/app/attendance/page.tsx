@@ -854,10 +854,7 @@ export default function AttendancePage() {
               </div>
               <div className="text-sm text-gray-500">오늘 근무 시간대</div>
               <div className="text-xs text-gray-400">
-                {(() => {
-                  const totalHours = todaySchedules.length * 0.5; // 30분 = 0.5시간
-                  return `${totalHours}시간 세부 스케줄`;
-                })()}
+                {todaySchedules.length}개 세부 스케줄
               </div>
             </div>
           </div>
@@ -1065,7 +1062,7 @@ export default function AttendancePage() {
                             
                             <div className="text-right">
                               <div className="text-lg font-bold text-blue-600">
-                                {completedSlots}/{totalSlots}
+                                {group.totalHours.toFixed(1)}시간 / {group.totalHours.toFixed(1)}시간
                               </div>
                               <div className="text-sm text-gray-500">완료</div>
                               {group.isContinuous && (
@@ -1212,8 +1209,8 @@ export default function AttendancePage() {
                               {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
-                              <span className="text-xs text-gray-500">완료: {summary.completedSchedules}/{summary.totalSchedules}</span>
-                              <span className="font-medium">{summary.totalHours.toFixed(1)}시간</span>
+                              <span>{(summary.totalSchedules * 0.5).toFixed(1)}시간 / {(summary.totalSchedules * 0.5).toFixed(1)}시간</span>
+                              <span>{summary.totalHours.toFixed(1)}시간</span>
                             </div>
                           </div>
                         ));
