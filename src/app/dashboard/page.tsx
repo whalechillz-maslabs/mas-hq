@@ -661,7 +661,7 @@ export default function DashboardPage() {
                 <Award className="h-6 w-6 mr-3 text-indigo-600" />
                 관리자 전용 기능
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button 
                   onClick={() => router.push('/admin/system-settings')}
                   className="p-6 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:bg-gray-100 transition-all duration-200 text-left"
@@ -693,6 +693,24 @@ export default function DashboardPage() {
                   <Calendar className="h-10 w-10 text-teal-600 mb-3" />
                   <h3 className="font-bold text-lg text-teal-900 mb-2">직원별 스케줄 관리</h3>
                   <p className="text-sm text-teal-700">모든 직원의 스케줄 관리</p>
+                </button>
+                
+                <button 
+                  onClick={() => router.push('/admin/hourly-wages')}
+                  className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl hover:bg-yellow-100 transition-all duration-200 text-left"
+                >
+                  <DollarSign className="h-10 w-10 text-yellow-600 mb-3" />
+                  <h3 className="font-bold text-lg text-yellow-900 mb-2">시급 관리</h3>
+                  <p className="text-sm text-yellow-700">직원별 시급 및 가중치 설정</p>
+                </button>
+                
+                <button 
+                  onClick={() => router.push('/admin/insert-attendance')}
+                  className="p-6 bg-pink-50 border-2 border-pink-200 rounded-2xl hover:bg-pink-100 transition-all duration-200 text-left"
+                >
+                  <Clock className="h-10 w-10 text-pink-600 mb-3" />
+                  <h3 className="font-bold text-lg text-pink-900 mb-2">출근 데이터 입력</h3>
+                  <p className="text-sm text-pink-700">정확한 출근 데이터 수동 입력</p>
                 </button>
           </div>
         </div>
