@@ -837,7 +837,6 @@ export default function AttendancePage() {
           </div>
           
           <div className="text-right">
-            <p className="text-xs text-gray-600">현재 시간</p>
             <div className="text-sm font-semibold text-gray-900">
               <div>{format(currentTime, 'yyyy년 MM월 dd일', { locale: ko })}</div>
               <div>{format(currentTime, 'HH:mm:ss', { locale: ko })}</div>
@@ -858,8 +857,24 @@ export default function AttendancePage() {
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
-                  const totalHours = todaySchedules.length * 0.5; // 30분 = 0.5시간
-                  return totalHours.toFixed(1);
+                  // 실제 스케줄된 시간 범위를 계산
+                  if (todaySchedules.length === 0) return '0.0';
+                  
+                  const sortedSchedules = [...todaySchedules].sort((a, b) => 
+                    a.scheduled_start.localeCompare(b.scheduled_start)
+                  );
+                  
+                  const firstSchedule = sortedSchedules[0];
+                  const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+                  
+                  if (firstSchedule && lastSchedule) {
+                    const startTime = new Date(`2000-01-01T${firstSchedule.scheduled_start}`);
+                    const endTime = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
+                    const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                    return totalHours.toFixed(1);
+                  }
+                  
+                  return '0.0';
                 })()}
               </div>
               <div className="text-sm text-gray-500">오늘 근무 시간</div>
@@ -871,15 +886,31 @@ export default function AttendancePage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <h3 className="text-lg font-semibold text-blue-900 mb-3">📊 오늘 근무 요약</h3>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-3 gap-6 text-center">
             <div>
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
-                  // 스케줄된 시간 계산 (30분 단위 스케줄 개수 * 0.5)
-                  const scheduledHours = todaySchedules.length * 0.5;
-                  const hours = Math.floor(scheduledHours);
-                  const minutes = Math.round((scheduledHours - hours) * 60);
-                  return scheduledHours > 0 ? `${hours}h ${minutes}m` : '0h 0m';
+                  // 실제 스케줄된 시간 범위를 계산
+                  if (todaySchedules.length === 0) return '0h 0m';
+                  
+                  const sortedSchedules = [...todaySchedules].sort((a, b) => 
+                    a.scheduled_start.localeCompare(b.scheduled_start)
+                  );
+                  
+                  const firstSchedule = sortedSchedules[0];
+                  const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+                  
+                  if (firstSchedule && lastSchedule) {
+                    const startTime = new Date(`2000-01-01T${firstSchedule.scheduled_start}`);
+                    const endTime = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
+                    const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                    
+                    const hours = Math.floor(totalHours);
+                    const minutes = Math.round((totalHours - hours) * 60);
+                    return `${hours}h ${minutes}m`;
+                  }
+                  
+                  return '0h 0m';
                 })()}
               </div>
               <div className="text-sm text-blue-700">스케줄 시간</div>
@@ -904,7 +935,23 @@ export default function AttendancePage() {
                         <div className="relative group">
               <div className="text-2xl font-bold text-purple-600">
                 {(() => {
-                  const scheduledHours = todaySchedules.length * 0.5; // 스케줄된 시간
+                  // 실제 스케줄된 시간 범위를 계산
+                  let scheduledHours = 0;
+                  if (todaySchedules.length > 0) {
+                    const sortedSchedules = [...todaySchedules].sort((a, b) => 
+                      a.scheduled_start.localeCompare(b.scheduled_start)
+                    );
+                    
+                    const firstSchedule = sortedSchedules[0];
+                    const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+                    
+                    if (firstSchedule && lastSchedule) {
+                      const startTime = new Date(`2000-01-01T${firstSchedule.scheduled_start}`);
+                      const endTime = new Date(`2000-01-01T${firstSchedule.scheduled_end}`);
+                      scheduledHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                    }
+                  }
+                  
                   const actualHours = todaySchedules
                     .filter(s => s.actual_start && s.actual_end)
                     .reduce((total, s) => {
@@ -912,6 +959,7 @@ export default function AttendancePage() {
                       const end = new Date(s.actual_end!);
                       return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                     }, 0);
+                  
                   const difference = actualHours - scheduledHours;
                   return difference > 0 ? `+${difference.toFixed(1)}` : difference.toFixed(1);
                 })()}
