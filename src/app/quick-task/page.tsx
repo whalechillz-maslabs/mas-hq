@@ -222,7 +222,14 @@ export default function QuickTaskPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="메인 대시보드로 이동"
+              >
+                <span className="text-2xl">←</span>
+              </button>
               <h1 className="text-xl font-bold text-gray-900">오늘 업무</h1>
             </div>
             <button
