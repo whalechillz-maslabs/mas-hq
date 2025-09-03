@@ -1290,18 +1290,22 @@ export default function AttendancePage() {
                       <div>
                         <div className="text-2xl font-bold text-orange-600">
                           {(() => {
-                            // 스케줄된 시간의 총합 (실제 근무 시간과 동일하게 계산)
-                            const totalHours = monthlyRecords
-                              .filter(r => r.actual_start && r.actual_end)
-                              .reduce((total, r) => {
-                                const start = new Date(r.actual_start!);
-                                const end = new Date(r.actual_end!);
-                                return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                              }, 0);
-                            return totalHours.toFixed(1);
+                            // 스케줄된 시간의 총합 (각 날짜별 스케줄 시간 누적)
+                            const totalScheduledHours = monthlyRecords.reduce((total, r) => {
+                              if (r.scheduled_start && r.scheduled_end) {
+                                const start = new Date(`2000-01-01T${r.scheduled_start}`);
+                                const end = new Date(`2000-01-01T${r.scheduled_end}`);
+                                const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                                console.log(`월간 스케줄: ${r.schedule_date} ${r.scheduled_start}-${r.scheduled_end} = ${hours}시간`);
+                                return total + hours;
+                              }
+                              return total;
+                            }, 0);
+                            console.log(`총 스케줄 시간: ${totalScheduledHours}시간`);
+                            return totalScheduledHours.toFixed(1);
                           })()}
                         </div>
-                        <div className="text-sm text-gray-600">총 근무시간</div>
+                        <div className="text-sm text-gray-600">스케줄 시간</div>
                       </div>
                     </div>
                   </div>
@@ -1334,11 +1338,11 @@ export default function AttendancePage() {
                           }
                           acc[date].totalSchedules++;
                           
-                          // 스케줄된 시간 계산 (9:00-12:00 = 3시간)
+                          // 스케줄된 시간 계산 (각 날짜별로 누적)
                           if (record.scheduled_start && record.scheduled_end) {
                             const start = new Date(`2000-01-01T${record.scheduled_start}`);
                             const end = new Date(`2000-01-01T${record.scheduled_end}`);
-                            acc[date].scheduledHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                            acc[date].scheduledHours += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                           }
                           
                           if (record.actual_start && record.actual_end) {
