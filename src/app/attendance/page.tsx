@@ -878,11 +878,17 @@ export default function AttendancePage() {
             <div>
               <div className="text-2xl font-bold text-green-600">
                 {(() => {
-                  const analysis = analyzeDailyAttendance(todaySchedules);
-                  return analysis.completedCount || 0;
+                  const totalHours = todaySchedules
+                    .filter(s => s.actual_start && s.actual_end)
+                    .reduce((total, s) => {
+                      const start = new Date(s.actual_start!);
+                      const end = new Date(s.actual_end!);
+                      return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                    }, 0);
+                  return totalHours.toFixed(1);
                 })()}
               </div>
-              <div className="text-sm text-green-700">완료된 근무</div>
+              <div className="text-sm text-green-700">완료된 시간</div>
             </div>
             
             <div>
@@ -1131,9 +1137,18 @@ export default function AttendancePage() {
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-green-600">
-                          {monthlyRecords.filter(r => r.actual_start && r.actual_end).length}
+                          {(() => {
+                            const totalHours = monthlyRecords
+                              .filter(r => r.actual_start && r.actual_end)
+                              .reduce((total, r) => {
+                                const start = new Date(r.actual_start!);
+                                const end = new Date(r.actual_end!);
+                                return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                              }, 0);
+                            return totalHours.toFixed(1);
+                          })()}
                         </div>
-                        <div className="text-sm text-gray-600">완료된 근무</div>
+                        <div className="text-sm text-gray-600">완료된 시간</div>
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-orange-600">
@@ -1194,8 +1209,8 @@ export default function AttendancePage() {
                               {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
-                              <span>{summary.completedSchedules}/{summary.totalSchedules}</span>
-                              <span>{summary.totalHours.toFixed(1)}시간</span>
+                              <span className="text-xs text-gray-500">완료: {summary.completedSchedules}/{summary.totalSchedules}</span>
+                              <span className="font-medium">{summary.totalHours.toFixed(1)}시간</span>
                             </div>
                           </div>
                         ));
