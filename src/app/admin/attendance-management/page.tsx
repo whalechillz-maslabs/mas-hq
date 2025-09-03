@@ -245,6 +245,10 @@ export default function AttendanceManagementPage() {
 
   // 실제 출근/퇴근 시간을 기반으로 상태를 판정하는 함수
   const getActualStatus = (record: AttendanceRecord) => {
+    console.log(`🔍 getActualStatus 호출: ${record.employee_name}`);
+    console.log(`  - actual_start: ${record.actual_start}`);
+    console.log(`  - actual_end: ${record.actual_end}`);
+    
     // 출근 시간과 퇴근 시간이 모두 있는 경우
     if (record.actual_start && record.actual_end) {
       const startTime = new Date(record.actual_start);
@@ -258,16 +262,23 @@ export default function AttendanceManagementPage() {
       const startDate = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate());
       const endDate = new Date(endTime.getFullYear(), endTime.getMonth(), endTime.getDate());
       
+      console.log(`  - startDate: ${startDate.toLocaleDateString()}`);
+      console.log(`  - endDate: ${endDate.toLocaleDateString()}`);
+      console.log(`  - today: ${today.toLocaleDateString()}`);
+      
       // 출근과 퇴근이 모두 오늘이 아닌 경우 (과거 근무)
       if (startDate.getTime() !== today.getTime() && endDate.getTime() !== today.getTime()) {
+        console.log(`  ✅ 과거 근무 → 'completed' 반환`);
         return 'completed'; // 완료된 근무
       }
       
       // 오늘 출근한 경우
       if (startDate.getTime() === today.getTime()) {
         if (endTime < now) {
+          console.log(`  ✅ 오늘 출근, 퇴근 완료 → 'completed' 반환`);
           return 'completed'; // 퇴근 완료
         } else {
+          console.log(`  ✅ 오늘 출근, 근무 중 → 'confirmed' 반환`);
           return 'confirmed'; // 근무 중
         }
       }
@@ -275,27 +286,33 @@ export default function AttendanceManagementPage() {
       // 오늘 퇴근한 경우 (어제 출근, 오늘 퇴근)
       if (endDate.getTime() === today.getTime()) {
         if (endTime < now) {
+          console.log(`  ✅ 오늘 퇴근, 퇴근 완료 → 'completed' 반환`);
           return 'completed'; // 퇴근 완료
         } else {
+          console.log(`  ✅ 오늘 퇴근, 근무 중 → 'confirmed' 반환`);
           return 'confirmed'; // 근무 중
         }
       }
       
       // 기본적으로 완료된 근무로 처리
+      console.log(`  ✅ 기본값 → 'completed' 반환`);
       return 'completed';
     }
     
     // 출근 시간만 있고 퇴근 시간이 없는 경우
     if (record.actual_start && !record.actual_end) {
+      console.log(`  ✅ 출근만 있음 → 'confirmed' 반환`);
       return 'confirmed'; // 근무 중
     }
     
     // 출근 시간이 없는 경우
     if (!record.actual_start) {
+      console.log(`  ✅ 출근 시간 없음 → 'pending' 반환`);
       return 'pending'; // 미출근
     }
     
     // 기본값
+    console.log(`  ✅ 기본값 → 'pending' 반환`);
     return 'pending';
   };
 
@@ -549,12 +566,19 @@ export default function AttendanceManagementPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getActualStatus(record))}`}>
-                        {getStatusIcon(getActualStatus(record))}
-                        <span className="ml-1">
-                          {getStatusText(getActualStatus(record))}
-                        </span>
-                      </span>
+                      {(() => {
+                        const actualStatus = getActualStatus(record);
+                        const statusText = getStatusText(actualStatus);
+                        console.log(`🎯 ${record.employee_name} 최종 상태: ${actualStatus} → ${statusText}`);
+                        return (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(actualStatus)}`}>
+                            {getStatusIcon(actualStatus)}
+                            <span className="ml-1">
+                              {statusText}
+                            </span>
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900 mr-3">
