@@ -114,13 +114,13 @@
   },
   "suites": [
     {
-      "title": "attendance-functionality-test.spec.ts",
-      "file": "attendance-functionality-test.spec.ts",
+      "title": "admin-attendance-final-diagnosis.spec.ts",
+      "file": "admin-attendance-final-diagnosis.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "출근 관리 기능 테스트 및 문제점 진단",
+          "title": "관리자 출근 관리 최종 진단 테스트",
           "ok": true,
           "tags": [],
           "tests": [
@@ -135,109 +135,109 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 10253,
+                  "duration": 17222,
                   "errors": [],
                   "stdout": [
                     {
-                      "text": "=== 출근 관리 기능 테스트 및 문제점 진단 시작 ===\n"
+                      "text": "=== 관리자 출근 관리 최종 진단 테스트 시작 ===\n"
                     },
                     {
-                      "text": "=== 2. 페이지 제목 및 기본 구조 확인 ===\n"
+                      "text": "=== 1. 대시보드에서 팀 관리 기능의 출근 관리로 이동 ===\n"
                     },
                     {
-                      "text": "✅ 출근 관리 페이지 제목이 표시됩니다\n"
+                      "text": "팀 관리 기능 섹션 존재: \u001b[33mtrue\u001b[39m\n"
                     },
                     {
-                      "text": "=== 3. 현재 시간 표시 확인 ===\n"
+                      "text": "출근 관리 카드 수: \u001b[33m2\u001b[39m\n"
                     },
                     {
-                      "text": "❌ 현재 시간을 찾을 수 없습니다\n"
+                      "text": "팀 관리 기능 출근 관리 카드 내용: 출근 관리직원 출근체크 위치/시간 확인\n"
                     },
                     {
-                      "text": "=== 4. 디버깅 정보 확인 ===\n"
+                      "text": "팀 관리 기능 출근 관리 카드 클릭...\n"
                     },
                     {
-                      "text": "✅ 디버깅 정보 섹션이 표시됩니다\n"
+                      "text": "✅ 관리자 출근 관리 페이지로 이동 성공\n"
                     },
                     {
-                      "text": "사용자 ID: 사용자 ID: WHA\n"
+                      "text": "=== 2. 페이지 로딩 및 디버깅 로그 수집 ===\n"
                     },
                     {
-                      "text": "사용자 이름: 사용자 이름: 김탁수\n"
+                      "text": "=== 3. 콘솔 로그 수집 ===\n"
                     },
                     {
-                      "text": "오늘 스케줄 수: 오늘 스케줄 수: 0개\n"
+                      "text": "콘솔 메시지 수: \u001b[33m0\u001b[39m\n"
                     },
                     {
-                      "text": "월간 기록 수: 월간 기록 수: 0개\n"
+                      "text": "=== 4. 요약 카드 상태 확인 ===\n"
                     },
                     {
-                      "text": "로딩 상태: 로딩 상태: 완료\n"
+                      "text": "출근 완료: 0명\n"
                     },
                     {
-                      "text": "=== 5. 오늘 근무 요약 확인 ===\n"
+                      "text": "근무 중: 0명\n"
                     },
                     {
-                      "text": "✅ 오늘 근무 요약 섹션이 표시됩니다\n"
+                      "text": "미출근: 0명\n"
                     },
                     {
-                      "text": "총 근무 시간: 총 근무 시간\n"
+                      "text": "=== 5. 테이블 데이터 확인 ===\n"
                     },
                     {
-                      "text": "완료된 근무: 완료된 근무\n"
+                      "text": "테이블 행 수: \u001b[33m0\u001b[39m\n"
                     },
                     {
-                      "text": "진행 중인 근무: 진행 중\n"
+                      "text": "❌ 테이블에 여전히 데이터가 없습니다.\n"
                     },
                     {
-                      "text": "대기 중인 근무: 대기 중\n"
+                      "text": "테이블 헤더 수: \u001b[33m9\u001b[39m\n"
                     },
                     {
-                      "text": "=== 6. 출근 관리 인터페이스 확인 ===\n"
+                      "text": "  헤더 1: 직원 정보\n"
                     },
                     {
-                      "text": "✅ 간단한 출근 관리 섹션이 표시됩니다\n"
+                      "text": "  헤더 2: 스케줄\n"
                     },
                     {
-                      "text": "현재 상태: 현재 상태:\n"
+                      "text": "  헤더 3: 실제 출근\n"
                     },
                     {
-                      "text": "✅ 출근 체크 버튼이 표시됩니다\n"
+                      "text": "  헤더 4: 점심 휴식\n"
                     },
                     {
-                      "text": "=== 출근 체크 버튼 클릭 테스트 ===\n"
+                      "text": "  헤더 5: 실제 퇴근\n"
                     },
                     {
-                      "text": "클릭 후 현재 상태: 현재 상태:\n"
+                      "text": "  헤더 6: 근무 시간\n"
                     },
                     {
-                      "text": "=== 7. 오늘의 근무 스케줄 확인 ===\n"
+                      "text": "  헤더 7: 위치\n"
                     },
                     {
-                      "text": "❌ 오늘의 근무 스케줄 섹션을 찾을 수 없습니다\n"
+                      "text": "  헤더 8: 상태\n"
                     },
                     {
-                      "text": "=== 8. 콘솔 로그 확인 ===\n"
+                      "text": "  헤더 9: 액션\n"
                     },
                     {
-                      "text": "콘솔 로그가 없습니다.\n"
+                      "text": "=== 6. 데이터베이스 진단 결과 확인 ===\n"
                     },
                     {
-                      "text": "JavaScript 오류가 없습니다.\n"
+                      "text": "❌ 데이터베이스 진단 로직이 실행되지 않았습니다.\n"
                     },
                     {
-                      "text": "=== 10. 스크린샷 저장 ===\n"
+                      "text": "=== 7. 최종 스크린샷 저장 ===\n"
                     },
                     {
-                      "text": "✅ 스크린샷이 저장되었습니다: playwright-report/attendance-functionality-test.png\n"
+                      "text": "✅ 최종 진단 테스트 스크린샷 저장\n"
                     },
                     {
-                      "text": "=== 출근 관리 기능 테스트 및 문제점 진단 완료 ===\n"
+                      "text": "=== 관리자 출근 관리 최종 진단 테스트 완료 ===\n"
                     }
                   ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2025-09-02T23:47:57.591Z",
+                  "startTime": "2025-09-03T05:57:36.633Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -245,8 +245,8 @@
               "status": "expected"
             }
           ],
-          "id": "67f60978e01eb27cab51-3b9325777f52d1686fcb",
-          "file": "attendance-functionality-test.spec.ts",
+          "id": "fc338fe176e9af704a9a-9459903a8d5f167c949b",
+          "file": "admin-attendance-final-diagnosis.spec.ts",
           "line": 3,
           "column": 5
         }
@@ -255,8 +255,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-02T23:47:57.214Z",
-    "duration": 12362.741,
+    "startTime": "2025-09-03T05:57:36.285Z",
+    "duration": 19604.644,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,
