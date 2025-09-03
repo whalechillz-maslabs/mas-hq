@@ -888,25 +888,7 @@ export default function AttendancePage() {
               <div className="text-sm text-green-700">완료된 시간</div>
             </div>
             
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                {(() => {
-                  const analysis = analyzeDailyAttendance(todaySchedules);
-                  return analysis.inProgressCount || 0;
-                })()}
-              </div>
-              <div className="text-sm text-orange-700">진행 중</div>
-            </div>
-            
-            <div>
-              <div className="text-2xl font-bold text-gray-600">
-                {(() => {
-                  const analysis = analyzeDailyAttendance(todaySchedules);
-                  return analysis.pendingCount || 0;
-                })()}
-              </div>
-              <div className="text-sm text-gray-700">대기 중</div>
-            </div>
+
           </div>
         </div>
 
@@ -1058,20 +1040,11 @@ export default function AttendancePage() {
                             </div>
                             
                             <div className="text-right">
-                              <div className="text-lg font-bold text-blue-600">
-                                {group.totalHours.toFixed(1)}시간 / {group.totalHours.toFixed(1)}시간
+                              <div className="text-sm text-gray-600 mb-1">
+                                출근: {group.actualStart ? formatTime(group.actualStart) : '--:--'}
                               </div>
-                              <div className="text-sm text-gray-500">완료</div>
-                              {group.isContinuous && (
-                                <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full mt-1">
-                                  연속 근무
-                                </div>
-                              )}
-                              <div className="text-sm font-semibold text-green-600 mt-1">
-                                {group.totalHours}시간
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                예상: {group.estimatedWage.toLocaleString()}원
+                              <div className="text-sm text-gray-600">
+                                퇴근: {group.actualEnd ? formatTime(group.actualEnd) : '--:--'}
                               </div>
                             </div>
                           </div>
@@ -1125,13 +1098,7 @@ export default function AttendancePage() {
                 <div className="space-y-3">
                   {/* 월간 통계 */}
                   <div className="bg-white rounded-lg border p-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-blue-600">
-                          {monthlyRecords.length}
-                        </div>
-                        <div className="text-sm text-gray-600">총 스케줄</div>
-                      </div>
+                    <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
                         <div className="text-2xl font-bold text-green-600">
                           {(() => {
