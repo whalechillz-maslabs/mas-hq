@@ -1,37 +1,78 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function InsertAttendancePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [showEmployeeSelect, setShowEmployeeSelect] = useState(false);
+
+  // 컴포넌트 마운트 시 직원 목록 조회
+  useEffect(() => {
+    loadEmployees();
+    // 오늘 날짜를 기본값으로 설정
+    setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
+
+  // 직원 목록 조회
+  const loadEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name, employee_id, department')
+        .order('name');
+      
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error: any) {
+      setMessage(`직원 목록 조회 오류: ${error.message}`);
+      setMessageType('error');
+    }
+  };
 
   const insertCorrectAttendance = async () => {
     try {
+      // 유효성 검사
+      if (!selectedEmployee) {
+        setMessage('❌ 직원을 선택해주세요.');
+        setMessageType('error');
+        return;
+      }
+      
+      if (!selectedDate) {
+        setMessage('❌ 날짜를 선택해주세요.');
+        setMessageType('error');
+        return;
+      }
+
       setIsLoading(true);
       setMessage('🚀 정확한 출근 데이터 입력 시작...');
       setMessageType('info');
 
-      // 1. 허상원의 UUID 조회
+      // 1. 선택된 직원의 UUID 조회
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
         .select('id')
-        .eq('employee_id', 'HEO')
+        .eq('id', selectedEmployee)
         .single();
 
       if (employeeError || !employee) {
         throw new Error('허상원 직원을 찾을 수 없습니다.');
       }
 
-      // 2. 기존 9월 3일 데이터 삭제
-      setMessage('🗑️ 기존 테스트 데이터 삭제 중...');
+      // 2. 기존 선택된 날짜 데이터 삭제
+      setMessage('🗑️ 기존 데이터 삭제 중...');
       const { error: deleteError } = await supabase
         .from('schedules')
         .delete()
-        .eq('schedule_date', '2025-09-03')
+        .eq('schedule_date', selectedDate)
         .eq('employee_id', employee.id);
 
       if (deleteError) {
@@ -41,40 +82,40 @@ export default function InsertAttendancePage() {
       // 3. 정시 출근/퇴근 데이터 입력
       setMessage('📝 정시 출근/퇴근 데이터 입력 중...');
       
-      const schedules = [
-        // 09:00-12:00 (3시간)
-        { start: '09:00', end: '09:30', actual_start: '2025-09-03T09:00:00+09:00', actual_end: '2025-09-03T09:30:00+09:00' },
-        { start: '09:30', end: '10:00', actual_start: '2025-09-03T09:30:00+09:00', actual_end: '2025-09-03T10:00:00+09:00' },
-        { start: '10:00', end: '10:30', actual_start: '2025-09-03T10:00:00+09:00', actual_end: '2025-09-03T10:30:00+09:00' },
-        { start: '10:30', end: '11:00', actual_start: '2025-09-03T10:30:00+09:00', actual_end: '2025-09-03T11:00:00+09:00' },
-        { start: '11:00', end: '11:30', actual_start: '2025-09-03T11:00:00+09:00', actual_end: '2025-09-03T11:30:00+09:00' },
-        { start: '11:30', end: '12:00', actual_start: '2025-09-03T11:30:00+09:00', actual_end: '2025-09-03T12:00:00+09:00' },
-        
-        // 13:00-17:30 (4.5시간) - 점심시간 12:00-13:00 제외
-        { start: '13:00', end: '13:30', actual_start: '2025-09-03T13:00:00+09:00', actual_end: '2025-09-03T13:30:00+09:00' },
-        { start: '13:30', end: '14:00', actual_start: '2025-09-03T13:30:00+09:00', actual_end: '2025-09-03T14:00:00+09:00' },
-        { start: '14:00', end: '14:30', actual_start: '2025-09-03T14:00:00+09:00', actual_end: '2025-09-03T14:30:00+09:00' },
-        { start: '14:30', end: '15:00', actual_start: '2025-09-03T14:30:00+09:00', actual_end: '2025-09-03T15:00:00+09:00' },
-        { start: '15:00', end: '15:30', actual_start: '2025-09-03T15:00:00+09:00', actual_end: '2025-09-03T15:30:00+09:00' },
-        { start: '15:30', end: '16:00', actual_start: '2025-09-03T15:30:00+09:00', actual_end: '2025-09-03T16:00:00+09:00' },
-        { start: '16:00', end: '16:30', actual_start: '2025-09-03T16:00:00+09:00', actual_end: '2025-09-03T16:30:00+09:00' },
-        { start: '16:30', end: '17:00', actual_start: '2025-09-03T16:30:00+09:00', actual_end: '2025-09-03T17:00:00+09:00' },
-        { start: '17:00', end: '17:30', actual_start: '2025-09-03T17:00:00+09:00', actual_end: '2025-09-03T17:30:00+09:00' }
-      ];
+             const schedules = [
+         // 09:00-12:00 (3시간)
+         { start: '09:00', end: '09:30', actual_start: `${selectedDate}T09:00:00+09:00`, actual_end: `${selectedDate}T09:30:00+09:00` },
+         { start: '09:30', end: '10:00', actual_start: `${selectedDate}T09:30:00+09:00`, actual_end: `${selectedDate}T10:00:00+09:00` },
+         { start: '10:00', end: '10:30', actual_start: `${selectedDate}T10:00:00+09:00`, actual_end: `${selectedDate}T10:30:00+09:00` },
+         { start: '10:30', end: '11:00', actual_start: `${selectedDate}T10:30:00+09:00`, actual_end: `${selectedDate}T11:00:00+09:00` },
+         { start: '11:00', end: '11:30', actual_start: `${selectedDate}T11:00:00+09:00`, actual_end: `${selectedDate}T11:30:00+09:00` },
+         { start: '11:30', end: '12:00', actual_start: `${selectedDate}T11:30:00+09:00`, actual_end: `${selectedDate}T12:00:00+09:00` },
+         
+         // 13:00-17:30 (4.5시간) - 점심시간 12:00-13:00 제외
+         { start: '13:00', end: '13:30', actual_start: `${selectedDate}T13:00:00+09:00`, actual_end: `${selectedDate}T13:30:00+09:00` },
+         { start: '13:30', end: '14:00', actual_start: `${selectedDate}T13:30:00+09:00`, actual_end: `${selectedDate}T14:00:00+09:00` },
+         { start: '14:00', end: '14:30', actual_start: `${selectedDate}T14:00:00+09:00`, actual_end: `${selectedDate}T14:30:00+09:00` },
+         { start: '14:30', end: '15:00', actual_start: `${selectedDate}T14:30:00+09:00`, actual_end: `${selectedDate}T15:00:00+09:00` },
+         { start: '15:00', end: '15:30', actual_start: `${selectedDate}T15:00:00+09:00`, actual_end: `${selectedDate}T15:30:00+09:00` },
+         { start: '15:30', end: '16:00', actual_start: `${selectedDate}T15:30:00+09:00`, actual_end: `${selectedDate}T16:00:00+09:00` },
+         { start: '13:00', end: '16:30', actual_start: `${selectedDate}T16:00:00+09:00`, actual_end: `${selectedDate}T16:30:00+09:00` },
+         { start: '16:30', end: '17:00', actual_start: `${selectedDate}T16:30:00+09:00`, actual_end: `${selectedDate}T17:00:00+09:00` },
+         { start: '17:00', end: '17:30', actual_start: `${selectedDate}T17:00:00+09:00`, actual_end: `${selectedDate}T17:30:00+09:00` }
+       ];
 
       for (const schedule of schedules) {
-        const { error: insertError } = await supabase
-          .from('schedules')
-          .insert({
-            employee_id: employee.id,
-            schedule_date: '2025-09-03',
-            scheduled_start: schedule.start,
-            scheduled_end: schedule.end,
-            actual_start: schedule.actual_start,
-            actual_end: schedule.actual_end,
-            status: 'completed',
-            total_hours: 0.5
-          });
+                 const { error: insertError } = await supabase
+           .from('schedules')
+           .insert({
+             employee_id: employee.id,
+             schedule_date: selectedDate,
+             scheduled_start: schedule.start,
+             scheduled_end: schedule.end,
+             actual_start: schedule.actual_start,
+             actual_end: schedule.actual_end,
+             status: 'completed',
+             total_hours: 0.5
+           });
 
         if (insertError) {
           throw new Error(`스케줄 입력 오류: ${insertError.message}`);
@@ -83,20 +124,20 @@ export default function InsertAttendancePage() {
 
       // 4. 입력된 데이터 확인
       setMessage('🔍 입력된 데이터 확인 중...');
-      const { data: insertedData, error: selectError } = await supabase
-        .from('schedules')
-        .select(`
-          schedule_date,
-          scheduled_start,
-          scheduled_end,
-          actual_start,
-          actual_end,
-          total_hours,
-          status
-        `)
-        .eq('schedule_date', '2025-09-03')
-        .eq('employee_id', employee.id)
-        .order('scheduled_start');
+             const { data: insertedData, error: selectError } = await supabase
+         .from('schedules')
+         .select(`
+           schedule_date,
+           scheduled_start,
+           scheduled_end,
+           actual_start,
+           actual_end,
+           total_hours,
+           status
+         `)
+         .eq('schedule_date', selectedDate)
+         .eq('employee_id', employee.id)
+         .order('scheduled_start');
 
       if (selectError) {
         throw new Error(`데이터 조회 오류: ${selectError.message}`);
@@ -138,25 +179,64 @@ export default function InsertAttendancePage() {
               </div>
             </div>
 
-            {/* 데이터 입력 버튼 */}
-            <div className="text-center">
-              <button
-                onClick={insertCorrectAttendance}
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 shadow-lg transform hover:scale-105 transition-all"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                    처리중...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center">
-                    <CheckCircle className="h-6 w-6 mr-3" />
-                    정시 출근/퇴근 데이터 입력
-                  </span>
-                )}
-              </button>
+            {/* 직원 및 날짜 선택 */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">👤 직원 및 날짜 선택</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {/* 직원 선택 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    직원 선택
+                  </label>
+                  <select
+                    value={selectedEmployee}
+                    onChange={(e) => setSelectedEmployee(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">직원을 선택하세요</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.employee_id}) - {emp.department}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* 날짜 선택 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    날짜 선택
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              {/* 데이터 입력 버튼 */}
+              <div className="text-center">
+                <button
+                  onClick={insertCorrectAttendance}
+                  disabled={isLoading || !selectedEmployee || !selectedDate}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 shadow-lg transform hover:scale-105 transition-all"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                      처리중...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 mr-3" />
+                      정시 출근/퇴근 데이터 입력
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* 메시지 표시 */}
