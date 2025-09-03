@@ -9,9 +9,9 @@ export interface HourlyWage {
   id: number;
   employee_id: string;
   base_wage: number;
-  overtime_multiplier: number;
-  night_shift_multiplier: number;
-  holiday_multiplier: number;
+  overtime_multiplier: number; // 1.0 = 수당 없음, 1.5 = 50% 추가
+  night_shift_multiplier: number; // 1.0 = 수당 없음, 1.3 = 30% 추가
+  holiday_multiplier: number; // 1.0 = 수당 없음, 2.0 = 100% 추가
   effective_date: string;
   end_date?: string;
 }

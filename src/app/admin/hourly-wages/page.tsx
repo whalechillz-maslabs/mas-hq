@@ -38,10 +38,10 @@ export default function HourlyWagesPage() {
   const [editingWage, setEditingWage] = useState<HourlyWage | null>(null);
   const [newWage, setNewWage] = useState({
     employee_id: '',
-    base_wage: 15000,
-    overtime_multiplier: 1.5,
-    night_shift_multiplier: 1.3,
-    holiday_multiplier: 2.0,
+    base_wage: 12000, // 기본 시급을 12,000원으로 변경
+    overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
+    night_shift_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
+    holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
     effective_date: new Date().toISOString().split('T')[0]
   });
 
@@ -102,10 +102,10 @@ export default function HourlyWagesPage() {
       alert('시급이 성공적으로 등록되었습니다.');
       setNewWage({
         employee_id: '',
-        base_wage: 15000,
-        overtime_multiplier: 1.5,
-        night_shift_multiplier: 1.3,
-        holiday_multiplier: 2.0,
+        base_wage: 12000, // 기본 시급을 12,000원으로 변경
+        overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
+        night_shift_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
+        holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
         effective_date: new Date().toISOString().split('T')[0]
       });
       loadData();
@@ -218,37 +218,40 @@ export default function HourlyWagesPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">초과 근무 가중치</label>
+                <div className="text-xs text-gray-500 mb-1">1.0 = 수당 없음, 1.5 = 50% 추가</div>
                 <input
                   type="number"
                   step="0.1"
                   value={newWage.overtime_multiplier}
                   onChange={(e) => setNewWage({ ...newWage, overtime_multiplier: Number(e.target.value) })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="1.5"
+                  placeholder="1.0"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">야간 근무 가중치</label>
+                <div className="text-xs text-gray-500 mb-1">1.0 = 수당 없음, 1.3 = 30% 추가</div>
                 <input
                   type="number"
                   step="0.1"
                   value={newWage.night_shift_multiplier}
                   onChange={(e) => setNewWage({ ...newWage, night_shift_multiplier: Number(e.target.value) })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="1.3"
+                  placeholder="1.0"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">휴일 근무 가중치</label>
+                <div className="block text-xs text-gray-500 mb-1">1.0 = 수당 없음, 2.0 = 100% 추가</div>
                 <input
                   type="number"
                   step="0.1"
                   value={newWage.holiday_multiplier}
                   onChange={(e) => setNewWage({ ...newWage, holiday_multiplier: Number(e.target.value) })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="2.0"
+                  placeholder="1.0"
                 />
               </div>
               
@@ -263,13 +266,50 @@ export default function HourlyWagesPage() {
               </div>
             </div>
             
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
                 onClick={handleCreateWage}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md flex items-center space-x-2"
               >
                 <Plus className="h-5 w-5" />
                 <span>시급 등록</span>
+              </button>
+              
+              {/* 프리셋 버튼들 */}
+              <button
+                onClick={() => setNewWage({
+                  ...newWage,
+                  overtime_multiplier: 1.0,
+                  night_shift_multiplier: 1.0,
+                  holiday_multiplier: 1.0
+                })}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm"
+              >
+                🏪 프랜차이즈 스타일 (수당 없음)
+              </button>
+              
+              <button
+                onClick={() => setNewWage({
+                  ...newWage,
+                  overtime_multiplier: 1.5,
+                  night_shift_multiplier: 1.0,
+                  holiday_multiplier: 1.0
+                })}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm"
+              >
+                ⚖️ 법정 기준 (초과근무만)
+              </button>
+              
+              <button
+                onClick={() => setNewWage({
+                  ...newWage,
+                  overtime_multiplier: 1.5,
+                  night_shift_multiplier: 1.3,
+                  holiday_multiplier: 2.0
+                })}
+                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm"
+              >
+                💎 프리미엄 (모든 수당)
               </button>
             </div>
           </div>
@@ -308,13 +348,19 @@ export default function HourlyWagesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{wage.overtime_multiplier}배</div>
+                        <div className="text-sm text-gray-900">
+                          {wage.overtime_multiplier === 1.0 ? '수당 없음' : `${wage.overtime_multiplier}배`}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{wage.night_shift_multiplier}배</div>
+                        <div className="text-sm text-gray-900">
+                          {wage.night_shift_multiplier === 1.0 ? '수당 없음' : `${wage.night_shift_multiplier}배`}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{wage.holiday_multiplier}배</div>
+                        <div className="text-sm text-gray-900">
+                          {wage.holiday_multiplier === 1.0 ? '수당 없음' : `${wage.holiday_multiplier}배`}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{wage.effective_date}</div>

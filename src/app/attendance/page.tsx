@@ -51,7 +51,7 @@ export default function AttendancePage() {
   });
   
   // 급여 계산 관련 상태
-  const [hourlyWage, setHourlyWage] = useState<number>(15000); // 기본 시급
+  const [hourlyWage, setHourlyWage] = useState<number>(12000); // 기본 시급 12,000원
   const [wageCalculation, setWageCalculation] = useState<{
     scheduledPay: number;
     actualPay: number;

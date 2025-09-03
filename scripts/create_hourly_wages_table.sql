@@ -50,10 +50,10 @@ CREATE POLICY "직원은 자신의 시급 정보 조회" ON hourly_wages
 INSERT INTO hourly_wages (employee_id, base_wage, overtime_multiplier, night_shift_multiplier, holiday_multiplier, effective_date)
 SELECT 
   id,
-  15000, -- 기본 시급 15,000원
-  1.5,   -- 초과 근무 1.5배
-  1.3,   -- 야간 근무 1.3배
-  2.0    -- 휴일 근무 2.0배
+  12000, -- 기본 시급 12,000원 (실제 운영 환경에 맞게 조정)
+  1.0,   -- 초과 근무 1.0배 (수당 없음 - 프랜차이즈 스타일)
+  1.0,   -- 야간 근무 1.0배 (수당 없음 - 프랜차이즈 스타일)
+  1.0    -- 휴일 근무 1.0배 (수당 없음 - 프랜차이즈 스타일)
 FROM employees 
 WHERE role = 'admin' -- 관리자만 기본값 설정
 ON CONFLICT (employee_id, effective_date) DO NOTHING;
