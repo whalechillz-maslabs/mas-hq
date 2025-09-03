@@ -162,7 +162,7 @@ export default function AttendancePage() {
               name
             )
           `)
-          .eq('employee_id', user.employee_id)
+          .eq('employee_id', user.id) // UUID 사용
           .eq('schedule_date', today);
 
         if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
@@ -206,7 +206,7 @@ export default function AttendancePage() {
               name
             )
           `)
-          .eq('employee_id', user.employee_id)
+          .eq('employee_id', user.id) // UUID 사용
           .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
           .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
           .not('actual_start', 'is', null);
@@ -291,7 +291,7 @@ export default function AttendancePage() {
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.employee_id)
+        .eq('employee_id', user.id) // UUID 사용
         .eq('schedule_date', today);
 
       if (error) {
@@ -696,9 +696,11 @@ export default function AttendancePage() {
           <p><strong>디버깅 정보:</strong></p>
           <p>사용자 ID: {currentUser?.employee_id || '없음'}</p>
           <p>사용자 이름: {currentUser?.name || '없음'}</p>
+          <p>UUID: {currentUser?.id || '없음'}</p>
           <p>오늘 스케줄 수: {todaySchedules.length}개</p>
           <p>월간 기록 수: {monthlyRecords.length}개</p>
           <p>로딩 상태: {loading ? '로딩 중' : '완료'}</p>
+          <p>현재 시간: {format(currentTime, 'HH:mm:ss', { locale: ko })}</p>
         </div>
 
         {/* 일일 근무 요약 */}
@@ -707,34 +709,42 @@ export default function AttendancePage() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-blue-600">{(() => {
-                const { totalHours, totalMinutes } = calculateDailyWorkHours(todaySchedules);
-                return `${totalHours}h ${totalMinutes}m`;
-              })()}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {(() => {
+                  const { totalHours, totalMinutes } = calculateDailyWorkHours(todaySchedules);
+                  return totalHours > 0 || totalMinutes > 0 ? `${totalHours}h ${totalMinutes}m` : '0h 0m';
+                })()}
+              </div>
               <div className="text-sm text-blue-700">총 근무 시간</div>
             </div>
             
             <div>
-              <div className="text-2xl font-bold text-green-600">{(() => {
-                const analysis = analyzeDailyAttendance(todaySchedules);
-                return analysis.completedCount;
-              })()}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {(() => {
+                  const analysis = analyzeDailyAttendance(todaySchedules);
+                  return analysis.completedCount || 0;
+                })()}
+              </div>
               <div className="text-sm text-green-700">완료된 근무</div>
             </div>
             
             <div>
-              <div className="text-2xl font-bold text-orange-600">{(() => {
-                const analysis = analyzeDailyAttendance(todaySchedules);
-                return analysis.inProgressCount;
-              })()}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {(() => {
+                  const analysis = analyzeDailyAttendance(todaySchedules);
+                  return analysis.inProgressCount || 0;
+                })()}
+              </div>
               <div className="text-sm text-orange-700">진행 중</div>
             </div>
             
             <div>
-              <div className="text-2xl font-bold text-gray-600">{(() => {
-                const analysis = analyzeDailyAttendance(todaySchedules);
-                return analysis.pendingCount;
-              })()}</div>
+              <div className="text-2xl font-bold text-gray-600">
+                {(() => {
+                  const analysis = analyzeDailyAttendance(todaySchedules);
+                  return analysis.pendingCount || 0;
+                })()}
+              </div>
               <div className="text-sm text-gray-700">대기 중</div>
             </div>
           </div>

@@ -1,35 +1,39 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="4.700177">
-<testsuite name="schedules-simple-check.spec.ts" timestamp="2025-09-02T23:29:35.819Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="2.608" errors="0">
-<testcase name="시간대별 카드 구조 간단 확인" classname="schedules-simple-check.spec.ts" time="2.608">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="12.362741">
+<testsuite name="attendance-functionality-test.spec.ts" timestamp="2025-09-02T23:47:57.303Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="10.253" errors="0">
+<testcase name="출근 관리 기능 테스트 및 문제점 진단" classname="attendance-functionality-test.spec.ts" time="10.253">
 <system-out>
-<![CDATA[=== 시간대별 카드 구조 확인 시작 ===
-✅ 시간대별 근무자 현황 섹션이 표시됩니다
-시간대별 카드 수: [33m9[39m
-=== 첫 번째 카드 구조 분석 ===
-첫 번째 카드 HTML: <div class="text-center"><div class="font-bold text-lg mb-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">9-10<span class="ml-1 text-xs bg-blue-200 text-blue-800 px-1 py-0.5 rounded">시작</span></div><div class="text-2xl font-bold mb-1 text-gray-400">0명</div><div class="text-xs text-gray-400">스케줄 없음</div></div>
-=== 9-10 시간대 카드 찾기 ===
-🎯 9-10 시간대 카드 발견! (인덱스: 0)
-카드 텍스트: 9-10시작0명스케줄 없음
-9-10 시간대 근무자 수: 0명
-9-10 시간대 설명: 스케줄 없음
-=== 모든 시간대 라벨 확인 ===
-발견된 시간대 라벨: [
-  [32m'9-10시작'[39m, [32m'10-11'[39m,
-  [32m'11-12'[39m,    [32m'12-1'[39m,
-  [32m'1-2'[39m,      [32m'2-3'[39m,
-  [32m'3-4'[39m,      [32m'4-5'[39m,
-  [32m'5-6'[39m
-]
-❌ 9-10 시간대가 포함되어 있지 않습니다
-누락된 시간대: [
-  [32m'10-11'[39m, [32m'11-12'[39m,
-  [32m'12-1'[39m,  [32m'1-2'[39m,
-  [32m'2-3'[39m,   [32m'3-4'[39m,
-  [32m'4-5'[39m,   [32m'5-6'[39m
-]
-=== 6. 스크린샷 저장 ===
-✅ 스크린샷이 저장되었습니다: playwright-report/schedules-simple-check.png
-=== 시간대별 카드 구조 확인 완료 ===
+<![CDATA[=== 출근 관리 기능 테스트 및 문제점 진단 시작 ===
+=== 2. 페이지 제목 및 기본 구조 확인 ===
+✅ 출근 관리 페이지 제목이 표시됩니다
+=== 3. 현재 시간 표시 확인 ===
+❌ 현재 시간을 찾을 수 없습니다
+=== 4. 디버깅 정보 확인 ===
+✅ 디버깅 정보 섹션이 표시됩니다
+사용자 ID: 사용자 ID: WHA
+사용자 이름: 사용자 이름: 김탁수
+오늘 스케줄 수: 오늘 스케줄 수: 0개
+월간 기록 수: 월간 기록 수: 0개
+로딩 상태: 로딩 상태: 완료
+=== 5. 오늘 근무 요약 확인 ===
+✅ 오늘 근무 요약 섹션이 표시됩니다
+총 근무 시간: 총 근무 시간
+완료된 근무: 완료된 근무
+진행 중인 근무: 진행 중
+대기 중인 근무: 대기 중
+=== 6. 출근 관리 인터페이스 확인 ===
+✅ 간단한 출근 관리 섹션이 표시됩니다
+현재 상태: 현재 상태:
+✅ 출근 체크 버튼이 표시됩니다
+=== 출근 체크 버튼 클릭 테스트 ===
+클릭 후 현재 상태: 현재 상태:
+=== 7. 오늘의 근무 스케줄 확인 ===
+❌ 오늘의 근무 스케줄 섹션을 찾을 수 없습니다
+=== 8. 콘솔 로그 확인 ===
+콘솔 로그가 없습니다.
+JavaScript 오류가 없습니다.
+=== 10. 스크린샷 저장 ===
+✅ 스크린샷이 저장되었습니다: playwright-report/attendance-functionality-test.png
+=== 출근 관리 기능 테스트 및 문제점 진단 완료 ===
 ]]>
 </system-out>
 </testcase>
