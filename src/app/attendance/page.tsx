@@ -813,19 +813,19 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* 간단한 사용자 정보 */}
-        <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4 mb-4">
+        {/* 간단한 사용자 정보 - 업계 표준 스타일 */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <User className="h-6 w-6 text-blue-600" />
+              <User className="h-8 w-8 text-blue-600" />
               <div>
-                <p className="font-medium text-gray-900">{currentUser?.name || '사용자'}</p>
-                <p className="text-sm text-gray-600">{currentUser?.employee_id || 'ID'}</p>
+                <p className="text-lg font-semibold text-gray-900">{currentUser?.name || '사용자'}</p>
+                <p className="text-sm text-gray-500">{currentUser?.employee_id || 'ID'}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-600">오늘 스케줄</p>
-              <p className="text-lg font-semibold text-blue-600">{todaySchedules.length}개</p>
+              <div className="text-2xl font-bold text-blue-600">{todaySchedules.length}</div>
+              <div className="text-sm text-gray-500">오늘 스케줄</div>
             </div>
           </div>
         </div>
@@ -877,103 +877,89 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* 단순화된 출근 관리 */}
+        {/* 간단한 출근 관리 - 업계 표준 스타일 */}
         <div className="bg-white rounded-lg border p-6 shadow-sm mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 간단한 출근 관리</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">📱 간단한 출근 관리</h3>
           
-          <div className="space-y-4">
-            {/* 출근/퇴근 상태 표시 */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <span className="font-medium">현재 상태: </span>
-                <span className={`px-2 py-1 rounded-full text-sm ${
-                  dailyAttendance.hasBreak 
-                    ? "bg-yellow-100 text-yellow-800"
-                    : dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime 
-                    ? "bg-green-100 text-green-800" 
-                    : dailyAttendance.checkOutTime 
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-100 text-gray-800"
-                }`}>
-                  {dailyAttendance.hasBreak ? "휴식 중" :
-                   dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime ? "근무 중" : 
-                   dailyAttendance.checkOutTime ? "근무 완료" : "출근 전"}
-                </span>
+          <div className="space-y-6">
+            {/* 현재 상태 표시 */}
+            <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border-2 border-blue-200">
+              <div className="text-2xl font-bold text-gray-800 mb-2">
+                {dailyAttendance.hasBreak ? "☕ 휴식 중" :
+                 dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime ? "🟢 근무 중" : 
+                 dailyAttendance.checkOutTime ? "✅ 근무 완료" : "⏰ 출근 전"}
               </div>
               
               {dailyAttendance.checkInTime && (
-                <div className="text-sm text-gray-600">
+                <div className="text-lg text-gray-600">
                   출근: {format(new Date(dailyAttendance.checkInTime), "MM/dd HH:mm", { locale: ko })}
+                </div>
+              )}
+              
+              {dailyAttendance.totalWorkTime && (
+                <div className="text-lg font-semibold text-blue-600 mt-2">
+                  총 근무: {dailyAttendance.totalWorkTime}
                 </div>
               )}
             </div>
             
-            {/* 출근/퇴근/휴식 버튼 */}
-            <div className="flex flex-col space-y-3">
+            {/* 간단한 버튼들 */}
+            <div className="grid grid-cols-1 gap-4">
               {!dailyAttendance.isCheckedIn && !dailyAttendance.hasBreak && (
                 <button
                   onClick={handleSimpleCheckIn}
                   disabled={checkingIn}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                  className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
                 >
-                  <CheckCircle className="h-5 w-5 mr-2" />
+                  <CheckCircle className="h-6 w-6 mr-3 inline" />
                   {checkingIn ? "처리중..." : "출근 체크"}
                 </button>
               )}
               
               {dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime && !dailyAttendance.hasBreak && (
-                <div className="space-y-3">
+                <>
                   <button
                     onClick={handleBreakStart}
                     disabled={checkingIn}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
                   >
-                    <Coffee className="h-5 w-5 mr-2" />
+                    <Coffee className="h-6 w-6 mr-3 inline" />
                     {checkingIn ? "처리중..." : "휴식 시작"}
                   </button>
                   
                   <button
                     onClick={handleSimpleCheckOut}
                     disabled={checkingIn}
-                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
                   >
-                    <XCircle className="h-5 w-5 mr-2" />
+                    <XCircle className="h-6 w-6 mr-3 inline" />
                     {checkingIn ? "처리중..." : "퇴근 체크"}
                   </button>
-                </div>
+                </>
               )}
 
               {dailyAttendance.hasBreak && (
-                <div className="space-y-3">
+                <>
                   <button
                     onClick={handleBreakReturn}
                     disabled={checkingIn}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
                   >
-                    <Coffee className="h-5 w-5 mr-2" />
+                    <Coffee className="h-6 w-6 mr-3 inline" />
                     {checkingIn ? "처리중..." : "휴식 후 복귀"}
                   </button>
                   
                   <button
                     onClick={handleSimpleCheckOut}
                     disabled={checkingIn}
-                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg text-lg font-medium disabled:opacity-50 w-full"
+                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
                   >
-                    <XCircle className="h-5 w-5 mr-2" />
+                    <XCircle className="h-6 w-6 mr-3 inline" />
                     {checkingIn ? "처리중..." : "퇴근 체크"}
                   </button>
-                </div>
+                </>
               )}
             </div>
-            
-            {/* 총 근무 시간 표시 */}
-            {dailyAttendance.totalWorkTime && (
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <span className="font-medium text-blue-900">
-                  오늘 총 근무 시간: {dailyAttendance.totalWorkTime}
-                </span>
-              </div>
-            )}
           </div>
         </div>
         {loading ? (
@@ -983,20 +969,20 @@ export default function AttendancePage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* 오늘의 스케줄 */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-green-600" />
-                오늘의 근무 스케줄
+            {/* 간단한 스케줄 요약 - 업계 표준 스타일 */}
+            <div className="bg-white rounded-lg border p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 text-center flex items-center justify-center">
+                <Calendar className="h-6 w-6 mr-2 text-blue-600" />
+                오늘의 근무 요약
               </h2>
               
               {todaySchedules.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <Clock className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                  <p>오늘 등록된 근무 스케줄이 없습니다.</p>
+                  <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg">오늘 등록된 근무 스케줄이 없습니다.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {(() => {
                     const groupedSchedules = groupSchedulesByTimeRange(todaySchedules);
                     
@@ -1005,16 +991,16 @@ export default function AttendancePage() {
                       const completedSlots = group.schedules.filter(s => s.actual_start && s.actual_end).length;
                       const inProgressSlots = group.schedules.filter(s => s.actual_start && !s.actual_end).length;
                       
-                      const getGroupStatusColor = (status: string) => {
+                      const getStatusIcon = (status: string) => {
                         switch (status) {
-                          case 'completed': return 'bg-green-100 text-green-800';
-                          case 'in-progress': return 'bg-blue-100 text-blue-800';
-                          case 'pending': return 'bg-yellow-100 text-yellow-800';
-                          default: return 'bg-gray-100 text-gray-800';
+                          case 'completed': return '✅';
+                          case 'in-progress': return '🟢';
+                          case 'pending': return '⏰';
+                          default: return '❓';
                         }
                       };
                       
-                      const getGroupStatusText = (status: string) => {
+                      const getStatusText = (status: string) => {
                         switch (status) {
                           case 'completed': return '완료';
                           case 'in-progress': return '근무중';
@@ -1024,83 +1010,53 @@ export default function AttendancePage() {
                       };
                       
                       return (
-                        <div key={groupIndex} className="bg-white rounded-lg border p-4 shadow-sm">
+                        <div key={groupIndex} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <span className="text-lg font-semibold text-gray-900">
+                              <span className="text-xl font-bold text-gray-800">
                                 {formatTime(group.startTime)} - {formatTime(group.endTime)}
                               </span>
-                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGroupStatusColor(group.status)}`}>
-                                {getGroupStatusText(group.status)}
+                              <span className="text-2xl">
+                                {getStatusIcon(group.status)}
                               </span>
-                              <span className="text-sm text-gray-500">
-                                ({totalSlots}개 시간대)
+                              <span className="px-3 py-1 bg-white rounded-full text-sm font-medium text-gray-700 border">
+                                {getStatusText(group.status)}
                               </span>
                             </div>
                             
                             <div className="text-right">
-                              <div className="text-sm text-gray-600">
-                                진행률: {completedSlots}/{totalSlots}
+                              <div className="text-lg font-bold text-blue-600">
+                                {completedSlots}/{totalSlots}
                               </div>
-                              {inProgressSlots > 0 && (
-                                <div className="text-xs text-blue-600">
-                                  진행 중: {inProgressSlots}개
-                                </div>
-                              )}
+                              <div className="text-sm text-gray-500">완료</div>
                             </div>
                           </div>
                           
-                          {/* 실제 출근/퇴근 시간 표시 */}
+                          {/* 간단한 진행률 바 */}
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${(completedSlots / totalSlots) * 100}%` }}
+                            ></div>
+                          </div>
+                          
+                          {/* 실제 시간 정보 (간단하게) */}
                           {(group.actualStart || group.actualEnd) && (
-                            <div className="mb-3 p-2 bg-gray-50 rounded text-sm">
+                            <div className="flex justify-center space-x-6 text-sm text-gray-600">
                               {group.actualStart && (
-                                <div className="flex items-center text-green-600 mb-1">
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  출근: {formatDateTime(group.actualStart)}
+                                <div className="flex items-center">
+                                  <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                                  출근: {formatDateTime(group.actualStart).split(' ')[1]}
                                 </div>
                               )}
                               {group.actualEnd && (
-                                <div className="flex items-center text-red-600">
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  퇴근: {formatDateTime(group.actualEnd)}
+                                <div className="flex items-center">
+                                  <XCircle className="h-4 w-4 mr-1 text-red-500" />
+                                  퇴근: {formatDateTime(group.actualEnd).split(' ')[1]}
                                 </div>
                               )}
                             </div>
                           )}
-                          
-                          {/* 개별 스케줄 관리 버튼 */}
-                          <div className="flex flex-wrap gap-2">
-                            {group.schedules.map((schedule) => {
-                              const canCheckIn = !schedule.actual_start;
-                              const canCheckOut = schedule.actual_start && !schedule.actual_end;
-                              
-                              return (
-                                <div key={schedule.id} className="flex items-center space-x-2">
-                                  <span className="text-xs text-gray-500">
-                                    {formatTime(schedule.scheduled_start)}-{formatTime(schedule.scheduled_end)}
-                                  </span>
-                                  {canCheckIn && (
-                                    <button
-                                      onClick={() => handleCheckIn(schedule.id)}
-                                      disabled={checkingIn}
-                                      className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
-                                    >
-                                      출근
-                                    </button>
-                                  )}
-                                  {canCheckOut && (
-                                    <button
-                                      onClick={() => handleCheckOut(schedule.id)}
-                                      disabled={checkingIn}
-                                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-medium disabled:opacity-50"
-                                    >
-                                      퇴근
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
                         </div>
                       );
                     });
