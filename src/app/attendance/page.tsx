@@ -848,14 +848,11 @@ export default function AttendancePage() {
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
-                  const groupedSchedules = groupSchedulesByTimeRange(todaySchedules);
-                  return groupedSchedules.length;
+                  const totalHours = todaySchedules.length * 0.5; // 30분 = 0.5시간
+                  return totalHours.toFixed(1);
                 })()}
               </div>
-              <div className="text-sm text-gray-500">오늘 근무 시간대</div>
-              <div className="text-xs text-gray-400">
-                {todaySchedules.length}개 세부 스케줄
-              </div>
+              <div className="text-sm text-gray-500">오늘 근무 시간</div>
             </div>
           </div>
         </div>
