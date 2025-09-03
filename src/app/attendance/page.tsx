@@ -1188,8 +1188,8 @@ export default function AttendancePage() {
                               {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
-                              <span>{(summary.totalSchedules * 0.5).toFixed(1)}시간 / {(summary.totalSchedules * 0.5).toFixed(1)}시간</span>
-                              <span>{summary.totalHours.toFixed(1)}시간</span>
+                              <span className="text-xs text-gray-500">스케줄: {(summary.totalSchedules * 0.5).toFixed(1)}시간</span>
+                              <span className="text-xs text-gray-500">실제: {summary.totalHours.toFixed(1)}시간</span>
                             </div>
                           </div>
                         ));
