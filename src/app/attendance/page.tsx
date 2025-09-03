@@ -890,10 +890,10 @@ export default function AttendancePage() {
           </div>
           
           <div className="text-right">
-            <p className="text-xs text-gray-600">현재 시간</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {format(currentTime, 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
-            </p>
+            <div className="text-sm font-semibold text-gray-900">
+              <div>{format(currentTime, 'yyyy년 MM월 dd일', { locale: ko })}</div>
+              <div>{format(currentTime, 'HH:mm:ss', { locale: ko })}</div>
+            </div>
           </div>
         </div>
 
@@ -955,6 +955,8 @@ export default function AttendancePage() {
             <div>
               <div className="text-2xl font-bold text-green-600">
                 {(() => {
+                  if (todaySchedules.length === 0) return '0h 0m';
+                  
                   const totalHours = todaySchedules
                     .filter(s => s.actual_start && s.actual_end)
                     .reduce((total, s) => {
@@ -962,16 +964,38 @@ export default function AttendancePage() {
                       const end = new Date(s.actual_end!);
                       return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                     }, 0);
-                  return totalHours.toFixed(1);
+                  
+                  if (totalHours === 0) return '0h 0m';
+                  
+                  const hours = Math.floor(totalHours);
+                  const minutes = Math.round((totalHours - hours) * 60);
+                  return `${hours}h ${minutes}m`;
                 })()}
               </div>
               <div className="text-sm text-green-700">실제 근무 시간</div>
             </div>
             
-                        <div className="relative group">
+            <div className="relative group">
               <div className="text-2xl font-bold text-purple-600">
                 {(() => {
-                  const scheduledHours = todaySchedules.length * 0.5; // 스케줄된 시간
+                  if (todaySchedules.length === 0) return '0h 0m';
+                  
+                  // 스케줄된 시간 계산 (시작~종료 시간 범위)
+                  let scheduledHours = 0;
+                  const sortedSchedules = [...todaySchedules].sort((a, b) => 
+                    a.scheduled_start.localeCompare(b.scheduled_start)
+                  );
+                  
+                  const firstSchedule = sortedSchedules[0];
+                  const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+                  
+                  if (firstSchedule && lastSchedule) {
+                    const startTime = new Date(`2000-01-01T${firstSchedule.scheduled_start}`);
+                    const endTime = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
+                    scheduledHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                  }
+                  
+                  // 실제 근무 시간 계산
                   const actualHours = todaySchedules
                     .filter(s => s.actual_start && s.actual_end)
                     .reduce((total, s) => {
@@ -979,8 +1003,16 @@ export default function AttendancePage() {
                       const end = new Date(s.actual_end!);
                       return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                     }, 0);
+                  
                   const difference = actualHours - scheduledHours;
-                  return difference > 0 ? `+${difference.toFixed(1)}` : difference.toFixed(1);
+                  
+                  if (difference === 0) return '0h 0m';
+                  
+                  const hours = Math.floor(Math.abs(difference));
+                  const minutes = Math.round((Math.abs(difference) - hours) * 60);
+                  const sign = difference > 0 ? '+' : '-';
+                  
+                  return `${sign}${hours}h ${minutes}m`;
                 })()}
               </div>
               <div className="text-sm text-purple-700">시간 차이</div>
@@ -1007,8 +1039,8 @@ export default function AttendancePage() {
           <h3 className="text-lg font-semibold text-yellow-900 mb-3">💰 급여 정보</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center">
-              <div className="text-sm text-yellow-700 mb-1">시급</div>
+            <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center flex flex-col items-center justify-center">
+              <div className="text-sm text-yellow-700 mb-2">시급</div>
               <div className="text-lg font-bold text-yellow-800">
                 {hourlyWage.toLocaleString()}원
               </div>
@@ -1016,15 +1048,15 @@ export default function AttendancePage() {
             
             {wageCalculation && (
               <>
-                <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center">
-                  <div className="text-sm text-yellow-700 mb-1">계약 급여</div>
+                <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center flex flex-col items-center justify-center">
+                  <div className="text-sm text-yellow-700 mb-2">계약 급여</div>
                   <div className="text-lg font-bold text-yellow-800">
                     {wageCalculation.scheduledPay.toLocaleString()}원
                   </div>
                 </div>
                 
-                <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center">
-                  <div className="text-sm text-yellow-700 mb-1">실제 급여</div>
+                <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center flex flex-col items-center justify-center">
+                  <div className="text-sm text-yellow-700 mb-2">실제 급여</div>
                   <div className="text-lg font-bold text-yellow-800">
                     {wageCalculation.actualPay.toLocaleString()}원
                   </div>
