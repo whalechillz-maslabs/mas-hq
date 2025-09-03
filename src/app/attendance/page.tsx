@@ -71,7 +71,7 @@ export default function AttendancePage() {
     return { totalHours: hours, totalMinutes: minutes };
   };
 
-  // 스케줄을 시간대별로 그룹화하는 함수
+  // 스케줄을 시간대별로 그룹화하는 함수 (연속 스케줄 통합)
   const groupSchedulesByTimeRange = (schedules: AttendanceRecord[]) => {
     if (schedules.length === 0) return [];
     
@@ -89,6 +89,7 @@ export default function AttendancePage() {
       actualEnd?: string;
       totalHours: number;
       estimatedWage: number;
+      isContinuous: boolean;
     }[] = [];
     
     let currentGroup: typeof groups[0] | null = null;
@@ -109,7 +110,8 @@ export default function AttendancePage() {
           actualStart: schedule.actual_start || undefined,
           actualEnd: schedule.actual_end || undefined,
           totalHours: 0,
-          estimatedWage: 0
+          estimatedWage: 0,
+          isContinuous: false
         };
       } else {
         // 연속된 시간대인지 확인 (30분 단위)
@@ -121,6 +123,7 @@ export default function AttendancePage() {
           // 같은 그룹에 추가
           currentGroup.schedules.push(schedule);
           currentGroup.endTime = endTime;
+          currentGroup.isContinuous = true;
           
           // 상태 업데이트
           if (schedule.actual_start && schedule.actual_end) {
@@ -149,7 +152,8 @@ export default function AttendancePage() {
             actualStart: schedule.actual_start || undefined,
             actualEnd: schedule.actual_end || undefined,
             totalHours: 0,
-            estimatedWage: 0
+            estimatedWage: 0,
+            isContinuous: false
           };
         }
       }
@@ -842,8 +846,16 @@ export default function AttendancePage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600">{todaySchedules.length}</div>
-              <div className="text-sm text-gray-500">오늘 스케줄</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {(() => {
+                  const groupedSchedules = groupSchedulesByTimeRange(todaySchedules);
+                  return groupedSchedules.length;
+                })()}
+              </div>
+              <div className="text-sm text-gray-500">오늘 근무 시간대</div>
+              <div className="text-xs text-gray-400">
+                {todaySchedules.length}개 세부 스케줄
+              </div>
             </div>
           </div>
         </div>
@@ -1047,6 +1059,11 @@ export default function AttendancePage() {
                                 {completedSlots}/{totalSlots}
                               </div>
                               <div className="text-sm text-gray-500">완료</div>
+                              {group.isContinuous && (
+                                <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full mt-1">
+                                  연속 근무
+                                </div>
+                              )}
                               <div className="text-sm font-semibold text-green-600 mt-1">
                                 {group.totalHours}시간
                               </div>
@@ -1089,11 +1106,11 @@ export default function AttendancePage() {
               )}
             </div>
 
-            {/* 이번 달 출근 기록 */}
+            {/* 이번 달 출근 요약 */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
                 <User className="h-5 w-5 mr-2 text-blue-600" />
-                이번 달 출근 기록
+                이번 달 출근 요약
               </h2>
               
               {monthlyRecords.length === 0 ? (
@@ -1102,43 +1119,89 @@ export default function AttendancePage() {
                   <p>이번 달 출근 기록이 없습니다.</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {monthlyRecords.map((record) => {
-                    const status = getAttendanceStatus(record);
-                    
-                    return (
-                      <div key={record.id} className="bg-white rounded-lg border p-3 text-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <span className="font-medium text-gray-900">
-                              {format(new Date(record.schedule_date), 'MM/dd (EEE)', { locale: ko })}
-                            </span>
-                            <span className="text-gray-600">
-                              {formatTime(record.scheduled_start)} - {formatTime(record.scheduled_end)}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
-                              {status.text}
-                            </span>
-                          </div>
-                          
-                          <div className="text-xs text-gray-500">
-                            {record.actual_start && record.actual_end && (
-                              <span>
-                                {formatTime(record.actual_start)} - {formatTime(record.actual_end)}
-                              </span>
-                            )}
-                          </div>
+                <div className="space-y-3">
+                  {/* 월간 통계 */}
+                  <div className="bg-white rounded-lg border p-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold text-blue-600">
+                          {monthlyRecords.length}
                         </div>
-                        
-                        {record.check_in_location && (
-                          <div className="mt-1 flex items-center text-xs text-gray-500">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            위치 정보 기록됨
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-600">총 스케줄</div>
                       </div>
-                    );
-                  })}
+                      <div>
+                        <div className="text-2xl font-bold text-green-600">
+                          {monthlyRecords.filter(r => r.actual_start && r.actual_end).length}
+                        </div>
+                        <div className="text-sm text-gray-600">완료된 근무</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-orange-600">
+                          {(() => {
+                            const totalMinutes = monthlyRecords
+                              .filter(r => r.actual_start && r.actual_end)
+                              .reduce((total, r) => {
+                                const start = new Date(r.actual_start!);
+                                const end = new Date(r.actual_end!);
+                                return total + (end.getTime() - start.getTime()) / (1000 * 60);
+                              }, 0);
+                            return Math.round(totalMinutes / 60);
+                          })()}
+                        </div>
+                        <div className="text-sm text-gray-600">총 근무시간</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 일별 요약 (최근 7일) */}
+                  <div className="bg-white rounded-lg border p-4">
+                    <h3 className="text-md font-medium text-gray-700 mb-3">최근 7일 요약</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {(() => {
+                        const recentRecords = monthlyRecords
+                          .filter(r => {
+                            const recordDate = new Date(r.schedule_date);
+                            const today = new Date();
+                            const diffTime = Math.abs(today.getTime() - recordDate.getTime());
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            return diffDays <= 7;
+                          })
+                          .sort((a, b) => new Date(b.schedule_date).getTime() - new Date(a.schedule_date).getTime());
+                        
+                        const dailySummary = recentRecords.reduce((acc, record) => {
+                          const date = record.schedule_date;
+                          if (!acc[date]) {
+                            acc[date] = {
+                              date,
+                              totalSchedules: 0,
+                              completedSchedules: 0,
+                              totalHours: 0
+                            };
+                          }
+                          acc[date].totalSchedules++;
+                          if (record.actual_start && record.actual_end) {
+                            acc[date].completedSchedules++;
+                            const start = new Date(record.actual_start);
+                            const end = new Date(record.actual_end);
+                            acc[date].totalHours += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                          }
+                          return acc;
+                        }, {} as Record<string, { date: string; totalSchedules: number; completedSchedules: number; totalHours: number }>);
+                        
+                        return Object.values(dailySummary).map((summary) => (
+                          <div key={summary.date} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                            <span className="font-medium text-gray-900">
+                              {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
+                            </span>
+                            <div className="flex items-center space-x-4 text-gray-600">
+                              <span>{summary.completedSchedules}/{summary.totalSchedules}</span>
+                              <span>{summary.totalHours.toFixed(1)}시간</span>
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
