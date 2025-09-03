@@ -103,7 +103,11 @@ export default function AttendanceManagementPage() {
       setIsLoading(true);
       console.log("출근 데이터 로딩 시작...", { selectedDate });
       
-      // 1. 먼저 해당 날짜에 출근 체크한 직원들의 스케줄 데이터 가져오기
+      // 날짜 형식 정규화 (YYYY-MM-DD)
+      const normalizedDate = selectedDate.split('T')[0];
+      console.log("정규화된 날짜:", normalizedDate);
+      
+      // 1. 먼저 해당 날짜에 스케줄이 있는 모든 직원 데이터 가져오기
       let { data: schedules, error: schedulesError } = await supabase
         .from("schedules")
         .select(`
@@ -119,10 +123,9 @@ export default function AttendanceManagementPage() {
           status,
           employee_note
         `)
-        .eq("schedule_date", selectedDate)
-        .not("actual_start", "is", null); // 실제 출근한 직원만
+        .eq("schedule_date", normalizedDate);
       
-      console.log("스케줄 데이터 결과:", { schedules, schedulesError });
+      console.log("스케줄 데이터 결과:", { schedules, schedulesError, normalizedDate });
       
       if (schedulesError) {
         console.error("스케줄 데이터 로딩 오류:", schedulesError);
@@ -131,10 +134,13 @@ export default function AttendanceManagementPage() {
       }
       
       if (!schedules || schedules.length === 0) {
-        console.log("해당 날짜에 출근한 직원이 없습니다.");
+        console.log("해당 날짜에 스케줄이 없습니다. 다른 날짜 형식으로 시도...");
         
-        // 2. 스케줄만 있는 직원들도 확인
-        const { data: scheduledOnly, error: scheduledError } = await supabase
+        // 2. 다른 날짜 형식으로 시도 (YYYY-MM-DD vs YYYY.MM.DD)
+        const alternativeDate = selectedDate.replace(/\./g, '-');
+        console.log("대안 날짜 형식:", alternativeDate);
+        
+        const { data: altSchedules, error: altError } = await supabase
           .from("schedules")
           .select(`
             id,
@@ -149,22 +155,55 @@ export default function AttendanceManagementPage() {
             status,
             employee_note
           `)
-          .eq("schedule_date", selectedDate);
+          .eq("schedule_date", alternativeDate);
         
-        if (scheduledError) {
-          console.error("스케줄 전용 데이터 로딩 오류:", scheduledError);
-          setAttendanceRecords([]);
-          return;
-        }
-        
-        if (scheduledOnly && scheduledOnly.length > 0) {
-          console.log("스케줄만 있는 직원들:", scheduledOnly);
-          schedules = scheduledOnly; // 스케줄만 있는 직원들도 포함
+        if (altError) {
+          console.error("대안 날짜 형식 쿼리 오류:", altError);
+        } else if (altSchedules && altSchedules.length > 0) {
+          console.log("대안 날짜 형식으로 데이터 찾음:", altSchedules);
+          schedules = altSchedules;
         } else {
-          console.log("해당 날짜에 스케줄도 없습니다.");
+          console.log("모든 날짜 형식으로 시도했지만 데이터가 없습니다.");
           setAttendanceRecords([]);
           return;
         }
+      }
+      
+      // schedules가 null이 아닌지 확인
+      if (!schedules || schedules.length === 0) {
+        console.log("최종적으로 데이터가 없습니다.");
+        
+        // 3. 데이터베이스에 실제로 어떤 데이터가 있는지 확인
+        console.log("데이터베이스 상태 진단 시작...");
+        
+        // 전체 schedules 테이블의 최근 데이터 확인
+        const { data: recentSchedules, error: recentError } = await supabase
+          .from("schedules")
+          .select("schedule_date, employee_id, actual_start")
+          .order("schedule_date", { ascending: false })
+          .limit(10);
+        
+        if (recentError) {
+          console.error("최근 스케줄 조회 오류:", recentError);
+        } else {
+          console.log("최근 10개 스케줄:", recentSchedules);
+        }
+        
+        // 해당 날짜 범위의 데이터 확인
+        const { data: dateRangeSchedules, error: dateRangeError } = await supabase
+          .from("schedules")
+          .select("schedule_date, employee_id, actual_start")
+          .gte("schedule_date", "2025-09-01")
+          .lte("schedule_date", "2025-09-05");
+        
+        if (dateRangeError) {
+          console.error("날짜 범위 조회 오류:", dateRangeError);
+        } else {
+          console.log("9월 1-5일 스케줄:", dateRangeSchedules);
+        }
+        
+        setAttendanceRecords([]);
+        return;
       }
       
       // 직원 정보 가져오기
