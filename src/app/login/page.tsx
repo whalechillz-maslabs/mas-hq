@@ -61,7 +61,7 @@ function LoginForm() {
       localStorage.setItem('lastActivity', Date.now().toString());
       
       // 즉시 업무 입력 페이지로 이동
-      router.push('/quick-task');
+      router.push('/tasks');
     } catch (error: any) {
       setError(error.message || '로그인에 실패했습니다.');
     } finally {
