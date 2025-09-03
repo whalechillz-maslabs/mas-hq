@@ -1025,55 +1025,39 @@ export default function AttendancePage() {
                       };
                       
                       return (
-                        <div key={groupIndex} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-xl font-bold text-gray-800">
-                                {formatTime(group.startTime)} - {formatTime(group.endTime)}
-                              </span>
-                              <span className="text-2xl">
-                                {getStatusIcon(group.status)}
-                              </span>
-                              <span className="px-3 py-1 bg-white rounded-full text-sm font-medium text-gray-700 border">
-                                {getStatusText(group.status)}
-                              </span>
-                            </div>
+                                              <div key={groupIndex} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-4">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {formatTime(group.startTime)} - {formatTime(group.endTime)}
+                            </span>
+                            <span className="text-3xl">
+                              {getStatusIcon(group.status)}
+                            </span>
+                            <span className="px-4 py-2 bg-gradient-to-r from-green-50 to-blue-50 rounded-full text-sm font-semibold text-gray-700 border border-green-200">
+                              {getStatusText(group.status)}
+                            </span>
+                          </div>
                             
                             <div className="text-right">
-                              <div className="text-sm text-gray-600 mb-1">
-                                출근: {group.actualStart ? formatTime(group.actualStart) : '--:--'}
-                              </div>
-                              <div className="text-sm text-gray-600">
-                                퇴근: {group.actualEnd ? formatTime(group.actualEnd) : '--:--'}
+                              <div className="text-center">
+                                <div className="text-xs text-gray-500 mb-1">실제 근무</div>
+                                <div className="text-sm font-medium text-gray-700">
+                                  {group.actualStart ? formatTime(group.actualStart) : '--:--'} → {group.actualEnd ? formatTime(group.actualEnd) : '--:--'}
+                                </div>
                               </div>
                             </div>
                           </div>
                           
-                          {/* 간단한 진행률 바 */}
-                          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                          {/* 고급스러운 진행률 바 */}
+                          <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
                             <div 
-                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500 ease-out"
                               style={{ width: `${(completedSlots / totalSlots) * 100}%` }}
                             ></div>
                           </div>
                           
-                          {/* 실제 시간 정보 (간단하게) */}
-                          {(group.actualStart || group.actualEnd) && (
-                            <div className="flex justify-center space-x-6 text-sm text-gray-600">
-                              {group.actualStart && (
-                                <div className="flex items-center">
-                                  <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                                  출근: {formatDateTime(group.actualStart).split(' ')[1]}
-                                </div>
-                              )}
-                              {group.actualEnd && (
-                                <div className="flex items-center">
-                                  <XCircle className="h-4 w-4 mr-1 text-red-500" />
-                                  퇴근: {formatDateTime(group.actualEnd).split(' ')[1]}
-                                </div>
-                              )}
-                            </div>
-                          )}
+
                         </div>
                       );
                     });
@@ -1117,14 +1101,15 @@ export default function AttendancePage() {
                       <div>
                         <div className="text-2xl font-bold text-orange-600">
                           {(() => {
-                            const totalMinutes = monthlyRecords
+                            // 스케줄된 시간의 총합 (실제 근무 시간과 동일하게 계산)
+                            const totalHours = monthlyRecords
                               .filter(r => r.actual_start && r.actual_end)
                               .reduce((total, r) => {
                                 const start = new Date(r.actual_start!);
                                 const end = new Date(r.actual_end!);
-                                return total + (end.getTime() - start.getTime()) / (1000 * 60);
+                                return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                               }, 0);
-                            return Math.round(totalMinutes / 60);
+                            return totalHours.toFixed(1);
                           })()}
                         </div>
                         <div className="text-sm text-gray-600">총 근무시간</div>
