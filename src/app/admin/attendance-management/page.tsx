@@ -103,8 +103,8 @@ export default function AttendanceManagementPage() {
       setIsLoading(true);
       console.log("출근 데이터 로딩 시작...", { selectedDate });
       
-      // 실제 데이터베이스에서 스케줄 데이터 가져오기 (스케줄 + 출근 기록 + 휴식 정보)
-      const { data: schedules, error: schedulesError } = await supabase
+      // 1. 먼저 해당 날짜에 출근 체크한 직원들의 스케줄 데이터 가져오기
+      let { data: schedules, error: schedulesError } = await supabase
         .from("schedules")
         .select(`
           id,
@@ -119,7 +119,8 @@ export default function AttendanceManagementPage() {
           status,
           employee_note
         `)
-        .eq("schedule_date", selectedDate);
+        .eq("schedule_date", selectedDate)
+        .not("actual_start", "is", null); // 실제 출근한 직원만
       
       console.log("스케줄 데이터 결과:", { schedules, schedulesError });
       
@@ -130,9 +131,40 @@ export default function AttendanceManagementPage() {
       }
       
       if (!schedules || schedules.length === 0) {
-        console.log("스케줄 데이터 없음");
-        setAttendanceRecords([]);
-        return;
+        console.log("해당 날짜에 출근한 직원이 없습니다.");
+        
+        // 2. 스케줄만 있는 직원들도 확인
+        const { data: scheduledOnly, error: scheduledError } = await supabase
+          .from("schedules")
+          .select(`
+            id,
+            employee_id,
+            schedule_date,
+            scheduled_start,
+            scheduled_end,
+            actual_start,
+            actual_end,
+            break_start,
+            break_end,
+            status,
+            employee_note
+          `)
+          .eq("schedule_date", selectedDate);
+        
+        if (scheduledError) {
+          console.error("스케줄 전용 데이터 로딩 오류:", scheduledError);
+          setAttendanceRecords([]);
+          return;
+        }
+        
+        if (scheduledOnly && scheduledOnly.length > 0) {
+          console.log("스케줄만 있는 직원들:", scheduledOnly);
+          schedules = scheduledOnly; // 스케줄만 있는 직원들도 포함
+        } else {
+          console.log("해당 날짜에 스케줄도 없습니다.");
+          setAttendanceRecords([]);
+          return;
+        }
       }
       
       // 직원 정보 가져오기
@@ -161,15 +193,31 @@ export default function AttendanceManagementPage() {
       // 직원별로 스케줄을 그룹화하여 중복 제거
       const employeeScheduleMap = new Map();
       
-      schedules.forEach(schedule => {
+      console.log("스케줄 데이터 처리 시작:", schedules.length, "개");
+      
+      schedules.forEach((schedule, index) => {
+        console.log(`스케줄 ${index + 1}:`, {
+          id: schedule.id,
+          employee_id: schedule.employee_id,
+          schedule_date: schedule.schedule_date,
+          actual_start: schedule.actual_start,
+          actual_end: schedule.actual_end,
+          status: schedule.status
+        });
+        
         const employee = employees?.find(emp => emp.id === schedule.employee_id);
-        if (!employee) return;
+        if (!employee) {
+          console.log(`  ❌ 직원 정보를 찾을 수 없음: ${schedule.employee_id}`);
+          return;
+        }
+        
+        console.log(`  ✅ 직원 정보 찾음: ${employee.name} (${employee.employee_id})`);
         
         const employeeKey = schedule.employee_id;
         
         if (!employeeScheduleMap.has(employeeKey)) {
           // 새로운 직원의 첫 번째 스케줄
-          employeeScheduleMap.set(employeeKey, {
+          const record = {
             id: schedule.id,
             employee_id: schedule.employee_id,
             employee_name: employee.name,
@@ -177,10 +225,14 @@ export default function AttendanceManagementPage() {
             department: employee.departments?.[0]?.name || "미지정",
             position: employee.positions?.[0]?.name || "미지정",
             schedule_date: schedule.schedule_date,
+            scheduled_start: schedule.scheduled_start,
+            scheduled_end: schedule.scheduled_end,
             actual_start: schedule.actual_start ? schedule.actual_start : 
                          schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
             actual_end: schedule.actual_end ? schedule.actual_end : 
                        schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
+            break_start: schedule.break_start,
+            break_end: schedule.break_end,
             total_hours: schedule.actual_start && schedule.actual_end ? 
               calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
               schedule.scheduled_start && schedule.scheduled_end ?
@@ -190,7 +242,10 @@ export default function AttendanceManagementPage() {
                     schedule.status === "checked_in" ? "confirmed" : "pending",
             employee_note: schedule.employee_note || "",
             schedule_count: 1 // 스케줄 개수
-          });
+          };
+          
+          employeeScheduleMap.set(employeeKey, record);
+          console.log(`  ✅ 새 직원 기록 생성: ${employee.name}`);
         } else {
           // 기존 직원의 추가 스케줄 - 시간을 합산하고 상태를 업데이트
           const existingRecord = employeeScheduleMap.get(employeeKey);
