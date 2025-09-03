@@ -218,11 +218,41 @@ export default function AttendanceManagementPage() {
   };
 
   const formatTime = (timeString: string | null) => {
-    if (!timeString) return '-';
-    return new Date(timeString).toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      if (!timeString) {
+        console.warn('formatTime: timeString이 비어있음');
+        return '시간 없음';
+      }
+      
+      // ISO 문자열이 아닌 경우 처리
+      let date: Date;
+      if (timeString.includes('T') || timeString.includes('Z')) {
+        // ISO 형식 (예: "2025-09-03T09:00:00Z")
+        date = new Date(timeString);
+      } else if (timeString.includes(':')) {
+        // 시간 형식 (예: "09:00:00" 또는 "09:00")
+        const today = new Date();
+        const [hours, minutes, seconds] = timeString.split(':');
+        date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                       parseInt(hours), parseInt(minutes), seconds ? parseInt(seconds) : 0);
+      } else {
+        // 기타 형식
+        date = new Date(timeString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        console.error('formatTime: 유효하지 않은 날짜/시간:', timeString);
+        return '시간 오류';
+      }
+      
+      return date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('formatTime 오류:', error, 'timeString:', timeString);
+      return '시간 오류';
+    }
   };
 
   const getStatusColor = (status: string) => {
