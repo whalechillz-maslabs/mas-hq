@@ -51,14 +51,33 @@ export default function HourlyWagesPage() {
 
   const loadData = async () => {
     try {
-      // 직원 목록 로드
+      // 직원 목록 로드 (부서 정보 포함)
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
-        .select('id, name, employee_id, department')
+        .select(`
+          id, 
+          name, 
+          employee_id, 
+          department_id,
+          departments!inner(name)
+        `)
         .order('name');
 
-      if (employeesError) throw employeesError;
-      setEmployees(employeesData || []);
+      if (employeesError) {
+        console.error('직원 목록 조회 오류:', employeesError);
+        throw employeesError;
+      }
+      
+      // 직원 데이터 포맷팅
+      const formattedEmployees = (employeesData || []).map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        employee_id: emp.employee_id,
+        department: emp.departments?.name || '부서 미지정'
+      }));
+      
+      setEmployees(formattedEmployees);
+      console.log('직원 목록 로드 완료:', formattedEmployees.length, '명');
 
       // 시급 데이터 로드
       const { data: wagesData, error: wagesError } = await supabase
@@ -69,7 +88,12 @@ export default function HourlyWagesPage() {
         `)
         .order('effective_date', { ascending: false });
 
-      if (wagesError) throw wagesError;
+      if (wagesError) {
+        console.error('시급 데이터 조회 오류:', wagesError);
+        throw wagesError;
+      }
+      
+      console.log('시급 데이터 로드 완료:', wagesData?.length || 0, '건');
       
       // 데이터 정리
       const formattedWages = (wagesData || []).map(wage => ({
