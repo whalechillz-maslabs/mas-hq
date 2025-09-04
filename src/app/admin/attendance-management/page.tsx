@@ -346,6 +346,8 @@ export default function AttendanceManagementPage() {
           // 마지막 스케줄 시간 업데이트
           existingRecord.last_schedule_end = schedule.scheduled_end;
           
+          // 첫 번째 스케줄 시간은 변경하지 않음 (가장 이른 시간 유지)
+          
           // 상태 우선순위: completed > confirmed > pending
           if (schedule.status === "checked_out" || existingRecord.status === "completed") {
             existingRecord.status = "completed";
@@ -395,7 +397,22 @@ export default function AttendanceManagementPage() {
     const end = new Date(endTime);
     const diffMs = end.getTime() - start.getTime();
     const totalMinutes = diffMs / (1000 * 60);
-    const workMinutes = totalMinutes - breakMinutes;
+    
+    // 점심시간(12:00-13:00) 자동 제외
+    let lunchBreakMinutes = 0;
+    const lunchStart = new Date(start);
+    lunchStart.setHours(12, 0, 0, 0);
+    const lunchEnd = new Date(start);
+    lunchEnd.setHours(13, 0, 0, 0);
+    
+    // 점심시간과 근무시간이 겹치는 경우
+    if (start < lunchEnd && end > lunchStart) {
+      const overlapStart = start > lunchStart ? start : lunchStart;
+      const overlapEnd = end < lunchEnd ? end : lunchEnd;
+      lunchBreakMinutes = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60);
+    }
+    
+    const workMinutes = totalMinutes - breakMinutes - lunchBreakMinutes;
     // 소수점 2자리까지 반올림
     return Math.round((workMinutes / 60) * 100) / 100;
   };
