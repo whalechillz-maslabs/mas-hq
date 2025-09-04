@@ -59,6 +59,8 @@ export default function AttendancePage() {
     actualPay: number;
     difference: number;
   } | null>(null);
+  const [pointBonus, setPointBonus] = useState<number>(0); // 포인트 수당
+  const [totalEarnings, setTotalEarnings] = useState<number>(0); // 총 수입 (급여 + 포인트)
   // getCurrentUser 함수 정의
   // 일일 근무 시간 계산 함수
   const calculateDailyWorkHours = (schedules: AttendanceRecord[]) => {
@@ -80,6 +82,45 @@ export default function AttendancePage() {
     const minutes = totalMinutes % 60;
     
     return { totalHours: hours, totalMinutes: minutes };
+  };
+
+  // 포인트 수당 계산 함수
+  const calculatePointBonus = async (employeeId: string, date: string) => {
+    try {
+      // 해당 날짜의 업무 기록 조회
+      const { data: tasks, error } = await supabase
+        .from('employee_tasks')
+        .select(`
+          id,
+          points,
+          operation_types!inner(
+            id,
+            name,
+            points
+          )
+        `)
+        .eq('employee_id', employeeId)
+        .eq('task_date', date);
+      
+      if (error) {
+        console.error('업무 기록 조회 오류:', error);
+        return 0;
+      }
+      
+      // 포인트 합계 계산
+      const totalPoints = (tasks || []).reduce((sum, task) => {
+        return sum + (task.operation_types?.points || 0);
+      }, 0);
+      
+      // 포인트를 원화로 환산 (1포인트 = 100원 가정)
+      const pointValue = totalPoints * 100;
+      
+      console.log(`포인트 수당: ${totalPoints}포인트 → ${pointValue.toLocaleString()}원`);
+      return pointValue;
+    } catch (error) {
+      console.error('포인트 수당 계산 오류:', error);
+      return 0;
+    }
   };
 
   // 급여 계산 함수
@@ -144,7 +185,15 @@ export default function AttendancePage() {
       // 급여 계산
       const calculation = calculateSimpleWage(baseWage, actualHours, scheduledHours);
       setWageCalculation(calculation);
-      setHourlyWage(baseWage);
+      
+      // 포인트 수당 계산
+      const today = new Date().toISOString().split('T')[0];
+      const pointBonusAmount = await calculatePointBonus(currentUser.id, today);
+      setPointBonus(pointBonusAmount);
+      
+      // 총 수입 계산 (급여 + 포인트 수당)
+      const totalEarningsAmount = calculation.actualPay + pointBonusAmount;
+      setTotalEarnings(totalEarningsAmount);
     } catch (error) {
       console.error('급여 계산 오류:', error);
     }
@@ -1122,6 +1171,29 @@ export default function AttendancePage() {
                 </div>
               </>
             )}
+          </div>
+          
+          {/* 포인트 수당 및 총 수입 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center flex flex-col items-center justify-center">
+              <div className="text-sm text-yellow-700 mb-2">포인트 수당</div>
+              <div className="text-lg font-bold text-yellow-800">
+                {pointBonus.toLocaleString()}원
+              </div>
+              <div className="text-xs text-yellow-600 mt-1">
+                {Math.round(pointBonus / 100)}포인트
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center flex flex-col items-center justify-center">
+              <div className="text-sm text-yellow-700 mb-2">총 수입</div>
+              <div className="text-lg font-bold text-yellow-800">
+                {totalEarnings.toLocaleString()}원
+              </div>
+              <div className="text-xs text-yellow-600 mt-1">
+                급여 + 포인트
+              </div>
+            </div>
           </div>
         </div>
 
