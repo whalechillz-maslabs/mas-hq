@@ -125,7 +125,19 @@ export default function AttendancePage() {
 
   // 급여 계산 함수
   const calculateWage = async () => {
-    if (!currentUser || todaySchedules.length === 0) return;
+    console.log('=== 급여 계산 함수 시작 ===');
+    console.log('currentUser:', currentUser);
+    console.log('todaySchedules.length:', todaySchedules.length);
+    
+    if (!currentUser) {
+      console.log('❌ currentUser가 없습니다.');
+      return;
+    }
+    
+    if (todaySchedules.length === 0) {
+      console.log('❌ todaySchedules가 비어있습니다.');
+      return;
+    }
     
     try {
       // 직원 정보 조회 (월급제 vs 시급제 구분)
@@ -141,6 +153,8 @@ export default function AttendancePage() {
       }
       
       console.log('직원 정보 조회 결과:', employee);
+      console.log('monthly_salary 값:', employee.monthly_salary, '타입:', typeof employee.monthly_salary);
+      console.log('hourly_rate 값:', employee.hourly_rate, '타입:', typeof employee.hourly_rate);
       
       let baseWage = 12000; // 기본값
       let wageType = 'hourly'; // 기본값
