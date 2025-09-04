@@ -51,7 +51,7 @@ export default function HourlyWagesPage() {
 
   const loadData = async () => {
     try {
-      // 직원 목록 로드 (부서 정보 포함)
+      // 직원 목록 로드 (부서 정보 포함, 월급제 직원 제외)
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
         .select(`
@@ -59,8 +59,11 @@ export default function HourlyWagesPage() {
           name, 
           employee_id, 
           department_id,
+          monthly_salary,
+          hourly_rate,
           departments!inner(name)
         `)
+        .is('monthly_salary', null) // 월급제 직원 제외
         .order('name');
 
       if (employeesError) {

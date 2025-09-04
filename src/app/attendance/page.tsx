@@ -143,20 +143,26 @@ export default function AttendancePage() {
       let baseWage = 12000; // 기본값
       let wageType = 'hourly'; // 기본값
       
-      // 월급제 vs 시급제 구분
-      if (employee.employment_type === 'full_time' && employee.monthly_salary) {
+      // 월급제 vs 시급제 구분 (월급제 우선)
+      if (employee.monthly_salary && employee.monthly_salary > 0) {
         // 월급제: 월급을 일급으로 환산 (월 22일 기준)
         baseWage = Math.round(employee.monthly_salary / 22);
         wageType = 'monthly';
         setMonthlySalary(employee.monthly_salary);
         console.log(`월급제: ${employee.monthly_salary.toLocaleString()}원/월 → ${baseWage.toLocaleString()}원/일`);
+      } else if (employee.hourly_rate && employee.hourly_rate > 0) {
+        // 시급제: employees 테이블의 hourly_rate 사용
+        baseWage = employee.hourly_rate;
+        wageType = 'hourly';
+        setMonthlySalary(null);
+        console.log(`시급제 (employees): ${baseWage.toLocaleString()}원/시간`);
       } else {
-        // 시급제: hourly_wages 테이블에서 시급 조회
+        // hourly_wages 테이블에서 시급 조회 (fallback)
         const wageInfo = await getHourlyWage(currentUser.id, new Date().toISOString().split('T')[0]);
         baseWage = wageInfo?.base_wage || 12000;
         wageType = 'hourly';
         setMonthlySalary(null);
-        console.log(`시급제: ${baseWage.toLocaleString()}원/시간`);
+        console.log(`시급제 (hourly_wages): ${baseWage.toLocaleString()}원/시간`);
       }
       
       // 급여 상태 업데이트
