@@ -134,6 +134,8 @@ export default function AttendancePage() {
       return;
     }
     
+    console.log('✅ 급여 계산 함수 실행 중...');
+    
     if (todaySchedules.length === 0) {
       console.log('❌ todaySchedules가 비어있습니다. 하지만 급여 정보는 표시합니다.');
       // 스케줄이 없어도 급여 정보는 표시해야 함
@@ -452,6 +454,9 @@ export default function AttendancePage() {
             // 스케줄이 없어도 급여 계산
             setTimeout(() => calculateWage(), 100);
           }
+          
+          // 추가로 급여 계산 강제 실행
+          setTimeout(() => calculateWage(), 500);
         }
         
         // 월간 기록 조회 시작...
