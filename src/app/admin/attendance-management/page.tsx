@@ -327,14 +327,20 @@ export default function AttendanceManagementPage() {
           employeeScheduleMap.set(employeeKey, record);
           console.log(`  ✅ 새 직원 기록 생성: ${employee.name}`);
         } else {
-          // 기존 직원의 추가 스케줄 - 시간을 합산하고 상태를 업데이트
+          // 기존 직원의 추가 스케줄 - 스케줄 개수만 증가 (실제 근무시간은 중복 계산 방지)
           const existingRecord = employeeScheduleMap.get(employeeKey);
-          const currentHours = schedule.actual_start && schedule.actual_end ? 
-            calculateActualHours(schedule.actual_start, schedule.actual_end, schedule.break_minutes || 0) : 
-            schedule.scheduled_start && schedule.scheduled_end ?
-            calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0;
           
-          existingRecord.total_hours += currentHours;
+          // 실제 출근/퇴근 시간이 같다면 중복 계산하지 않음
+          if (schedule.actual_start !== existingRecord.actual_start || 
+              schedule.actual_end !== existingRecord.actual_end) {
+            const currentHours = schedule.actual_start && schedule.actual_end ? 
+              calculateActualHours(schedule.actual_start, schedule.actual_end, schedule.break_minutes || 0) : 
+              schedule.scheduled_start && schedule.scheduled_end ?
+              calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0;
+            
+            existingRecord.total_hours += currentHours;
+          }
+          
           existingRecord.schedule_count += 1;
           
           // 마지막 스케줄 시간 업데이트
@@ -371,7 +377,7 @@ export default function AttendanceManagementPage() {
       setDebugInfo(debugData);
       setAttendanceRecords([]);
     } finally {
-      setIsLoading(false);
+    setIsLoading(false);
     }
   };
 
@@ -425,10 +431,10 @@ export default function AttendanceManagementPage() {
     
     // ISO 날짜 형식인 경우
     try {
-      return new Date(timeString).toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+    return new Date(timeString).toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
     } catch (error) {
       return timeString; // 파싱 실패 시 원본 반환
     }
@@ -813,8 +819,8 @@ export default function AttendanceManagementPage() {
                           {formatTime(record.actual_start)}
                         </div>
                         {record.check_in_location ? (
-                          <div className="text-xs text-gray-500 flex items-center mt-1">
-                            <MapPin className="w-3 h-3 mr-1" />
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
                             {record.check_in_location.address || '위치 정보 있음'}
                           </div>
                         ) : (
@@ -846,8 +852,8 @@ export default function AttendanceManagementPage() {
                         ) : (
                           <div className="text-xs text-gray-400 mt-1">
                             위치 없음
-                          </div>
-                        )}
+                        </div>
+                      )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -878,10 +884,10 @@ export default function AttendanceManagementPage() {
                         return (
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(actualStatus)}`}>
                             {getStatusIcon(actualStatus)}
-                            <span className="ml-1">
+                        <span className="ml-1">
                               {statusText}
-                            </span>
-                          </span>
+                        </span>
+                      </span>
                         );
                       })()}
                     </td>
