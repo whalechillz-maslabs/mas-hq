@@ -62,6 +62,7 @@ export default function AttendanceManagementPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     checkAuth();
@@ -103,6 +104,17 @@ export default function AttendanceManagementPage() {
       setIsLoading(true);
       console.log("출근 데이터 로딩 시작...", { selectedDate });
       
+      // 디버그 정보 초기화
+      const debugData = {
+        selectedDate,
+        normalizedDate: selectedDate.split('T')[0],
+        schedulesCount: 0,
+        employeesCount: 0,
+        recordsCount: 0,
+        errors: [],
+        steps: []
+      };
+      
       // 날짜 형식 정규화 (YYYY-MM-DD)
       const normalizedDate = selectedDate.split('T')[0];
       console.log("정규화된 날짜:", normalizedDate);
@@ -127,8 +139,14 @@ export default function AttendanceManagementPage() {
       
       console.log("스케줄 데이터 결과:", { schedules, schedulesError, normalizedDate });
       
+      // 디버그 정보 업데이트
+      debugData.schedulesCount = schedules?.length || 0;
+      debugData.steps.push(`스케줄 조회 완료: ${debugData.schedulesCount}개`);
+      
       if (schedulesError) {
         console.error("스케줄 데이터 로딩 오류:", schedulesError);
+        debugData.errors.push(`스케줄 조회 오류: ${schedulesError.message}`);
+        setDebugInfo(debugData);
         setAttendanceRecords([]);
         return;
       }
@@ -216,7 +234,7 @@ export default function AttendanceManagementPage() {
           id,
           name,
           employee_id,
-          departments(name),
+          departments!inner(name),
           positions(name)
         `)
         .in("id", uniqueEmployeeIds);
@@ -224,14 +242,22 @@ export default function AttendanceManagementPage() {
       console.log("직원 데이터 결과:", { employees, employeesError });
       console.log("직원 데이터 개수:", employees?.length || 0);
       
+      // 디버그 정보 업데이트
+      debugData.employeesCount = employees?.length || 0;
+      debugData.steps.push(`직원 조회 완료: ${debugData.employeesCount}명`);
+      
       if (employeesError) {
         console.error("직원 데이터 로딩 오류:", employeesError);
+        debugData.errors.push(`직원 조회 오류: ${employeesError.message}`);
+        setDebugInfo(debugData);
         setAttendanceRecords([]);
         return;
       }
       
       if (!employees || employees.length === 0) {
         console.error("직원 데이터가 없습니다.");
+        debugData.errors.push("직원 데이터가 없습니다.");
+        setDebugInfo(debugData);
         setAttendanceRecords([]);
         return;
       }
@@ -268,7 +294,7 @@ export default function AttendanceManagementPage() {
             employee_id: schedule.employee_id,
             employee_name: employee.name,
             employee_id_code: employee.employee_id,
-            department: employee.departments?.[0]?.name || "미지정",
+            department: employee.departments?.name || "미지정",
             position: employee.positions?.[0]?.name || "미지정",
             schedule_date: schedule.schedule_date,
             scheduled_start: schedule.scheduled_start,
@@ -321,9 +347,17 @@ export default function AttendanceManagementPage() {
       const attendanceRecords: AttendanceRecord[] = Array.from(employeeScheduleMap.values());
       
       console.log("중복 제거된 출근 기록:", attendanceRecords);
+      
+      // 디버그 정보 최종 업데이트
+      debugData.recordsCount = attendanceRecords.length;
+      debugData.steps.push(`출근 기록 생성 완료: ${debugData.recordsCount}명`);
+      setDebugInfo(debugData);
+      
       setAttendanceRecords(attendanceRecords);
     } catch (error) {
       console.error("출근 데이터 로딩 중 오류:", error);
+      debugData.errors.push(`전체 오류: ${error}`);
+      setDebugInfo(debugData);
       setAttendanceRecords([]);
     } finally {
       setIsLoading(false);
@@ -518,8 +552,13 @@ export default function AttendanceManagementPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">전체 부서</option>
-                <option value="마쓰구">마쓰구</option>
-                <option value="싱싱">싱싱</option>
+                <option value="개발팀">개발팀</option>
+                <option value="디자인팀">디자인팀</option>
+                <option value="마케팅팀">마케팅팀</option>
+                <option value="본사">본사</option>
+                <option value="경영지원팀">경영지원팀</option>
+                <option value="마스운영팀">마스운영팀</option>
+                <option value="싱싱운영팀">싱싱운영팀</option>
               </select>
             </div>
             <div>
@@ -546,6 +585,43 @@ export default function AttendanceManagementPage() {
             </div>
           </div>
         </div>
+
+        {/* 디버그 정보 */}
+        {debugInfo && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-3">🔍 디버그 정보</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-yellow-700 mb-2">기본 정보</h4>
+                <ul className="text-sm text-yellow-600 space-y-1">
+                  <li>선택된 날짜: {debugInfo.selectedDate}</li>
+                  <li>정규화된 날짜: {debugInfo.normalizedDate}</li>
+                  <li>스케줄 개수: {debugInfo.schedulesCount}</li>
+                  <li>직원 개수: {debugInfo.employeesCount}</li>
+                  <li>출근 기록 개수: {debugInfo.recordsCount}</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-yellow-700 mb-2">처리 단계</h4>
+                <ul className="text-sm text-yellow-600 space-y-1">
+                  {debugInfo.steps.map((step: string, index: number) => (
+                    <li key={index}>{index + 1}. {step}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            {debugInfo.errors.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium text-red-700 mb-2">오류 정보</h4>
+                <ul className="text-sm text-red-600 space-y-1">
+                  {debugInfo.errors.map((error: string, index: number) => (
+                    <li key={index}>❌ {error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 통계 요약 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
