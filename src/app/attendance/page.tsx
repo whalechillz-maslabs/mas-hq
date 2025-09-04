@@ -448,6 +448,9 @@ export default function AttendancePage() {
             
             // 스케줄 로드 후 급여 계산
             setTimeout(() => calculateWage(), 100);
+          } else {
+            // 스케줄이 없어도 급여 계산
+            setTimeout(() => calculateWage(), 100);
           }
         }
         
