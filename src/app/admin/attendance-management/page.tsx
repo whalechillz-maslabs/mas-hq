@@ -27,8 +27,7 @@ interface AttendanceRecord {
   actual_end: string;
   
   // 점심 휴식 정보
-  break_start?: string;
-  break_end?: string;
+  break_minutes?: number;
   
   // 근무 시간 계산
   total_hours: number;
@@ -130,8 +129,9 @@ export default function AttendanceManagementPage() {
           scheduled_end,
           actual_start,
           actual_end,
-          break_start,
-          break_end,
+          break_minutes,
+          total_hours,
+          overtime_hours,
           status,
           employee_note
         `)
@@ -168,8 +168,9 @@ export default function AttendanceManagementPage() {
             scheduled_end,
             actual_start,
             actual_end,
-            break_start,
-            break_end,
+            break_minutes,
+            total_hours,
+            overtime_hours,
             status,
             employee_note
           `)
@@ -303,8 +304,7 @@ export default function AttendanceManagementPage() {
                          schedule.scheduled_start ? `${selectedDate}T${schedule.scheduled_start}` : null,
             actual_end: schedule.actual_end ? schedule.actual_end : 
                        schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
-            break_start: schedule.break_start,
-            break_end: schedule.break_end,
+            break_minutes: schedule.break_minutes,
             total_hours: schedule.actual_start && schedule.actual_end ? 
               calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
               schedule.scheduled_start && schedule.scheduled_end ?
