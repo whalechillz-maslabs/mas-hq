@@ -26,11 +26,26 @@ export default function InsertAttendancePage() {
     try {
       const { data, error } = await supabase
         .from('employees')
-        .select('id, name, employee_id, department')
+        .select(`
+          id, 
+          name, 
+          employee_id, 
+          department_id,
+          departments!inner(name)
+        `)
         .order('name');
       
       if (error) throw error;
-      setEmployees(data || []);
+      
+      // 데이터 구조 변환
+      const formattedEmployees = (data || []).map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        employee_id: emp.employee_id,
+        department: emp.departments?.name || '부서 미지정'
+      }));
+      
+      setEmployees(formattedEmployees);
     } catch (error: any) {
       setMessage(`직원 목록 조회 오류: ${error.message}`);
       setMessageType('error');
@@ -64,7 +79,7 @@ export default function InsertAttendancePage() {
         .single();
 
       if (employeeError || !employee) {
-        throw new Error('허상원 직원을 찾을 수 없습니다.');
+        throw new Error('선택된 직원을 찾을 수 없습니다.');
       }
 
       // 2. 기존 선택된 날짜 데이터 삭제
@@ -98,7 +113,7 @@ export default function InsertAttendancePage() {
          { start: '14:30', end: '15:00', actual_start: `${selectedDate}T14:30:00+09:00`, actual_end: `${selectedDate}T15:00:00+09:00` },
          { start: '15:00', end: '15:30', actual_start: `${selectedDate}T15:00:00+09:00`, actual_end: `${selectedDate}T15:30:00+09:00` },
          { start: '15:30', end: '16:00', actual_start: `${selectedDate}T15:30:00+09:00`, actual_end: `${selectedDate}T16:00:00+09:00` },
-         { start: '13:00', end: '16:30', actual_start: `${selectedDate}T16:00:00+09:00`, actual_end: `${selectedDate}T16:30:00+09:00` },
+         { start: '16:00', end: '16:30', actual_start: `${selectedDate}T16:00:00+09:00`, actual_end: `${selectedDate}T16:30:00+09:00` },
          { start: '16:30', end: '17:00', actual_start: `${selectedDate}T16:30:00+09:00`, actual_end: `${selectedDate}T17:00:00+09:00` },
          { start: '17:00', end: '17:30', actual_start: `${selectedDate}T17:00:00+09:00`, actual_end: `${selectedDate}T17:30:00+09:00` }
        ];
@@ -172,8 +187,9 @@ export default function InsertAttendancePage() {
                 현재 상황
               </h2>
               <div className="space-y-2 text-blue-800">
-                <p>• 허상원(HEO)의 9월 3일 출근 데이터가 부정확함</p>
-                <p>• "완료된 시간 5.9시간"이 표시되는 문제</p>
+                <p>• 김탁수(WHA)의 출근 데이터가 부정확함</p>
+                <p>• "실제 근무 시간 -1h 54m"이 표시되는 문제</p>
+                <p>• "시간 차이 -3h 6m"이 표시되는 문제</p>
                 <p>• 정시 출근(09:00) → 정시 퇴근(17:30) 데이터 필요</p>
                 <p>• 점심시간 12:00-13:00 제외, 총 7.5시간 근무</p>
               </div>
