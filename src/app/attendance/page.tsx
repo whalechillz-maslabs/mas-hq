@@ -140,6 +140,8 @@ export default function AttendancePage() {
         return;
       }
       
+      console.log('직원 정보 조회 결과:', employee);
+      
       let baseWage = 12000; // 기본값
       let wageType = 'hourly'; // 기본값
       

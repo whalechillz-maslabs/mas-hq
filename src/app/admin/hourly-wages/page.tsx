@@ -63,7 +63,7 @@ export default function HourlyWagesPage() {
           hourly_rate,
           departments!inner(name)
         `)
-        .or('monthly_salary.is.null,monthly_salary.eq.0') // 월급제 직원 제외
+        .is('monthly_salary', null) // 월급제 직원 제외 (monthly_salary가 null인 직원만)
         .order('name');
 
       if (employeesError) {
