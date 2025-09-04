@@ -62,6 +62,7 @@ export default function AttendanceManagementPage() {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -306,7 +307,7 @@ export default function AttendanceManagementPage() {
                        schedule.scheduled_end ? `${selectedDate}T${schedule.scheduled_end}` : null,
             break_minutes: schedule.break_minutes,
             total_hours: schedule.actual_start && schedule.actual_end ? 
-              calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
+              calculateActualHours(schedule.actual_start, schedule.actual_end, schedule.break_minutes || 0) : 
               schedule.scheduled_start && schedule.scheduled_end ?
               calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0,
             overtime_hours: 0,
@@ -322,7 +323,7 @@ export default function AttendanceManagementPage() {
           // 기존 직원의 추가 스케줄 - 시간을 합산하고 상태를 업데이트
           const existingRecord = employeeScheduleMap.get(employeeKey);
           const currentHours = schedule.actual_start && schedule.actual_end ? 
-            calculateHours(schedule.actual_start.split('T')[1], schedule.actual_end.split('T')[1]) : 
+            calculateActualHours(schedule.actual_start, schedule.actual_end, schedule.break_minutes || 0) : 
             schedule.scheduled_start && schedule.scheduled_end ?
             calculateHours(schedule.scheduled_start, schedule.scheduled_end) : 0;
           
@@ -372,12 +373,33 @@ export default function AttendanceManagementPage() {
     return Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
   };
 
+  // 실제 근무 시간 계산 함수 (휴식 시간 제외)
+  const calculateActualHours = (startTime: string, endTime: string, breakMinutes: number): number => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMs = end.getTime() - start.getTime();
+    const totalMinutes = diffMs / (1000 * 60);
+    const workMinutes = totalMinutes - breakMinutes;
+    return Math.round((workMinutes / 60) * 100) / 100;
+  };
+
   const formatTime = (timeString: string | null) => {
     if (!timeString) return '-';
-    return new Date(timeString).toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    
+    // 시간만 있는 경우 (HH:MM:SS 형식)
+    if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return timeString.substring(0, 5); // HH:MM만 반환
+    }
+    
+    // ISO 날짜 형식인 경우
+    try {
+      return new Date(timeString).toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return timeString; // 파싱 실패 시 원본 반환
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -522,6 +544,15 @@ export default function AttendanceManagementPage() {
               </div>
             </div>
             <div className="flex space-x-3">
+              <button 
+                onClick={() => setShowDebug(!showDebug)}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {showDebug ? '디버그 숨기기' : '디버그 보기'}
+              </button>
               <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center">
                 <DownloadIcon className="w-4 h-4 mr-2" />
                 엑셀 다운로드
@@ -587,7 +618,7 @@ export default function AttendanceManagementPage() {
         </div>
 
         {/* 디버그 정보 */}
-        {debugInfo && (
+        {debugInfo && showDebug && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <h3 className="text-lg font-semibold text-yellow-800 mb-3">🔍 디버그 정보</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -756,7 +787,7 @@ export default function AttendanceManagementPage() {
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">점심 휴식</div>
                         <div className="text-xs text-gray-500">
-                          {record.break_start ? formatTime(record.break_start) : '-'} - {record.break_end ? formatTime(record.break_end) : '-'}
+                          {record.break_minutes ? `${record.break_minutes}분` : '-'}
                         </div>
                       </div>
                     </td>
