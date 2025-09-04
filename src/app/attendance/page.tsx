@@ -569,8 +569,12 @@ export default function AttendancePage() {
 
   // 간단한 출근 체크
   const handleSimpleCheckIn = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
     try {
       setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
       const now = new Date().toISOString();
       
       // 모든 오늘 스케줄에 출근 시간 기록
@@ -609,8 +613,12 @@ export default function AttendancePage() {
 
   // 간단한 퇴근 체크
   const handleSimpleCheckOut = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
     try {
       setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
       const now = new Date().toISOString();
       
       // 모든 오늘 스케줄에 퇴근 시간 기록
@@ -661,8 +669,12 @@ export default function AttendancePage() {
 
   // 중간 휴식 후 복귀 체크
   const handleBreakReturn = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
     try {
       setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
       const now = new Date().toISOString();
       
       // 현재 진행 중인 스케줄에 퇴근 시간 기록
@@ -718,8 +730,12 @@ export default function AttendancePage() {
 
   // 휴식 시작 함수 추가
   const handleBreakStart = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
     try {
       setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
       const now = new Date().toISOString();
       
       // 현재 진행 중인 스케줄들을 휴식 상태로 변경
