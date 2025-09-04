@@ -52,6 +52,8 @@ export default function AttendancePage() {
   
   // 급여 계산 관련 상태
   const [hourlyWage, setHourlyWage] = useState<number>(12000); // 기본 시급 12,000원 (hourly_wages 테이블에서 동적으로 로드)
+  const [wageType, setWageType] = useState<'hourly' | 'monthly'>('hourly'); // 급여 형태
+  const [monthlySalary, setMonthlySalary] = useState<number | null>(null); // 월급 정보
   const [wageCalculation, setWageCalculation] = useState<{
     scheduledPay: number;
     actualPay: number;
@@ -85,12 +87,40 @@ export default function AttendancePage() {
     if (!currentUser || todaySchedules.length === 0) return;
     
     try {
-      // 사용자의 시급 정보 가져오기 (hourly_wages 테이블에서)
-      const wageInfo = await getHourlyWage(currentUser.id, new Date().toISOString().split('T')[0]);
-      const baseWage = wageInfo?.base_wage || 12000; // 기본값 12,000원
+      // 직원 정보 조회 (월급제 vs 시급제 구분)
+      const { data: employee, error: employeeError } = await supabase
+        .from('employees')
+        .select('employment_type, monthly_salary, hourly_rate')
+        .eq('id', currentUser.id)
+        .single();
       
-      // 시급 상태 업데이트
+      if (employeeError) {
+        console.error('직원 정보 조회 오류:', employeeError);
+        return;
+      }
+      
+      let baseWage = 12000; // 기본값
+      let wageType = 'hourly'; // 기본값
+      
+      // 월급제 vs 시급제 구분
+      if (employee.employment_type === 'full_time' && employee.monthly_salary) {
+        // 월급제: 월급을 일급으로 환산 (월 22일 기준)
+        baseWage = Math.round(employee.monthly_salary / 22);
+        wageType = 'monthly';
+        setMonthlySalary(employee.monthly_salary);
+        console.log(`월급제: ${employee.monthly_salary.toLocaleString()}원/월 → ${baseWage.toLocaleString()}원/일`);
+      } else {
+        // 시급제: hourly_wages 테이블에서 시급 조회
+        const wageInfo = await getHourlyWage(currentUser.id, new Date().toISOString().split('T')[0]);
+        baseWage = wageInfo?.base_wage || 12000;
+        wageType = 'hourly';
+        setMonthlySalary(null);
+        console.log(`시급제: ${baseWage.toLocaleString()}원/시간`);
+      }
+      
+      // 급여 상태 업데이트
       setHourlyWage(baseWage);
+      setWageType(wageType);
       
       // 스케줄된 시간과 실제 근무 시간 계산
       const scheduledHours = todaySchedules.reduce((total, schedule) => {
@@ -1059,10 +1089,20 @@ export default function AttendancePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg p-3 border border-yellow-200 text-center flex flex-col items-center justify-center">
-              <div className="text-sm text-yellow-700 mb-2">시급</div>
-              <div className="text-lg font-bold text-yellow-800">
-                {hourlyWage.toLocaleString()}원
+              <div className="text-sm text-yellow-700 mb-2">
+                {wageType === 'monthly' ? '월급' : '시급'}
               </div>
+              <div className="text-lg font-bold text-yellow-800">
+                {wageType === 'monthly' && monthlySalary 
+                  ? `${monthlySalary.toLocaleString()}원/월`
+                  : `${hourlyWage.toLocaleString()}원/시간`
+                }
+              </div>
+              {wageType === 'monthly' && (
+                <div className="text-xs text-yellow-600 mt-1">
+                  일급: {hourlyWage.toLocaleString()}원
+                </div>
+              )}
             </div>
             
             {wageCalculation && (
