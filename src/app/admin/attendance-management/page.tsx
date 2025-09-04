@@ -206,9 +206,9 @@ export default function AttendanceManagementPage() {
         return;
       }
       
-      // 직원 정보 가져오기
-      const employeeIds = schedules.map(s => s.employee_id);
-      console.log("직원 ID 목록:", employeeIds);
+      // 직원 정보 가져오기 (중복 제거)
+      const uniqueEmployeeIds = [...new Set(schedules.map(s => s.employee_id))];
+      console.log("고유 직원 ID 목록:", uniqueEmployeeIds);
       
       const { data: employees, error: employeesError } = await supabase
         .from("employees")
@@ -219,12 +219,19 @@ export default function AttendanceManagementPage() {
           departments(name),
           positions(name)
         `)
-        .in("id", employeeIds);
+        .in("id", uniqueEmployeeIds);
       
       console.log("직원 데이터 결과:", { employees, employeesError });
+      console.log("직원 데이터 개수:", employees?.length || 0);
       
       if (employeesError) {
         console.error("직원 데이터 로딩 오류:", employeesError);
+        setAttendanceRecords([]);
+        return;
+      }
+      
+      if (!employees || employees.length === 0) {
+        console.error("직원 데이터가 없습니다.");
         setAttendanceRecords([]);
         return;
       }
