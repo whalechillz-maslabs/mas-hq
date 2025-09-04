@@ -394,6 +394,27 @@ export default function AttendanceManagementPage() {
     return Math.round((workMinutes / 60) * 100) / 100;
   };
 
+  // 스케줄 시간을 h m 형식으로 변환하는 함수
+  const formatScheduleDuration = (startTime: string, endTime: string): string => {
+    if (!startTime || !endTime) return '';
+    
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    const diffMs = end.getTime() - start.getTime();
+    const totalMinutes = Math.round(diffMs / (1000 * 60));
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
   const formatTime = (timeString: string | null) => {
     if (!timeString) return '-';
     
@@ -777,8 +798,10 @@ export default function AttendanceManagementPage() {
                         <div className="font-medium">스케줄</div>
                         <div className="text-xs text-gray-500">
                           {formatTime(record.first_schedule_start)} - {formatTime(record.last_schedule_end)}
-                          {record.schedule_count && record.schedule_count > 1 && (
-                            <span className="ml-2 text-blue-600">({record.schedule_count}개 스케줄)</span>
+                          {record.first_schedule_start && record.last_schedule_end && (
+                            <span className="ml-2 text-blue-600">
+                              ({formatScheduleDuration(record.first_schedule_start, record.last_schedule_end)})
+                            </span>
                           )}
                         </div>
                       </div>
