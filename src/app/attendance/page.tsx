@@ -51,7 +51,7 @@ export default function AttendancePage() {
   });
   
   // 급여 계산 관련 상태
-  const [hourlyWage, setHourlyWage] = useState<number>(12000); // 기본 시급 12,000원
+  const [hourlyWage, setHourlyWage] = useState<number>(12000); // 기본 시급 12,000원 (hourly_wages 테이블에서 동적으로 로드)
   const [wageCalculation, setWageCalculation] = useState<{
     scheduledPay: number;
     actualPay: number;
@@ -85,9 +85,12 @@ export default function AttendancePage() {
     if (!currentUser || todaySchedules.length === 0) return;
     
     try {
-      // 사용자의 시급 정보 가져오기
+      // 사용자의 시급 정보 가져오기 (hourly_wages 테이블에서)
       const wageInfo = await getHourlyWage(currentUser.id, new Date().toISOString().split('T')[0]);
-      const baseWage = wageInfo?.base_wage || hourlyWage;
+      const baseWage = wageInfo?.base_wage || 12000; // 기본값 12,000원
+      
+      // 시급 상태 업데이트
+      setHourlyWage(baseWage);
       
       // 스케줄된 시간과 실제 근무 시간 계산
       const scheduledHours = todaySchedules.reduce((total, schedule) => {
