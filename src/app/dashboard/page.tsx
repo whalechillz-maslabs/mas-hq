@@ -546,57 +546,159 @@ export default function DashboardPage() {
             협업 성과
           </h2>
           
-          {/* 통합 협업 성과 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">전체 매출</p>
-                  <p className="text-3xl font-bold text-blue-900">{formatCurrency(data?.teamKPI?.totalSales || 0)}</p>
+          {/* 마스골프 성과 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+              마스골프 성과
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium">마스골프 매출</p>
+                    <p className="text-3xl font-bold text-blue-900">{formatCurrency(25000000)}</p>
+                  </div>
+                  <DollarSign className="h-10 w-10 text-blue-600" />
                 </div>
-                <DollarSign className="h-10 w-10 text-blue-600" />
+                <div className="text-xs text-blue-500">
+                  OP1-10 업무 매출
+                </div>
               </div>
-              <div className="text-xs text-blue-500">
-                마스업무 + 싱싱업무 통합
+              
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium">마스골프 포인트</p>
+                    <p className="text-3xl font-bold text-blue-900">1,250점</p>
+                  </div>
+                  <Award className="h-10 w-10 text-blue-600" />
+                </div>
+                <div className="text-xs text-blue-500">
+                  OP1-10 업무 포인트
+                </div>
+              </div>
+              
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-blue-600 font-medium">마스골프 업무</p>
+                    <p className="text-3xl font-bold text-blue-900">85건</p>
+                  </div>
+                  <Target className="h-10 w-10 text-blue-600" />
+                </div>
+                <div className="text-xs text-blue-500">
+                  OP1-10 업무 건수
+                </div>
               </div>
             </div>
-            
-            <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-purple-600 font-medium">전체 포인트</p>
-                  <p className="text-3xl font-bold text-purple-900">1,670점</p>
+          </div>
+
+          {/* 싱싱골프 성과 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
+              싱싱골프 성과
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl border border-pink-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-pink-600 font-medium">싱싱골프 매출</p>
+                    <p className="text-3xl font-bold text-pink-900">{formatCurrency(10000000)}</p>
+                  </div>
+                  <DollarSign className="h-10 w-10 text-pink-600" />
                 </div>
-                <Award className="h-10 w-10 text-purple-600" />
+                <div className="text-xs text-pink-500">
+                  OP11-12 업무 매출
+                </div>
               </div>
-              <div className="text-xs text-purple-500">
-                모든 업무 유형 합계
+              
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl border border-pink-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-pink-600 font-medium">싱싱골프 포인트</p>
+                    <p className="text-3xl font-bold text-pink-900">420점</p>
+                  </div>
+                  <Award className="h-10 w-10 text-pink-600" />
+                </div>
+                <div className="text-xs text-pink-500">
+                  OP11-12 업무 포인트
+                </div>
+              </div>
+              
+              <div className="p-6 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl border border-pink-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-pink-600 font-medium">싱싱골프 업무</p>
+                    <p className="text-3xl font-bold text-pink-900">35건</p>
+                  </div>
+                  <Target className="h-10 w-10 text-pink-600" />
+                </div>
+                <div className="text-xs text-pink-500">
+                  OP11-12 업무 건수
+                </div>
               </div>
             </div>
-            
-            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-green-600 font-medium">전체 업무</p>
-                  <p className="text-3xl font-bold text-green-900">120건</p>
+          </div>
+
+          {/* 전체 성과 요약 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+              전체 성과 요약
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">전체 매출</p>
+                    <p className="text-3xl font-bold text-green-900">{formatCurrency(35000000)}</p>
+                  </div>
+                  <DollarSign className="h-10 w-10 text-green-600" />
                 </div>
-                <Target className="h-10 w-10 text-green-600" />
-              </div>
-              <div className="text-xs text-green-500">
-                완료된 업무 건수
-              </div>
-            </div>
-            
-            <div className="p-6 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl border border-orange-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-orange-600 font-medium">참여 인원</p>
-                  <p className="text-3xl font-bold text-orange-900">{data?.teamKPI?.teamMembers || 0}명</p>
+                <div className="text-xs text-green-500">
+                  마스골프 + 싱싱골프
                 </div>
-                <Users className="h-10 w-10 text-orange-600" />
               </div>
-              <div className="text-xs text-orange-500">
-                이번 달 업무 참여자
+              
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">전체 포인트</p>
+                    <p className="text-3xl font-bold text-green-900">1,670점</p>
+                  </div>
+                  <Award className="h-10 w-10 text-green-600" />
+                </div>
+                <div className="text-xs text-green-500">
+                  마스골프 + 싱싱골프
+                </div>
+              </div>
+              
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">전체 업무</p>
+                    <p className="text-3xl font-bold text-green-900">120건</p>
+                  </div>
+                  <Target className="h-10 w-10 text-green-600" />
+                </div>
+                <div className="text-xs text-green-500">
+                  마스골프 + 싱싱골프
+                </div>
+              </div>
+              
+              <div className="p-6 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl border border-orange-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-orange-600 font-medium">참여 인원</p>
+                    <p className="text-3xl font-bold text-orange-900">{data?.teamKPI?.teamMembers || 0}명</p>
+                  </div>
+                  <Users className="h-10 w-10 text-orange-600" />
+                </div>
+                <div className="text-xs text-orange-500">
+                  이번 달 업무 참여자
+                </div>
               </div>
             </div>
           </div>
@@ -611,7 +713,7 @@ export default function DashboardPage() {
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-600 font-medium">마스업무 참여</p>
+                    <p className="text-sm text-blue-600 font-medium">마스골프 참여</p>
                     <p className="text-2xl font-bold text-blue-900">5명</p>
                     <p className="text-xs text-blue-500 mt-1">OP1-10 업무 참여자</p>
                   </div>
@@ -624,7 +726,7 @@ export default function DashboardPage() {
               <div className="p-4 bg-pink-50 rounded-xl border border-pink-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-pink-600 font-medium">싱싱업무 참여</p>
+                    <p className="text-sm text-pink-600 font-medium">싱싱골프 참여</p>
                     <p className="text-2xl font-bold text-pink-900">3명</p>
                     <p className="text-xs text-pink-500 mt-1">OP11-12 업무 참여자</p>
                   </div>
