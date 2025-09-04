@@ -135,8 +135,8 @@ export default function AttendancePage() {
     }
     
     if (todaySchedules.length === 0) {
-      console.log('❌ todaySchedules가 비어있습니다.');
-      return;
+      console.log('❌ todaySchedules가 비어있습니다. 하지만 급여 정보는 표시합니다.');
+      // 스케줄이 없어도 급여 정보는 표시해야 함
     }
     
     try {
@@ -186,7 +186,7 @@ export default function AttendancePage() {
       setWageType(wageType);
       
       // 스케줄된 시간과 실제 근무 시간 계산
-      const scheduledHours = todaySchedules.reduce((total, schedule) => {
+      const scheduledHours = todaySchedules.length > 0 ? todaySchedules.reduce((total, schedule) => {
         if (schedule.scheduled_start && schedule.scheduled_end) {
           const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
           const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
@@ -194,15 +194,15 @@ export default function AttendancePage() {
           return total + hours;
         }
         return total;
-      }, 0);
+      }, 0) : 0;
       
-      const actualHours = todaySchedules
+      const actualHours = todaySchedules.length > 0 ? todaySchedules
         .filter(s => s.actual_start && s.actual_end)
         .reduce((total, s) => {
           const start = new Date(s.actual_start!);
           const end = new Date(s.actual_end!);
           return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-        }, 0);
+        }, 0) : 0;
       
       // 급여 계산
       const calculation = calculateSimpleWage(baseWage, actualHours, scheduledHours);
