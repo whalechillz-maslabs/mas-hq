@@ -51,6 +51,11 @@ interface AttendanceRecord {
   // 메모
   employee_note?: string;
   manager_note?: string;
+  
+  // 스케줄 정보
+  schedule_count?: number;
+  first_schedule_start?: string;
+  last_schedule_end?: string;
 }
 
 export default function AttendanceManagementPage() {
@@ -297,7 +302,7 @@ export default function AttendanceManagementPage() {
             employee_name: employee.name,
             employee_id_code: employee.employee_id,
             department: employee.departments?.name || "미지정",
-            position: employee.positions?.[0]?.name || "미지정",
+            position: employee.positions?.name || "미지정",
             schedule_date: schedule.schedule_date,
             scheduled_start: schedule.scheduled_start,
             scheduled_end: schedule.scheduled_end,
@@ -314,7 +319,9 @@ export default function AttendanceManagementPage() {
             status: schedule.status === "checked_out" ? "completed" : 
                     schedule.status === "checked_in" ? "confirmed" : "pending",
             employee_note: schedule.employee_note || "",
-            schedule_count: 1 // 스케줄 개수
+            schedule_count: 1, // 스케줄 개수
+            first_schedule_start: schedule.scheduled_start,
+            last_schedule_end: schedule.scheduled_end
           };
           
           employeeScheduleMap.set(employeeKey, record);
@@ -329,6 +336,9 @@ export default function AttendanceManagementPage() {
           
           existingRecord.total_hours += currentHours;
           existingRecord.schedule_count += 1;
+          
+          // 마지막 스케줄 시간 업데이트
+          existingRecord.last_schedule_end = schedule.scheduled_end;
           
           // 상태 우선순위: completed > confirmed > pending
           if (schedule.status === "checked_out" || existingRecord.status === "completed") {
@@ -380,6 +390,7 @@ export default function AttendanceManagementPage() {
     const diffMs = end.getTime() - start.getTime();
     const totalMinutes = diffMs / (1000 * 60);
     const workMinutes = totalMinutes - breakMinutes;
+    // 소수점 2자리까지 반올림
     return Math.round((workMinutes / 60) * 100) / 100;
   };
 
@@ -695,7 +706,7 @@ export default function AttendanceManagementPage() {
               <div>
                 <p className="text-sm text-gray-600">평균 근무시간</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {Math.round(filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / Math.max(filteredRecords.length, 1) * 10) / 10}시간
+                  {(filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / Math.max(filteredRecords.length, 1)).toFixed(1)}시간
                 </p>
               </div>
             </div>
@@ -765,7 +776,10 @@ export default function AttendanceManagementPage() {
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">스케줄</div>
                         <div className="text-xs text-gray-500">
-                          {formatTime(record.scheduled_start)} - {formatTime(record.scheduled_end)}
+                          {formatTime(record.first_schedule_start)} - {formatTime(record.last_schedule_end)}
+                          {record.schedule_count && record.schedule_count > 1 && (
+                            <span className="ml-2 text-blue-600">({record.schedule_count}개 스케줄)</span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -775,10 +789,14 @@ export default function AttendanceManagementPage() {
                         <div className="text-xs text-gray-500">
                           {formatTime(record.actual_start)}
                         </div>
-                        {record.check_in_location && (
+                        {record.check_in_location ? (
                           <div className="text-xs text-gray-500 flex items-center mt-1">
                             <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_in_location.address}
+                            {record.check_in_location.address || '위치 정보 있음'}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 mt-1">
+                            위치 없음
                           </div>
                         )}
                       </div>
@@ -797,17 +815,21 @@ export default function AttendanceManagementPage() {
                         <div className="text-xs text-gray-500">
                           {formatTime(record.actual_end)}
                         </div>
-                        {record.check_out_location && (
+                        {record.check_out_location ? (
                           <div className="text-xs text-gray-500 flex items-center mt-1">
                             <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_out_location.address}
+                            {record.check_out_location.address || '위치 정보 있음'}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 mt-1">
+                            위치 없음
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {record.total_hours > 0 ? `${record.total_hours}시간` : '-'}
+                        {record.total_hours > 0 ? `${record.total_hours.toFixed(2)}시간` : '-'}
                       </div>
                       {record.overtime_hours > 0 && (
                         <div className="text-xs text-orange-600">
