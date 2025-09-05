@@ -601,7 +601,7 @@ export default function SchedulesPage() {
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/dashboard')}
               className="p-2 rounded-full hover:bg-gray-200 transition-colors"
             >
               <ChevronLeft className="w-4 h-4 text-gray-700" />

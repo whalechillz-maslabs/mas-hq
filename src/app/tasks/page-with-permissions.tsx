@@ -279,7 +279,7 @@ export default function TasksPageWithPermissions() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push('/dashboard')}
                 className="flex items-center text-gray-600 hover:text-gray-900"
               >
                 <ChevronLeft className="h-5 w-5 mr-1" />
