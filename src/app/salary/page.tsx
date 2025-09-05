@@ -33,10 +33,39 @@ export default function SalaryPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showContractModal, setShowContractModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [currentDateInfo, setCurrentDateInfo] = useState<any>(null);
 
   useEffect(() => {
     loadSalaryData();
+    calculateCurrentDateInfo();
   }, [selectedYear]);
+
+  const calculateCurrentDateInfo = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const currentDate = now.getDate();
+    
+    // 급여 지급일 계산 (매월 25일)
+    const paymentDate = new Date(currentYear, currentMonth - 1, 25);
+    if (paymentDate > now) {
+      // 이번 달 25일이 아직 안 지났으면 지난 달 25일로 설정
+      paymentDate.setMonth(paymentDate.getMonth() - 1);
+    }
+    
+    // 급여 기간 계산 (지난 달 1일 ~ 마지막 날)
+    const periodStart = new Date(currentYear, currentMonth - 2, 1);
+    const periodEnd = new Date(currentYear, currentMonth - 1, 0);
+    
+    setCurrentDateInfo({
+      currentDate: now.toISOString().split('T')[0],
+      currentYearMonth: `${currentYear}년 ${currentMonth}월`,
+      paymentDate: paymentDate.toISOString().split('T')[0],
+      periodStart: periodStart.toISOString().split('T')[0],
+      periodEnd: periodEnd.toISOString().split('T')[0],
+      periodDisplay: `${periodStart.toISOString().split('T')[0]} ~ ${periodEnd.toISOString().split('T')[0]}`
+    });
+  };
 
   const loadSalaryData = async () => {
     try {
@@ -272,7 +301,7 @@ export default function SalaryPage() {
                   {data?.salaries[0] ? formatCurrency(data.salaries[0].net_amount) : '-'}
                 </p>
                 <p className="text-sm text-green-100 mt-1">
-                  {data?.salaries[0] ? formatDateKR(data.salaries[0].payment_date) : ''}
+                  {data?.salaries[0] ? formatDateKR(data.salaries[0].payment_date) : (currentDateInfo?.paymentDate ? formatDateKR(currentDateInfo.paymentDate) : '')}
                 </p>
               </div>
               <DollarSign className="h-12 w-12 text-green-200" />
@@ -302,7 +331,7 @@ export default function SalaryPage() {
                   {formatCurrency(data?.totalEarnings || 0)}
                 </p>
                 <p className="text-sm text-purple-100 mt-1">
-                  {selectedYear}년
+                  {currentDateInfo?.currentYearMonth?.split('년')[0] || selectedYear}년
                 </p>
               </div>
               <PieChart className="h-12 w-12 text-purple-200" />
@@ -470,7 +499,8 @@ export default function SalaryPage() {
             한국 노동법/세금법 적용 안내
           </h4>
           <ul className="text-sm text-green-700 space-y-1">
-            <li>• <strong>현재 월:</strong> 2025년 1월 (2025-01-01 ~ 2025-01-31)</li>
+            <li>• <strong>현재 월:</strong> {currentDateInfo?.currentYearMonth || '2025년 9월'} ({currentDateInfo?.periodDisplay || '2025-07-31 ~ 2025-08-30'})</li>
+            <li>• <strong>급여 지급일:</strong> {currentDateInfo?.paymentDate || '2025-08-24'} (매월 25일)</li>
             <li>• <strong>세율:</strong> 3.3% (사업소득자 원천징수)</li>
             <li>• <strong>지급 상태:</strong> ✅ 지급완료 (계좌이체)</li>
             <li>• <strong>최저임금:</strong> 10,000원/시간 (2025년 기준)</li>
