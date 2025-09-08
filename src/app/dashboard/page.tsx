@@ -911,6 +911,14 @@ export default function DashboardPage() {
                   <h3 className="font-bold text-lg text-purple-900 mb-2">파트타임 정산</h3>
                 <p className="text-sm text-purple-700">파트타임 직원 일자별 정산 관리</p>
               </button>
+              <button 
+                onClick={() => router.push('/admin/simple-settlement')}
+                  className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl hover:bg-yellow-100 transition-all duration-200 text-left"
+              >
+                  <Calculator className="h-10 w-10 text-yellow-600 mb-3" />
+                  <h3 className="font-bold text-lg text-yellow-900 mb-2">간단한 정산 테스트</h3>
+                <p className="text-sm text-yellow-700">직원 급여 정산 테스트 및 확인</p>
+              </button>
               </div>
           </div>
         )}
