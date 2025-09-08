@@ -735,9 +735,21 @@ export default function EmployeeSchedulesPage() {
                     <ChevronLeft className="w-5 h-5 text-gray-700" />
                   </button>
                   
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    {getWeekDisplay(currentDate)}
-                  </h2>
+                  <div className="flex items-center space-x-4">
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      {getWeekDisplay(currentDate)}
+                    </h2>
+                    
+                    {/* 오늘로 가기 버튼 */}
+                    <button
+                      onClick={() => setCurrentDate(new Date())}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                      title="오늘 날짜가 포함된 주로 이동"
+                    >
+                      <span>📅</span>
+                      <span>오늘로 가기</span>
+                    </button>
+                  </div>
                   
                   <button 
                     onClick={handleNextWeek} 

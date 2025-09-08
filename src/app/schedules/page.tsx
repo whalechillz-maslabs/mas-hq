@@ -702,12 +702,25 @@ export default function SchedulesPage() {
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
           </button>
           
-          <h2 className="text-sm sm:text-base font-semibold text-gray-800">
-            {viewMode === 'week' 
-              ? `${format(startOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
-              : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
-            }
-          </h2>
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <h2 className="text-sm sm:text-base font-semibold text-gray-800">
+              {viewMode === 'week' 
+                ? `${format(startOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
+                : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
+              }
+            </h2>
+            
+            {/* 오늘로 가기 버튼 */}
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+              title="오늘 날짜로 이동"
+            >
+              <span>📅</span>
+              <span className="hidden sm:inline">오늘로 가기</span>
+              <span className="sm:hidden">오늘</span>
+            </button>
+          </div>
           
           <button 
             onClick={handleNextPeriod} 
