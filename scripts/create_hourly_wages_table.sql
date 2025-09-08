@@ -50,7 +50,7 @@ CREATE POLICY "직원은 자신의 시급 정보 조회" ON hourly_wages
 INSERT INTO hourly_wages (employee_id, base_wage, overtime_multiplier, night_shift_multiplier, holiday_multiplier, effective_date)
 SELECT 
   id,
-  12000, -- 기본 시급 12,000원 (실제 운영 환경에 맞게 조정)
+   12000, -- 기본 시급 12,000원 (실제 운영 환경에 맞게 조정)
   1.0,   -- 초과 근무 1.0배 (수당 없음 - 프랜차이즈 스타일)
   1.0,   -- 야간 근무 1.0배 (수당 없음 - 프랜차이즈 스타일)
   1.0    -- 휴일 근무 1.0배 (수당 없음 - 프랜차이즈 스타일)

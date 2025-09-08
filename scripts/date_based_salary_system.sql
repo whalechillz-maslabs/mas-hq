@@ -201,3 +201,4 @@ SELECT '날짜 기반 급여 시스템 설정 완료!' as message,
        '현재 날짜: ' || CURRENT_DATE as current_date,
        '급여 지급일: ' || (SELECT payment_date FROM get_current_date_info()) as payment_date,
        '급여 기간: ' || (SELECT period_display FROM get_current_date_info()) as period_display;
+

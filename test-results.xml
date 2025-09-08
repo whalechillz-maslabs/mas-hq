@@ -1,66 +1,11 @@
-<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="23.263221">
-<testsuite name="real-account-test.spec.ts" timestamp="2025-09-03T13:02:24.003Z" hostname="chromium-stable" tests="2" failures="0" skipped="0" time="44.432" errors="0">
-<testcase name="실제 계정으로 출근 관리 페이지 최종 검증 › 김탁수(관리자) 계정으로 로그인 후 출근 관리 페이지 검증" classname="real-account-test.spec.ts" time="22.217">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="8.171079">
+<testsuite name="attendance-real-time-data-test.spec.ts" timestamp="2025-09-04T22:52:59.345Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="7.464" errors="0">
+<testcase name="출근 관리 급여 정보 및 실시간 데이터 확인 › 실시간 데이터 업데이트 확인" classname="attendance-real-time-data-test.spec.ts" time="7.464">
 <system-out>
-<![CDATA[김탁수 로그인 후 현재 URL: https://www.maslabs.kr/quick-task
-김탁수 출근 관리 페이지 URL: https://www.maslabs.kr/attendance
-김탁수 출근 관리 페이지 제목: MASLABS - 혁신적인 골프 경험
-=== 김탁수 출근 관리 페이지 검증 시작 ===
-김탁수 페이지 제목: 출근 관리
-김탁수 사용자 정보 표시: ✅
-김탁수 오늘 근무 요약 섹션: ✅
-김탁수 메트릭 개수: [33m3[39m
-김탁수 스케줄 시간 라벨: ✅
-김탁수 실제 근무 시간 라벨: ✅
-김탁수 시간 차이 라벨: ✅
-김탁수 오늘의 근무 요약: ✅
-김탁수 근무 블록 개수: [33m1[39m
-김탁수 이번 달 출근 요약: ✅
-김탁수 최근 7일 요약: ✅
-김탁수 간단한 출근 관리: ✅
-김탁수 중복 표시 문제: ✅ 해결됨
-김탁수 스케줄: 라벨: ✅
-김탁수 실제: 라벨: ✅
-김탁수 제거된 요소 "진행 중": ✅ 제거됨
-김탁수 제거된 요소 "대기 중": ✅ 제거됨
-김탁수 제거된 요소 "연속 근무": ✅ 제거됨
-김탁수 제거된 요소 "예상:": ✅ 제거됨
-김탁수 제거된 요소 "총 스케줄": ✅ 제거됨
-김탁수 시간 차이 툴팁: ✅
-김탁수 모바일 뷰 스크린샷 저장 완료
-=== 김탁수 출근 관리 페이지 검증 완료 ===
-]]>
-</system-out>
-</testcase>
-<testcase name="실제 계정으로 출근 관리 페이지 최종 검증 › 허상원 계정으로 로그인 후 출근 관리 페이지 검증" classname="real-account-test.spec.ts" time="22.215">
-<system-out>
-<![CDATA[허상원 로그인 후 현재 URL: https://www.maslabs.kr/quick-task
-허상원 출근 관리 페이지 URL: https://www.maslabs.kr/attendance
-허상원 출근 관리 페이지 제목: MASLABS - 혁신적인 골프 경험
-=== 허상원 출근 관리 페이지 검증 시작 ===
-허상원 페이지 제목: 출근 관리
-허상원 사용자 정보 표시: ✅
-허상원 오늘 근무 요약 섹션: ✅
-허상원 메트릭 개수: [33m3[39m
-허상원 스케줄 시간 라벨: ✅
-허상원 실제 근무 시간 라벨: ✅
-허상원 시간 차이 라벨: ✅
-허상원 오늘의 근무 요약: ✅
-허상원 근무 블록 개수: [33m2[39m
-허상원 이번 달 출근 요약: ✅
-허상원 최근 7일 요약: ✅
-허상원 간단한 출근 관리: ✅
-허상원 중복 표시 문제: ✅ 해결됨
-허상원 스케줄: 라벨: ✅
-허상원 실제: 라벨: ✅
-허상원 제거된 요소 "진행 중": ✅ 제거됨
-허상원 제거된 요소 "대기 중": ✅ 제거됨
-허상원 제거된 요소 "연속 근무": ✅ 제거됨
-허상원 제거된 요소 "예상:": ✅ 제거됨
-허상원 제거된 요소 "총 스케줄": ✅ 제거됨
-허상원 시간 차이 툴팁: ✅
-허상원 모바일 뷰 스크린샷 저장 완료
-=== 허상원 출근 관리 페이지 검증 완료 ===
+<![CDATA[=== 실시간 데이터 업데이트 확인 테스트 시작 ===
+시간 표시 요소 개수: [33m1[39m
+✅ 실시간 시간 업데이트가 확인됩니다.
+=== 실시간 데이터 업데이트 확인 테스트 완료 ===
 ]]>
 </system-out>
 </testcase>

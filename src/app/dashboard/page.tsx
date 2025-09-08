@@ -11,7 +11,7 @@ import {
   TrendingUp, DollarSign, Users, Clock, Calendar, Target,
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
-  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu
+  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu, FileText
 } from 'lucide-react';
 
 interface DashboardData {
@@ -894,6 +894,14 @@ export default function DashboardPage() {
                   <UserPlus className="h-10 w-10 text-blue-600 mb-3" />
                   <h3 className="font-bold text-lg text-blue-900 mb-2">직원 관리</h3>
                 <p className="text-sm text-blue-700">직원 정보 및 권한 관리</p>
+              </button>
+              <button 
+                onClick={() => router.push('/admin/payslip-generator')}
+                  className="p-6 bg-green-50 border-2 border-green-200 rounded-2xl hover:bg-green-100 transition-all duration-200 text-left"
+              >
+                  <FileText className="h-10 w-10 text-green-600 mb-3" />
+                  <h3 className="font-bold text-lg text-green-900 mb-2">급여 명세서 생성</h3>
+                <p className="text-sm text-green-700">직원 급여 명세서 생성 및 발행</p>
               </button>
               </div>
           </div>

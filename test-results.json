@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 2
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "reporter": [
@@ -45,7 +45,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 1
         },
         "id": "chromium-nightly",
         "name": "chromium-nightly",
@@ -61,7 +61,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 1
         },
         "id": "chromium-stable",
         "name": "chromium-stable",
@@ -77,7 +77,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 1
         },
         "id": "firefox",
         "name": "firefox",
@@ -93,7 +93,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 1
         },
         "id": "webkit",
         "name": "webkit",
@@ -108,26 +108,26 @@
     "shard": null,
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.55.0",
+    "version": "1.56.0-alpha-2025-09-04",
     "workers": 4,
     "webServer": null
   },
   "suites": [
     {
-      "title": "real-account-test.spec.ts",
-      "file": "real-account-test.spec.ts",
+      "title": "attendance-real-time-data-test.spec.ts",
+      "file": "attendance-real-time-data-test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "실제 계정으로 출근 관리 페이지 최종 검증",
-          "file": "real-account-test.spec.ts",
+          "title": "출근 관리 급여 정보 및 실시간 데이터 확인",
+          "file": "attendance-real-time-data-test.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "김탁수(관리자) 계정으로 로그인 후 출근 관리 페이지 검증",
+              "title": "실시간 데이터 업데이트 확인",
               "ok": true,
               "tags": [],
               "tests": [
@@ -142,94 +142,25 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 22217,
+                      "duration": 7464,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "김탁수 로그인 후 현재 URL: https://www.maslabs.kr/quick-task\n"
+                          "text": "=== 실시간 데이터 업데이트 확인 테스트 시작 ===\n"
                         },
                         {
-                          "text": "김탁수 출근 관리 페이지 URL: https://www.maslabs.kr/attendance\n"
+                          "text": "시간 표시 요소 개수: \u001b[33m1\u001b[39m\n"
                         },
                         {
-                          "text": "김탁수 출근 관리 페이지 제목: MASLABS - 혁신적인 골프 경험\n"
+                          "text": "✅ 실시간 시간 업데이트가 확인됩니다.\n"
                         },
                         {
-                          "text": "=== 김탁수 출근 관리 페이지 검증 시작 ===\n"
-                        },
-                        {
-                          "text": "김탁수 페이지 제목: 출근 관리\n"
-                        },
-                        {
-                          "text": "김탁수 사용자 정보 표시: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 오늘 근무 요약 섹션: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 메트릭 개수: \u001b[33m3\u001b[39m\n"
-                        },
-                        {
-                          "text": "김탁수 스케줄 시간 라벨: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 실제 근무 시간 라벨: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 시간 차이 라벨: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 오늘의 근무 요약: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 근무 블록 개수: \u001b[33m1\u001b[39m\n"
-                        },
-                        {
-                          "text": "김탁수 이번 달 출근 요약: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 최근 7일 요약: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 간단한 출근 관리: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 중복 표시 문제: ✅ 해결됨\n"
-                        },
-                        {
-                          "text": "김탁수 스케줄: 라벨: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 실제: 라벨: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 제거된 요소 \"진행 중\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "김탁수 제거된 요소 \"대기 중\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "김탁수 제거된 요소 \"연속 근무\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "김탁수 제거된 요소 \"예상:\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "김탁수 제거된 요소 \"총 스케줄\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "김탁수 시간 차이 툴팁: ✅\n"
-                        },
-                        {
-                          "text": "김탁수 모바일 뷰 스크린샷 저장 완료\n"
-                        },
-                        {
-                          "text": "=== 김탁수 출근 관리 페이지 검증 완료 ===\n"
+                          "text": "=== 실시간 데이터 업데이트 확인 테스트 완료 ===\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-03T13:02:24.334Z",
+                      "startTime": "2025-09-04T22:52:59.807Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -237,125 +168,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "6a9f46a5d9bc26e27cc9-66cfdc98f9c3afd9529d",
-              "file": "real-account-test.spec.ts",
-              "line": 4,
-              "column": 7
-            },
-            {
-              "title": "허상원 계정으로 로그인 후 출근 관리 페이지 검증",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-stable",
-                  "projectName": "chromium-stable",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 22215,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "허상원 로그인 후 현재 URL: https://www.maslabs.kr/quick-task\n"
-                        },
-                        {
-                          "text": "허상원 출근 관리 페이지 URL: https://www.maslabs.kr/attendance\n"
-                        },
-                        {
-                          "text": "허상원 출근 관리 페이지 제목: MASLABS - 혁신적인 골프 경험\n"
-                        },
-                        {
-                          "text": "=== 허상원 출근 관리 페이지 검증 시작 ===\n"
-                        },
-                        {
-                          "text": "허상원 페이지 제목: 출근 관리\n"
-                        },
-                        {
-                          "text": "허상원 사용자 정보 표시: ✅\n"
-                        },
-                        {
-                          "text": "허상원 오늘 근무 요약 섹션: ✅\n"
-                        },
-                        {
-                          "text": "허상원 메트릭 개수: \u001b[33m3\u001b[39m\n"
-                        },
-                        {
-                          "text": "허상원 스케줄 시간 라벨: ✅\n"
-                        },
-                        {
-                          "text": "허상원 실제 근무 시간 라벨: ✅\n"
-                        },
-                        {
-                          "text": "허상원 시간 차이 라벨: ✅\n"
-                        },
-                        {
-                          "text": "허상원 오늘의 근무 요약: ✅\n"
-                        },
-                        {
-                          "text": "허상원 근무 블록 개수: \u001b[33m2\u001b[39m\n"
-                        },
-                        {
-                          "text": "허상원 이번 달 출근 요약: ✅\n"
-                        },
-                        {
-                          "text": "허상원 최근 7일 요약: ✅\n"
-                        },
-                        {
-                          "text": "허상원 간단한 출근 관리: ✅\n"
-                        },
-                        {
-                          "text": "허상원 중복 표시 문제: ✅ 해결됨\n"
-                        },
-                        {
-                          "text": "허상원 스케줄: 라벨: ✅\n"
-                        },
-                        {
-                          "text": "허상원 실제: 라벨: ✅\n"
-                        },
-                        {
-                          "text": "허상원 제거된 요소 \"진행 중\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "허상원 제거된 요소 \"대기 중\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "허상원 제거된 요소 \"연속 근무\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "허상원 제거된 요소 \"예상:\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "허상원 제거된 요소 \"총 스케줄\": ✅ 제거됨\n"
-                        },
-                        {
-                          "text": "허상원 시간 차이 툴팁: ✅\n"
-                        },
-                        {
-                          "text": "허상원 모바일 뷰 스크린샷 저장 완료\n"
-                        },
-                        {
-                          "text": "=== 허상원 출근 관리 페이지 검증 완료 ===\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-09-03T13:02:24.339Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "6a9f46a5d9bc26e27cc9-644226af2e4eb3d5c6a6",
-              "file": "real-account-test.spec.ts",
-              "line": 47,
+              "id": "5175111fd103b0289bb1-75eb86d31e301a67cde1",
+              "file": "attendance-real-time-data-test.spec.ts",
+              "line": 174,
               "column": 7
             }
           ]
@@ -365,9 +180,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-03T13:02:23.914Z",
-    "duration": 23263.221,
-    "expected": 2,
+    "startTime": "2025-09-04T22:52:59.325Z",
+    "duration": 8171.079000000001,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

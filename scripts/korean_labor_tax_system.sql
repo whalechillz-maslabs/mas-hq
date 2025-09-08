@@ -175,3 +175,4 @@ SELECT '한국 노동법/세금법 기반 급여 시스템 설정 완료!' as me
        '현재 월: 2025년 1월' as current_month,
        '세율: 3.3% (사업소득자)' as tax_rate,
        '지급 상태: 지급완료' as payment_status;
+
