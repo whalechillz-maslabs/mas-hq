@@ -13,11 +13,9 @@ interface Employee {
   id: string;
   name: string;
   employee_id: string;
-  department: string;
-  position: string;
   employment_type: string;
-  monthly_salary: number;
-  hourly_rate: number;
+  monthly_salary?: number;
+  hourly_rate?: number;
 }
 
 interface PayslipData {
@@ -59,24 +57,31 @@ export default function PayslipGenerator() {
   const loadEmployees = async () => {
     try {
       setLoading(true);
+      console.log('🔍 직원 목록 로드 시작...');
+      
       const { data, error } = await supabase
         .from('employees')
         .select(`
           id,
           name,
           employee_id,
-          department,
-          position,
           employment_type,
           monthly_salary,
           hourly_rate
         `)
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase 에러:', error);
+        throw error;
+      }
+      
+      console.log('✅ 직원 데이터 로드 성공:', data?.length || 0, '명');
+      console.log('📋 직원 목록:', data);
       setEmployees(data || []);
     } catch (error) {
-      console.error('직원 목록 로드 실패:', error);
+      console.error('❌ 직원 목록 로드 실패:', error);
+      alert('직원 목록을 불러오는데 실패했습니다: ' + error);
     } finally {
       setLoading(false);
     }
@@ -204,6 +209,16 @@ export default function PayslipGenerator() {
         {/* 직원 선택 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">직원 선택</h2>
+          
+          {/* 디버깅 정보 */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-600">
+              <div>로딩 상태: {loading ? '로딩 중...' : '완료'}</div>
+              <div>직원 수: {employees.length}명</div>
+              <div>선택된 직원: {selectedEmployee || '없음'}</div>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -215,10 +230,12 @@ export default function PayslipGenerator() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={loading}
               >
-                <option value="">직원을 선택하세요</option>
+                <option value="">
+                  {loading ? '로딩 중...' : employees.length === 0 ? '직원 데이터가 없습니다' : '직원을 선택하세요'}
+                </option>
                 {employees.map((employee) => (
                   <option key={employee.id} value={employee.id}>
-                    {employee.name} ({employee.employee_id}) - {employee.department}
+                    {employee.name} ({employee.employee_id}) - {employee.employment_type}
                   </option>
                 ))}
               </select>
