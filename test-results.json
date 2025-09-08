@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 1
+      "actualWorkers": 4
     },
     "preserveOutput": "always",
     "reporter": [
@@ -45,7 +45,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "chromium-nightly",
         "name": "chromium-nightly",
@@ -61,7 +61,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "chromium-stable",
         "name": "chromium-stable",
@@ -77,7 +77,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "firefox",
         "name": "firefox",
@@ -93,7 +93,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "webkit",
         "name": "webkit",
@@ -108,27 +108,69 @@
     "shard": null,
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.56.0-alpha-2025-09-04",
+    "version": "1.55.0",
     "workers": 4,
     "webServer": null
   },
   "suites": [
     {
-      "title": "attendance-real-time-data-test.spec.ts",
-      "file": "attendance-real-time-data-test.spec.ts",
+      "title": "supabase-hourly-wages-test.spec.ts",
+      "file": "supabase-hourly-wages-test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "출근 관리 급여 정보 및 실시간 데이터 확인",
-          "file": "attendance-real-time-data-test.spec.ts",
+          "title": "Supabase Hourly Wages Setup",
+          "file": "supabase-hourly-wages-test.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "실시간 데이터 업데이트 확인",
-              "ok": true,
+              "title": "최형호 시급 등록 및 월급 변경",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-nightly",
+                  "projectName": "chromium-nightly",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 3,
+                      "error": {
+                        "message": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\"",
+                        "stack": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\""
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\""
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-08T22:32:09.131Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7bfdf7189ab4573e4b56-b7f900467f5f53e71349",
+              "file": "supabase-hourly-wages-test.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "최형호 시급 등록 및 월급 변경",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -139,38 +181,152 @@
                   "projectName": "chromium-stable",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 7464,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "=== 실시간 데이터 업데이트 확인 테스트 시작 ===\n"
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 18068,
+                      "error": {
+                        "message": "TimeoutError: page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=SQL Editor')\u001b[22m\n\u001b[2m    - locator resolved to <span>SQL Editor</span>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m  - element was detached from the DOM, retrying\u001b[22m\n",
+                        "stack": "TimeoutError: page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=SQL Editor')\u001b[22m\n\u001b[2m    - locator resolved to <span>SQL Editor</span>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m  - element was detached from the DOM, retrying\u001b[22m\n\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts:15:16",
+                        "location": {
+                          "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts",
+                          "column": 16,
+                          "line": 15
                         },
+                        "snippet": "\u001b[0m \u001b[90m 13 |\u001b[39m     \n \u001b[90m 14 |\u001b[39m     \u001b[90m// 3. SQL Editor로 이동\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'text=SQL Editor'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m2000\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \n \u001b[90m 18 |\u001b[39m     \u001b[90m// 4. hourly_wages 테이블 생성\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
                         {
-                          "text": "시간 표시 요소 개수: \u001b[33m1\u001b[39m\n"
-                        },
-                        {
-                          "text": "✅ 실시간 시간 업데이트가 확인됩니다.\n"
-                        },
-                        {
-                          "text": "=== 실시간 데이터 업데이트 확인 테스트 완료 ===\n"
+                          "location": {
+                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts",
+                            "column": 16,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=SQL Editor')\u001b[22m\n\u001b[2m    - locator resolved to <span>SQL Editor</span>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m  - element was detached from the DOM, retrying\u001b[22m\n\n\n\u001b[0m \u001b[90m 13 |\u001b[39m     \n \u001b[90m 14 |\u001b[39m     \u001b[90m// 3. SQL Editor로 이동\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'text=SQL Editor'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m2000\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 17 |\u001b[39m     \n \u001b[90m 18 |\u001b[39m     \u001b[90m// 4. hourly_wages 테이블 생성\u001b[39m\u001b[0m\n\u001b[2m    at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts:15:16\u001b[22m"
                         }
                       ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-04T22:52:59.807Z",
+                      "startTime": "2025-09-08T22:32:09.114Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts",
+                        "column": 16,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7bfdf7189ab4573e4b56-6848217002ba4e073439",
+              "file": "supabase-hourly-wages-test.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "최형호 시급 등록 및 월급 변경",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 60033,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m"
+                        },
+                        {
+                          "message": "Error: browserContext.newPage: Test timeout of 60000ms exceeded."
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-08T22:32:09.129Z",
                       "annotations": [],
                       "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "5175111fd103b0289bb1-75eb86d31e301a67cde1",
-              "file": "attendance-real-time-data-test.spec.ts",
-              "line": 174,
+              "id": "7bfdf7189ab4573e4b56-6af9bcdde69c905e0839",
+              "file": "supabase-hourly-wages-test.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "최형호 시급 등록 및 월급 변경",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 8,
+                      "error": {
+                        "message": "Error: browserType.launch: Executable doesn't exist at /Users/m2/Library/Caches/ms-playwright/webkit-2203/pw_run.sh\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝",
+                        "stack": "Error: browserType.launch: Executable doesn't exist at /Users/m2/Library/Caches/ms-playwright/webkit-2203/pw_run.sh\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.launch: Executable doesn't exist at /Users/m2/Library/Caches/ms-playwright/webkit-2203/pw_run.sh\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-08T22:32:09.144Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7bfdf7189ab4573e4b56-4557c0eae63fa643101e",
+              "file": "supabase-hourly-wages-test.spec.ts",
+              "line": 4,
               "column": 7
             }
           ]
@@ -180,11 +336,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-04T22:52:59.325Z",
-    "duration": 8171.079000000001,
-    "expected": 1,
+    "startTime": "2025-09-08T22:32:08.246Z",
+    "duration": 68389.375,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 4,
     "flaky": 0
   }
 }

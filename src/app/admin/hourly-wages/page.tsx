@@ -10,16 +10,17 @@ const supabase = createClient(
 );
 
 interface HourlyWage {
-  id: number;
+  id: string;
   employee_id: string;
   employee_name: string;
   employee_code: string;
   base_wage: number;
   overtime_multiplier: number;
-  night_shift_multiplier: number;
+  night_multiplier: number;
   holiday_multiplier: number;
-  effective_date: string;
-  end_date?: string;
+  effective_start_date: string;
+  effective_end_date?: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -40,9 +41,11 @@ export default function HourlyWagesPage() {
     employee_id: '',
     base_wage: 12000, // 기본 시급을 12,000원으로 변경
     overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
-    night_shift_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
+    night_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
     holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
-    effective_date: new Date().toISOString().split('T')[0]
+    effective_start_date: new Date().toISOString().split('T')[0],
+    effective_end_date: '',
+    status: 'active'
   });
 
   useEffect(() => {

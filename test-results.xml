@@ -1,13 +1,87 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="8.171079">
-<testsuite name="attendance-real-time-data-test.spec.ts" timestamp="2025-09-04T22:52:59.345Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="7.464" errors="0">
-<testcase name="출근 관리 급여 정보 및 실시간 데이터 확인 › 실시간 데이터 업데이트 확인" classname="attendance-real-time-data-test.spec.ts" time="7.464">
+<testsuites id="" name="" tests="4" failures="4" skipped="0" errors="0" time="68.389375">
+<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="chromium-nightly" tests="1" failures="1" skipped="0" time="0.003" errors="0">
+<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="0.003">
+<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
+<![CDATA[  [chromium-nightly] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+
+    Error: browserType.launch: Unsupported chromium channel "chrome-nightly"
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="18.068" errors="0">
+<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="18.068">
+<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
+<![CDATA[  [chromium-stable] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+
+    TimeoutError: page.click: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('text=SQL Editor')
+        - locator resolved to <span>SQL Editor</span>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+      - element was detached from the DOM, retrying
+
+
+      13 |     
+      14 |     // 3. SQL Editor로 이동
+    > 15 |     await page.click('text=SQL Editor');
+         |                ^
+      16 |     await page.waitForTimeout(2000);
+      17 |     
+      18 |     // 4. hourly_wages 테이블 생성
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/error-context.md
+]]>
+</failure>
 <system-out>
-<![CDATA[=== 실시간 데이터 업데이트 확인 테스트 시작 ===
-시간 표시 요소 개수: [33m1[39m
-✅ 실시간 시간 업데이트가 확인됩니다.
-=== 실시간 데이터 업데이트 확인 테스트 완료 ===
+<![CDATA[
+[[ATTACHMENT|test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/error-context.md]]
 ]]>
 </system-out>
+</testcase>
+</testsuite>
+<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="firefox" tests="1" failures="1" skipped="0" time="60.033" errors="0">
+<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="60.033">
+<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
+<![CDATA[  [firefox] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+
+    Test timeout of 60000ms exceeded while setting up "page".
+
+    Error: browserContext.newPage: Test timeout of 60000ms exceeded.
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="webkit" tests="1" failures="1" skipped="0" time="0.008" errors="0">
+<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="0.008">
+<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
+<![CDATA[  [webkit] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+
+    Error: browserType.launch: Executable doesn't exist at /Users/m2/Library/Caches/ms-playwright/webkit-2203/pw_run.sh
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+]]>
+</failure>
 </testcase>
 </testsuite>
 </testsuites>
