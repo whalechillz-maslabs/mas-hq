@@ -14,8 +14,7 @@ interface AttendanceRecord {
   employee_id: string;
   employee_name: string;
   employee_id_code: string;
-  department: string;
-  position: string;
+  employment_type: string;
   schedule_date: string;
   
   // 스케줄 정보 (업무 예정 시간)
@@ -241,8 +240,7 @@ export default function AttendanceManagementPage() {
           id,
           name,
           employee_id,
-          departments!inner(name),
-          positions(name)
+          employment_type
         `)
         .in("id", uniqueEmployeeIds);
       
@@ -301,8 +299,7 @@ export default function AttendanceManagementPage() {
             employee_id: schedule.employee_id,
             employee_name: employee.name,
             employee_id_code: employee.employee_id,
-            department: employee.departments?.name || "미지정",
-            position: employee.positions?.name || "미지정",
+            employment_type: employee.employment_type || "미지정",
             schedule_date: schedule.schedule_date,
             scheduled_start: schedule.scheduled_start,
             scheduled_end: schedule.scheduled_end,
@@ -812,7 +809,7 @@ export default function AttendanceManagementPage() {
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{record.employee_name}</div>
                           <div className="text-sm text-gray-500">{record.employee_id_code}</div>
-                          <div className="text-sm text-gray-500">{record.department} - {record.position}</div>
+                          <div className="text-sm text-gray-500">{record.employment_type}</div>
                         </div>
                       </div>
                     </td>
