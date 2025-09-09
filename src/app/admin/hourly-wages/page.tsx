@@ -386,7 +386,7 @@ export default function HourlyWagesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {wage.night_shift_multiplier === 1.0 ? '수당 없음' : `${wage.night_shift_multiplier}배`}
+                          {wage.night_multiplier === 1.0 ? '수당 없음' : `${wage.night_multiplier}배`}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -395,7 +395,7 @@ export default function HourlyWagesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{wage.effective_date}</div>
+                        <div className="text-sm text-gray-900">{wage.effective_start_date}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
