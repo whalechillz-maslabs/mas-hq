@@ -1029,6 +1029,24 @@ export default function EmployeeSchedulesPage() {
                     >
                       오늘
                     </button>
+                    
+                    {/* 주간/월간 토글 버튼 */}
+                    <div className="flex bg-white rounded-lg border border-gray-300 overflow-hidden">
+                      <button
+                        className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                          true ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        주간
+                      </button>
+                      <button
+                        className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                          false ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        월간
+                      </button>
+                    </div>
                   </div>
                   
                   <button 
@@ -1039,21 +1057,21 @@ export default function EmployeeSchedulesPage() {
                   </button>
                 </div>
 
-                {/* 일괄 입력 모달 - 개인 스케줄 페이지와 동일 */}
+                {/* 일괄 입력 모달 - 개인 스케줄 페이지와 완전히 동일 */}
                 {showBulkInput && (
-                  <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                    <h3 className="text-sm font-semibold text-green-800 mb-3 flex items-center">
-                      <Repeat className="h-4 w-4 mr-2" />
+                  <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                      <Repeat className="h-4 w-4 mr-1" />
                       일괄 스케줄 입력 (30분 단위로 자동 분할)
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">시작 시간</label>
                         <input
                           type="time"
                           value={bulkStartTime}
                           onChange={(e) => setBulkStartTime(e.target.value)}
-                          className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
+                          className="w-full p-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
                         />
                       </div>
                       <div>
@@ -1062,7 +1080,7 @@ export default function EmployeeSchedulesPage() {
                           type="time"
                           value={bulkEndTime}
                           onChange={(e) => setBulkEndTime(e.target.value)}
-                          className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
+                          className="w-full p-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
                         />
                       </div>
                       <div>
@@ -1089,7 +1107,7 @@ export default function EmployeeSchedulesPage() {
                               className={`px-2 py-1 text-xs rounded ${
                                 bulkDays.includes(day)
                                   ? 'bg-green-600 text-white'
-                                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                               }`}
                             >
                               {label}
@@ -1097,42 +1115,41 @@ export default function EmployeeSchedulesPage() {
                           ))}
                         </div>
                       </div>
-                      <div className="flex items-end space-x-2">
-                        <button
-                          onClick={handleBulkScheduleAdd}
-                          disabled={updating === 'bulk-add'}
-                          className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {updating === 'bulk-add' ? '생성 중...' : '적용'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowBulkInput(false);
-                            setBulkDays([]);
-                          }}
-                          className="px-3 py-2 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
-                        >
-                          취소
-                        </button>
+                      <div className="mt-3">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={excludeLunch}
+                            onChange={(e) => setExcludeLunch(e.target.checked)}
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
+                          <span className="text-xs text-gray-700">
+                            점심시간(12:00-13:00) 제외
+                          </span>
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {excludeLunch ? '점심시간을 제외하고 근무시간을 계산합니다' : '점심시간을 포함하여 근무시간을 계산합니다'}
+                        </p>
                       </div>
                     </div>
-                    
-                    {/* 점심시간 제외 옵션 */}
-                    <div className="mt-3 flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="excludeLunchBulk"
-                        checked={excludeLunch}
-                        onChange={(e) => setExcludeLunch(e.target.checked)}
-                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                      />
-                      <label htmlFor="excludeLunchBulk" className="text-sm text-gray-700">
-                        점심시간(12:00-13:00) 제외
-                      </label>
+                    <div className="flex justify-end space-x-2 mt-3">
+                      <button
+                        onClick={() => {
+                          setShowBulkInput(false);
+                          setBulkDays([]);
+                        }}
+                        className="px-3 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={handleBulkScheduleAdd}
+                        disabled={updating === 'bulk-add'}
+                        className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {updating === 'bulk-add' ? '처리중...' : '적용'}
+                      </button>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      점심시간을 제외하고 근무시간을 계산합니다
-                    </p>
                   </div>
                 )}
 
