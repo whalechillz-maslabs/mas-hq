@@ -23,6 +23,7 @@ interface PayslipData {
   employee_name: string;
   payment_date: string;
   salary_period: string;
+  employment_type: string;
   base_salary: number;
   overtime_pay: number;
   incentive: number;
@@ -31,6 +32,15 @@ interface PayslipData {
   tax_amount: number;
   net_salary: number;
   status: string;
+  // 시간제 급여 관련 필드
+  total_hours?: number;
+  hourly_rate?: number;
+  daily_details?: Array<{
+    date: string;
+    hours: number;
+    hourly_wage: number;
+    daily_wage: number;
+  }>;
 }
 
 export default function PayslipGenerator() {
@@ -103,30 +113,15 @@ export default function PayslipGenerator() {
       const currentMonth = currentDate.getMonth() + 1;
       const currentYear = currentDate.getFullYear();
       
-      // 기본 급여 계산
-      const baseSalary = employee.monthly_salary || 0;
-      const overtimePay = Math.floor(baseSalary * 0.1); // 기본급의 10%
-      const incentive = Math.floor(baseSalary * 0.05); // 기본급의 5%
-      const pointBonus = 0; // 포인트 보너스는 별도 계산
-      
-      const totalEarnings = baseSalary + overtimePay + incentive + pointBonus;
-      const taxAmount = Math.floor(totalEarnings * 0.033); // 3.3% 사업소득세
-      const netSalary = totalEarnings - taxAmount;
+      let payslip: PayslipData;
 
-      const payslip: PayslipData = {
-        employee_id: employee.employee_id,
-        employee_name: employee.name,
-        payment_date: currentDate.toISOString().split('T')[0],
-        salary_period: `${currentYear}년 ${currentMonth}월`,
-        base_salary: baseSalary,
-        overtime_pay: overtimePay,
-        incentive: incentive,
-        point_bonus: pointBonus,
-        total_earnings: totalEarnings,
-        tax_amount: taxAmount,
-        net_salary: netSalary,
-        status: 'generated'
-      };
+      if (employee.employment_type === 'part_time') {
+        // 시간제 급여 계산
+        payslip = await generateHourlyPayslip(employee, currentYear, currentMonth);
+      } else {
+        // 월급제 급여 계산
+        payslip = await generateMonthlyPayslip(employee, currentYear, currentMonth);
+      }
 
       setPayslipData(payslip);
     } catch (error) {
@@ -135,6 +130,119 @@ export default function PayslipGenerator() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const generateHourlyPayslip = async (employee: Employee, year: number, month: number) => {
+    // 해당 월의 스케줄 조회
+    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
+    
+    const { data: schedules, error: scheduleError } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('employee_id', employee.id)
+      .gte('schedule_date', startDate)
+      .lte('schedule_date', endDate)
+      .eq('status', 'approved')
+      .order('schedule_date', { ascending: true });
+
+    if (scheduleError) {
+      throw new Error('스케줄 조회 실패');
+    }
+
+    // 일별 근무시간 계산
+    const dailyHours: { [key: string]: number } = {};
+    schedules.forEach(schedule => {
+      const date = schedule.schedule_date;
+      const start = new Date(`2025-08-01 ${schedule.scheduled_start}`);
+      const end = new Date(`2025-08-01 ${schedule.scheduled_end}`);
+      const hours = (end - start) / (1000 * 60 * 60);
+      
+      if (!dailyHours[date]) {
+        dailyHours[date] = 0;
+      }
+      dailyHours[date] += hours;
+    });
+
+    // 시급별 계산 (8월 1일~7일: 13,000원, 8월 8일~31일: 12,000원)
+    const hourlyWage1 = 13000;
+    const hourlyWage2 = 12000;
+    
+    let totalHours = 0;
+    let totalWage = 0;
+    const dailyDetails: Array<{
+      date: string;
+      hours: number;
+      hourly_wage: number;
+      daily_wage: number;
+    }> = [];
+
+    Object.keys(dailyHours).sort().forEach(date => {
+      const day = parseInt(date.split('-')[2]);
+      const hours = dailyHours[date];
+      const wage = day <= 7 ? hourlyWage1 : hourlyWage2;
+      const dayWage = hours * wage;
+      
+      totalHours += hours;
+      totalWage += dayWage;
+      
+      dailyDetails.push({
+        date,
+        hours: parseFloat(hours.toFixed(1)),
+        hourly_wage: wage,
+        daily_wage: dayWage
+      });
+    });
+
+    const taxAmount = Math.floor(totalWage * 0.033);
+    const netSalary = totalWage - taxAmount;
+
+    return {
+      employee_id: employee.employee_id,
+      employee_name: employee.name,
+      payment_date: new Date().toISOString().split('T')[0],
+      salary_period: `${year}년 ${month}월`,
+      employment_type: 'part_time',
+      base_salary: totalWage,
+      overtime_pay: 0,
+      incentive: 0,
+      point_bonus: 0,
+      total_earnings: totalWage,
+      tax_amount: taxAmount,
+      net_salary: netSalary,
+      status: 'generated',
+      total_hours: parseFloat(totalHours.toFixed(1)),
+      hourly_rate: hourlyWage2, // 최종 시급
+      daily_details: dailyDetails
+    };
+  };
+
+  const generateMonthlyPayslip = async (employee: Employee, year: number, month: number) => {
+    // 기본 급여 계산
+    const baseSalary = employee.monthly_salary || 0;
+    const overtimePay = Math.floor(baseSalary * 0.1); // 기본급의 10%
+    const incentive = Math.floor(baseSalary * 0.05); // 기본급의 5%
+    const pointBonus = 0; // 포인트 보너스는 별도 계산
+    
+    const totalEarnings = baseSalary + overtimePay + incentive + pointBonus;
+    const taxAmount = Math.floor(totalEarnings * 0.033); // 3.3% 사업소득세
+    const netSalary = totalEarnings - taxAmount;
+
+    return {
+      employee_id: employee.employee_id,
+      employee_name: employee.name,
+      payment_date: new Date().toISOString().split('T')[0],
+      salary_period: `${year}년 ${month}월`,
+      employment_type: 'full_time',
+      base_salary: baseSalary,
+      overtime_pay: overtimePay,
+      incentive: incentive,
+      point_bonus: pointBonus,
+      total_earnings: totalEarnings,
+      tax_amount: taxAmount,
+      net_salary: netSalary,
+      status: 'generated'
+    };
   };
 
   const handleCheckChange = (checkName: keyof typeof checks) => {
@@ -259,96 +367,209 @@ export default function PayslipGenerator() {
             
             {/* 급여 정보 카드 */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">💰 급여 정보</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="text-sm text-gray-600">기본급</div>
-                  <div className="text-xl font-bold text-gray-900">
-                    {formatCurrency(payslipData.base_salary)}원
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                💰 급여 정보 ({payslipData.employment_type === 'part_time' ? '시간제' : '월급제'})
+              </h3>
+              
+              {payslipData.employment_type === 'part_time' ? (
+                // 시간제 급여 표시
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg p-4 border">
+                      <div className="text-sm text-gray-600">총 근무시간</div>
+                      <div className="text-xl font-bold text-gray-900">
+                        {payslipData.total_hours}시간
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border">
+                      <div className="text-sm text-gray-600">시간제 급여</div>
+                      <div className="text-xl font-bold text-gray-900">
+                        {formatCurrency(payslipData.base_salary)}원
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border">
+                      <div className="text-sm text-gray-600">총 수입</div>
+                      <div className="text-xl font-bold text-green-600">
+                        {formatCurrency(payslipData.total_earnings)}원
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border">
+                      <div className="text-sm text-gray-600">세금 (3.3%)</div>
+                      <div className="text-xl font-bold text-red-600">
+                        -{formatCurrency(payslipData.tax_amount)}원
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 일별 상세 내역 */}
+                  {payslipData.daily_details && payslipData.daily_details.length > 0 && (
+                    <div className="bg-white rounded-lg p-4 border">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3">📅 일별 상세 내역</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-2">날짜</th>
+                              <th className="text-right py-2">근무시간</th>
+                              <th className="text-right py-2">시급</th>
+                              <th className="text-right py-2">일급여</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {payslipData.daily_details.map((detail, index) => (
+                              <tr key={index} className="border-b">
+                                <td className="py-2">{detail.date}</td>
+                                <td className="text-right py-2">{detail.hours}시간</td>
+                                <td className="text-right py-2">{formatCurrency(detail.hourly_wage)}원</td>
+                                <td className="text-right py-2 font-medium">{formatCurrency(detail.daily_wage)}원</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="text-sm text-gray-600">실수령액</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(payslipData.net_salary)}원
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="text-sm text-gray-600">연장수당</div>
-                  <div className="text-xl font-bold text-gray-900">
-                    {formatCurrency(payslipData.overtime_pay)}원
+              ) : (
+                // 월급제 급여 표시
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600">기본급</div>
+                    <div className="text-xl font-bold text-gray-900">
+                      {formatCurrency(payslipData.base_salary)}원
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600">연장수당</div>
+                    <div className="text-xl font-bold text-gray-900">
+                      {formatCurrency(payslipData.overtime_pay)}원
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600">인센티브</div>
+                    <div className="text-xl font-bold text-gray-900">
+                      {formatCurrency(payslipData.incentive)}원
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600">포인트 보너스</div>
+                    <div className="text-xl font-bold text-gray-900">
+                      {formatCurrency(payslipData.point_bonus)}원
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600">총 수입</div>
+                    <div className="text-xl font-bold text-green-600">
+                      {formatCurrency(payslipData.total_earnings)}원
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-sm text-gray-600">세금 (3.3%)</div>
+                    <div className="text-xl font-bold text-red-600">
+                      -{formatCurrency(payslipData.tax_amount)}원
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="text-sm text-gray-600">인센티브</div>
-                  <div className="text-xl font-bold text-gray-900">
-                    {formatCurrency(payslipData.incentive)}원
+              )}
+              
+              {payslipData.employment_type === 'full_time' && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="text-sm text-gray-600">실수령액</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(payslipData.net_salary)}원
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="text-sm text-gray-600">포인트 보너스</div>
-                  <div className="text-xl font-bold text-gray-900">
-                    {formatCurrency(payslipData.point_bonus)}원
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="text-sm text-gray-600">총 수입</div>
-                  <div className="text-xl font-bold text-green-600">
-                    {formatCurrency(payslipData.total_earnings)}원
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="text-sm text-gray-600">세금 (3.3%)</div>
-                  <div className="text-xl font-bold text-red-600">
-                    -{formatCurrency(payslipData.tax_amount)}원
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="text-sm text-gray-600">실수령액</div>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(payslipData.net_salary)}원
-                </div>
-              </div>
+              )}
             </div>
 
             {/* 체크리스트 */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">✅ 발행 전 체크리스트</h3>
               <div className="space-y-3">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={checks.baseSalary}
-                    onChange={() => handleCheckChange('baseSalary')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">기본급 금액 확인 ({formatCurrency(payslipData.base_salary)}원)</span>
-                </label>
-                
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={checks.overtimePay}
-                    onChange={() => handleCheckChange('overtimePay')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">연장수당 확인 ({formatCurrency(payslipData.overtime_pay)}원)</span>
-                </label>
-                
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={checks.incentive}
-                    onChange={() => handleCheckChange('incentive')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">인센티브 확인 ({formatCurrency(payslipData.incentive)}원)</span>
-                </label>
-                
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={checks.pointBonus}
-                    onChange={() => handleCheckChange('pointBonus')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">포인트 보너스 확인 ({formatCurrency(payslipData.point_bonus)}원)</span>
-                </label>
+                {payslipData.employment_type === 'part_time' ? (
+                  // 시간제 체크리스트
+                  <>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.baseSalary}
+                        onChange={() => handleCheckChange('baseSalary')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">총 근무시간 확인 ({payslipData.total_hours}시간)</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.overtimePay}
+                        onChange={() => handleCheckChange('overtimePay')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">시간제 급여 확인 ({formatCurrency(payslipData.base_salary)}원)</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.incentive}
+                        onChange={() => handleCheckChange('incentive')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">일별 상세 내역 확인</span>
+                    </label>
+                  </>
+                ) : (
+                  // 월급제 체크리스트
+                  <>
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.baseSalary}
+                        onChange={() => handleCheckChange('baseSalary')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">기본급 금액 확인 ({formatCurrency(payslipData.base_salary)}원)</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.overtimePay}
+                        onChange={() => handleCheckChange('overtimePay')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">연장수당 확인 ({formatCurrency(payslipData.overtime_pay)}원)</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.incentive}
+                        onChange={() => handleCheckChange('incentive')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">인센티브 확인 ({formatCurrency(payslipData.incentive)}원)</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checks.pointBonus}
+                        onChange={() => handleCheckChange('pointBonus')}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">포인트 보너스 확인 ({formatCurrency(payslipData.point_bonus)}원)</span>
+                    </label>
+                  </>
+                )}
                 
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
