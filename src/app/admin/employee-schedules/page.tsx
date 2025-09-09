@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, addWeeks, subWeeks, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, modifyScheduleForPartialDeletion } from '@/lib/schedule-optimizer';
 
 interface Employee {
   id: string;
@@ -239,28 +240,83 @@ export default function EmployeeSchedulesPage() {
     return 'bg-blue-500';
   };
 
-  // 빠른 스케줄 삭제 (모달 없이)
-  const handleQuickDelete = async (scheduleId: string) => {
-    try {
-      const { error } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', scheduleId);
+  // 빠른 스케줄 삭제 (부분 삭제 지원)
+  const handleQuickDelete = async (scheduleId: string, partialDelete?: { start: string, end: string }) => {
+    if (!confirm(partialDelete ? 
+      `이 시간대(${partialDelete.start}-${partialDelete.end})를 삭제하시겠습니까?` : 
+      '이 스케줄을 삭제하시겠습니까?')) {
+      return;
+    }
 
-      if (error) throw error;
+    try {
+      if (partialDelete) {
+        // 부분 삭제 로직
+        const { data: existingSchedule, error: fetchError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('id', scheduleId)
+          .single();
+
+        if (fetchError) {
+          console.error('기존 스케줄 조회 실패:', fetchError);
+          throw fetchError;
+        }
+
+        // 부분 삭제를 위한 스케줄 수정
+        const modifiedSchedules = modifyScheduleForPartialDeletion(
+          existingSchedule,
+          partialDelete.start,
+          partialDelete.end
+        );
+
+        if (modifiedSchedules.length === 0) {
+          // 전체 삭제
+          const { error } = await supabase
+            .from('schedules')
+            .delete()
+            .eq('id', scheduleId);
+          
+          if (error) throw error;
+        } else {
+          // 기존 스케줄 삭제 후 수정된 스케줄들 추가
+          const { error: deleteError } = await supabase
+            .from('schedules')
+            .delete()
+            .eq('id', scheduleId);
+          
+          if (deleteError) throw deleteError;
+
+          // 수정된 스케줄들 추가
+          const { error: insertError } = await supabase
+            .from('schedules')
+            .insert(modifiedSchedules);
+          
+          if (insertError) throw insertError;
+        }
+      } else {
+        // 전체 삭제
+        const { error } = await supabase
+          .from('schedules')
+          .delete()
+          .eq('id', scheduleId);
+
+        if (error) throw error;
+      }
 
       // 스케줄 데이터 즉시 업데이트
       await fetchSchedules();
       
       // 로컬 상태도 즉시 업데이트
-      setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+      if (!partialDelete) {
+        setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+      }
     } catch (error: any) {
       console.error('스케줄 삭제 실패:', error);
       alert(`스케줄 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
   };
 
-  // 빠른 스케줄 추가 (모달 없이) - "내 스케줄" 페이지 방식 참고
+  // 빠른 스케줄 추가 (최적화된 버전)
   const handleQuickAdd = async (date: Date, timeSlot: TimeSlot, employeeId: string) => {
     if (!employeeId) {
       alert('직원을 선택해주세요.');
@@ -271,7 +327,7 @@ export default function EmployeeSchedulesPage() {
     setUpdating(updateKey);
 
     try {
-      // 기본값 설정: 30분 단위
+      // 30분 단위 시간 슬롯 생성 (점심시간 제외)
       const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
       let endHour = startHour;
       let endMinute = startMinute + 30;
@@ -281,15 +337,35 @@ export default function EmployeeSchedulesPage() {
         endMinute = 0;
       }
       
-      const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+      const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+      
+      const timeSlots = generateTimeSlotsExcludingLunch(
+        timeSlot.time,
+        endTime,
+        '12:00',
+        '13:00',
+        30
+      );
+      
+      // 연속된 시간대로 합치기
+      const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots);
+      
+      if (optimizedSchedules.length === 0) {
+        alert('유효한 스케줄이 없습니다.');
+        return;
+      }
+      
+      const optimizedSchedule = optimizedSchedules[0];
 
       const scheduleData = {
         employee_id: employeeId,
         schedule_date: format(date, 'yyyy-MM-dd'),
-        scheduled_start: timeSlot.time + ':00',
-        scheduled_end: endTimeStr + ':00',
+        scheduled_start: optimizedSchedule.start + ':00',
+        scheduled_end: optimizedSchedule.end + ':00',
+        break_minutes: optimizedSchedule.break_minutes,
+        total_hours: optimizedSchedule.total_hours,
         status: 'approved',
-        employee_note: '관리자가 추가함'
+        employee_note: optimizedSchedule.employee_note || '관리자가 추가함 (최적화)'
       };
 
       console.log('스케줄 추가 시작:', scheduleData);

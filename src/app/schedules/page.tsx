@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { auth, supabase } from '@/lib/supabase';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, parseISO, addWeeks, subWeeks, addMonths, subMonths, isAfter, isBefore, startOfDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch } from '@/lib/schedule-optimizer';
 
 interface Schedule {
   id: string;
@@ -473,46 +474,37 @@ export default function SchedulesPage() {
       const [startHour, startMinute] = bulkStartTime.split(':').map(Number);
       const [endHour, endMinute] = bulkEndTime.split(':').map(Number);
       
-      // 선택된 요일들에 대해 시간대별로 스케줄 생성
+      // 선택된 요일들에 대해 최적화된 스케줄 생성
       for (let i = 0; i < 7; i++) {
         const day = addDays(weekStart, i);
         const dayOfWeek = day.getDay();
         
         if (bulkDays.includes(dayOfWeek)) {
-          // 30분 단위로 스케줄 생성
-          let currentHour = startHour;
-          let currentMinute = startMinute;
+          // 30분 단위 시간 슬롯 생성 (점심시간 제외)
+          const timeSlots = generateTimeSlotsExcludingLunch(
+            bulkStartTime,
+            bulkEndTime,
+            '12:00',
+            '13:00',
+            30
+          );
           
-          while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
-            const timeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}:00`;
-            
-            // 30분 후 시간 계산
-            let nextHour = currentHour;
-            let nextMinute = currentMinute + 30;
-            
-            if (nextMinute >= 60) {
-              nextHour += 1;
-              nextMinute = 0;
-            }
-            
-            const endTimeStr = `${nextHour.toString().padStart(2, '0')}:${nextMinute.toString().padStart(2, '0')}:00`;
-            
+          // 연속된 시간대로 합치기
+          const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots);
+          
+          // 데이터베이스 저장용 객체 생성
+          optimizedSchedules.forEach(optimizedSchedule => {
             schedulesToAdd.push({
               employee_id: currentUser.id,
               schedule_date: format(day, 'yyyy-MM-dd'),
-              scheduled_start: timeStr,
-              scheduled_end: endTimeStr,
+              scheduled_start: optimizedSchedule.start + ':00',
+              scheduled_end: optimizedSchedule.end + ':00',
+              break_minutes: optimizedSchedule.break_minutes,
+              total_hours: optimizedSchedule.total_hours,
               status: 'approved',
-              employee_note: '일괄 입력'
+              employee_note: optimizedSchedule.employee_note || '일괄 입력 (최적화)'
             });
-            
-            // 다음 30분으로 이동
-            currentMinute += 30;
-            if (currentMinute >= 60) {
-              currentHour += 1;
-              currentMinute = 0;
-            }
-          }
+          });
         }
       }
 
