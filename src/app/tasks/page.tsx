@@ -229,54 +229,70 @@ export default function TasksPage() {
   };
 
   const handleAddTask = async (taskData: any) => {
+    console.log('➕ 업무 추가 시작:', taskData);
+    
     try {
       // 현재 사용자 확인
       const user = await auth.getCurrentUser();
       if (!user) {
-        console.error('사용자가 로그인되지 않았습니다.');
+        console.error('❌ 사용자가 로그인되지 않았습니다.');
+        alert('로그인이 필요합니다. 다시 로그인해주세요.');
         return;
       }
 
-      console.log('현재 사용자 ID:', user.id);
+      console.log('👤 현재 사용자 ID:', user.id);
+
+      const insertData = {
+        employee_id: user.id,
+        operation_type_id: taskData.operation_type_id,
+        title: taskData.title,
+        notes: taskData.notes,
+        memo: taskData.memo,
+        task_time: taskData.task_time,
+        customer_name: taskData.customer_name,
+        sales_amount: typeof taskData.sales_amount === 'string' 
+          ? parseFloat(taskData.sales_amount.replace(/,/g, '')) || 0
+          : taskData.sales_amount || 0,
+        task_priority: taskData.task_priority || 'normal',
+        achievement_status: 'pending',
+        task_date: taskData.task_date,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('📝 삽입할 데이터:', insertData);
 
       const { data, error } = await supabase
         .from('employee_tasks')
-        .insert({
-          employee_id: user.id,
-          operation_type_id: taskData.operation_type_id,
-          title: taskData.title,
-          notes: taskData.notes,
-          memo: taskData.memo,
-          task_time: taskData.task_time,
-          customer_name: taskData.customer_name,
-          sales_amount: typeof taskData.sales_amount === 'string' 
-            ? parseFloat(taskData.sales_amount.replace(/,/g, '')) || 0
-            : taskData.sales_amount || 0,
-          task_priority: taskData.task_priority || 'normal',
-          achievement_status: 'pending',
-          task_date: taskData.task_date,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase 삽입 에러:', error);
+        throw error;
+      }
       
-      console.log('업무 추가 성공:', data);
+      console.log('✅ 업무 추가 성공:', data);
+      alert('업무가 성공적으로 추가되었습니다!');
       setShowAddModal(false);
       loadTasksData();
     } catch (error) {
-      console.error('업무 추가 실패:', error);
+      console.error('❌ 업무 추가 실패:', error);
+      alert(`업무 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
   };
 
   const showOperationTypeDetails = (opType: OperationType) => {
+    console.log('🎯 업무 유형 클릭:', opType);
+    
     if (opType.code === 'OP8') {
       // OP8은 상세 정보 모달만 표시
+      console.log('📋 OP8 상세 정보 모달 표시');
       setSelectedOperationType(opType);
     } else {
       // 다른 OP는 업무 추가 모달을 열고 해당 업무 유형 선택
+      console.log('➕ 업무 추가 모달 열기:', opType.id);
       setSelectedOperationTypeForAdd(opType.id);
       setShowAddModal(true);
     }
@@ -319,22 +335,32 @@ export default function TasksPage() {
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
+    console.log('🔄 업무 상태 업데이트 시작:', { taskId, newStatus });
+    
     try {
       const updateData: any = { 
         achievement_status: newStatus,
         updated_at: new Date().toISOString()
       };
 
+      console.log('📝 업데이트 데이터:', updateData);
+
       const { error } = await supabase
         .from('employee_tasks')
         .update(updateData)
         .eq('id', taskId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase 업데이트 에러:', error);
+        throw error;
+      }
       
+      console.log('✅ 업무 상태 업데이트 성공');
+      alert('업무가 완료되었습니다!');
       loadTasksData();
     } catch (error) {
-      console.error('업무 상태 업데이트 실패:', error);
+      console.error('❌ 업무 상태 업데이트 실패:', error);
+      alert(`업무 완료 처리에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
   };
 

@@ -60,8 +60,16 @@ function LoginForm() {
       // 로그인 성공 시 활동 시간 업데이트
       localStorage.setItem('lastActivity', Date.now().toString());
       
-      // 즉시 업무 입력 페이지로 이동
-      router.push('/tasks');
+      // 디바이스 감지하여 분기 처리
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // 모바일: 업무 입력 페이지로 이동
+        router.push('/tasks');
+      } else {
+        // PC: 대시보드로 이동
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       setError(error.message || '로그인에 실패했습니다.');
     } finally {

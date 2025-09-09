@@ -92,7 +92,7 @@ export default function HourlyWagesPage() {
           *,
           employees!inner(name, employee_id)
         `)
-        .order('effective_date', { ascending: false });
+        .order('effective_start_date', { ascending: false });
 
       if (wagesError) {
         console.error('시급 데이터 조회 오류:', wagesError);
@@ -134,9 +134,11 @@ export default function HourlyWagesPage() {
         employee_id: '',
         base_wage: 12000, // 기본 시급을 12,000원으로 변경
         overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
-        night_shift_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
+        night_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
         holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
-        effective_date: new Date().toISOString().split('T')[0]
+        effective_start_date: new Date().toISOString().split('T')[0],
+        effective_end_date: '',
+        status: 'active'
       });
       loadData();
     } catch (error) {

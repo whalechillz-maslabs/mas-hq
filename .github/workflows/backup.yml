@@ -1,0 +1,73 @@
+name: Database Backup
+
+on:
+  schedule:
+    # 매일 오전 2시 (UTC 기준, 한국시간 오전 11시)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: '백업 타입'
+        required: true
+        default: 'scheduled'
+        type: choice
+        options:
+        - scheduled
+        - manual
+      reason:
+        description: '수동 백업 사유'
+        required: false
+        default: 'manual'
+        type: string
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create backup directory
+      run: mkdir -p backups
+      
+    - name: Run scheduled backup
+      if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.backup_type == 'scheduled')
+      run: node scripts/backup_scheduler.js
+      env:
+        NODE_ENV: production
+        
+    - name: Run manual backup
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.backup_type == 'manual'
+      run: node scripts/backup_scheduler.js --manual --reason="${{ github.event.inputs.reason }}"
+      env:
+        NODE_ENV: production
+        
+    - name: Upload backup to GitHub
+      uses: actions/upload-artifact@v4
+      with:
+        name: database-backup-${{ github.run_number }}
+        path: backups/
+        retention-days: 30
+        
+    - name: Create backup summary
+      run: |
+        echo "## 📊 백업 완료 보고서" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**백업 시간**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**백업 타입**: ${{ github.event_name == 'schedule' && 'scheduled' || github.event.inputs.backup_type }}" >> $GITHUB_STEP_SUMMARY
+        echo "**백업 사유**: ${{ github.event.inputs.reason || '정기 백업' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📁 백업된 파일들" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        find backups -name "*.json" -type f | head -10 >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
