@@ -41,6 +41,10 @@ export default function SchedulesPage() {
   const [bulkDays, setBulkDays] = useState<number[]>([]);
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [autoApprove, setAutoApprove] = useState(false);
+  
+  // 관리자 권한 확인
+  const isAdmin = currentUser?.role?.name === 'admin';
 
   // 시간대 정의 (30분 단위, 18-19시까지 확장)
   const timeSlots: TimeSlot[] = [
@@ -510,8 +514,8 @@ export default function SchedulesPage() {
               scheduled_end: optimizedSchedule.end + ':00',
               break_minutes: optimizedSchedule.break_minutes,
               total_hours: optimizedSchedule.total_hours,
-              status: 'approved',
-              employee_note: optimizedSchedule.employee_note || `일괄 입력 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`
+              status: (isAdmin && autoApprove) ? 'approved' : 'pending',
+              employee_note: optimizedSchedule.employee_note || `일괄 입력 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})${(isAdmin && autoApprove) ? ' - 자동승인' : ''}`
             });
           });
         }
@@ -744,6 +748,27 @@ export default function SchedulesPage() {
             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
           </button>
         </div>
+
+        {/* 자동 승인 설정 (관리자만) */}
+        {isAdmin && (
+          <div className="mb-2 sm:mb-3 p-2 bg-blue-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="autoApprove"
+                checked={autoApprove}
+                onChange={(e) => setAutoApprove(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="autoApprove" className="text-sm font-medium text-gray-700">
+                자동 승인 (스케줄 추가 시 즉시 승인됨)
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {autoApprove ? '✅ 모든 새 스케줄이 자동으로 승인됩니다' : '⚠️ 새 스케줄은 수동 승인이 필요합니다'}
+            </p>
+          </div>
+        )}
 
         {/* 뷰 모드 토글 */}
         <div className="flex justify-center mb-2 sm:mb-3">
