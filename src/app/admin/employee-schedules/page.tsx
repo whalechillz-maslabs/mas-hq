@@ -1049,34 +1049,15 @@ export default function EmployeeSchedulesPage() {
                       {getWeekDisplay(currentDate)}
                     </h2>
                     
-                    {/* 오늘 버튼 */}
+                    {/* 오늘 버튼 - 2번 페이지와 동일 */}
                     <button
                       onClick={() => setCurrentDate(new Date())}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
                       title="오늘 날짜가 포함된 주로 이동"
                     >
-                      오늘
+                      <Calendar className="w-4 h-4" />
+                      <span>오늘로 가기</span>
                     </button>
-                    
-                    {/* 주간/월간 토글 버튼 */}
-                    <div className="flex bg-white rounded-lg border border-gray-300 overflow-hidden">
-                      <button
-                        onClick={() => setScheduleViewMode('week')}
-                        className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                          scheduleViewMode === 'week' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        주간
-                      </button>
-                      <button
-                        onClick={() => setScheduleViewMode('month')}
-                        className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                          scheduleViewMode === 'month' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        월간
-                      </button>
-                    </div>
                   </div>
                   
                   <button 
@@ -1169,6 +1150,27 @@ export default function EmployeeSchedulesPage() {
                   </div>
                 )}
 
+                {/* 주간/월간 토글 버튼 - 2번 페이지와 동일 */}
+                <div className="flex justify-center mb-4">
+                  <div className="flex bg-white rounded-lg border border-gray-300 overflow-hidden">
+                    <button
+                      onClick={() => setScheduleViewMode('week')}
+                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                        scheduleViewMode === 'week' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      주간
+                    </button>
+                    <button
+                      onClick={() => setScheduleViewMode('month')}
+                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                        scheduleViewMode === 'month' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      월간
+                    </button>
+                  </div>
+                </div>
 
                 {/* 스케줄 그리드 */}
                 <div className="overflow-x-auto">
@@ -1793,6 +1795,51 @@ export default function EmployeeSchedulesPage() {
           </div>
         </div>
       )}
+      
+      {/* 범례 - 2번 페이지와 동일 */}
+      <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+        <div className="flex flex-wrap gap-2 sm:gap-3 text-xs">
+          {scheduleViewMode === 'week' ? (
+            <>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-300 rounded mr-1"></div>
+                <span>다른사람</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-300 rounded mr-1 ring-1 ring-blue-500"></div>
+                <span>나 포함</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-50 rounded mr-1"></div>
+                <span>점심</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gray-50 rounded mr-1"></div>
+                <span>없음</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-200 rounded mr-1"></div>
+                <span>1명</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-300 rounded mr-1"></div>
+                <span>2명</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-400 rounded mr-1"></div>
+                <span>3명</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded mr-1"></div>
+                <span>4명+</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
