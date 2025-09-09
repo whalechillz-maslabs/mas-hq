@@ -917,10 +917,10 @@ export default function SchedulesPage() {
                 {/* 날짜별 시간대별 구분 */}
                 {getDaysInView().map(date => {
                   return (
-                    <div
-                      key={format(date, 'yyyy-MM-dd')}
+                  <div
+                    key={format(date, 'yyyy-MM-dd')}
                       className={`aspect-square rounded-md sm:rounded-lg transition-all duration-200 relative ${
-                        isSameDay(date, new Date()) 
+                      isSameDay(date, new Date()) 
                           ? 'ring-2 ring-blue-500' 
                           : ''
                       } bg-white border border-gray-200`}
@@ -931,8 +931,8 @@ export default function SchedulesPage() {
                           ? 'text-blue-600' 
                           : 'text-gray-600'
                       }`}>
-                        {format(date, 'd')}
-                      </div>
+                      {format(date, 'd')}
+                    </div>
                       
                       {/* 시간대별 구분 */}
                       <div className="absolute inset-0 flex flex-col">
@@ -955,7 +955,7 @@ export default function SchedulesPage() {
                           );
                         })}
                       </div>
-                    </div>
+                  </div>
                   );
                 })}
               </div>
@@ -999,8 +999,8 @@ export default function SchedulesPage() {
                               <div className="mt-2 text-sm text-gray-500">
                                 {schedule.employee_note}
                               </div>
-                            )}
-                          </div>
+                    )}
+                  </div>
                         </div>
                       </div>
                     ))
