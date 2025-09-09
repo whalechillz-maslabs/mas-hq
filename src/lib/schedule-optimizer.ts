@@ -23,7 +23,8 @@ export interface OptimizedSchedule {
 export function mergeConsecutiveTimeSlots(
   timeSlots: string[],
   lunchStart: string = '12:00',
-  lunchEnd: string = '13:00'
+  lunchEnd: string = '13:00',
+  excludeLunch: boolean = true
 ): OptimizedSchedule[] {
   if (timeSlots.length === 0) return [];
   
@@ -48,7 +49,8 @@ export function mergeConsecutiveTimeSlots(
         currentStart,
         add30Minutes(currentEnd),
         lunchStart,
-        lunchEnd
+        lunchEnd,
+        excludeLunch
       );
       merged.push(optimizedSchedule);
       
@@ -62,7 +64,8 @@ export function mergeConsecutiveTimeSlots(
     currentStart,
     add30Minutes(currentEnd),
     lunchStart,
-    lunchEnd
+    lunchEnd,
+    excludeLunch
   );
   merged.push(optimizedSchedule);
   
@@ -92,7 +95,8 @@ function createOptimizedSchedule(
   start: string,
   end: string,
   lunchStart: string,
-  lunchEnd: string
+  lunchEnd: string,
+  excludeLunch: boolean = true
 ): OptimizedSchedule {
   const startTime = new Date(`2000-01-01T${start}:00`);
   const endTime = new Date(`2000-01-01T${end}:00`);
@@ -107,7 +111,8 @@ function createOptimizedSchedule(
   const overlapEnd = new Date(Math.min(endTime.getTime(), lunchEndTime.getTime()));
   
   let breakMinutes = 0;
-  if (overlapStart < overlapEnd) {
+  if (overlapStart < overlapEnd && excludeLunch) {
+    // 점심시간 제외 옵션이 활성화된 경우에만 점심시간 제외
     breakMinutes = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60);
   }
   
@@ -121,6 +126,8 @@ function createOptimizedSchedule(
     total_hours: actualWorkHours,
     employee_note: breakMinutes > 0 ? 
       `${start}-${end} 근무 (점심시간 ${breakMinutes}분 제외)` : 
+      excludeLunch && overlapStart < overlapEnd ?
+      `${start}-${end} 근무 (점심시간 포함)` :
       `${start}-${end} 근무`
   };
 }
@@ -169,6 +176,17 @@ export function generateTimeSlotsExcludingLunch(
     
     return slotTime < lunchStartTime || slotTime >= lunchEndTime;
   });
+}
+
+/**
+ * 점심시간을 포함한 시간 슬롯들 생성
+ */
+export function generateTimeSlotsIncludingLunch(
+  startTime: string,
+  endTime: string,
+  intervalMinutes: number = 30
+): string[] {
+  return generateTimeSlots(startTime, endTime, intervalMinutes);
 }
 
 /**

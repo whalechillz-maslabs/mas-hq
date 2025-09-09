@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, addWeeks, subWeeks, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, modifyScheduleForPartialDeletion } from '@/lib/schedule-optimizer';
+import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, generateTimeSlotsIncludingLunch, modifyScheduleForPartialDeletion } from '@/lib/schedule-optimizer';
 
 interface Employee {
   id: string;
@@ -61,6 +61,7 @@ export default function EmployeeSchedulesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [updating, setUpdating] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'individual' | 'overview'>('individual');
+  const [excludeLunch, setExcludeLunch] = useState(true);
   
   // 스케줄 모달 상태 추가
   const [scheduleModal, setScheduleModal] = useState<ScheduleModal>({
@@ -327,7 +328,7 @@ export default function EmployeeSchedulesPage() {
     setUpdating(updateKey);
 
     try {
-      // 30분 단위 시간 슬롯 생성 (점심시간 제외)
+      // 30분 단위 시간 슬롯 생성 (점심시간 옵션에 따라)
       const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
       let endHour = startHour;
       let endMinute = startMinute + 30;
@@ -339,16 +340,12 @@ export default function EmployeeSchedulesPage() {
       
       const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
       
-      const timeSlots = generateTimeSlotsExcludingLunch(
-        timeSlot.time,
-        endTime,
-        '12:00',
-        '13:00',
-        30
-      );
+      const timeSlots = excludeLunch ? 
+        generateTimeSlotsExcludingLunch(timeSlot.time, endTime, '12:00', '13:00', 30) :
+        generateTimeSlotsIncludingLunch(timeSlot.time, endTime, 30);
       
       // 연속된 시간대로 합치기
-      const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots);
+      const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots, '12:00', '13:00', excludeLunch);
       
       if (optimizedSchedules.length === 0) {
         alert('유효한 스케줄이 없습니다.');
@@ -365,7 +362,7 @@ export default function EmployeeSchedulesPage() {
         break_minutes: optimizedSchedule.break_minutes,
         total_hours: optimizedSchedule.total_hours,
         status: 'approved',
-        employee_note: optimizedSchedule.employee_note || '관리자가 추가함 (최적화)'
+        employee_note: optimizedSchedule.employee_note || `관리자가 추가함 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`
       };
 
       console.log('스케줄 추가 시작:', scheduleData);
@@ -815,6 +812,19 @@ export default function EmployeeSchedulesPage() {
                     <h2 className="text-lg font-semibold text-gray-800">
                       {getWeekDisplay(currentDate)}
                     </h2>
+                    
+                    {/* 점심시간 옵션 */}
+                    <label className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-lg border">
+                      <input
+                        type="checkbox"
+                        checked={excludeLunch}
+                        onChange={(e) => setExcludeLunch(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        점심시간 제외
+                      </span>
+                    </label>
                     
                     {/* 오늘로 가기 버튼 */}
                     <button

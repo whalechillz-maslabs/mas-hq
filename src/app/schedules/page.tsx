@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { auth, supabase } from '@/lib/supabase';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, parseISO, addWeeks, subWeeks, addMonths, subMonths, isAfter, isBefore, startOfDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch } from '@/lib/schedule-optimizer';
+import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, generateTimeSlotsIncludingLunch } from '@/lib/schedule-optimizer';
 
 interface Schedule {
   id: string;
@@ -39,6 +39,7 @@ export default function SchedulesPage() {
   const [bulkStartTime, setBulkStartTime] = useState('09:00');
   const [bulkEndTime, setBulkEndTime] = useState('19:00');
   const [bulkDays, setBulkDays] = useState<number[]>([]);
+  const [excludeLunch, setExcludeLunch] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
   // 시간대 정의 (30분 단위, 18-19시까지 확장)
@@ -480,17 +481,13 @@ export default function SchedulesPage() {
         const dayOfWeek = day.getDay();
         
         if (bulkDays.includes(dayOfWeek)) {
-          // 30분 단위 시간 슬롯 생성 (점심시간 제외)
-          const timeSlots = generateTimeSlotsExcludingLunch(
-            bulkStartTime,
-            bulkEndTime,
-            '12:00',
-            '13:00',
-            30
-          );
+          // 30분 단위 시간 슬롯 생성 (점심시간 옵션에 따라)
+          const timeSlots = excludeLunch ? 
+            generateTimeSlotsExcludingLunch(bulkStartTime, bulkEndTime, '12:00', '13:00', 30) :
+            generateTimeSlotsIncludingLunch(bulkStartTime, bulkEndTime, 30);
           
           // 연속된 시간대로 합치기
-          const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots);
+          const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots, '12:00', '13:00', excludeLunch);
           
           // 데이터베이스 저장용 객체 생성
           optimizedSchedules.forEach(optimizedSchedule => {
@@ -502,7 +499,7 @@ export default function SchedulesPage() {
               break_minutes: optimizedSchedule.break_minutes,
               total_hours: optimizedSchedule.total_hours,
               status: 'approved',
-              employee_note: optimizedSchedule.employee_note || '일괄 입력 (최적화)'
+              employee_note: optimizedSchedule.employee_note || `일괄 입력 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`
             });
           });
         }
@@ -665,6 +662,22 @@ export default function SchedulesPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+              <div className="mt-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={excludeLunch}
+                    onChange={(e) => setExcludeLunch(e.target.checked)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-xs text-gray-700">
+                    점심시간(12:00-13:00) 제외
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  {excludeLunch ? '점심시간을 제외하고 근무시간을 계산합니다' : '점심시간을 포함하여 근무시간을 계산합니다'}
+                </p>
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-3">
