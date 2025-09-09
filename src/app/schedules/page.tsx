@@ -469,7 +469,7 @@ export default function SchedulesPage() {
 
     try {
       const weekStart = startOfWeek(currentDate, { locale: ko });
-      const schedulesToAdd = [];
+      const schedulesToAdd: any[] = [];
 
       // 선택된 시간 범위를 30분 단위로 분할
       const [startHour, startMinute] = bulkStartTime.split(':').map(Number);
@@ -610,11 +610,11 @@ export default function SchedulesPage() {
               일괄입력
             </button>
           <button
-            onClick={handleAddSchedule}
+            onClick={() => router.push('/schedules/add')}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 sm:py-2 sm:px-4 rounded-lg shadow-md flex items-center transition-all duration-200 transform hover:scale-105 text-sm"
           >
               <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-              추가
+              상세 추가
           </button>
           </div>
         </div>

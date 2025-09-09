@@ -313,9 +313,9 @@ export default function EmployeeSchedulesPage() {
     return isBefore(targetDateTime, now);
   };
 
-  // 관리자는 모든 스케줄 수정 가능
+  // 관리자 페이지에서는 모든 스케줄 수정 가능
   const canModifySchedule = (date: Date, timeSlot: TimeSlot) => {
-    return currentUser?.role?.name === 'admin';
+    return true; // 관리자 페이지에서는 모든 스케줄 수정 가능
   };
 
   // 스케줄 토글 (클릭 시)
@@ -336,7 +336,7 @@ export default function EmployeeSchedulesPage() {
     const mySchedule = existingSchedules.find(s => s.employee_id === selectedEmployee.id);
     
     if (!canModifySchedule(date, timeSlot)) {
-      alert('관리자만 스케줄을 수정할 수 있습니다.');
+      alert('스케줄을 수정할 수 없습니다.');
       return;
     }
     
@@ -607,11 +607,11 @@ export default function EmployeeSchedulesPage() {
                       일괄입력
                     </button>
                     <button
-                      onClick={() => {/* 추가 기능 */}}
+                      onClick={() => router.push('/schedules/add')}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg shadow-md flex items-center transition-all duration-200 transform hover:scale-105 text-sm"
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      추가
+                      상세 추가
                     </button>
                   </div>
                 </div>
