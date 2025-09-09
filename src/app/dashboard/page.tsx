@@ -919,7 +919,7 @@ export default function DashboardPage() {
                   <h3 className="font-bold text-lg text-yellow-900 mb-2">간단한 정산 테스트</h3>
                 <p className="text-sm text-yellow-700">직원 급여 정산 테스트 및 확인</p>
               </button>
-              </div>
+            </div>
           </div>
         )}
 

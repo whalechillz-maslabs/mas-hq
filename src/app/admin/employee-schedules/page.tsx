@@ -29,6 +29,8 @@ interface Schedule {
   scheduled_end: string;
   status: string;
   employee_note?: string;
+  total_hours?: number;
+  break_minutes?: number;
   employee: {
     name: string;
     employee_id: string;
@@ -60,7 +62,7 @@ export default function EmployeeSchedulesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [updating, setUpdating] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'individual' | 'overview'>('individual');
+  const [viewMode, setViewMode] = useState<'individual' | 'overview' | 'list'>('individual');
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [lunchSlot, setLunchSlot] = useState<'none' | '11:30-12:30' | '12:30-13:30'>('none');
   
@@ -134,7 +136,7 @@ export default function EmployeeSchedulesPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedEmployee || viewMode === 'overview') {
+    if (selectedEmployee || viewMode === 'overview' || viewMode === 'list') {
       fetchSchedules();
     }
   }, [selectedEmployee, currentDate, viewMode]);
@@ -173,9 +175,6 @@ export default function EmployeeSchedulesPage() {
 
   const fetchSchedules = async () => {
     try {
-      const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 });
-      const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 0 });
-      
       let query = supabase
         .from('schedules')
         .select(`
@@ -184,12 +183,23 @@ export default function EmployeeSchedulesPage() {
             name,
             employee_id
           )
-        `)
-        .gte('schedule_date', format(startOfWeekDate, 'yyyy-MM-dd'))
-        .lte('schedule_date', format(endOfWeekDate, 'yyyy-MM-dd'))
-        .order('schedule_date', { ascending: true });
+        `);
 
-      if (viewMode === 'individual' && selectedEmployee) {
+      if (viewMode === 'list') {
+        // 리스트 뷰에서는 모든 스케줄을 가져옴 (날짜 제한 없음)
+        query = query.order('schedule_date', { ascending: false })
+                    .order('scheduled_start', { ascending: true });
+      } else {
+        // 기존 로직: 주간 뷰
+        const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+        const endOfWeekDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+        
+        query = query.gte('schedule_date', format(startOfWeekDate, 'yyyy-MM-dd'))
+                    .lte('schedule_date', format(endOfWeekDate, 'yyyy-MM-dd'))
+                    .order('schedule_date', { ascending: true });
+      }
+
+      if ((viewMode === 'individual' || viewMode === 'list') && selectedEmployee) {
         query = query.eq('employee_id', selectedEmployee.id);
       }
 
@@ -795,11 +805,21 @@ export default function EmployeeSchedulesPage() {
                 onClick={() => setViewMode('overview')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                   viewMode === 'overview'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
                 전체 보기
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                스케줄 리스트
               </button>
             </div>
             <button
@@ -1160,6 +1180,157 @@ export default function EmployeeSchedulesPage() {
                       <div className="w-3 h-3 bg-orange-50 rounded mr-2"></div>
                       <span>점심</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="lg:col-span-3">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                          <Calendar className="h-5 w-5 mr-2" />
+                          전체 스케줄 리스트
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                          모든 직원의 스케줄을 날짜순으로 확인할 수 있습니다.
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <select
+                          value={selectedEmployee?.id || ''}
+                          onChange={(e) => {
+                            const employee = employees.find(emp => emp.id === e.target.value);
+                            setSelectedEmployee(employee || null);
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">전체 직원</option>
+                          {employees.map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                              {employee.name} ({employee.employee_id})
+                            </option>
+                          ))}
+                        </select>
+                        <div className="text-sm text-gray-600">
+                          총 {schedules.length}개 스케줄
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            날짜
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            직원
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            근무시간
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            상태
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            메모
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            작업
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {schedules.map((schedule) => (
+                          <tr key={schedule.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">
+                                {format(parseISO(schedule.schedule_date), 'yyyy-MM-dd (E)', { locale: ko })}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {schedule.employee?.name || 'Unknown'}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {schedule.employee?.employee_id || ''}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {schedule.scheduled_start?.substring(0, 5)} - {schedule.scheduled_end?.substring(0, 5)}
+                              </div>
+                              {schedule.total_hours && (
+                                <div className="text-xs text-gray-500">
+                                  {schedule.total_hours}시간
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                schedule.status === 'approved' 
+                                  ? 'bg-green-100 text-green-800'
+                                  : schedule.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : schedule.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {schedule.status === 'approved' ? '승인됨' :
+                                 schedule.status === 'pending' ? '대기중' :
+                                 schedule.status === 'cancelled' ? '취소됨' : schedule.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-sm text-gray-900 max-w-xs truncate">
+                                {schedule.employee_note || '-'}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setScheduleModal({
+                                      isOpen: true,
+                                      date: parseISO(schedule.schedule_date),
+                                      timeSlot: null,
+                                      schedule: schedule,
+                                      mode: 'edit'
+                                    });
+                                    setModalInputs({
+                                      startTime: schedule.scheduled_start?.substring(0, 5) || '',
+                                      endTime: schedule.scheduled_end?.substring(0, 5) || '',
+                                      note: schedule.employee_note || ''
+                                    });
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleQuickDelete(schedule.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    
+                    {schedules.length === 0 && (
+                      <div className="text-center py-12">
+                        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">스케줄이 없습니다</h3>
+                        <p className="text-gray-500">등록된 스케줄이 없습니다.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
