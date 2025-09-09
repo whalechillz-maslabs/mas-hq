@@ -859,8 +859,8 @@ export default function AttendanceManagementPage() {
                           {formatTime(record.actual_end)}
                         </div>
                         {record.check_out_location ? (
-                          <div className="text-xs text-gray-500 flex items-center mt-1">
-                            <MapPin className="w-3 h-3 mr-1" />
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
                             {record.check_out_location.address || '위치 정보 있음'}
                           </div>
                         ) : (

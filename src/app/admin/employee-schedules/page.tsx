@@ -42,7 +42,7 @@ interface TimeSlot {
 export default function EmployeeSchedulesPage() {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'week' | 'month' | 'list'>('week');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -159,11 +159,15 @@ export default function EmployeeSchedulesPage() {
       let startDate, endDate;
       
       if (viewMode === 'week') {
-        startDate = startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }); // 월요일부터 시작
+        startDate = startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }); // 일요일부터 시작
         endDate = endOfWeek(currentDate, { locale: ko });
-      } else {
+      } else if (viewMode === 'month') {
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
+      } else {
+        // 리스트 뷰: 현재 날짜 기준으로 앞뒤 30일
+        startDate = addDays(currentDate, -30);
+        endDate = addDays(currentDate, 30);
       }
 
       const { data, error } = await supabase
@@ -194,7 +198,7 @@ export default function EmployeeSchedulesPage() {
 
   const getDaysInView = () => {
     if (viewMode === 'week') {
-      return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }), i)); // 월요일부터 시작
+      return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), i)); // 일요일부터 시작
     } else {
       // 월간 뷰에서 8월 24일부터 시작하도록 수정
       const start = new Date(2025, 7, 24); // 8월 24일 (월은 0부터 시작하므로 7)
@@ -414,7 +418,7 @@ export default function EmployeeSchedulesPage() {
     setUpdating('bulk');
 
     try {
-      const weekStart = startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }); // 월요일부터 시작
+      const weekStart = startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }); // 일요일부터 시작
       const schedulesToAdd: any[] = [];
 
       // 선택된 요일들에 대해 해당 주의 날짜들을 찾아서 스케줄 생성
@@ -714,19 +718,17 @@ export default function EmployeeSchedulesPage() {
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     <h2 className="text-sm sm:text-base font-semibold text-gray-800">
                       {viewMode === 'week' 
-                        ? `${format(startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
+                        ? `${format(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
                         : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
                       }
                     </h2>
                     
                     <button
                       onClick={() => setCurrentDate(new Date())}
-                      className="px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                      className="px-3 py-1.5 text-gray-600 hover:text-gray-800 text-sm font-medium border border-gray-200 hover:border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-200"
                       title="오늘 날짜로 이동"
                     >
-                      <span>📅</span>
-                      <span className="hidden sm:inline">오늘로 가기</span>
-                      <span className="sm:hidden">오늘</span>
+                      오늘
                     </button>
                   </div>
                   
@@ -760,6 +762,16 @@ export default function EmployeeSchedulesPage() {
                       }`}
                     >
                       월간
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`px-2 py-1 sm:px-3 sm:py-1 rounded-md transition-all duration-200 text-xs sm:text-sm ${
+                        viewMode === 'list' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      리스트
                     </button>
                   </div>
                 </div>
@@ -844,7 +856,7 @@ export default function EmployeeSchedulesPage() {
                           </div>
                         ))}
                       </div>
-                    ) : (
+                    ) : viewMode === 'month' ? (
                       // 월간 요약 뷰
                       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
                         {/* 요일 헤더 */}
@@ -899,6 +911,53 @@ export default function EmployeeSchedulesPage() {
                           );
                         })}
                       </div>
+                    ) : (
+                      // 리스트 뷰
+                      <div className="space-y-2">
+                        {schedules.length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                            <p>등록된 스케줄이 없습니다</p>
+                          </div>
+                        ) : (
+                          schedules
+                            .sort((a, b) => new Date(a.schedule_date).getTime() - new Date(b.schedule_date).getTime())
+                            .map((schedule) => (
+                              <div
+                                key={schedule.id}
+                                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {format(new Date(schedule.schedule_date), 'MM월 dd일 (EEE)', { locale: ko })}
+                                      </div>
+                                      <div className="text-sm text-gray-600">
+                                        {schedule.scheduled_start} - {schedule.scheduled_end}
+                                      </div>
+                                      <div className={`px-2 py-1 text-xs rounded-full ${
+                                        schedule.status === 'approved' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : schedule.status === 'pending'
+                                          ? 'bg-yellow-100 text-yellow-800'
+                                          : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {schedule.status === 'approved' ? '승인' : 
+                                         schedule.status === 'pending' ? '대기' : '취소'}
+                                      </div>
+                                    </div>
+                                    {schedule.employee_note && (
+                                      <div className="mt-2 text-sm text-gray-500">
+                                        {schedule.employee_note}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -921,7 +980,7 @@ export default function EmployeeSchedulesPage() {
                           <span>없음</span>
                         </div>
                       </>
-                    ) : (
+                    ) : viewMode === 'month' ? (
                       <>
                         <div className="flex items-center">
                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-200 rounded mr-1"></div>
@@ -946,6 +1005,21 @@ export default function EmployeeSchedulesPage() {
                         <div className="flex items-center">
                           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-transparent border border-gray-200 rounded mr-1"></div>
                           <span>없음</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-100 rounded mr-1"></div>
+                          <span>승인</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-100 rounded mr-1"></div>
+                          <span>대기</span>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-100 rounded mr-1"></div>
+                          <span>취소</span>
                         </div>
                       </>
                     )}
