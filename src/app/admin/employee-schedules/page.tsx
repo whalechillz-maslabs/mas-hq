@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, Search, User, Building, X, Edit, Trash2, Repeat } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, addWeeks, subWeeks, getWeek } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, addWeeks, subWeeks, getWeek, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, generateTimeSlotsIncludingLunch, modifyScheduleForPartialDeletion } from '@/lib/schedule-optimizer';
 
@@ -63,6 +63,7 @@ export default function EmployeeSchedulesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [updating, setUpdating] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'individual' | 'overview' | 'list'>('individual');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'week' | 'month'>('week');
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [lunchSlot, setLunchSlot] = useState<'none' | '11:30-12:30' | '12:30-13:30'>('none');
   
@@ -103,6 +104,7 @@ export default function EmployeeSchedulesPage() {
   });
 
   // 시간대 정의 (30분 단위, 18-19시까지 확장)
+  // 시간대 정의 (30분 단위, 18-19시까지 확장) - 2번 페이지와 동일
   const timeSlots: TimeSlot[] = [
     { time: '09:00', label: '9:00', isLunch: false },
     { time: '09:30', label: '9:30', isLunch: false },
@@ -134,7 +136,7 @@ export default function EmployeeSchedulesPage() {
     { day: 3, label: '수', name: 'wednesday' },
     { day: 4, label: '목', name: 'thursday' },
     { day: 5, label: '금', name: 'friday' },
-    { day: 6, label: '토', name: 'saturday' }
+    { day: 6, label: '토', name: 'saturday' },
   ];
 
   useEffect(() => {
@@ -219,14 +221,20 @@ export default function EmployeeSchedulesPage() {
   };
 
   const getDaysInView = () => {
-    const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 });
-    const days = [];
-    
-    for (let i = 0; i < 7; i++) {
-      days.push(addDays(startOfWeekDate, i));
+    if (scheduleViewMode === 'week') {
+      return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko }), i));
+    } else {
+      // 월간 뷰에서 8월 24일부터 시작하도록 수정
+      const start = new Date(2025, 7, 24); // 8월 24일 (월은 0부터 시작하므로 7)
+      const end = endOfMonth(currentDate);
+      const days = [];
+      let current = start;
+      while (current <= end) {
+        days.push(current);
+        current = addDays(current, 1);
+      }
+      return days;
     }
-    
-    return days;
   };
 
   const getSchedulesForDateAndTime = (date: Date, timeSlot: TimeSlot, employeeId?: string) => {
@@ -451,7 +459,7 @@ export default function EmployeeSchedulesPage() {
     }
   };
 
-  // 일괄 스케줄 입력 함수
+  // 일괄 스케줄 입력 함수 - 2번 페이지와 동일
   const handleBulkScheduleAdd = async () => {
     if (!selectedEmployee) {
       alert('직원을 선택해주세요.');
@@ -463,70 +471,82 @@ export default function EmployeeSchedulesPage() {
       return;
     }
 
-    if (bulkStartTime >= bulkEndTime) {
-      alert('시작 시간이 종료 시간보다 늦을 수 없습니다.');
-      return;
-    }
+    setUpdating('bulk-add');
 
     try {
-      setUpdating('bulk-add');
-      
-      // 선택된 요일들에 대해 스케줄 생성
-      const schedules = [];
-      const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 });
-      
-      for (const dayOffset of bulkDays) {
-        const scheduleDate = addDays(startOfWeekDate, dayOffset);
-        const dateStr = format(scheduleDate, 'yyyy-MM-dd');
+      const weekStart = startOfWeek(currentDate, { locale: ko });
+      const schedulesToAdd: any[] = [];
+
+      // 선택된 요일들에 대해 최적화된 스케줄 생성
+      for (let i = 0; i < 7; i++) {
+        const day = addDays(weekStart, i);
+        const dayOfWeek = day.getDay();
         
-        // 30분 단위 시간 슬롯 생성 (점심시간 옵션에 따라)
-        const timeSlots = excludeLunch ? 
-          generateTimeSlotsExcludingLunch(bulkStartTime, bulkEndTime, '12:00', '13:00', 30) :
-          generateTimeSlotsIncludingLunch(bulkStartTime, bulkEndTime, 30);
-        
-        // 연속된 시간대로 합치기
-        const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots, '12:00', '13:00', excludeLunch);
-        
-        for (const optimizedSchedule of optimizedSchedules) {
-          schedules.push({
-            employee_id: selectedEmployee.id,
-            schedule_date: dateStr,
-            scheduled_start: optimizedSchedule.start + ':00',
-            scheduled_end: optimizedSchedule.end + ':00',
-            break_minutes: optimizedSchedule.break_minutes,
-            total_hours: optimizedSchedule.total_hours,
-            status: 'pending',
-            employee_note: optimizedSchedule.employee_note || `일괄 입력 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`
+        if (bulkDays.includes(dayOfWeek)) {
+          // 30분 단위 시간 슬롯 생성 (점심시간 옵션에 따라)
+          const timeSlots = excludeLunch ? 
+            generateTimeSlotsExcludingLunch(bulkStartTime, bulkEndTime, '12:00', '13:00', 30) :
+            generateTimeSlotsIncludingLunch(bulkStartTime, bulkEndTime, 30);
+          
+          // 연속된 시간대로 합치기
+          const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots, '12:00', '13:00', excludeLunch);
+          
+          // 데이터베이스 저장용 객체 생성
+          optimizedSchedules.forEach(optimizedSchedule => {
+            schedulesToAdd.push({
+              employee_id: selectedEmployee.id,
+              schedule_date: format(day, 'yyyy-MM-dd'),
+              scheduled_start: optimizedSchedule.start + ':00',
+              scheduled_end: optimizedSchedule.end + ':00',
+              break_minutes: optimizedSchedule.break_minutes,
+              total_hours: optimizedSchedule.total_hours,
+              status: 'pending',
+              employee_note: optimizedSchedule.employee_note || `일괄 입력 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`
+            });
           });
         }
       }
 
-      if (schedules.length === 0) {
-        alert('생성할 스케줄이 없습니다.');
-        return;
+      console.log('일괄 스케줄 추가 데이터:', schedulesToAdd);
+
+      // 기존 스케줄 삭제 (선택된 요일들과 시간대)
+      const deletePromises = schedulesToAdd.map(schedule => 
+        supabase
+          .from('schedules')
+          .delete()
+          .eq('employee_id', selectedEmployee.id)
+          .eq('schedule_date', schedule.schedule_date)
+          .eq('scheduled_start', schedule.scheduled_start)
+      );
+
+      const deleteResults = await Promise.all(deletePromises);
+      const deleteErrors = deleteResults.filter(result => result.error);
+      
+      if (deleteErrors.length > 0) {
+        console.error('기존 스케줄 삭제 오류:', deleteErrors);
       }
 
-      // 스케줄 일괄 삽입
-      const { error } = await supabase
-        .from('schedules')
-        .upsert(schedules, {
-          onConflict: 'employee_id,schedule_date,scheduled_start'
-        });
+      // 새 스케줄 추가
+      if (schedulesToAdd.length > 0) {
+        const { data, error: insertError } = await supabase
+          .from('schedules')
+          .insert(schedulesToAdd)
+          .select();
 
-      if (error) throw error;
+        if (insertError) {
+          console.error('일괄 스케줄 추가 오류:', insertError);
+          throw insertError;
+        }
+        console.log('일괄 스케줄 추가 완료:', data);
+      }
 
-      // 스케줄 데이터 즉시 업데이트
       await fetchSchedules();
-      
-      // 일괄 입력 모달 닫기
       setShowBulkInput(false);
       setBulkDays([]);
-      
-      alert(`${schedules.length}개 스케줄이 생성되었습니다.`);
-      
+      alert(`일괄 스케줄이 성공적으로 추가되었습니다. (${schedulesToAdd.length}개 30분 단위)`);
     } catch (error: any) {
-      console.error('일괄 스케줄 생성 실패:', error);
-      alert(`일괄 스케줄 생성에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      console.error('일괄 스케줄 추가 오류:', error);
+      alert(`일괄 스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     } finally {
       setUpdating(null);
     }
@@ -762,19 +782,27 @@ export default function EmployeeSchedulesPage() {
     setCurrentDate(addWeeks(currentDate, 1));
   };
 
-  // 월과 주차를 포함한 주차 표시 형식
+  // 요일 토글 함수 - 2번 페이지와 동일
+  const toggleBulkDay = (day: number) => {
+    setBulkDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
+  };
+
+  // 주차 계산 - 2번 페이지와 동일
+  const getWeekNumber = (date: Date) => {
+    return getWeek(date, { locale: ko });
+  };
+
+  // 월과 주차를 포함한 주차 표시 형식 - 2번 페이지와 동일
   const getWeekDisplay = (date: Date) => {
-    const weekNumber = getWeek(date, { locale: ko });
-    
-    // 해당 주의 시작일(일요일)과 끝일(토요일) 계산
-    const weekStart = startOfWeek(date, { locale: ko });
-    const weekEnd = endOfWeek(date, { locale: ko });
-    
-    // 시작일과 끝일을 MM/DD 형식으로 포맷
-    const startDate = format(weekStart, 'MM/dd', { locale: ko });
-    const endDate = format(weekEnd, 'MM/dd', { locale: ko });
-    
-    return `${startDate} - ${endDate} (${weekNumber}주차)`;
+    if (scheduleViewMode === 'week') {
+      return `${format(startOfWeek(date, { locale: ko }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(date, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(date)}주차)`;
+    } else {
+      return `${format(date, 'yyyy년 MM월', { locale: ko })}`;
+    }
   };
 
   // 스케줄 정보를 직원별로 분리하여 표시하는 함수
@@ -1033,15 +1061,17 @@ export default function EmployeeSchedulesPage() {
                     {/* 주간/월간 토글 버튼 */}
                     <div className="flex bg-white rounded-lg border border-gray-300 overflow-hidden">
                       <button
+                        onClick={() => setScheduleViewMode('week')}
                         className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                          true ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                          scheduleViewMode === 'week' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
                         }`}
                       >
                         주간
                       </button>
                       <button
+                        onClick={() => setScheduleViewMode('month')}
                         className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                          false ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                          scheduleViewMode === 'month' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
                         }`}
                       >
                         월간
@@ -1086,31 +1116,17 @@ export default function EmployeeSchedulesPage() {
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">요일 선택</label>
                         <div className="flex flex-wrap gap-1">
-                          {[
-                            { day: 0, label: '일' },
-                            { day: 1, label: '월' },
-                            { day: 2, label: '화' },
-                            { day: 3, label: '수' },
-                            { day: 4, label: '목' },
-                            { day: 5, label: '금' },
-                            { day: 6, label: '토' }
-                          ].map(({ day, label }) => (
+                          {weekDays.map(day => (
                             <button
-                              key={day}
-                              onClick={() => {
-                                setBulkDays(prev => 
-                                  prev.includes(day) 
-                                    ? prev.filter(d => d !== day)
-                                    : [...prev, day]
-                                );
-                              }}
+                              key={day.day}
+                              onClick={() => toggleBulkDay(day.day)}
                               className={`px-2 py-1 text-xs rounded ${
-                                bulkDays.includes(day)
+                                bulkDays.includes(day.day)
                                   ? 'bg-green-600 text-white'
                                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                               }`}
                             >
-                              {label}
+                              {day.label}
                             </button>
                           ))}
                         </div>
