@@ -608,6 +608,40 @@ export default function EmployeeSchedulesPage() {
     }
   };
 
+  // 스케줄 완전 삭제 함수 추가
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (updating) {
+      console.log('이미 처리 중입니다.');
+      return;
+    }
+
+    if (!confirm('이 스케줄을 완전히 삭제하시겠습니까? 삭제된 스케줄은 복구할 수 없습니다.')) {
+      return;
+    }
+
+    setUpdating(scheduleId);
+
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', scheduleId);
+
+      if (error) {
+        console.error('스케줄 삭제 실패:', error);
+        throw error;
+      }
+
+      await fetchSchedules();
+      alert('스케줄이 완전히 삭제되었습니다.');
+    } catch (error: any) {
+      console.error('스케줄 삭제 오류:', error);
+      alert(`스케줄 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-1 sm:p-2">
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4">
@@ -1092,6 +1126,28 @@ export default function EmployeeSchedulesPage() {
                                       >
                                         <XCircle className="h-4 w-4" />
                                         <span>취소</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  {/* 취소된 스케줄 재승인/삭제 버튼 추가 */}
+                                  {schedule.status === 'cancelled' && (
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleScheduleApproval(schedule.id, 'approved')}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span>재승인</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSchedule(schedule.id)}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span>삭제</span>
                                       </button>
                                     </div>
                                   )}
