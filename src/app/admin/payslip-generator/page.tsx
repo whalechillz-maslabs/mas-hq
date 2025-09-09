@@ -38,7 +38,6 @@ interface PayslipData {
   daily_details?: Array<{
     date: string;
     hours: number;
-    hourly_wage: number;
     daily_wage: number;
   }>;
 }
@@ -91,7 +90,6 @@ export default function PayslipGenerator() {
       setEmployees(data || []);
     } catch (error) {
       console.error('❌ 직원 목록 로드 실패:', error);
-      alert('직원 목록을 불러오는데 실패했습니다: ' + error);
     } finally {
       setLoading(false);
     }
@@ -154,8 +152,8 @@ export default function PayslipGenerator() {
     const dailyHours: { [key: string]: number } = {};
     schedules.forEach(schedule => {
       const date = schedule.schedule_date;
-      const start = new Date(`2025-08-01 ${schedule.scheduled_start}`);
-      const end = new Date(`2025-08-01 ${schedule.scheduled_end}`);
+      const start = new Date(`${date} ${schedule.scheduled_start}`);
+      const end = new Date(`${date} ${schedule.scheduled_end}`);
       const hours = (end - start) / (1000 * 60 * 60);
       
       if (!dailyHours[date]) {
@@ -188,20 +186,21 @@ export default function PayslipGenerator() {
       
       dailyDetails.push({
         date,
-        hours: parseFloat(hours.toFixed(1)),
+        hours,
         hourly_wage: wage,
         daily_wage: dayWage
       });
     });
 
-    const taxAmount = Math.floor(totalWage * 0.033);
+    // 세금 계산 (3.3%)
+    const taxAmount = Math.round(totalWage * 0.033);
     const netSalary = totalWage - taxAmount;
 
-    return {
-      employee_id: employee.employee_id,
+    const payslip: PayslipData = {
+      employee_id: employee.id,
       employee_name: employee.name,
       payment_date: new Date().toISOString().split('T')[0],
-      salary_period: `${year}년 ${month}월`,
+      salary_period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'part_time',
       base_salary: totalWage,
       overtime_pay: 0,
@@ -211,28 +210,49 @@ export default function PayslipGenerator() {
       tax_amount: taxAmount,
       net_salary: netSalary,
       status: 'generated',
-      total_hours: parseFloat(totalHours.toFixed(1)),
+      total_hours: totalHours,
       hourly_rate: hourlyWage2, // 최종 시급
-      daily_details: dailyDetails
+      daily_details: dailyDetails.map(detail => ({
+        date: detail.date,
+        hours: detail.hours,
+        daily_wage: detail.daily_wage
+      }))
     };
+
+    // payslips 테이블에 저장
+    try {
+      const { error: saveError } = await supabase
+        .from('payslips')
+        .insert([payslip]);
+
+      if (saveError) {
+        console.error('급여명세서 저장 실패:', saveError);
+        throw new Error('급여명세서 저장에 실패했습니다.');
+      }
+      
+      console.log('✅ 급여명세서 저장 성공');
+    } catch (saveError) {
+      console.error('급여명세서 저장 중 오류:', saveError);
+      // 저장 실패해도 화면에는 표시
+    }
+
+    return payslip;
   };
 
   const generateMonthlyPayslip = async (employee: Employee, year: number, month: number) => {
-    // 기본 급여 계산
     const baseSalary = employee.monthly_salary || 0;
-    const overtimePay = Math.floor(baseSalary * 0.1); // 기본급의 10%
-    const incentive = Math.floor(baseSalary * 0.05); // 기본급의 5%
-    const pointBonus = 0; // 포인트 보너스는 별도 계산
-    
+    const overtimePay = 0; // 추후 구현
+    const incentive = 0; // 추후 구현
+    const pointBonus = 0; // 추후 구현
     const totalEarnings = baseSalary + overtimePay + incentive + pointBonus;
-    const taxAmount = Math.floor(totalEarnings * 0.033); // 3.3% 사업소득세
+    const taxAmount = Math.round(totalEarnings * 0.033); // 3.3% 세금
     const netSalary = totalEarnings - taxAmount;
 
-    return {
-      employee_id: employee.employee_id,
+    const payslip: PayslipData = {
+      employee_id: employee.id,
       employee_name: employee.name,
       payment_date: new Date().toISOString().split('T')[0],
-      salary_period: `${year}년 ${month}월`,
+      salary_period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'full_time',
       base_salary: baseSalary,
       overtime_pay: overtimePay,
@@ -243,9 +263,28 @@ export default function PayslipGenerator() {
       net_salary: netSalary,
       status: 'generated'
     };
+
+    // payslips 테이블에 저장
+    try {
+      const { error: saveError } = await supabase
+        .from('payslips')
+        .insert([payslip]);
+
+      if (saveError) {
+        console.error('급여명세서 저장 실패:', saveError);
+        throw new Error('급여명세서 저장에 실패했습니다.');
+      }
+      
+      console.log('✅ 급여명세서 저장 성공');
+    } catch (saveError) {
+      console.error('급여명세서 저장 중 오류:', saveError);
+      // 저장 실패해도 화면에는 표시
+    }
+
+    return payslip;
   };
 
-  const handleCheckChange = (checkName: keyof typeof checks) => {
+  const handleCheck = (checkName: keyof typeof checks) => {
     setChecks(prev => ({
       ...prev,
       [checkName]: !prev[checkName]
@@ -255,49 +294,58 @@ export default function PayslipGenerator() {
   const issuePayslip = async () => {
     if (!payslipData) return;
 
-    // 모든 체크 항목이 완료되었는지 확인
-    const allChecked = Object.values(checks).every(check => check);
-    if (!allChecked) {
-      alert('모든 체크 항목을 완료해주세요.');
-      return;
-    }
-
     try {
-      setGenerating(true);
-      
-      // 급여 데이터를 데이터베이스에 저장
-      const { error: salaryError } = await supabase
-        .from('salaries')
-        .insert({
-          employee_id: selectedEmployee,
-          payment_date: payslipData.payment_date,
-          base_salary: payslipData.base_salary,
-          overtime_pay: payslipData.overtime_pay,
-          incentive: payslipData.incentive,
-          deduction_amount: payslipData.tax_amount,
-          net_salary: payslipData.net_salary,
-          status: 'paid'
-        });
+      const { error } = await supabase
+        .from('payslips')
+        .update({ 
+          status: 'issued',
+          issued_at: new Date().toISOString()
+        })
+        .eq('employee_id', payslipData.employee_id)
+        .eq('salary_period', payslipData.salary_period);
 
-      if (salaryError) throw salaryError;
+      if (error) {
+        throw error;
+      }
 
-      alert('급여 명세서가 성공적으로 발행되었습니다!');
-      router.push('/admin/employee-management');
+      setPayslipData(prev => prev ? { ...prev, status: 'issued' } : null);
+      alert('급여 명세서가 발행되었습니다.');
     } catch (error) {
       console.error('급여 명세서 발행 실패:', error);
       alert('급여 명세서 발행에 실패했습니다.');
-    } finally {
-      setGenerating(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ko-KR').format(amount);
+  const markAsPaid = async () => {
+    if (!payslipData) return;
+
+    try {
+      const { error } = await supabase
+        .from('payslips')
+        .update({ 
+          status: 'paid',
+          paid_at: new Date().toISOString()
+        })
+        .eq('employee_id', payslipData.employee_id)
+        .eq('salary_period', payslipData.salary_period);
+
+      if (error) {
+        throw error;
+      }
+
+      setPayslipData(prev => prev ? { ...prev, status: 'paid' } : null);
+      alert('급여 지급이 완료되었습니다.');
+    } catch (error) {
+      console.error('급여 지급 처리 실패:', error);
+      alert('급여 지급 처리에 실패했습니다.');
+    }
   };
 
+  const selectedEmployeeData = employees.find(emp => emp.id === selectedEmployee);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
         {/* 헤더 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -307,7 +355,7 @@ export default function PayslipGenerator() {
             </div>
             <button
               onClick={() => router.back()}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               뒤로가기
             </button>
@@ -318,317 +366,283 @@ export default function PayslipGenerator() {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">직원 선택</h2>
           
-          {/* 디버깅 정보 */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="space-y-4">
             <div className="text-sm text-gray-600">
-              <div>로딩 상태: {loading ? '로딩 중...' : '완료'}</div>
-              <div>직원 수: {employees.length}명</div>
-              <div>선택된 직원: {selectedEmployee || '없음'}</div>
+              <p>로딩 상태: {loading ? '로딩 중...' : '완료'}</p>
+              <p>직원 수: {employees.length}명</p>
+              <p>선택된 직원: {selectedEmployee || '없음'}</p>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                직원 선택
-              </label>
-              <select
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={loading}
-              >
-                <option value="">
-                  {loading ? '로딩 중...' : employees.length === 0 ? '직원 데이터가 없습니다' : '직원을 선택하세요'}
-                </option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.name} ({employee.employee_id}) - {employee.employment_type}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={generatePayslip}
-                disabled={!selectedEmployee || generating}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {generating ? '생성 중...' : '급여 명세서 생성'}
-              </button>
+            
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  직원 선택
+                </label>
+                <select
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                >
+                  <option value="">직원을 선택하세요</option>
+                  {employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name} ({employee.employee_id}) - {employee.employment_type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={generatePayslip}
+                  disabled={!selectedEmployee || generating}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {generating ? '생성 중...' : '급여 명세서 생성'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 급여 명세서 미리보기 */}
+        {/* 급여 명세서 */}
         {payslipData && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">급여 명세서 미리보기</h2>
-            
-            {/* 급여 정보 카드 */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                💰 급여 정보 ({payslipData.employment_type === 'part_time' ? '시간제' : '월급제'})
-              </h3>
-              
-              {payslipData.employment_type === 'part_time' ? (
-                // 시간제 급여 표시
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg p-4 border">
-                      <div className="text-sm text-gray-600">총 근무시간</div>
-                      <div className="text-xl font-bold text-gray-900">
-                        {payslipData.total_hours}시간
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 border">
-                      <div className="text-sm text-gray-600">시간제 급여</div>
-                      <div className="text-xl font-bold text-gray-900">
-                        {formatCurrency(payslipData.base_salary)}원
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 border">
-                      <div className="text-sm text-gray-600">총 수입</div>
-                      <div className="text-xl font-bold text-green-600">
-                        {formatCurrency(payslipData.total_earnings)}원
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 border">
-                      <div className="text-sm text-gray-600">세금 (3.3%)</div>
-                      <div className="text-xl font-bold text-red-600">
-                        -{formatCurrency(payslipData.tax_amount)}원
-                      </div>
-                    </div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">급여 명세서</h2>
+              <div className="flex gap-2">
+                {payslipData.status === 'generated' && (
+                  <button
+                    onClick={issuePayslip}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    발행
+                  </button>
+                )}
+                {payslipData.status === 'issued' && (
+                  <button
+                    onClick={markAsPaid}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    지급 완료
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 기본 정보 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-md font-medium text-gray-900 mb-3">기본 정보</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">직원명:</span>
+                    <span className="font-medium">{payslipData.employee_name}</span>
                   </div>
-                  
-                  {/* 일별 상세 내역 */}
-                  {payslipData.daily_details && payslipData.daily_details.length > 0 && (
-                    <div className="bg-white rounded-lg p-4 border">
-                      <h4 className="text-md font-semibold text-gray-900 mb-3">📅 일별 상세 내역</h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-2">날짜</th>
-                              <th className="text-right py-2">근무시간</th>
-                              <th className="text-right py-2">시급</th>
-                              <th className="text-right py-2">일급여</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {payslipData.daily_details.map((detail, index) => (
-                              <tr key={index} className="border-b">
-                                <td className="py-2">{detail.date}</td>
-                                <td className="text-right py-2">{detail.hours}시간</td>
-                                <td className="text-right py-2">{formatCurrency(detail.hourly_wage)}원</td>
-                                <td className="text-right py-2 font-medium">{formatCurrency(detail.daily_wage)}원</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="text-sm text-gray-600">실수령액</div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(payslipData.net_salary)}원
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">직원 ID:</span>
+                    <span className="font-medium">{payslipData.employee_id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">급여 기간:</span>
+                    <span className="font-medium">{payslipData.salary_period}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">고용 형태:</span>
+                    <span className="font-medium">
+                      {payslipData.employment_type === 'full_time' ? '정규직' : '시간제'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">지급일:</span>
+                    <span className="font-medium">{payslipData.payment_date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">상태:</span>
+                    <span className={`font-medium ${
+                      payslipData.status === 'generated' ? 'text-yellow-600' :
+                      payslipData.status === 'issued' ? 'text-blue-600' :
+                      'text-green-600'
+                    }`}>
+                      {payslipData.status === 'generated' ? '생성됨' :
+                       payslipData.status === 'issued' ? '발행됨' : '지급완료'}
+                    </span>
                   </div>
                 </div>
-              ) : (
-                // 월급제 급여 표시
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-white rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600">기본급</div>
-                    <div className="text-xl font-bold text-gray-900">
-                      {formatCurrency(payslipData.base_salary)}원
+              </div>
+
+              {/* 시간제 급여 상세 정보 */}
+              {payslipData.employment_type === 'part_time' && (
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 mb-3">시간제 급여 상세</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">총 근무시간:</span>
+                      <span className="font-medium">{payslipData.total_hours}시간</span>
                     </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600">연장수당</div>
-                    <div className="text-xl font-bold text-gray-900">
-                      {formatCurrency(payslipData.overtime_pay)}원
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">시급:</span>
+                      <span className="font-medium">{payslipData.hourly_rate?.toLocaleString()}원</span>
                     </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600">인센티브</div>
-                    <div className="text-xl font-bold text-gray-900">
-                      {formatCurrency(payslipData.incentive)}원
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">일별 상세:</span>
+                      <span className="font-medium text-blue-600 cursor-pointer" onClick={() => {
+                        const details = payslipData.daily_details?.map(d => 
+                          `${d.date}: ${d.hours}시간 (${d.daily_wage.toLocaleString()}원)`
+                        ).join('\n');
+                        alert(details || '상세 정보 없음');
+                      }}>
+                        클릭하여 확인
+                      </span>
                     </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600">포인트 보너스</div>
-                    <div className="text-xl font-bold text-gray-900">
-                      {formatCurrency(payslipData.point_bonus)}원
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600">총 수입</div>
-                    <div className="text-xl font-bold text-green-600">
-                      {formatCurrency(payslipData.total_earnings)}원
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 border">
-                    <div className="text-sm text-gray-600">세금 (3.3%)</div>
-                    <div className="text-xl font-bold text-red-600">
-                      -{formatCurrency(payslipData.tax_amount)}원
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {payslipData.employment_type === 'full_time' && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="text-sm text-gray-600">실수령액</div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {formatCurrency(payslipData.net_salary)}원
                   </div>
                 </div>
               )}
             </div>
 
+            {/* 급여 내역 */}
+            <div className="border-t pt-6">
+              <h3 className="text-md font-medium text-gray-900 mb-4">급여 내역</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">기본급</span>
+                  <span className="font-medium">{payslipData.base_salary.toLocaleString()}원</span>
+                </div>
+                {payslipData.overtime_pay > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">연장근무수당</span>
+                    <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
+                  </div>
+                )}
+                {payslipData.incentive > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">인센티브</span>
+                    <span className="font-medium">{payslipData.incentive.toLocaleString()}원</span>
+                  </div>
+                )}
+                {payslipData.point_bonus > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">포인트 보너스</span>
+                    <span className="font-medium">{payslipData.point_bonus.toLocaleString()}원</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center py-2 border-b border-gray-300">
+                  <span className="font-medium text-gray-900">총 지급액</span>
+                  <span className="font-bold text-lg">{payslipData.total_earnings.toLocaleString()}원</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">세금 (3.3%)</span>
+                  <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
+                </div>
+                <div className="flex justify-between items-center py-3 bg-gray-50 rounded-lg px-4">
+                  <span className="font-bold text-gray-900">실수령액</span>
+                  <span className="font-bold text-xl text-blue-600">{payslipData.net_salary.toLocaleString()}원</span>
+                </div>
+              </div>
+            </div>
+
             {/* 체크리스트 */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">✅ 발행 전 체크리스트</h3>
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-md font-medium text-gray-900 mb-4">급여 명세서 검토 체크리스트</h3>
               <div className="space-y-3">
                 {payslipData.employment_type === 'part_time' ? (
-                  // 시간제 체크리스트
                   <>
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.baseSalary}
-                        onChange={() => handleCheckChange('baseSalary')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('baseSalary')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">총 근무시간 확인 ({payslipData.total_hours}시간)</span>
+                      <span className="text-sm text-gray-700">시간제 급여 계산 확인 (총 {payslipData.total_hours}시간)</span>
                     </label>
-                    
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.overtimePay}
-                        onChange={() => handleCheckChange('overtimePay')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('overtimePay')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">시간제 급여 확인 ({formatCurrency(payslipData.base_salary)}원)</span>
+                      <span className="text-sm text-gray-700">일별 근무시간 상세 확인</span>
                     </label>
-                    
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.incentive}
-                        onChange={() => handleCheckChange('incentive')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('incentive')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">일별 상세 내역 확인</span>
+                      <span className="text-sm text-gray-700">시급 적용 확인 (8/1-7: 13,000원, 8/8-31: 12,000원)</span>
                     </label>
                   </>
                 ) : (
-                  // 월급제 체크리스트
                   <>
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.baseSalary}
-                        onChange={() => handleCheckChange('baseSalary')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('baseSalary')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">기본급 금액 확인 ({formatCurrency(payslipData.base_salary)}원)</span>
+                      <span className="text-sm text-gray-700">기본급 확인 ({payslipData.base_salary.toLocaleString()}원)</span>
                     </label>
-                    
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.overtimePay}
-                        onChange={() => handleCheckChange('overtimePay')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('overtimePay')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">연장수당 확인 ({formatCurrency(payslipData.overtime_pay)}원)</span>
+                      <span className="text-sm text-gray-700">연장근무수당 확인</span>
                     </label>
-                    
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.incentive}
-                        onChange={() => handleCheckChange('incentive')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('incentive')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">인센티브 확인 ({formatCurrency(payslipData.incentive)}원)</span>
+                      <span className="text-sm text-gray-700">인센티브 확인</span>
                     </label>
-                    
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={checks.pointBonus}
-                        onChange={() => handleCheckChange('pointBonus')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={() => handleCheck('pointBonus')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-gray-700">포인트 보너스 확인 ({formatCurrency(payslipData.point_bonus)}원)</span>
+                      <span className="text-sm text-gray-700">포인트 보너스 확인</span>
                     </label>
                   </>
                 )}
-                
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checks.taxCalculation}
-                    onChange={() => handleCheckChange('taxCalculation')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    onChange={() => handleCheck('taxCalculation')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-gray-700">세금 계산 확인 (3.3% 사업소득세: {formatCurrency(payslipData.tax_amount)}원)</span>
+                  <span className="text-sm text-gray-700">세금 계산 확인 (3.3%)</span>
                 </label>
-                
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checks.netSalary}
-                    onChange={() => handleCheckChange('netSalary')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    onChange={() => handleCheck('netSalary')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-gray-700">실수령액 확인 ({formatCurrency(payslipData.net_salary)}원)</span>
+                  <span className="text-sm text-gray-700">실수령액 확인 ({payslipData.net_salary.toLocaleString()}원)</span>
                 </label>
-                
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checks.finalReview}
-                    onChange={() => handleCheckChange('finalReview')}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    onChange={() => handleCheck('finalReview')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-gray-700">최종 검토 완료</span>
+                  <span className="text-sm text-gray-700">최종 검토 완료</span>
                 </label>
               </div>
-            </div>
-
-            {/* 발행 버튼 */}
-            <div className="mt-6 flex justify-end space-x-4">
-              <button
-                onClick={() => {
-                  setPayslipData(null);
-                  setChecks({
-                    baseSalary: false,
-                    overtimePay: false,
-                    incentive: false,
-                    pointBonus: false,
-                    taxCalculation: false,
-                    netSalary: false,
-                    finalReview: false
-                  });
-                }}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={issuePayslip}
-                disabled={generating || !Object.values(checks).every(check => check)}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {generating ? '발행 중...' : '급여 명세서 발행'}
-              </button>
             </div>
           </div>
         )}
