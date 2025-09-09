@@ -79,7 +79,8 @@ export default function EmployeeSchedulesPage() {
   const [modalInputs, setModalInputs] = useState({
     startTime: '',
     endTime: '',
-    note: ''
+    note: '',
+    status: 'pending'
   });
 
   // 빠른 스케줄 추가 상태 (모달 없이 바로 추가)
@@ -372,7 +373,7 @@ export default function EmployeeSchedulesPage() {
         scheduled_end: optimizedSchedule.end + ':00',
         break_minutes: optimizedSchedule.break_minutes,
         total_hours: optimizedSchedule.total_hours,
-        status: 'approved',
+        status: 'pending',
         employee_note:
           (optimizedSchedule.employee_note || `관리자가 추가함 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`) +
           (lunchSlot !== 'none' ? ` | lunch:${lunchSlot}` : '')
@@ -528,13 +529,15 @@ export default function EmployeeSchedulesPage() {
       setModalInputs({
         startTime: timeSlot.time,
         endTime: endTimeStr,
-        note: ''
+        note: '',
+        status: 'pending'
       });
     } else if (mode === 'edit' && schedule) {
       setModalInputs({
         startTime: schedule.scheduled_start.substring(0, 5),
         endTime: schedule.scheduled_end.substring(0, 5),
-        note: schedule.employee_note || ''
+        note: schedule.employee_note || '',
+        status: schedule.status || 'pending'
       });
     }
 
@@ -560,7 +563,8 @@ export default function EmployeeSchedulesPage() {
     setModalInputs({
       startTime: '',
       endTime: '',
-      note: ''
+      note: '',
+      status: 'pending'
     });
   };
 
@@ -600,7 +604,7 @@ export default function EmployeeSchedulesPage() {
           schedule_date: dateStr,
           scheduled_start: modalInputs.startTime + ':00',
           scheduled_end: modalInputs.endTime + ':00',
-          status: 'approved',
+          status: modalInputs.status,
           employee_note: modalInputs.note || '관리자가 추가함'
         };
 
@@ -1216,6 +1220,32 @@ export default function EmployeeSchedulesPage() {
                         <div className="text-sm text-gray-600">
                           총 {schedules.length}개 스케줄
                         </div>
+                        {schedules.some(s => s.status === 'pending') && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('모든 대기중 스케줄을 승인하시겠습니까?')) {
+                                try {
+                                  const pendingSchedules = schedules.filter(s => s.status === 'pending');
+                                  const { error } = await supabase
+                                    .from('schedules')
+                                    .update({ status: 'approved' })
+                                    .in('id', pendingSchedules.map(s => s.id));
+                                  
+                                  if (error) throw error;
+                                  
+                                  await fetchSchedules();
+                                  alert(`${pendingSchedules.length}개 스케줄이 승인되었습니다.`);
+                                } catch (error) {
+                                  console.error('일괄 승인 실패:', error);
+                                  alert('일괄 승인에 실패했습니다.');
+                                }
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                          >
+                            일괄 승인
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1292,6 +1322,30 @@ export default function EmployeeSchedulesPage() {
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                               <div className="flex space-x-2">
+                                {schedule.status === 'pending' && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const { error } = await supabase
+                                          .from('schedules')
+                                          .update({ status: 'approved' })
+                                          .eq('id', schedule.id);
+                                        
+                                        if (error) throw error;
+                                        
+                                        await fetchSchedules();
+                                        alert('스케줄이 승인되었습니다.');
+                                      } catch (error) {
+                                        console.error('승인 실패:', error);
+                                        alert('승인에 실패했습니다.');
+                                      }
+                                    }}
+                                    className="text-green-600 hover:text-green-900"
+                                    title="승인"
+                                  >
+                                    ✓
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => {
                                     setScheduleModal({
@@ -1304,16 +1358,19 @@ export default function EmployeeSchedulesPage() {
                                     setModalInputs({
                                       startTime: schedule.scheduled_start?.substring(0, 5) || '',
                                       endTime: schedule.scheduled_end?.substring(0, 5) || '',
-                                      note: schedule.employee_note || ''
+                                      note: schedule.employee_note || '',
+                                      status: schedule.status || 'pending'
                                     });
                                   }}
                                   className="text-blue-600 hover:text-blue-900"
+                                  title="수정"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={() => handleQuickDelete(schedule.id)}
                                   className="text-red-600 hover:text-red-900"
+                                  title="삭제"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -1470,6 +1527,21 @@ export default function EmployeeSchedulesPage() {
                     onChange={(e) => setModalInputs(prev => ({ ...prev, endTime: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    상태
+                  </label>
+                  <select
+                    value={modalInputs.status}
+                    onChange={(e) => setModalInputs(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="pending">대기중</option>
+                    <option value="approved">승인됨</option>
+                    <option value="cancelled">취소됨</option>
+                  </select>
                 </div>
 
                 <div>
