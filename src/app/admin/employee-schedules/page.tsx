@@ -159,7 +159,7 @@ export default function EmployeeSchedulesPage() {
       let startDate, endDate;
       
       if (viewMode === 'week') {
-        startDate = startOfWeek(currentDate, { locale: ko });
+        startDate = startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }); // 월요일부터 시작
         endDate = endOfWeek(currentDate, { locale: ko });
       } else {
         startDate = startOfMonth(currentDate);
@@ -194,7 +194,7 @@ export default function EmployeeSchedulesPage() {
 
   const getDaysInView = () => {
     if (viewMode === 'week') {
-      return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko }), i));
+      return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }), i)); // 월요일부터 시작
     } else {
       // 월간 뷰에서 8월 24일부터 시작하도록 수정
       const start = new Date(2025, 7, 24); // 8월 24일 (월은 0부터 시작하므로 7)
@@ -414,7 +414,7 @@ export default function EmployeeSchedulesPage() {
     setUpdating('bulk');
 
     try {
-      const weekStart = startOfWeek(currentDate, { locale: ko });
+      const weekStart = startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }); // 월요일부터 시작
       const schedulesToAdd: any[] = [];
 
       // 선택된 요일들에 대해 해당 주의 날짜들을 찾아서 스케줄 생성
@@ -714,7 +714,7 @@ export default function EmployeeSchedulesPage() {
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     <h2 className="text-sm sm:text-base font-semibold text-gray-800">
                       {viewMode === 'week' 
-                        ? `${format(startOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
+                        ? `${format(startOfWeek(currentDate, { locale: ko, weekStartsOn: 1 }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
                         : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
                       }
                     </h2>
