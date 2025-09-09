@@ -62,6 +62,7 @@ export default function EmployeeSchedulesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'individual' | 'overview'>('individual');
   const [excludeLunch, setExcludeLunch] = useState(true);
+  const [lunchSlot, setLunchSlot] = useState<'none' | '11:30-12:30' | '12:30-13:30'>('none');
   
   // 스케줄 모달 상태 추가
   const [scheduleModal, setScheduleModal] = useState<ScheduleModal>({
@@ -362,7 +363,9 @@ export default function EmployeeSchedulesPage() {
         break_minutes: optimizedSchedule.break_minutes,
         total_hours: optimizedSchedule.total_hours,
         status: 'approved',
-        employee_note: optimizedSchedule.employee_note || `관리자가 추가함 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`
+        employee_note:
+          (optimizedSchedule.employee_note || `관리자가 추가함 (${excludeLunch ? '점심시간 제외' : '점심시간 포함'})`) +
+          (lunchSlot !== 'none' ? ` | lunch:${lunchSlot}` : '')
       };
 
       console.log('스케줄 추가 시작:', scheduleData);
@@ -392,6 +395,13 @@ export default function EmployeeSchedulesPage() {
       
       // 스케줄 데이터 즉시 업데이트
       await fetchSchedules();
+
+      // 저장 후 점심 커버리지 검증 실행
+      try {
+        await validateLunchCoverage(format(date, 'yyyy-MM-dd'));
+      } catch (e) {
+        console.error('점심 커버리지 검증 오류:', e);
+      }
       
       // 로컬 상태도 즉시 업데이트
       if (data && data.length > 0) {
@@ -419,6 +429,72 @@ export default function EmployeeSchedulesPage() {
       alert(`스케줄 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     } finally {
       setUpdating(null);
+    }
+  };
+
+  // 점심 커버리지 검증 함수 (11:30~13:30 사이 최소 1명 상주)
+  const validateLunchCoverage = async (scheduleDate: string, minOnDuty: number = 1) => {
+    try {
+      const { data: daySchedules, error } = await supabase
+        .from('schedules')
+        .select('employee_id, scheduled_start, scheduled_end, employee_note, status')
+        .eq('schedule_date', scheduleDate)
+        .neq('status', 'cancelled');
+
+      if (error) throw error;
+      if (!daySchedules || daySchedules.length === 0) return;
+
+      // 30분 타임라인 생성: 11:30, 12:00, 12:30, 13:00
+      const checkpoints = ['11:30', '12:00', '12:30', '13:00'];
+
+      const isWithin = (t: string, start: string, end: string) => {
+        const toMin = (s: string) => {
+          const [h, m] = s.split(':').map(Number);
+          return h * 60 + m;
+        };
+        const tm = toMin(t);
+        return tm >= toMin(start) && tm < toMin(end);
+      };
+
+      // 각 체크포인트별 상주 인원 계산
+      const gaps: string[] = [];
+      for (const cp of checkpoints) {
+        let onDuty = 0;
+
+        for (const s of daySchedules) {
+          const start = s.scheduled_start.substring(0, 5);
+          const end = s.scheduled_end.substring(0, 5);
+          const note = s.employee_note || '';
+
+          // 기본: 스케줄 범위 안에 있으면 근무 중
+          let present = isWithin(cp, start, end);
+
+          if (present) {
+            // 점심 제외 처리: note에 lunch:11:30-12:30 / 12:30-13:30 있으면 해당 구간 결석으로 간주
+            const lunchMatch = note.match(/lunch:(11:30-12:30|12:30-13:30)/);
+            if (lunchMatch) {
+              const [ls, le] = lunchMatch[1].split('-');
+              if (isWithin(cp, ls, le)) present = false;
+            } else {
+              // 별도 지정이 없고, break_minutes가 60이면서 excludeLunch 저장 관례 문구가 있다면 12:00-13:00 부재로 간주
+              if ((note.includes('점심시간 제외') || note.includes('오전 근무 (점심시간 제외)')) && isWithin(cp, '12:00', '13:00')) {
+                present = false;
+              }
+            }
+          }
+
+        
+          if (present) onDuty += 1;
+        }
+
+        if (onDuty < minOnDuty) gaps.push(cp);
+      }
+
+      if (gaps.length > 0) {
+        alert(`점심 커버리지 경고 (${scheduleDate}): ${gaps.join(', ')} 시점에 상주 인원이 부족합니다.`);
+      }
+    } catch (err) {
+      console.error('validateLunchCoverage error', err);
     }
   };
 

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "e221a5b6-59ff-49b8-b750-f4dea69d65a0",
+    "employee_id": "e998a540-51bf-4380-bcb1-86fb36ec7eb8",
+    "base_wage": 13000,
+    "overtime_multiplier": 1,
+    "night_multiplier": 1,
+    "holiday_multiplier": 1,
+    "effective_start_date": "2025-08-01",
+    "effective_end_date": "2025-08-04",
+    "status": "active",
+    "created_at": "2025-09-08T23:34:15.682842+00:00",
+    "updated_at": "2025-09-08T23:34:15.682842+00:00"
+  },
+  {
+    "id": "cd54827f-5c73-45f2-9412-5de7d4a6a60a",
+    "employee_id": "e998a540-51bf-4380-bcb1-86fb36ec7eb8",
+    "base_wage": 12000,
+    "overtime_multiplier": 1,
+    "night_multiplier": 1,
+    "holiday_multiplier": 1,
+    "effective_start_date": "2025-08-08",
+    "effective_end_date": "2025-08-29",
+    "status": "active",
+    "created_at": "2025-09-08T23:34:15.682842+00:00",
+    "updated_at": "2025-09-08T23:34:15.682842+00:00"
+  },
+  {
+    "id": "99b05401-fd8f-4218-a6f2-c86b8fc7436f",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "base_wage": 13000,
+    "overtime_multiplier": 1,
+    "night_multiplier": 1,
+    "holiday_multiplier": 1,
+    "effective_start_date": "2025-01-01",
+    "effective_end_date": null,
+    "status": "active",
+    "created_at": "2025-09-08T23:40:34.967034+00:00",
+    "updated_at": "2025-09-08T23:40:34.967034+00:00"
+  },
+  {
+    "id": "7e9d4dd1-ef7b-497a-8968-35b27840e02e",
+    "employee_id": "b7091eda-936b-4516-a2bd-b4efba552e73",
+    "base_wage": 12000,
+    "overtime_multiplier": 1,
+    "night_multiplier": 1,
+    "holiday_multiplier": 1,
+    "effective_start_date": "2025-01-01",
+    "effective_end_date": null,
+    "status": "active",
+    "created_at": "2025-09-08T23:40:35.04721+00:00",
+    "updated_at": "2025-09-08T23:40:35.04721+00:00"
+  }
+]

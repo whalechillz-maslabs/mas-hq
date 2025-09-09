@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-09-09T01:02:18.505Z",
+  "backup_type": "full",
+  "tables_backed_up": [
+    "employees",
+    "schedules",
+    "employee_tasks",
+    "salaries",
+    "operation_types",
+    "contracts",
+    "daily_work_records",
+    "weekly_settlements",
+    "hourly_wages"
+  ],
+  "total_records": {
+    "employees": 6,
+    "schedules": 0,
+    "employee_tasks": 0,
+    "salaries": 0,
+    "operation_types": 12,
+    "contracts": 0,
+    "daily_work_records": 0,
+    "weekly_settlements": 0,
+    "hourly_wages": 4
+  }
+}

@@ -1,87 +1,125 @@
-<testsuites id="" name="" tests="4" failures="4" skipped="0" errors="0" time="68.389375">
-<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="chromium-nightly" tests="1" failures="1" skipped="0" time="0.003" errors="0">
-<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="0.003">
-<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
-<![CDATA[  [chromium-nightly] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+<testsuites id="" name="" tests="5" failures="4" skipped="0" errors="0" time="60.373182">
+<testsuite name="task-buttons-test.spec.ts" timestamp="2025-09-09T01:12:03.194Z" hostname="chromium-stable" tests="5" failures="4" skipped="0" time="164.483" errors="0">
+<testcase name="업무 완료/추가 버튼 테스트 › 업무 추가 버튼 클릭 시 모달이 열리는지 확인" classname="task-buttons-test.spec.ts" time="34.795">
+<failure message="task-buttons-test.spec.ts:26:7 업무 추가 버튼 클릭 시 모달이 열리는지 확인" type="FAILURE">
+<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:26:7 › 업무 완료/추가 버튼 테스트 › 업무 추가 버튼 클릭 시 모달이 열리는지 확인 ─
 
-    Error: browserType.launch: Unsupported chromium channel "chrome-nightly"
-]]>
-</failure>
-</testcase>
-</testsuite>
-<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="18.068" errors="0">
-<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="18.068">
-<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
-<![CDATA[  [chromium-stable] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
-
-    TimeoutError: page.click: Timeout 10000ms exceeded.
-    Call log:
-      - waiting for locator('text=SQL Editor')
-        - locator resolved to <span>SQL Editor</span>
-      - attempting click action
-        - waiting for element to be visible, enabled and stable
-      - element was detached from the DOM, retrying
-
-
-      13 |     
-      14 |     // 3. SQL Editor로 이동
-    > 15 |     await page.click('text=SQL Editor');
-         |                ^
-      16 |     await page.waitForTimeout(2000);
-      17 |     
-      18 |     // 4. hourly_wages 테이블 생성
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-hourly-wages-test.spec.ts:15:16
+    Error: Cannot find object to "loadstate": frame@60e6dad4ad0e3e20426cfaf87e98b50a
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/test-failed-1.png
+    ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/error-context.md
+    Error Context: ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md
 ]]>
 </failure>
 <system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/test-failed-1.png]]
+<![CDATA[🧪 업무 추가 버튼 테스트 시작
+✅ 업무 추가 모달이 정상적으로 열렸습니다
 
-[[ATTACHMENT|test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/video.webm]]
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png]]
 
-[[ATTACHMENT|test-results/supabase-hourly-wages-test-e3f0d-ges-Setup-최형호-시급-등록-및-월급-변경-chromium-stable/error-context.md]]
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 </testcase>
-</testsuite>
-<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="firefox" tests="1" failures="1" skipped="0" time="60.033" errors="0">
-<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="60.033">
-<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
-<![CDATA[  [firefox] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+<testcase name="업무 완료/추가 버튼 테스트 › 빠른 업무 입력 카드 클릭 시 모달이 열리는지 확인" classname="task-buttons-test.spec.ts" time="43.101">
+<failure message="task-buttons-test.spec.ts:38:7 빠른 업무 입력 카드 클릭 시 모달이 열리는지 확인" type="FAILURE">
+<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:38:7 › 업무 완료/추가 버튼 테스트 › 빠른 업무 입력 카드 클릭 시 모달이 열리는지 확인 
 
-    Test timeout of 60000ms exceeded while setting up "page".
+    Error: expect(locator).toBeVisible() failed
 
-    Error: browserContext.newPage: Test timeout of 60000ms exceeded.
+    Locator:  locator('h3:has-text("업무 추가")')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('h3:has-text("업무 추가")')
+
+
+      43 |     
+      44 |     // 모달이 열렸는지 확인
+    > 45 |     await expect(page.locator('h3:has-text("업무 추가")')).toBeVisible();
+         |                                                        ^
+      46 |     
+      47 |     console.log('✅ 빠른 업무 입력 카드 클릭 시 모달이 정상적으로 열렸습니다');
+      48 |   });
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/task-buttons-test.spec.ts:45:56
+
+    Error: Cannot find object to "close": page@329e460b3a3f7bb55d39cc18514b7500
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md
 ]]>
 </failure>
+<system-out>
+<![CDATA[🧪 빠른 업무 입력 카드 테스트 시작
+
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-2.png]]
+
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md]]
+]]>
+</system-out>
 </testcase>
-</testsuite>
-<testsuite name="supabase-hourly-wages-test.spec.ts" timestamp="2025-09-08T22:32:08.390Z" hostname="webkit" tests="1" failures="1" skipped="0" time="0.008" errors="0">
-<testcase name="Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경" classname="supabase-hourly-wages-test.spec.ts" time="0.008">
-<failure message="supabase-hourly-wages-test.spec.ts:4:7 최형호 시급 등록 및 월급 변경" type="FAILURE">
-<![CDATA[  [webkit] › supabase-hourly-wages-test.spec.ts:4:7 › Supabase Hourly Wages Setup › 최형호 시급 등록 및 월급 변경 
+<testcase name="업무 완료/추가 버튼 테스트 › 업무 추가 폼 제출 테스트" classname="task-buttons-test.spec.ts" time="31.63">
+<failure message="task-buttons-test.spec.ts:50:7 업무 추가 폼 제출 테스트" type="FAILURE">
+<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:50:7 › 업무 완료/추가 버튼 테스트 › 업무 추가 폼 제출 테스트 ────────────
 
-    Error: browserType.launch: Executable doesn't exist at /Users/m2/Library/Caches/ms-playwright/webkit-2203/pw_run.sh
-    ╔═════════════════════════════════════════════════════════════════════════╗
-    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
-    ║ Please run the following command to download new browsers:              ║
-    ║                                                                         ║
-    ║     npx playwright install                                              ║
-    ║                                                                         ║
-    ║ <3 Playwright Team                                                      ║
-    ╚═════════════════════════════════════════════════════════════════════════╝
+    Error: Cannot find parent object page@596271f1aea68ea44398951929b01581 to create dialog@3b939e52bc1c1b4ef2621e785cc92dc8
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-폼-제출-테스트-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
 ]]>
 </failure>
+<system-out>
+<![CDATA[🧪 업무 추가 폼 제출 테스트 시작
+✅ 업무 추가 폼 제출이 정상적으로 작동했습니다
+
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-폼-제출-테스트-chromium-stable/test-failed-1.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="업무 완료/추가 버튼 테스트 › 업무 완료 버튼 클릭 테스트" classname="task-buttons-test.spec.ts" time="34.853">
+<failure message="task-buttons-test.spec.ts:75:7 업무 완료 버튼 클릭 테스트" type="FAILURE">
+<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:75:7 › 업무 완료/추가 버튼 테스트 › 업무 완료 버튼 클릭 테스트 ───────────
+
+    Error: Cannot find object to "loadstate": frame@91b1ebfc8518c135ffba4ca7521e158a
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🧪 업무 완료 버튼 테스트 시작
+ℹ️ 대기 중인 업무가 없어서 완료 버튼 테스트를 건너뜁니다
+
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="업무 완료/추가 버튼 테스트 › 브라우저 콘솔 에러 확인" classname="task-buttons-test.spec.ts" time="20.104">
+<system-out>
+<![CDATA[🧪 브라우저 콘솔 에러 확인 테스트 시작
+✅ 콘솔 에러가 없습니다
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>
