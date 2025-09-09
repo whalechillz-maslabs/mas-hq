@@ -1021,14 +1021,13 @@ export default function EmployeeSchedulesPage() {
                       {getWeekDisplay(currentDate)}
                     </h2>
                     
-                    {/* 오늘로 가기 버튼 */}
+                    {/* 오늘 버튼 */}
                     <button
                       onClick={() => setCurrentDate(new Date())}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                       title="오늘 날짜가 포함된 주로 이동"
                     >
-                      <Calendar className="h-4 w-4" />
-                      <span>오늘로 가기</span>
+                      오늘
                     </button>
                   </div>
                   
