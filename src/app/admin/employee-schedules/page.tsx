@@ -563,6 +563,51 @@ export default function EmployeeSchedulesPage() {
     }
   };
 
+  // 일괄 승인 함수 추가
+  const handleBulkApproveAll = async () => {
+    if (updating) {
+      console.log('이미 처리 중입니다.');
+      return;
+    }
+
+    const pendingSchedules = schedules.filter(schedule => schedule.status === 'pending');
+    
+    if (pendingSchedules.length === 0) {
+      alert('승인할 대기 스케줄이 없습니다.');
+      return;
+    }
+
+    if (!confirm(`총 ${pendingSchedules.length}개의 대기 스케줄을 모두 승인하시겠습니까?`)) {
+      return;
+    }
+
+    setUpdating('bulk-approve');
+
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({ 
+          status: 'approved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('employee_id', selectedEmployee?.id)
+        .eq('status', 'pending');
+
+      if (error) {
+        console.error('일괄 승인 실패:', error);
+        throw error;
+      }
+
+      await fetchSchedules();
+      alert(`${pendingSchedules.length}개의 스케줄이 모두 승인되었습니다.`);
+    } catch (error: any) {
+      console.error('일괄 승인 오류:', error);
+      alert(`일괄 승인에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-1 sm:p-2">
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4">
@@ -967,6 +1012,28 @@ export default function EmployeeSchedulesPage() {
                     ) : (
                       // 리스트 뷰
                       <div className="space-y-2">
+                        {/* 일괄 승인 버튼 */}
+                        {schedules.some(schedule => schedule.status === 'pending') && (
+                          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <CheckCircle className="h-5 w-5 text-blue-600" />
+                                <span className="text-sm font-medium text-blue-800">
+                                  대기 중인 스케줄: {schedules.filter(s => s.status === 'pending').length}개
+                                </span>
+                              </div>
+                              <button
+                                onClick={handleBulkApproveAll}
+                                disabled={updating === 'bulk-approve'}
+                                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                <span>{updating === 'bulk-approve' ? '처리중...' : '모든 대기 스케줄 일괄 승인'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        
                         {schedules.length === 0 ? (
                           <div className="text-center py-8 text-gray-500">
                             <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-4" />
