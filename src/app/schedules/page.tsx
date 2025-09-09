@@ -476,9 +476,17 @@ export default function SchedulesPage() {
       const [endHour, endMinute] = bulkEndTime.split(':').map(Number);
       
       // 선택된 요일들에 대해 최적화된 스케줄 생성
+      console.log('🔍 개인 스케줄 일괄 입력 디버깅:', { 
+        weekStart: format(weekStart, 'yyyy-MM-dd (EEE)', { locale: ko }),
+        bulkDays,
+        currentDate: format(currentDate, 'yyyy-MM-dd (EEE)', { locale: ko })
+      });
+      
       for (let i = 0; i < 7; i++) {
         const day = addDays(weekStart, i);
         const dayOfWeek = day.getDay();
+        
+        console.log(`📅 ${i}일차: ${format(day, 'yyyy-MM-dd (EEE)', { locale: ko })} - 요일번호: ${dayOfWeek} - 선택됨: ${bulkDays.includes(dayOfWeek)}`);
         
         if (bulkDays.includes(dayOfWeek)) {
           // 30분 단위 시간 슬롯 생성 (점심시간 옵션에 따라)

@@ -417,10 +417,20 @@ export default function EmployeeSchedulesPage() {
       const weekStart = startOfWeek(currentDate, { locale: ko });
       const schedulesToAdd: any[] = [];
 
+      // 선택된 요일들에 대해 해당 주의 날짜들을 찾아서 스케줄 생성
+      console.log('🔍 일괄 입력 디버깅:', { 
+        weekStart: format(weekStart, 'yyyy-MM-dd (EEE)', { locale: ko }),
+        bulkDays,
+        currentDate: format(currentDate, 'yyyy-MM-dd (EEE)', { locale: ko })
+      });
+      
       for (let i = 0; i < 7; i++) {
         const day = addDays(weekStart, i);
         const dayOfWeek = day.getDay();
         
+        console.log(`📅 ${i}일차: ${format(day, 'yyyy-MM-dd (EEE)', { locale: ko })} - 요일번호: ${dayOfWeek} - 선택됨: ${bulkDays.includes(dayOfWeek)}`);
+        
+        // 선택된 요일에 해당하는 날짜인지 확인
         if (bulkDays.includes(dayOfWeek)) {
           const timeSlots = excludeLunch ? 
             generateTimeSlotsExcludingLunch(bulkStartTime, bulkEndTime, '12:00', '13:00', 30) :
