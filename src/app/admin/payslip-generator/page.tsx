@@ -601,7 +601,7 @@ export default function PayslipGenerator() {
                 </div>
                 <div class="info-item">
                   <span class="info-label">직원코드:</span>
-                  <span class="info-value">${payslip.employee_id || 'N/A'}</span>
+                  <span class="info-value">${payslip.employees.employee_id || 'N/A'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">급여 기간:</span>
@@ -889,7 +889,7 @@ export default function PayslipGenerator() {
                   </div>
                   <div class="info-item">
                     <span class="info-label">직원 코드:</span>
-                    <span class="info-value">${payslipData.employee_code || payslipData.employee_id}</span>
+                    <span class="info-value">${payslipData.employee_code || 'N/A'}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">닉네임:</span>

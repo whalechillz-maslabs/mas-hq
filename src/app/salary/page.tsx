@@ -320,7 +320,7 @@ export default function SalaryPage() {
                   </div>
                        <div class="info-item">
                          <span class="info-label">직원코드:</span>
-                         <span>${payslip.employee_id || currentUser?.employee_id || 'N/A'}</span>
+                         <span>${currentUser?.employee_id || 'N/A'}</span>
                        </div>
                   <div class="info-item">
                     <span class="info-label">급여 기간:</span>
