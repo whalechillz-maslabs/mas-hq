@@ -149,18 +149,20 @@ export default function PayslipGenerator() {
       throw new Error(`${year}년 ${month}월에 승인된 스케줄이 없습니다.`);
     }
 
-    // 일별 근무시간 계산
+    // 일별 근무시간 계산 (점심시간 제외)
     const dailyHours: { [key: string]: number } = {};
     schedules.forEach(schedule => {
       const date = schedule.schedule_date;
       const start = new Date(`${date} ${schedule.scheduled_start}`);
       const end = new Date(`${date} ${schedule.scheduled_end}`);
-      const hours = (end - start) / (1000 * 60 * 60);
+      const totalHours = (end - start) / (1000 * 60 * 60);
+      const breakHours = (schedule.break_minutes || 0) / 60;
+      const netHours = totalHours - breakHours; // 점심시간 제외한 순 근무시간
       
       if (!dailyHours[date]) {
         dailyHours[date] = 0;
       }
-      dailyHours[date] += hours;
+      dailyHours[date] += netHours;
     });
 
     // 시급별 계산 (8월 1일~7일: 13,000원, 8월 8일~31일: 12,000원)
