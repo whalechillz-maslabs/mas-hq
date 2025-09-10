@@ -216,7 +216,7 @@ export default function SalaryPage() {
               overflow: hidden;
             }
             .header {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              background: #666;
               color: white;
               padding: 30px;
               text-align: center;
@@ -277,10 +277,10 @@ export default function SalaryPage() {
               font-weight: bold;
             }
             .footer {
-              background: #f8f9fa;
+              background: #666;
               padding: 20px;
               text-align: center;
-              color: #666;
+              color: white;
               font-size: 14px;
             }
             .status-badge {
@@ -318,10 +318,10 @@ export default function SalaryPage() {
                     <span class="info-label">직원명:</span>
                     <span>${currentUser?.name || 'N/A'}</span>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">직원코드:</span>
-                    <span>${currentUser?.employee_id || 'N/A'}</span>
-                  </div>
+                       <div class="info-item">
+                         <span class="info-label">직원코드:</span>
+                         <span>${payslip.employee_id || currentUser?.employee_id || 'N/A'}</span>
+                       </div>
                   <div class="info-item">
                     <span class="info-label">급여 기간:</span>
                     <span>${payslip.period}</span>

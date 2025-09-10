@@ -449,7 +449,7 @@ export default function PayslipGenerator() {
             padding: 0;
           }
           .header {
-            background: #000;
+            background: #666;
             color: white;
             padding: 40px 30px;
             text-align: center;
@@ -536,7 +536,7 @@ export default function PayslipGenerator() {
             border: 2px solid #000;
           }
           .footer {
-            background: #000;
+            background: #666;
             color: white;
             padding: 25px;
             text-align: center;
@@ -557,7 +557,7 @@ export default function PayslipGenerator() {
             color: #000;
           }
           .status-paid {
-            background: #000;
+            background: #666;
             color: white;
           }
           .status-generated {
@@ -575,11 +575,11 @@ export default function PayslipGenerator() {
               box-shadow: none;
             }
             .header {
-              background: #000 !important;
+              background: #666 !important;
               color: white !important;
             }
             .footer {
-              background: #000 !important;
+              background: #666 !important;
               color: white !important;
             }
           }
@@ -601,7 +601,7 @@ export default function PayslipGenerator() {
                 </div>
                 <div class="info-item">
                   <span class="info-label">직원코드:</span>
-                  <span class="info-value">e998a540-51bf-4380-bcb1-86fb36ec7eb8</span>
+                  <span class="info-value">${payslip.employee_id || 'N/A'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">급여 기간:</span>
@@ -725,7 +725,7 @@ export default function PayslipGenerator() {
             padding: 0;
           }
           .header {
-            background: #000;
+            background: #666;
             color: white;
             padding: 40px 30px;
             text-align: center;
@@ -822,7 +822,7 @@ export default function PayslipGenerator() {
             border: 2px solid #000;
           }
           .footer {
-            background: #000;
+            background: #666;
             color: white;
             padding: 25px;
             text-align: center;
@@ -843,7 +843,7 @@ export default function PayslipGenerator() {
             color: #000;
           }
           .status-paid {
-            background: #000;
+            background: #666;
             color: white;
           }
           .status-generated {
@@ -861,11 +861,11 @@ export default function PayslipGenerator() {
               box-shadow: none;
             }
             .header {
-              background: #000 !important;
+              background: #666 !important;
               color: white !important;
             }
             .footer {
-              background: #000 !important;
+              background: #666 !important;
               color: white !important;
             }
           }
@@ -889,7 +889,7 @@ export default function PayslipGenerator() {
                   </div>
                   <div class="info-item">
                     <span class="info-label">직원 코드:</span>
-                    <span class="info-value">e998a540-51bf-4380-bcb1-86fb36ec7eb8</span>
+                    <span class="info-value">${payslipData.employee_code || payslipData.employee_id}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">닉네임:</span>
