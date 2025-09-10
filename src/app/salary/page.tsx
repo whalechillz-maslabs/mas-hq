@@ -101,18 +101,22 @@ export default function SalaryPage() {
         return;
       }
 
-      // 급여 정보 계산
+      // 급여 정보 계산 (employment_type 기준으로 판단)
       let wageType: 'hourly' | 'monthly' = 'hourly';
       let monthlySalary: number | null = null;
       let hourlyWage = 12000; // 기본값
 
-      if (employee.monthly_salary && employee.monthly_salary > 0) {
+      if (employee.employment_type === 'full_time' && employee.monthly_salary && employee.monthly_salary > 0) {
         wageType = 'monthly';
         monthlySalary = employee.monthly_salary;
         hourlyWage = Math.round(employee.monthly_salary / 22); // 일급 환산
-      } else if (employee.hourly_rate && employee.hourly_rate > 0) {
+      } else if (employee.employment_type === 'part_time' && employee.hourly_rate && employee.hourly_rate > 0) {
         wageType = 'hourly';
         hourlyWage = employee.hourly_rate;
+      } else if (employee.employment_type === 'part_time') {
+        // part_time이지만 hourly_rate가 없는 경우 기본값 사용
+        wageType = 'hourly';
+        hourlyWage = 12000; // 기본값
       }
 
       // 포인트 수당 계산
@@ -131,16 +135,16 @@ export default function SalaryPage() {
         .eq('employee_id', user.id)
         .eq('task_date', today);
 
-      const pointBonus = (tasks || []).reduce((sum, task) => {
+      const pointBonus = (tasks || []).reduce((sum: number, task: any) => {
         return sum + (task.operation_types?.points || 0) * 100; // 1포인트 = 100원
       }, 0);
 
-      // 급여 내역 조회
-      const { data: salaries, error: salaryError } = await supabase
-        .from('salaries')
+      // 급여 내역 조회 (payslips 테이블에서)
+      const { data: payslips, error: payslipError } = await supabase
+        .from('payslips')
         .select('*')
         .eq('employee_id', user.id)
-        .order('payment_date', { ascending: false });
+        .order('period', { ascending: false });
 
       // 계약서 조회
       const { data: contracts, error: contractError } = await supabase
@@ -150,12 +154,12 @@ export default function SalaryPage() {
         .order('contract_date', { ascending: false });
 
       // 통계 계산
-      const totalEarnings = (salaries || []).reduce((sum: number, s: any) => sum + (s.net_amount || 0), 0);
-      const averageMonthly = (salaries || []).length > 0 ? totalEarnings / (salaries || []).length : 0;
+      const totalEarnings = (payslips || []).reduce((sum: number, p: any) => sum + (p.net_salary || 0), 0);
+      const averageMonthly = (payslips || []).length > 0 ? totalEarnings / (payslips || []).length : 0;
       const totalEarningsWithBonus = totalEarnings + pointBonus;
 
       setData({
-        salaries: salaries || [],
+        salaries: payslips || [], // payslips 데이터를 salaries로 매핑
         contracts: contracts || [],
         bankAccount: employee.bank_account,
         totalEarnings,
@@ -389,39 +393,44 @@ export default function SalaryPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {data?.salaries.map((salary) => (
-                  <tr key={salary.id}>
+                {data?.salaries.map((payslip) => (
+                  <tr key={payslip.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDateKR(salary.payment_date)}
+                      {payslip.paid_at ? formatDateKR(payslip.paid_at) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDateKR(salary.period_start)} ~ {formatDateKR(salary.period_end)}
+                      {payslip.period}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(salary.base_salary)}
+                      {formatCurrency(payslip.base_salary)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(salary.overtime_pay || 0)}
+                      {formatCurrency(payslip.overtime_pay || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(salary.bonus || 0)}
+                      {formatCurrency(payslip.incentive || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                      -{formatCurrency(salary.deductions || 0)}
+                      -{formatCurrency(payslip.tax_amount || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-green-600">
-                          {formatCurrency(salary.net_amount)}
+                          {formatCurrency(payslip.net_salary)}
                         </span>
-                        <span className="text-xs text-green-500 flex items-center">
-                          ✅ 지급완료
+                        <span className={`text-xs flex items-center ${
+                          payslip.status === 'paid' ? 'text-green-500' :
+                          payslip.status === 'issued' ? 'text-yellow-500' :
+                          'text-gray-500'
+                        }`}>
+                          {payslip.status === 'paid' ? '✅ 지급완료' :
+                           payslip.status === 'issued' ? '📄 발행됨' : '⏳ 생성됨'}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => handleDownloadPayslip(salary)}
+                        onClick={() => handleDownloadPayslip(payslip)}
                         className="text-indigo-600 hover:text-indigo-900"
                       >
                         <Download className="h-4 w-4" />
