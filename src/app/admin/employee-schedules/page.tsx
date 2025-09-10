@@ -217,12 +217,15 @@ export default function EmployeeSchedulesPage() {
     if (viewMode === 'week') {
       return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), i)); // 일요일부터 시작
     } else {
-      // 월간 뷰: 해당 월의 모든 날짜 표시
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
+      // 월간 뷰: 해당 월의 첫 번째 날이 포함된 주의 시작부터 마지막 날이 포함된 주의 끝까지 표시
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      const calendarStart = startOfWeek(monthStart, { locale: ko, weekStartsOn: 0 }); // 해당 월의 첫 번째 날이 포함된 주의 일요일
+      const calendarEnd = endOfWeek(monthEnd, { locale: ko, weekStartsOn: 0 }); // 해당 월의 마지막 날이 포함된 주의 토요일
+      
       const days = [];
-      let current = start;
-      while (current <= end) {
+      let current = calendarStart;
+      while (current <= calendarEnd) {
         days.push(current);
         current = addDays(current, 1);
       }
