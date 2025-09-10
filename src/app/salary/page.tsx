@@ -211,13 +211,13 @@ export default function SalaryPage() {
               max-width: 800px;
               margin: 0 auto;
               background: white;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+              border-radius: 0;
+              box-shadow: none;
               overflow: hidden;
             }
             .header {
-              background: #666;
-              color: white;
+              background: white;
+              color: #000;
               padding: 30px;
               text-align: center;
             }
@@ -251,9 +251,9 @@ export default function SalaryPage() {
               color: #555;
             }
             .salary-section {
-              background: #f8f9fa;
+              background: white;
               padding: 20px;
-              border-radius: 8px;
+              border-radius: 0;
               margin-bottom: 20px;
             }
             .salary-item {
@@ -277,10 +277,10 @@ export default function SalaryPage() {
               font-weight: bold;
             }
             .footer {
-              background: #666;
+              background: white;
               padding: 20px;
               text-align: center;
-              color: white;
+              color: #000;
               font-size: 14px;
             }
             .status-badge {

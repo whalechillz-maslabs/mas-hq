@@ -445,15 +445,15 @@ export default function PayslipGenerator() {
             max-width: 800px;
             margin: 0 auto;
             background: white;
-            border: 2px solid #000;
+            border: none;
             padding: 0;
           }
           .header {
-            background: #666;
+            background: white;
             color: white;
             padding: 40px 30px;
             text-align: center;
-            border-bottom: 3px solid #000;
+            border-bottom: 2px solid #000;
           }
           .header h1 {
             font-size: 32px;
@@ -492,10 +492,10 @@ export default function PayslipGenerator() {
             text-align: right;
           }
           .salary-section {
-            border: 2px solid #000;
+            border: none;
             padding: 30px;
             margin-bottom: 30px;
-            background: #f9f9f9;
+            background: white;
           }
           .salary-title {
             font-size: 20px;
@@ -516,13 +516,13 @@ export default function PayslipGenerator() {
             border-bottom: none;
           }
           .salary-item.total {
-            border-top: 3px solid #000;
-            border-bottom: 3px solid #000;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
             font-weight: 900;
             font-size: 20px;
             margin: 20px 0;
             padding: 20px 0;
-            background: #f0f0f0;
+            background: white;
           }
           .salary-item.deduction {
             font-weight: 600;
@@ -530,13 +530,13 @@ export default function PayslipGenerator() {
           .salary-item.net {
             font-weight: 900;
             font-size: 22px;
-            background: #e8e8e8;
+            background: white;
             padding: 20px;
             margin-top: 15px;
-            border: 2px solid #000;
+            border: none;
           }
           .footer {
-            background: #666;
+            background: white;
             color: white;
             padding: 25px;
             text-align: center;
@@ -546,7 +546,7 @@ export default function PayslipGenerator() {
           .status-badge {
             display: inline-block;
             padding: 6px 15px;
-            border: 2px solid #000;
+            border: none;
             font-size: 12px;
             font-weight: 900;
             text-transform: uppercase;
@@ -557,11 +557,11 @@ export default function PayslipGenerator() {
             color: #000;
           }
           .status-paid {
-            background: #666;
+            background: white;
             color: white;
           }
           .status-generated {
-            background: #f0f0f0;
+            background: white;
             color: #000;
           }
           @media print {
@@ -571,15 +571,15 @@ export default function PayslipGenerator() {
               print-color-adjust: exact;
             }
             .payslip-container { 
-              border: 2px solid #000;
+              border: none;
               box-shadow: none;
             }
             .header {
-              background: #666 !important;
+              background: white !important;
               color: white !important;
             }
             .footer {
-              background: #666 !important;
+              background: white !important;
               color: white !important;
             }
           }
@@ -721,15 +721,15 @@ export default function PayslipGenerator() {
             max-width: 800px;
             margin: 0 auto;
             background: white;
-            border: 2px solid #000;
+            border: none;
             padding: 0;
           }
           .header {
-            background: #666;
+            background: white;
             color: white;
             padding: 40px 30px;
             text-align: center;
-            border-bottom: 3px solid #000;
+            border-bottom: 2px solid #000;
           }
           .header h1 {
             font-size: 32px;
@@ -778,10 +778,10 @@ export default function PayslipGenerator() {
             text-align: right;
           }
           .salary-section {
-            border: 2px solid #000;
+            border: none;
             padding: 30px;
             margin-bottom: 30px;
-            background: #f9f9f9;
+            background: white;
           }
           .salary-title {
             font-size: 20px;
@@ -802,13 +802,13 @@ export default function PayslipGenerator() {
             border-bottom: none;
           }
           .salary-item.total {
-            border-top: 3px solid #000;
-            border-bottom: 3px solid #000;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
             font-weight: 900;
             font-size: 20px;
             margin: 20px 0;
             padding: 20px 0;
-            background: #f0f0f0;
+            background: white;
           }
           .salary-item.deduction {
             font-weight: 600;
@@ -816,13 +816,13 @@ export default function PayslipGenerator() {
           .salary-item.net {
             font-weight: 900;
             font-size: 22px;
-            background: #e8e8e8;
+            background: white;
             padding: 20px;
             margin-top: 15px;
-            border: 2px solid #000;
+            border: none;
           }
           .footer {
-            background: #666;
+            background: white;
             color: white;
             padding: 25px;
             text-align: center;
@@ -832,7 +832,7 @@ export default function PayslipGenerator() {
           .status-badge {
             display: inline-block;
             padding: 6px 15px;
-            border: 2px solid #000;
+            border: none;
             font-size: 12px;
             font-weight: 900;
             text-transform: uppercase;
@@ -843,11 +843,11 @@ export default function PayslipGenerator() {
             color: #000;
           }
           .status-paid {
-            background: #666;
+            background: white;
             color: white;
           }
           .status-generated {
-            background: #f0f0f0;
+            background: white;
             color: #000;
           }
           @media print {
@@ -857,15 +857,15 @@ export default function PayslipGenerator() {
               print-color-adjust: exact;
             }
             .payslip-container { 
-              border: 2px solid #000;
+              border: none;
               box-shadow: none;
             }
             .header {
-              background: #666 !important;
+              background: white !important;
               color: white !important;
             }
             .footer {
-              background: #666 !important;
+              background: white !important;
               color: white !important;
             }
           }
