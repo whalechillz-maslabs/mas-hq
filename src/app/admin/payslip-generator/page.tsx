@@ -13,6 +13,7 @@ interface Employee {
   id: string;
   name: string;
   employee_id: string;
+  nickname?: string;
   employment_type: string;
   monthly_salary?: number;
   hourly_rate?: number;
@@ -21,6 +22,8 @@ interface Employee {
 interface PayslipData {
   employee_id: string;
   employee_name: string;
+  employee_code?: string; // MASLABS-004
+  employee_nickname?: string; // 최형호
   payment_date: string;
   salary_period: string;
   employment_type: string;
@@ -79,6 +82,7 @@ export default function PayslipGenerator() {
           id,
           name,
           employee_id,
+          nickname,
           employment_type,
           monthly_salary,
           hourly_rate
@@ -227,6 +231,8 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
+      employee_code: employee.employee_id, // MASLABS-004
+      employee_nickname: employee.nickname || employee.name, // 닉네임 또는 이름
       payment_date: new Date().toISOString().split('T')[0],
       salary_period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'part_time',
@@ -284,6 +290,8 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
+      employee_code: employee.employee_id, // MASLABS-004
+      employee_nickname: employee.nickname || employee.name, // 닉네임 또는 이름
       payment_date: new Date().toISOString().split('T')[0],
       salary_period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'full_time',
@@ -541,8 +549,12 @@ export default function PayslipGenerator() {
                   <span>${payslipData.employee_name}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">직원 ID:</span>
-                  <span>${payslipData.employee_id}</span>
+                  <span class="info-label">직원 코드:</span>
+                  <span>${payslipData.employee_code || payslipData.employee_id}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">닉네임:</span>
+                  <span>${payslipData.employee_nickname || payslipData.employee_name}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">급여 기간:</span>
@@ -878,8 +890,12 @@ export default function PayslipGenerator() {
                     <span className="font-medium">{payslipData.employee_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">직원 ID:</span>
-                    <span className="font-medium">{payslipData.employee_id}</span>
+                    <span className="text-gray-600">직원 코드:</span>
+                    <span className="font-medium">{payslipData.employee_code || payslipData.employee_id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">닉네임:</span>
+                    <span className="font-medium">{payslipData.employee_nickname || payslipData.employee_name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">급여 기간:</span>
