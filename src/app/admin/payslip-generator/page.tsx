@@ -60,9 +60,12 @@ export default function PayslipGenerator() {
     netSalary: false,
     finalReview: false
   });
+  const [savedPayslips, setSavedPayslips] = useState<any[]>([]);
+  const [showPayslipList, setShowPayslipList] = useState(false);
 
   useEffect(() => {
     loadEmployees();
+    loadSavedPayslips();
   }, []);
 
   const loadEmployees = async () => {
@@ -94,6 +97,30 @@ export default function PayslipGenerator() {
       console.error('❌ 직원 목록 로드 실패:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSavedPayslips = async () => {
+    try {
+      console.log('🔍 발행된 급여명세서 목록 로드 시작...');
+      
+      const { data, error } = await supabase
+        .from('payslips')
+        .select(`
+          *,
+          employees!inner(name, employee_id)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('급여명세서 목록 로드 실패:', error);
+        return;
+      }
+
+      console.log('✅ 발행된 급여명세서 목록 로드 완료:', data?.length || 0, '개');
+      setSavedPayslips(data || []);
+    } catch (error) {
+      console.error('급여명세서 목록 로드 중 오류:', error);
     }
   };
 
@@ -155,7 +182,7 @@ export default function PayslipGenerator() {
       const date = schedule.schedule_date;
       const start = new Date(`${date} ${schedule.scheduled_start}`);
       const end = new Date(`${date} ${schedule.scheduled_end}`);
-      const hours = (end - start) / (1000 * 60 * 60); // 스케줄 자체가 점심시간 제외된 순 근무시간
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // 스케줄 자체가 점심시간 제외된 순 근무시간
       
       if (!dailyHours[date]) {
         dailyHours[date] = 0;
@@ -344,10 +371,11 @@ export default function PayslipGenerator() {
       }
 
       setPayslipData(prev => prev ? { ...prev, status: 'issued' } : null);
+      await loadSavedPayslips(); // 발행된 급여명세서 목록 새로고침
       alert('급여 명세서가 발행되었습니다.');
     } catch (error) {
       console.error('급여 명세서 발행 실패:', error);
-      alert(`급여 명세서 발행에 실패했습니다: ${error.message}`);
+      alert(`급여 명세서 발행에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     }
   };
 
@@ -369,6 +397,7 @@ export default function PayslipGenerator() {
       }
 
       setPayslipData(prev => prev ? { ...prev, status: 'paid' } : null);
+      await loadSavedPayslips(); // 발행된 급여명세서 목록 새로고침
       alert('급여 지급이 완료되었습니다.');
     } catch (error) {
       console.error('급여 지급 처리 실패:', error);
@@ -473,7 +502,7 @@ export default function PayslipGenerator() {
             </div>
 
             {/* 생성 버튼 */}
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-center gap-4 pt-4">
               <button
                 onClick={generatePayslip}
                 disabled={!selectedEmployee || generating}
@@ -481,9 +510,98 @@ export default function PayslipGenerator() {
               >
                 {generating ? '생성 중...' : `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`}
               </button>
+              <button
+                onClick={() => setShowPayslipList(!showPayslipList)}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              >
+                {showPayslipList ? '목록 숨기기' : '발행된 급여명세서 목록'}
+              </button>
             </div>
           </div>
         </div>
+
+        {/* 발행된 급여명세서 목록 */}
+        {showPayslipList && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">발행된 급여명세서 목록</h2>
+            
+            {savedPayslips.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                발행된 급여명세서가 없습니다.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        직원명
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        급여 기간
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        고용 형태
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        총 급여
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        실수령액
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        상태
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        발행일
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        지급일
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {savedPayslips.map((payslip) => (
+                      <tr key={payslip.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {payslip.employees.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {payslip.period}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {payslip.employment_type === 'full_time' ? '정규직' : '시간제'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {payslip.total_earnings?.toLocaleString()}원
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {payslip.net_salary?.toLocaleString()}원
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            payslip.status === 'generated' ? 'bg-yellow-100 text-yellow-800' :
+                            payslip.status === 'issued' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {payslip.status === 'generated' ? '생성됨' :
+                             payslip.status === 'issued' ? '발행됨' : '지급완료'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {payslip.issued_at ? new Date(payslip.issued_at).toLocaleDateString('ko-KR') : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 급여 명세서 */}
         {payslipData && (
