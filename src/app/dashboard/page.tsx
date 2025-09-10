@@ -35,6 +35,25 @@ interface DashboardData {
     targetAchievement: number | string;
     teamMembers: number;
   };
+  collaborationStats: {
+    masgolf: {
+      sales: number;
+      points: number;
+      tasks: number;
+      participants: number;
+    };
+    singsingolf: {
+      sales: number;
+      points: number;
+      tasks: number;
+      participants: number;
+    };
+    total: {
+      sales: number;
+      points: number;
+      tasks: number;
+    };
+  };
   todayMission: {
     positiveThinking: boolean;
     creativePassion: boolean;
@@ -193,9 +212,68 @@ export default function DashboardPage() {
         contentViews: 'Na' // 콘텐츠 조회수는 별도 데이터 필요
       };
 
-      // 팀 KPI (실제 데이터 + 더미 데이터)
+      // 전체 팀의 이번 달 업무 데이터 가져오기 (협업 성과 계산용)
+      const { data: allTeamTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points),
+          employee:employees(name, employee_id)
+        `)
+        .gte('created_at', startOfMonthStr + 'T00:00:00')
+        .lte('created_at', endOfMonthStr + 'T23:59:59');
+
+      // 마스골프 성과 계산 (OP1-OP10)
+      const masgolfTasks = allTeamTasks?.filter(task => {
+        const code = task.operation_type?.code;
+        return code && ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10'].includes(code);
+      }) || [];
+
+      const masgolfSales = masgolfTasks.reduce((sum, task) => sum + (task.sales_amount || 0), 0);
+      const masgolfPoints = masgolfTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
+      const masgolfTaskCount = masgolfTasks.length;
+      const masgolfParticipants = new Set(masgolfTasks.map(task => task.employee_id)).size;
+
+      // 싱싱골프 성과 계산 (OP11-OP12)
+      const singsingolfTasks = allTeamTasks?.filter(task => {
+        const code = task.operation_type?.code;
+        return code && ['OP11', 'OP12'].includes(code);
+      }) || [];
+
+      const singsingolfSales = singsingolfTasks.reduce((sum, task) => sum + (task.sales_amount || 0), 0);
+      const singsingolfPoints = singsingolfTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
+      const singsingolfTaskCount = singsingolfTasks.length;
+      const singsingolfParticipants = new Set(singsingolfTasks.map(task => task.employee_id)).size;
+
+      // 전체 성과 계산
+      const totalSales = masgolfSales + singsingolfSales;
+      const totalPoints = masgolfPoints + singsingolfPoints;
+      const totalTasks = masgolfTaskCount + singsingolfTaskCount;
+
+      // 협업 성과 데이터
+      const collaborationStats = {
+        masgolf: {
+          sales: masgolfSales,
+          points: masgolfPoints,
+          tasks: masgolfTaskCount,
+          participants: masgolfParticipants
+        },
+        singsingolf: {
+          sales: singsingolfSales,
+          points: singsingolfPoints,
+          tasks: singsingolfTaskCount,
+          participants: singsingolfParticipants
+        },
+        total: {
+          sales: totalSales,
+          points: totalPoints,
+          tasks: totalTasks
+        }
+      };
+
+      // 팀 KPI (실제 데이터)
       const teamKPI = {
-        totalSales: 35000000,
+        totalSales: totalSales,
         yoyGrowth: 'Na',
         targetAchievement: 'Na',
         teamMembers: totalEmployees || 8
@@ -214,6 +292,7 @@ export default function DashboardPage() {
         monthlyStats,
         personalKPI,
         teamKPI,
+        collaborationStats,
         todayMission,
         todaySales: todaySales
       });
@@ -241,6 +320,25 @@ export default function DashboardPage() {
           yoyGrowth: 'Na',
           targetAchievement: 'Na',
           teamMembers: 8
+        },
+        collaborationStats: {
+          masgolf: {
+            sales: 25000000,
+            points: 1250,
+            tasks: 85,
+            participants: 5
+          },
+          singsingolf: {
+            sales: 10000000,
+            points: 420,
+            tasks: 35,
+            participants: 3
+          },
+          total: {
+            sales: 35000000,
+            points: 1670,
+            tasks: 120
+          }
         },
         todayMission: {
           positiveThinking: true,
@@ -557,7 +655,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-blue-600 font-medium">마스골프 매출</p>
-                    <p className="text-3xl font-bold text-blue-900">{formatCurrency(25000000)}</p>
+                    <p className="text-3xl font-bold text-blue-900">{formatCurrency(data?.collaborationStats?.masgolf?.sales || 0)}</p>
                   </div>
                   <DollarSign className="h-10 w-10 text-blue-600" />
                 </div>
@@ -570,7 +668,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-blue-600 font-medium">마스골프 포인트</p>
-                    <p className="text-3xl font-bold text-blue-900">1,250점</p>
+                    <p className="text-3xl font-bold text-blue-900">{data?.collaborationStats?.masgolf?.points?.toLocaleString() || 0}점</p>
                   </div>
                   <Award className="h-10 w-10 text-blue-600" />
                 </div>
@@ -583,7 +681,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-blue-600 font-medium">마스골프 업무</p>
-                    <p className="text-3xl font-bold text-blue-900">85건</p>
+                    <p className="text-3xl font-bold text-blue-900">{data?.collaborationStats?.masgolf?.tasks || 0}건</p>
                   </div>
                   <Target className="h-10 w-10 text-blue-600" />
                 </div>
@@ -605,7 +703,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-pink-600 font-medium">싱싱골프 매출</p>
-                    <p className="text-3xl font-bold text-pink-900">{formatCurrency(10000000)}</p>
+                    <p className="text-3xl font-bold text-pink-900">{formatCurrency(data?.collaborationStats?.singsingolf?.sales || 0)}</p>
                   </div>
                   <DollarSign className="h-10 w-10 text-pink-600" />
                 </div>
@@ -618,7 +716,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-pink-600 font-medium">싱싱골프 포인트</p>
-                    <p className="text-3xl font-bold text-pink-900">420점</p>
+                    <p className="text-3xl font-bold text-pink-900">{data?.collaborationStats?.singsingolf?.points?.toLocaleString() || 0}점</p>
                   </div>
                   <Award className="h-10 w-10 text-pink-600" />
                 </div>
@@ -631,7 +729,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-pink-600 font-medium">싱싱골프 업무</p>
-                    <p className="text-3xl font-bold text-pink-900">35건</p>
+                    <p className="text-3xl font-bold text-pink-900">{data?.collaborationStats?.singsingolf?.tasks || 0}건</p>
                   </div>
                   <Target className="h-10 w-10 text-pink-600" />
                 </div>
@@ -653,7 +751,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-green-600 font-medium">전체 매출</p>
-                    <p className="text-3xl font-bold text-green-900">{formatCurrency(35000000)}</p>
+                    <p className="text-3xl font-bold text-green-900">{formatCurrency(data?.collaborationStats?.total?.sales || 0)}</p>
                   </div>
                   <DollarSign className="h-10 w-10 text-green-600" />
                 </div>
@@ -666,7 +764,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-green-600 font-medium">전체 포인트</p>
-                    <p className="text-3xl font-bold text-green-900">1,670점</p>
+                    <p className="text-3xl font-bold text-green-900">{data?.collaborationStats?.total?.points?.toLocaleString() || 0}점</p>
                   </div>
                   <Award className="h-10 w-10 text-green-600" />
                 </div>
@@ -679,7 +777,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-green-600 font-medium">전체 업무</p>
-                    <p className="text-3xl font-bold text-green-900">120건</p>
+                    <p className="text-3xl font-bold text-green-900">{data?.collaborationStats?.total?.tasks || 0}건</p>
                   </div>
                   <Target className="h-10 w-10 text-green-600" />
                 </div>
@@ -714,7 +812,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-blue-600 font-medium">마스골프 참여</p>
-                    <p className="text-2xl font-bold text-blue-900">5명</p>
+                    <p className="text-2xl font-bold text-blue-900">{data?.collaborationStats?.masgolf?.participants || 0}명</p>
                     <p className="text-xs text-blue-500 mt-1">OP1-10 업무 참여자</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -727,7 +825,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-pink-600 font-medium">싱싱골프 참여</p>
-                    <p className="text-2xl font-bold text-pink-900">3명</p>
+                    <p className="text-2xl font-bold text-pink-900">{data?.collaborationStats?.singsingolf?.participants || 0}명</p>
                     <p className="text-xs text-pink-500 mt-1">OP11-12 업무 참여자</p>
                   </div>
                   <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
