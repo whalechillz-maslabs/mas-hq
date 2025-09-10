@@ -405,6 +405,240 @@ export default function PayslipGenerator() {
     }
   };
 
+  const printPayslip = () => {
+    if (!payslipData) return;
+    
+    // 인쇄용 창 열기
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+      return;
+    }
+
+    // 인쇄용 HTML 생성
+    const printContent = `
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>급여명세서 - ${payslipData.employee_name}</title>
+        <style>
+          body {
+            font-family: 'Malgun Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            color: #333;
+          }
+          .payslip-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #333;
+            padding: 30px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+          .payslip-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .period {
+            font-size: 16px;
+            color: #666;
+          }
+          .info-section {
+            margin-bottom: 30px;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+          }
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+          }
+          .info-label {
+            font-weight: bold;
+          }
+          .salary-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          }
+          .salary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+          }
+          .salary-item.total {
+            border-top: 2px solid #333;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 18px;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+          .status-generated { background: #fef3c7; color: #92400e; }
+          .status-issued { background: #dbeafe; color: #1e40af; }
+          .status-paid { background: #d1fae5; color: #065f46; }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+            font-size: 12px;
+            color: #666;
+          }
+          @media print {
+            body { margin: 0; padding: 0; }
+            .payslip-container { border: none; padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="payslip-container">
+          <div class="header">
+            <div class="company-name">MASLABS</div>
+            <div class="payslip-title">급여명세서</div>
+            <div class="period">${payslipData.salary_period}</div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">기본 정보</div>
+            <div class="info-grid">
+              <div>
+                <div class="info-item">
+                  <span class="info-label">직원명:</span>
+                  <span>${payslipData.employee_name}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">직원 ID:</span>
+                  <span>${payslipData.employee_id}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">급여 기간:</span>
+                  <span>${payslipData.salary_period}</span>
+                </div>
+              </div>
+              <div>
+                <div class="info-item">
+                  <span class="info-label">고용 형태:</span>
+                  <span>${payslipData.employment_type === 'full_time' ? '정규직' : '시간제'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">지급일:</span>
+                  <span>${payslipData.payment_date}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">상태:</span>
+                  <span class="status-badge status-${payslipData.status}">
+                    ${payslipData.status === 'generated' ? '생성됨' :
+                      payslipData.status === 'issued' ? '발행됨' : '지급완료'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${payslipData.employment_type === 'part_time' ? `
+          <div class="info-section">
+            <div class="section-title">시간제 급여 상세</div>
+            <div class="info-item">
+              <span class="info-label">총 근무시간:</span>
+              <span>${payslipData.total_hours}시간</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">시급:</span>
+              <span>${payslipData.hourly_rate?.toLocaleString()}원</span>
+            </div>
+          </div>
+          ` : ''}
+
+          <div class="salary-section">
+            <div class="section-title">급여 내역</div>
+            <div class="salary-item">
+              <span>기본급:</span>
+              <span>${payslipData.base_salary.toLocaleString()}원</span>
+            </div>
+            ${payslipData.overtime_pay > 0 ? `
+            <div class="salary-item">
+              <span>연장수당:</span>
+              <span>${payslipData.overtime_pay.toLocaleString()}원</span>
+            </div>
+            ` : ''}
+            ${payslipData.incentive > 0 ? `
+            <div class="salary-item">
+              <span>인센티브:</span>
+              <span>${payslipData.incentive.toLocaleString()}원</span>
+            </div>
+            ` : ''}
+            ${payslipData.point_bonus > 0 ? `
+            <div class="salary-item">
+              <span>포인트 보너스:</span>
+              <span>${payslipData.point_bonus.toLocaleString()}원</span>
+            </div>
+            ` : ''}
+            <div class="salary-item">
+              <span>총 지급액:</span>
+              <span>${payslipData.total_earnings.toLocaleString()}원</span>
+            </div>
+            <div class="salary-item">
+              <span>세금 (3.3%):</span>
+              <span>-${payslipData.tax_amount.toLocaleString()}원</span>
+            </div>
+            <div class="salary-item total">
+              <span>실수령액:</span>
+              <span>${payslipData.net_salary.toLocaleString()}원</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>본 급여명세서는 ${new Date().toLocaleDateString('ko-KR')}에 생성되었습니다.</p>
+            <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락주세요.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // 인쇄 대화상자 열기
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
+
   const selectedEmployeeData = employees.find(emp => emp.id === selectedEmployee);
 
   // 년도 옵션 생성 (2020-2030)
@@ -609,6 +843,12 @@ export default function PayslipGenerator() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-gray-900">급여 명세서</h2>
               <div className="flex gap-2">
+                <button
+                  onClick={printPayslip}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  출력/인쇄
+                </button>
                 {payslipData.status === 'generated' && (
                   <button
                     onClick={issuePayslip}
