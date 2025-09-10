@@ -220,11 +220,13 @@ export default function PayslipGenerator() {
       }))
     };
 
-    // payslips 테이블에 저장
+    // payslips 테이블에 저장 (upsert 사용)
     try {
       const { error: saveError } = await supabase
         .from('payslips')
-        .insert([payslip]);
+        .upsert([payslip], {
+          onConflict: 'employee_id,salary_period'
+        });
 
       if (saveError) {
         console.error('급여명세서 저장 실패:', saveError);
@@ -296,24 +298,52 @@ export default function PayslipGenerator() {
     if (!payslipData) return;
 
     try {
-      const { error } = await supabase
+      // 먼저 기존 레코드가 있는지 확인
+      const { data: existingPayslip, error: checkError } = await supabase
         .from('payslips')
-        .update({ 
-          status: 'issued',
-          issued_at: new Date().toISOString()
-        })
+        .select('id')
         .eq('employee_id', payslipData.employee_id)
-        .eq('salary_period', payslipData.salary_period);
+        .eq('salary_period', payslipData.salary_period)
+        .single();
 
-      if (error) {
-        throw error;
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116은 "레코드를 찾을 수 없음" 오류
+        throw checkError;
+      }
+
+      if (existingPayslip) {
+        // 기존 레코드가 있으면 업데이트
+        const { error } = await supabase
+          .from('payslips')
+          .update({ 
+            status: 'issued',
+            issued_at: new Date().toISOString()
+          })
+          .eq('id', existingPayslip.id);
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        // 기존 레코드가 없으면 새로 생성
+        const { error } = await supabase
+          .from('payslips')
+          .insert([{
+            ...payslipData,
+            status: 'issued',
+            issued_at: new Date().toISOString()
+          }]);
+
+        if (error) {
+          throw error;
+        }
       }
 
       setPayslipData(prev => prev ? { ...prev, status: 'issued' } : null);
       alert('급여 명세서가 발행되었습니다.');
     } catch (error) {
       console.error('급여 명세서 발행 실패:', error);
-      alert('급여 명세서 발행에 실패했습니다.');
+      alert(`급여 명세서 발행에 실패했습니다: ${error.message}`);
     }
   };
 
