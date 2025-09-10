@@ -55,7 +55,7 @@ export default function EmployeeSchedulesPage() {
   const [bulkDays, setBulkDays] = useState<number[]>([]);
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [autoApprove, setAutoApprove] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(true);
 
   // 시간대 정의 (30분 단위, 18-19시까지 확장)
   const timeSlots: TimeSlot[] = [

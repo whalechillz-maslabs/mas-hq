@@ -41,7 +41,7 @@ export default function SchedulesPage() {
   const [bulkDays, setBulkDays] = useState<number[]>([]);
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [autoApprove, setAutoApprove] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(true);
   
   // 관리자 권한 확인
   const isAdmin = currentUser?.role?.name === 'admin';
