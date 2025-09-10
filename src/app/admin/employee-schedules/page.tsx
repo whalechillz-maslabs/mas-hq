@@ -863,22 +863,24 @@ export default function EmployeeSchedulesPage() {
                     <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                   </button>
                   
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                    <h2 className="text-sm sm:text-base font-semibold text-gray-800">
-                      {viewMode === 'week' 
-                        ? `${format(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
-                        : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
-                      }
-                    </h2>
-                    
-                    <button
-                      onClick={() => setCurrentDate(new Date())}
-                      className="px-3 py-1.5 text-gray-600 hover:text-gray-800 text-sm font-medium border border-gray-200 hover:border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-200"
-                      title="오늘 날짜로 이동"
-                    >
-                      오늘
-                    </button>
-                  </div>
+                  {viewMode !== 'list' && (
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <h2 className="text-sm sm:text-base font-semibold text-gray-800">
+                        {viewMode === 'week' 
+                          ? `${format(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
+                          : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
+                        }
+                      </h2>
+                      
+                      <button
+                        onClick={() => setCurrentDate(new Date())}
+                        className="px-3 py-1.5 text-gray-600 hover:text-gray-800 text-sm font-medium border border-gray-200 hover:border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-200"
+                        title="오늘 날짜로 이동"
+                      >
+                        오늘
+                      </button>
+                    </div>
+                  )}
                   
                   <button 
                     onClick={handleNextPeriod} 
@@ -919,7 +921,7 @@ export default function EmployeeSchedulesPage() {
                           : 'text-gray-600 hover:text-gray-800'
                       }`}
                     >
-                      리스트
+                      월간 리스트
                     </button>
                   </div>
                 </div>
@@ -1062,42 +1064,55 @@ export default function EmployeeSchedulesPage() {
                     ) : (
                       // 리스트 뷰
                       <div className="space-y-2">
-                        {/* 연도/월 선택 */}
-                        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2">
-                              <label className="text-sm font-medium text-gray-700">연도:</label>
-                              <select
-                                value={selectedYear}
-                                onChange={(e) => handleYearMonthChange(parseInt(e.target.value), selectedMonth)}
-                                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                {Array.from({ length: 5 }, (_, i) => {
-                                  const year = new Date().getFullYear() - 2 + i;
-                                  return (
-                                    <option key={year} value={year}>
-                                      {year}년
+                        {/* 월별 서머리 및 연도/월 선택 */}
+                        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-4">
+                              <div className="flex items-center space-x-2">
+                                <label className="text-sm font-medium text-gray-700">연도:</label>
+                                <select
+                                  value={selectedYear}
+                                  onChange={(e) => handleYearMonthChange(parseInt(e.target.value), selectedMonth)}
+                                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  {Array.from({ length: 5 }, (_, i) => {
+                                    const year = new Date().getFullYear() - 2 + i;
+                                    return (
+                                      <option key={year} value={year}>
+                                        {year}년
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <label className="text-sm font-medium text-gray-700">월:</label>
+                                <select
+                                  value={selectedMonth}
+                                  onChange={(e) => handleYearMonthChange(selectedYear, parseInt(e.target.value))}
+                                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  {Array.from({ length: 12 }, (_, i) => (
+                                    <option key={i + 1} value={i + 1}>
+                                      {i + 1}월
                                     </option>
-                                  );
-                                })}
-                              </select>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <label className="text-sm font-medium text-gray-700">월:</label>
-                              <select
-                                value={selectedMonth}
-                                onChange={(e) => handleYearMonthChange(selectedYear, parseInt(e.target.value))}
-                                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                {Array.from({ length: 12 }, (_, i) => (
-                                  <option key={i + 1} value={i + 1}>
-                                    {i + 1}월
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {selectedYear}년 {selectedMonth}월 스케줄
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-blue-800">
+                                {selectedYear}년 {selectedMonth}월
+                              </div>
+                              <div className="text-sm text-blue-600">
+                                총 근무예정시간: {schedules.reduce((total, schedule) => {
+                                  const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
+                                  const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
+                                  const hours = (end - start) / (1000 * 60 * 60);
+                                  const breakHours = (schedule.break_minutes || 0) / 60;
+                                  return total + (hours - breakHours);
+                                }, 0).toFixed(1)}시간
+                              </div>
                             </div>
                           </div>
                         </div>
