@@ -7,9 +7,9 @@ const supabase = createClient(
 
 const choiId = 'e998a540-51bf-4380-bcb1-86fb36ec7eb8';
 
-async function verifyChoiAugustHours() {
+async function checkChoiAugustCurrent() {
   try {
-    console.log('🔍 최형호 8월 근무시간 정확한 계산...');
+    console.log('🔍 최형호 8월 현재 스케줄 확인 중...');
     
     const { data, error } = await supabase
       .from('schedules')
@@ -24,28 +24,26 @@ async function verifyChoiAugustHours() {
       return;
     }
 
-    console.log('📊 최형호 8월 스케줄 상세 분석:');
+    if (!data || data.length === 0) {
+      console.log('❌ 8월 스케줄을 찾을 수 없습니다.');
+      return;
+    }
+
+    console.log('✅ 최형호 8월 현재 스케줄:');
+    console.log(`📊 총 스케줄 수: ${data.length}개`);
     
     let totalHours = 0;
     data.forEach(schedule => {
       const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
       const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
-      const grossHours = (end - start) / (1000 * 60 * 60);
-      const breakHours = (schedule.break_minutes || 0) / 60;
-      const netHours = grossHours - breakHours;
-      totalHours += netHours;
+      const hours = (end - start) / (1000 * 60 * 60);
+      totalHours += hours;
       
       const dayOfWeek = getDayOfWeek(schedule.schedule_date);
-      console.log(`- ${schedule.schedule_date} (${dayOfWeek}): ${schedule.scheduled_start}-${schedule.scheduled_end}`);
-      console.log(`  총시간: ${grossHours}시간, 휴식: ${breakHours}시간, 순근무: ${netHours}시간`);
+      console.log(`- ${schedule.schedule_date} (${dayOfWeek}): ${schedule.scheduled_start}-${schedule.scheduled_end} (${hours}시간) [${schedule.status}]`);
     });
 
-    console.log(`\n📈 총 순근무시간: ${totalHours}시간`);
-    
-    // 사용자 제공 데이터와 비교
-    const expectedHours = 38.5; // 1+4+3.5+4+6+2+6+6+6 = 38.5
-    console.log(`📋 예상 근무시간: ${expectedHours}시간`);
-    console.log(`✅ 차이: ${Math.abs(totalHours - expectedHours)}시간`);
+    console.log(`📈 총 근무시간: ${totalHours}시간`);
 
   } catch (error) {
     console.error('❌ 스크립트 실행 오류:', error);
@@ -58,4 +56,4 @@ function getDayOfWeek(dateString) {
   return days[date.getDay()];
 }
 
-verifyChoiAugustHours();
+checkChoiAugustCurrent();

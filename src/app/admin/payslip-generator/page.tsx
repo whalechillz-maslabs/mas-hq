@@ -46,6 +46,8 @@ export default function PayslipGenerator() {
   const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [payslipData, setPayslipData] = useState<PayslipData | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -106,19 +108,14 @@ export default function PayslipGenerator() {
       const employee = employees.find(emp => emp.id === selectedEmployee);
       if (!employee) return;
 
-      // 현재 날짜 기준으로 급여 데이터 생성
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth() + 1;
-      const currentYear = currentDate.getFullYear();
-      
       let payslip: PayslipData;
 
       if (employee.employment_type === 'part_time') {
         // 시간제 급여 계산
-        payslip = await generateHourlyPayslip(employee, currentYear, currentMonth);
+        payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
       } else {
         // 월급제 급여 계산
-        payslip = await generateMonthlyPayslip(employee, currentYear, currentMonth);
+        payslip = await generateMonthlyPayslip(employee, selectedYear, selectedMonth);
       }
 
       setPayslipData(payslip);
@@ -146,6 +143,10 @@ export default function PayslipGenerator() {
 
     if (scheduleError) {
       throw new Error('스케줄 조회 실패');
+    }
+
+    if (!schedules || schedules.length === 0) {
+      throw new Error(`${year}년 ${month}월에 승인된 스케줄이 없습니다.`);
     }
 
     // 일별 근무시간 계산
@@ -343,6 +344,12 @@ export default function PayslipGenerator() {
 
   const selectedEmployeeData = employees.find(emp => emp.id === selectedEmployee);
 
+  // 년도 옵션 생성 (2020-2030)
+  const yearOptions = Array.from({ length: 11 }, (_, i) => 2020 + i);
+  
+  // 월 옵션 생성
+  const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
@@ -362,9 +369,9 @@ export default function PayslipGenerator() {
           </div>
         </div>
 
-        {/* 직원 선택 */}
+        {/* 직원 선택 및 기간 설정 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">직원 선택</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">급여 명세서 설정</h2>
           
           <div className="space-y-4">
             <div className="text-sm text-gray-600">
@@ -373,8 +380,9 @@ export default function PayslipGenerator() {
               <p>선택된 직원: {selectedEmployee || '없음'}</p>
             </div>
             
-            <div className="flex gap-4">
-              <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 직원 선택 */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   직원 선택
                 </label>
@@ -392,15 +400,53 @@ export default function PayslipGenerator() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-end">
-                <button
-                  onClick={generatePayslip}
-                  disabled={!selectedEmployee || generating}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+
+              {/* 년도 선택 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  년도
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {generating ? '생성 중...' : '급여 명세서 생성'}
-                </button>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}년
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* 월 선택 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  월
+                </label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {monthOptions.map((month) => (
+                    <option key={month} value={month}>
+                      {month}월
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 생성 버튼 */}
+            <div className="flex justify-center pt-4">
+              <button
+                onClick={generatePayslip}
+                disabled={!selectedEmployee || generating}
+                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {generating ? '생성 중...' : `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`}
+              </button>
             </div>
           </div>
         </div>

@@ -201,8 +201,8 @@ export default function EmployeeSchedulesPage() {
     if (viewMode === 'week') {
       return Array.from({ length: 7 }).map((_, i) => addDays(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), i)); // 일요일부터 시작
     } else {
-      // 월간 뷰에서 8월 24일부터 시작하도록 수정
-      const start = new Date(2025, 7, 24); // 8월 24일 (월은 0부터 시작하므로 7)
+      // 월간 뷰: 해당 월의 모든 날짜 표시
+      const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       const days = [];
       let current = start;
