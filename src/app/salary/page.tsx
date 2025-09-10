@@ -276,7 +276,7 @@ export default function SalaryPage() {
             <div className="bg-white rounded-lg p-4 border border-yellow-200 text-center">
               <div className="text-sm text-yellow-700 mb-2">세금 (3.3%)</div>
               <div className="text-xl font-bold text-yellow-800">
-                {data?.salaries[0] ? formatCurrency(data.salaries[0].deductions) : '0원'}
+                {data?.salaries[0] ? formatCurrency(data.salaries[0].tax_amount || 0) : '0원'}
               </div>
               <div className="text-xs text-yellow-600 mt-1">
                 사업소득자 원천징수
@@ -302,10 +302,10 @@ export default function SalaryPage() {
               <div>
                 <p className="text-green-100">최근 실수령액</p>
                 <p className="text-3xl font-bold mt-2">
-                  {data?.salaries[0] ? formatCurrency(data.salaries[0].net_amount) : '-'}
+                  {data?.salaries[0] ? formatCurrency(data.salaries[0].net_salary) : '-'}
                 </p>
                 <p className="text-sm text-green-100 mt-1">
-                  {data?.salaries[0] ? formatDateKR(data.salaries[0].payment_date) : (currentDateInfo?.paymentDate ? formatDateKR(currentDateInfo.paymentDate) : '')}
+                  {data?.salaries[0] ? formatDateKR(data.salaries[0].paid_at || data.salaries[0].created_at) : (currentDateInfo?.paymentDate ? formatDateKR(currentDateInfo.paymentDate) : '')}
                 </p>
               </div>
               <DollarSign className="h-12 w-12 text-green-200" />
