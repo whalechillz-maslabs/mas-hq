@@ -1033,12 +1033,12 @@ export default function SchedulesPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center justify-between">
                               <div className="text-sm font-medium text-gray-900">
-                                {format(new Date(schedule.schedule_date), 'MM월 dd일 (EEE)', { locale: ko })}
-                              </div>
-                              <div className="text-sm text-gray-600">
-                                {schedule.scheduled_start} - {schedule.scheduled_end}
+                                {format(new Date(schedule.schedule_date), 'MM월 dd일 (EEE)', { locale: ko })} {schedule.scheduled_start} - {schedule.scheduled_end}
+                                {schedule.employee_note && (
+                                  <span className="ml-2 text-gray-500">• {schedule.employee_note}</span>
+                                )}
                               </div>
                               <div className={`px-2 py-1 text-xs rounded-full ${
                                 schedule.status === 'approved' 
@@ -1051,11 +1051,6 @@ export default function SchedulesPage() {
                                  schedule.status === 'pending' ? '대기' : '취소'}
                               </div>
                             </div>
-                            {schedule.employee_note && (
-                              <div className="mt-2 text-sm text-gray-500">
-                                {schedule.employee_note}
-                              </div>
-                    )}
                   </div>
                         </div>
                       </div>
