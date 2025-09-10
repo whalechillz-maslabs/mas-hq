@@ -41,6 +41,7 @@ export default function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const [formData, setFormData] = useState({
+    employee_id: '',
     nickname: '',
     email: '',
     pin_code: '',
@@ -94,6 +95,7 @@ export default function ProfilePage() {
 
       setProfileData(profile);
       setFormData({
+        employee_id: profile.employee_id || '',
         nickname: profile.nickname || '',
         email: profile.email || '',
         pin_code: profile.pin_code || '',
@@ -119,12 +121,19 @@ export default function ProfilePage() {
     if (!profileData) return;
 
     try {
+      // 직원코드 형식 검증
+      if (formData.employee_id && !/^MASLABS-\d{3}$/.test(formData.employee_id)) {
+        alert('직원코드는 MASLABS-XXX 형식이어야 합니다. (예: MASLABS-004)');
+        return;
+      }
+
       if (formData.new_password && formData.new_password !== formData.confirm_password) {
         alert('새 비밀번호가 일치하지 않습니다.');
         return;
       }
 
       const updates: any = {
+        employee_id: formData.employee_id,
         nickname: formData.nickname,
         email: formData.email,
         updated_at: new Date().toISOString()
@@ -352,6 +361,19 @@ export default function ProfilePage() {
               <div className="p-6">
                 {activeTab === 'basic' && (
                   <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        직원코드
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.employee_id}
+                        onChange={(e) => handleInputChange('employee_id', e.target.value)}
+                        disabled={!isEditing}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 transition-all duration-200"
+                        placeholder="직원코드를 입력하세요 (예: MASLABS-004)"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         닉네임
