@@ -885,7 +885,6 @@ export default function TasksPage() {
           <h3 className="text-lg font-semibold mb-4">업무 유형별 분포</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {operationTypes
-              .slice(0, 10) // 모든 OP 카드 표시 (OP8 포함)
               .map((opType) => {
               const count = tasks.filter(t => t.operation_type_id === opType.id).length;
               const points = tasks
