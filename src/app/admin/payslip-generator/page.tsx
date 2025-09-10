@@ -224,8 +224,11 @@ export default function PayslipGenerator() {
     try {
       const { error: saveError } = await supabase
         .from('payslips')
-        .upsert([payslip], {
-          onConflict: 'employee_id,salary_period'
+        .upsert([{
+          ...payslip,
+          period: payslip.salary_period // salary_period를 period로 매핑
+        }], {
+          onConflict: 'employee_id,period'
         });
 
       if (saveError) {
@@ -303,7 +306,7 @@ export default function PayslipGenerator() {
         .from('payslips')
         .select('id')
         .eq('employee_id', payslipData.employee_id)
-        .eq('salary_period', payslipData.salary_period)
+        .eq('period', payslipData.salary_period)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -330,6 +333,7 @@ export default function PayslipGenerator() {
           .from('payslips')
           .insert([{
             ...payslipData,
+            period: payslipData.salary_period, // salary_period를 period로 매핑
             status: 'issued',
             issued_at: new Date().toISOString()
           }]);
@@ -358,7 +362,7 @@ export default function PayslipGenerator() {
           paid_at: new Date().toISOString()
         })
         .eq('employee_id', payslipData.employee_id)
-        .eq('salary_period', payslipData.salary_period);
+        .eq('period', payslipData.salary_period);
 
       if (error) {
         throw error;
