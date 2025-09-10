@@ -450,7 +450,7 @@ export default function PayslipGenerator() {
           }
           .header {
             background: white;
-            color: white;
+            color: #000;
             padding: 40px 30px;
             text-align: center;
             border-bottom: 2px solid #000;
@@ -537,7 +537,7 @@ export default function PayslipGenerator() {
           }
           .footer {
             background: white;
-            color: white;
+            color: #000;
             padding: 25px;
             text-align: center;
             font-size: 14px;
@@ -558,7 +558,7 @@ export default function PayslipGenerator() {
           }
           .status-paid {
             background: white;
-            color: white;
+            color: #000;
           }
           .status-generated {
             background: white;
@@ -726,7 +726,7 @@ export default function PayslipGenerator() {
           }
           .header {
             background: white;
-            color: white;
+            color: #000;
             padding: 40px 30px;
             text-align: center;
             border-bottom: 2px solid #000;
@@ -823,7 +823,7 @@ export default function PayslipGenerator() {
           }
           .footer {
             background: white;
-            color: white;
+            color: #000;
             padding: 25px;
             text-align: center;
             font-size: 14px;
@@ -844,7 +844,7 @@ export default function PayslipGenerator() {
           }
           .status-paid {
             background: white;
-            color: white;
+            color: #000;
           }
           .status-generated {
             background: white;
