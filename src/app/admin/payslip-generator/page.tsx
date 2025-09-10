@@ -527,16 +527,39 @@ export default function PayslipGenerator() {
                       <span className="font-medium">{payslipData.total_hours}시간</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">시급:</span>
-                      <span className="font-medium">{payslipData.hourly_rate?.toLocaleString()}원</span>
+                      <span className="text-gray-600">시급별 계산:</span>
+                      <span className="font-medium text-blue-600 cursor-pointer" onClick={() => {
+                        // 시급별 계산 상세 표시
+                        const hourlyDetails = payslipData.daily_details?.reduce((acc, detail) => {
+                          const day = parseInt(detail.date.split('-')[2]);
+                          const hourlyRate = day <= 7 ? 13000 : 12000;
+                          const key = `${hourlyRate.toLocaleString()}원`;
+                          if (!acc[key]) {
+                            acc[key] = { hours: 0, wage: 0 };
+                          }
+                          acc[key].hours += detail.hours;
+                          acc[key].wage += detail.daily_wage;
+                          return acc;
+                        }, {} as { [key: string]: { hours: number; wage: number } });
+
+                        const details = Object.entries(hourlyDetails || {}).map(([rate, data]) => 
+                          `${rate}: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
+                        ).join('\n');
+                        
+                        alert(`시급별 계산 상세:\n\n${details}`);
+                      }}>
+                        클릭하여 확인
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">일별 상세:</span>
                       <span className="font-medium text-blue-600 cursor-pointer" onClick={() => {
-                        const details = payslipData.daily_details?.map(d => 
-                          `${d.date}: ${d.hours}시간 (${d.daily_wage.toLocaleString()}원)`
-                        ).join('\n');
-                        alert(details || '상세 정보 없음');
+                        const details = payslipData.daily_details?.map(d => {
+                          const day = parseInt(d.date.split('-')[2]);
+                          const hourlyRate = day <= 7 ? 13000 : 12000;
+                          return `${d.date}: ${d.hours}시간 × ${hourlyRate.toLocaleString()}원 = ${d.daily_wage.toLocaleString()}원`;
+                        }).join('\n');
+                        alert(details || '일별 상세 정보가 없습니다.');
                       }}>
                         클릭하여 확인
                       </span>
