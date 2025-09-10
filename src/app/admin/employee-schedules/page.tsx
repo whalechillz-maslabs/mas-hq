@@ -56,6 +56,15 @@ export default function EmployeeSchedulesPage() {
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [autoApprove, setAutoApprove] = useState(true);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+  // 리스트 보기에서 연도/월 변경 시 currentDate 업데이트
+  const handleYearMonthChange = (year: number, month: number) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
+    setCurrentDate(new Date(year, month - 1, 1)); // month는 0부터 시작하므로 -1
+  };
 
   // 시간대 정의 (30분 단위, 18-19시까지 확장)
   const timeSlots: TimeSlot[] = [
@@ -104,6 +113,13 @@ export default function EmployeeSchedulesPage() {
     };
     fetchUserAndData();
   }, [router]);
+
+  // 리스트 뷰에서 연도/월이 변경될 때 스케줄 다시 가져오기
+  useEffect(() => {
+    if (selectedEmployee && viewMode === 'list') {
+      fetchSchedules();
+    }
+  }, [selectedYear, selectedMonth, viewMode, selectedEmployee]);
 
   // selectedEmployee가 설정된 후 스케줄 로딩
   useEffect(() => {
@@ -166,9 +182,9 @@ export default function EmployeeSchedulesPage() {
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
       } else {
-        // 리스트 뷰: 현재 날짜 기준으로 앞뒤 30일
-        startDate = addDays(currentDate, -30);
-        endDate = addDays(currentDate, 30);
+        // 리스트 뷰: 선택된 연도/월의 해당 월 전체
+        startDate = new Date(selectedYear, selectedMonth - 1, 1);
+        endDate = new Date(selectedYear, selectedMonth, 0); // 해당 월의 마지막 날
       }
 
       const { data, error } = await supabase
@@ -1046,6 +1062,46 @@ export default function EmployeeSchedulesPage() {
                     ) : (
                       // 리스트 뷰
                       <div className="space-y-2">
+                        {/* 연도/월 선택 */}
+                        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                              <label className="text-sm font-medium text-gray-700">연도:</label>
+                              <select
+                                value={selectedYear}
+                                onChange={(e) => handleYearMonthChange(parseInt(e.target.value), selectedMonth)}
+                                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                {Array.from({ length: 5 }, (_, i) => {
+                                  const year = new Date().getFullYear() - 2 + i;
+                                  return (
+                                    <option key={year} value={year}>
+                                      {year}년
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <label className="text-sm font-medium text-gray-700">월:</label>
+                              <select
+                                value={selectedMonth}
+                                onChange={(e) => handleYearMonthChange(selectedYear, parseInt(e.target.value))}
+                                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                {Array.from({ length: 12 }, (_, i) => (
+                                  <option key={i + 1} value={i + 1}>
+                                    {i + 1}월
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {selectedYear}년 {selectedMonth}월 스케줄
+                            </div>
+                          </div>
+                        </div>
+                        
                         {/* 일괄 승인 버튼 */}
                         {schedules.some(schedule => schedule.status === 'pending') && (
                           <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
