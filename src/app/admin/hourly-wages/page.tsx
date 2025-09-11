@@ -41,10 +41,10 @@ export default function HourlyWagesPage() {
     employee_id: '',
     base_wage: 12000, // 기본 시급을 12,000원으로 변경
     overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
-    night_shift_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
+    night_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
     holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
-    effective_date: new Date().toISOString().split('T')[0],
-    end_date: '',
+    effective_start_date: new Date().toISOString().split('T')[0],
+    effective_end_date: '',
     status: 'active'
   });
 
@@ -130,16 +130,16 @@ export default function HourlyWagesPage() {
       if (error) throw error;
 
       alert('시급이 성공적으로 등록되었습니다.');
-        setNewWage({
-          employee_id: '',
-          base_wage: 12000, // 기본 시급을 12,000원으로 변경
-          overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
-          night_shift_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
-          holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
-          effective_date: new Date().toISOString().split('T')[0],
-          end_date: '',
-          status: 'active'
-        });
+      setNewWage({
+        employee_id: '',
+        base_wage: 12000, // 기본 시급을 12,000원으로 변경
+        overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
+        night_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
+        holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
+        effective_start_date: new Date().toISOString().split('T')[0],
+        effective_end_date: '',
+        status: 'active'
+      });
       loadData();
     } catch (error) {
       console.error('시급 등록 오류:', error);
@@ -384,19 +384,19 @@ export default function HourlyWagesPage() {
                           {wage.overtime_multiplier === 1.0 ? '수당 없음' : `${wage.overtime_multiplier}배`}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {wage.night_shift_multiplier === 1.0 ? '수당 없음' : `${wage.night_shift_multiplier}배`}
-                        </div>
-                      </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                           {wage.night_shift_multiplier === 1.0 ? '수당 없음' : `${wage.night_shift_multiplier}배`}
+                          </div>
+                        </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {wage.holiday_multiplier === 1.0 ? '수당 없음' : `${wage.holiday_multiplier}배`}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{wage.effective_date}</div>
-                      </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="text-sm text-gray-900">{wage.effective_date}</div>
+                        </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button
