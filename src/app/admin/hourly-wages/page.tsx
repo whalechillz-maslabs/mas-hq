@@ -18,8 +18,8 @@ interface HourlyWage {
   overtime_multiplier: number;
   night_shift_multiplier: number;
   holiday_multiplier: number;
-  effective_date: string;
-  end_date?: string;
+  effective_start_date: string;
+  effective_end_date?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -92,7 +92,7 @@ export default function HourlyWagesPage() {
           *,
           employees(name, employee_id)
         `)
-        .order('effective_date', { ascending: false });
+        .order('effective_start_date', { ascending: false });
 
       if (wagesError) {
         console.error('시급 데이터 조회 오류:', wagesError);
@@ -158,7 +158,7 @@ export default function HourlyWagesPage() {
           overtime_multiplier: editingWage.overtime_multiplier,
           night_shift_multiplier: editingWage.night_shift_multiplier,
           holiday_multiplier: editingWage.holiday_multiplier,
-          effective_date: editingWage.effective_date,
+          effective_start_date: editingWage.effective_start_date,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingWage.id);
@@ -289,12 +289,12 @@ export default function HourlyWagesPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">적용 시작일</label>
-                <input
-                  type="date"
-                  value={newWage.effective_date}
-                  onChange={(e) => setNewWage({ ...newWage, effective_date: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
+                  <input
+                    type="date"
+                    value={newWage.effective_start_date}
+                    onChange={(e) => setNewWage({ ...newWage, effective_start_date: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
               </div>
             </div>
             
@@ -395,7 +395,7 @@ export default function HourlyWagesPage() {
                         </div>
                       </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                         <div className="text-sm text-gray-900">{wage.effective_date}</div>
+                         <div className="text-sm text-gray-900">{wage.effective_start_date}</div>
                         </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
@@ -474,12 +474,12 @@ export default function HourlyWagesPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">적용 시작일</label>
-                <input
-                  type="date"
-                  value={editingWage.effective_date}
-                  onChange={(e) => setEditingWage({ ...editingWage, effective_date: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
+                  <input
+                    type="date"
+                    value={editingWage.effective_start_date}
+                    onChange={(e) => setEditingWage({ ...editingWage, effective_start_date: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
               </div>
             </div>
             
