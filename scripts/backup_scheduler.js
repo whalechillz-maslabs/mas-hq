@@ -42,7 +42,11 @@ class BackupScheduler {
     
     try {
       // 백업 실행
-      const backupPath = await backupDatabase();
+      const backupFilePath = await backupDatabase();
+      
+      if (!backupFilePath) {
+        throw new Error('백업 파일이 생성되지 않았습니다');
+      }
       
       // 백업 타입별 디렉토리로 이동
       const typeDir = path.join(this.backupDir, backupType);
@@ -50,12 +54,21 @@ class BackupScheduler {
         fs.mkdirSync(typeDir, { recursive: true });
       }
       
-      const finalBackupPath = path.join(typeDir, `${backupType}_${timestamp}`);
+      const finalBackupPath = path.join(typeDir, `${backupType}_${timestamp}.json`);
       
-      // 백업 폴더를 타입별 디렉토리로 이동
-      if (fs.existsSync(backupPath)) {
-        fs.renameSync(backupPath, finalBackupPath);
+      // 백업 파일을 타입별 디렉토리로 복사
+      if (fs.existsSync(backupFilePath)) {
+        fs.copyFileSync(backupFilePath, finalBackupPath);
+        
+        // 임시 파일 삭제
+        fs.unlinkSync(backupFilePath);
+        
         console.log(`✅ ${backupType} 백업 완료: ${finalBackupPath}`);
+        
+        // 백업 파일 크기 확인
+        const stats = fs.statSync(finalBackupPath);
+        const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+        console.log(`📁 백업 파일 크기: ${fileSizeInMB} MB`);
       }
       
       // 구데이터 정리
@@ -84,31 +97,36 @@ class BackupScheduler {
     console.log(`\n🧹 ${backupType} 백업 정리 중... (${retentionDays}일 이상된 백업 삭제)`);
     
     try {
-      const backupFolders = fs.readdirSync(typeDir)
-        .filter(folder => folder.startsWith(backupType))
-        .map(folder => {
-          const folderPath = path.join(typeDir, folder);
-          const stats = fs.statSync(folderPath);
+      const backupFiles = fs.readdirSync(typeDir)
+        .filter(file => file.startsWith(backupType) && file.endsWith('.json'))
+        .map(file => {
+          const filePath = path.join(typeDir, file);
+          const stats = fs.statSync(filePath);
           return {
-            name: folder,
-            path: folderPath,
-            created: stats.birthtime
+            name: file,
+            path: filePath,
+            created: stats.birthtime,
+            size: stats.size
           };
         })
         .sort((a, b) => b.created - a.created); // 최신순 정렬
       
       let deletedCount = 0;
+      let totalSizeDeleted = 0;
       
-      for (const folder of backupFolders) {
-        if (folder.created < cutoffDate) {
-          console.log(`  🗑️  삭제: ${folder.name} (${folder.created.toISOString().split('T')[0]})`);
-          fs.rmSync(folder.path, { recursive: true, force: true });
+      for (const file of backupFiles) {
+        if (file.created < cutoffDate) {
+          const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+          console.log(`  🗑️  삭제: ${file.name} (${file.created.toISOString().split('T')[0]}, ${fileSizeInMB}MB)`);
+          fs.unlinkSync(file.path);
           deletedCount++;
+          totalSizeDeleted += file.size;
         }
       }
       
       if (deletedCount > 0) {
-        console.log(`✅ ${deletedCount}개의 구백업 삭제 완료`);
+        const totalSizeInMB = (totalSizeDeleted / (1024 * 1024)).toFixed(2);
+        console.log(`✅ ${deletedCount}개의 구백업 삭제 완료 (${totalSizeInMB}MB 절약)`);
       } else {
         console.log(`✅ 삭제할 구백업 없음`);
       }
@@ -126,7 +144,11 @@ class BackupScheduler {
     console.log(`=== 수동 백업 시작 (${reason}) ===`);
     
     try {
-      const backupPath = await backupDatabase();
+      const backupFilePath = await backupDatabase();
+      
+      if (!backupFilePath) {
+        throw new Error('백업 파일이 생성되지 않았습니다');
+      }
       
       // 수동 백업은 별도 디렉토리에 저장
       const manualDir = path.join(this.backupDir, 'manual');
@@ -134,11 +156,20 @@ class BackupScheduler {
         fs.mkdirSync(manualDir, { recursive: true });
       }
       
-      const finalBackupPath = path.join(manualDir, `manual_${reason}_${timestamp}`);
+      const finalBackupPath = path.join(manualDir, `manual_${reason}_${timestamp}.json`);
       
-      if (fs.existsSync(backupPath)) {
-        fs.renameSync(backupPath, finalBackupPath);
+      if (fs.existsSync(backupFilePath)) {
+        fs.copyFileSync(backupFilePath, finalBackupPath);
+        
+        // 임시 파일 삭제
+        fs.unlinkSync(backupFilePath);
+        
         console.log(`✅ 수동 백업 완료: ${finalBackupPath}`);
+        
+        // 백업 파일 크기 확인
+        const stats = fs.statSync(finalBackupPath);
+        const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+        console.log(`📁 백업 파일 크기: ${fileSizeInMB} MB`);
       }
       
       return finalBackupPath;
@@ -152,30 +183,32 @@ class BackupScheduler {
   // 백업 상태 확인
   getBackupStatus() {
     const status = {
-      daily: { count: 0, latest: null },
-      weekly: { count: 0, latest: null },
-      monthly: { count: 0, latest: null },
-      manual: { count: 0, latest: null }
+      daily: { count: 0, latest: null, totalSize: 0 },
+      weekly: { count: 0, latest: null, totalSize: 0 },
+      monthly: { count: 0, latest: null, totalSize: 0 },
+      manual: { count: 0, latest: null, totalSize: 0 }
     };
     
     for (const [type, info] of Object.entries(status)) {
       const typeDir = path.join(this.backupDir, type);
       
       if (fs.existsSync(typeDir)) {
-        const folders = fs.readdirSync(typeDir)
-          .filter(folder => folder.startsWith(type))
-          .map(folder => {
-            const folderPath = path.join(typeDir, folder);
-            const stats = fs.statSync(folderPath);
+        const files = fs.readdirSync(typeDir)
+          .filter(file => file.startsWith(type) && file.endsWith('.json'))
+          .map(file => {
+            const filePath = path.join(typeDir, file);
+            const stats = fs.statSync(filePath);
             return {
-              name: folder,
-              created: stats.birthtime
+              name: file,
+              created: stats.birthtime,
+              size: stats.size
             };
           })
           .sort((a, b) => b.created - a.created);
         
-        info.count = folders.length;
-        info.latest = folders.length > 0 ? folders[0].created : null;
+        info.count = files.length;
+        info.latest = files.length > 0 ? files[0].created : null;
+        info.totalSize = files.reduce((sum, file) => sum + file.size, 0);
       }
     }
     
@@ -197,7 +230,8 @@ if (require.main === module) {
     const status = scheduler.getBackupStatus();
     console.log('=== 백업 상태 ===');
     for (const [type, info] of Object.entries(status)) {
-      console.log(`${type}: ${info.count}개 (최신: ${info.latest ? info.latest.toISOString().split('T')[0] : '없음'})`);
+      const totalSizeInMB = (info.totalSize / (1024 * 1024)).toFixed(2);
+      console.log(`${type}: ${info.count}개 (최신: ${info.latest ? info.latest.toISOString().split('T')[0] : '없음'}, 총 크기: ${totalSizeInMB}MB)`);
     }
   } else {
     scheduler.runScheduledBackup().catch(console.error);

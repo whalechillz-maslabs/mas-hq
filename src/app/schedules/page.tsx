@@ -749,7 +749,7 @@ export default function SchedulesPage() {
                   ? `${format(startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 }), 'MM/dd', { locale: ko })} - ${format(endOfWeek(currentDate, { locale: ko }), 'MM/dd', { locale: ko })} (${getWeekNumber(currentDate)}주차)`
                   : `${format(currentDate, 'yyyy년 MM월', { locale: ko })}`
                 }
-            </h2>
+          </h2>
               
               {/* 오늘로 가기 버튼 */}
               <button
@@ -823,7 +823,7 @@ export default function SchedulesPage() {
                       }`}
                     >
                       월간 리스트
-                    </button>
+            </button>
           </div>
         </div>
 
@@ -1057,10 +1057,10 @@ export default function SchedulesPage() {
                                 {schedule.employee_note && (
                                   <span className="ml-2 text-gray-500">• {schedule.employee_note}</span>
                                 )}
-                              </div>
+                            </div>
                               <div className={`px-2 py-1 text-xs rounded-full ${
-                                schedule.status === 'approved' 
-                                  ? 'bg-green-100 text-green-800' 
+                              schedule.status === 'approved' 
+                                ? 'bg-green-100 text-green-800' 
                                   : schedule.status === 'pending'
                                   ? 'bg-yellow-100 text-yellow-800'
                                   : 'bg-red-100 text-red-800'

@@ -1,123 +1,129 @@
-<testsuites id="" name="" tests="5" failures="4" skipped="0" errors="0" time="60.373182">
-<testsuite name="task-buttons-test.spec.ts" timestamp="2025-09-09T01:12:03.194Z" hostname="chromium-stable" tests="5" failures="4" skipped="0" time="164.483" errors="0">
-<testcase name="업무 완료/추가 버튼 테스트 › 업무 추가 버튼 클릭 시 모달이 열리는지 확인" classname="task-buttons-test.spec.ts" time="34.795">
-<failure message="task-buttons-test.spec.ts:26:7 업무 추가 버튼 클릭 시 모달이 열리는지 확인" type="FAILURE">
-<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:26:7 › 업무 완료/추가 버튼 테스트 › 업무 추가 버튼 클릭 시 모달이 열리는지 확인 ─
+<testsuites id="" name="" tests="3" failures="3" skipped="0" errors="0" time="21.64928">
+<testsuite name="hourly-wage-edit-test.spec.ts" timestamp="2025-09-11T00:51:46.544Z" hostname="chromium-stable" tests="3" failures="3" skipped="0" time="57.341" errors="0">
+<testcase name="시급 수정 기능 테스트 › 시급 관리 페이지에서 시급 수정 테스트" classname="hourly-wage-edit-test.spec.ts" time="18.417">
+<failure message="hourly-wage-edit-test.spec.ts:13:7 시급 관리 페이지에서 시급 수정 테스트" type="FAILURE">
+<![CDATA[  [chromium-stable] › hourly-wage-edit-test.spec.ts:13:7 › 시급 수정 기능 테스트 › 시급 관리 페이지에서 시급 수정 테스트 ────
 
-    Error: Cannot find object to "loadstate": frame@60e6dad4ad0e3e20426cfaf87e98b50a
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[🧪 업무 추가 버튼 테스트 시작
-✅ 업무 추가 모달이 정상적으로 열렸습니다
-
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-버튼-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="업무 완료/추가 버튼 테스트 › 빠른 업무 입력 카드 클릭 시 모달이 열리는지 확인" classname="task-buttons-test.spec.ts" time="43.101">
-<failure message="task-buttons-test.spec.ts:38:7 빠른 업무 입력 카드 클릭 시 모달이 열리는지 확인" type="FAILURE">
-<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:38:7 › 업무 완료/추가 버튼 테스트 › 빠른 업무 입력 카드 클릭 시 모달이 열리는지 확인 
-
-    Error: expect(locator).toBeVisible() failed
-
-    Locator:  locator('h3:has-text("업무 추가")')
-    Expected: visible
-    Received: <element(s) not found>
-    Timeout:  10000ms
-
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
     Call log:
-      - Expect "toBeVisible" with timeout 10000ms
-      - waiting for locator('h3:has-text("업무 추가")')
+      - waiting for locator('tbody tr').first().locator('button:has-text("수정")')
 
 
-      43 |     
-      44 |     // 모달이 열렸는지 확인
-    > 45 |     await expect(page.locator('h3:has-text("업무 추가")')).toBeVisible();
-         |                                                        ^
-      46 |     
-      47 |     console.log('✅ 빠른 업무 입력 카드 클릭 시 모달이 정상적으로 열렸습니다');
-      48 |   });
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/task-buttons-test.spec.ts:45:56
-
-    Error: Cannot find object to "close": page@329e460b3a3f7bb55d39cc18514b7500
+      41 |       // 수정 버튼 클릭
+      42 |       const editButton = firstRow.locator('button:has-text("수정")');
+    > 43 |       await editButton.click();
+         |                        ^
+      44 |       await page.waitForTimeout(1000);
+      45 |       
+      46 |       // 수정 모달 확인
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wage-edit-test.spec.ts:43:24
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png
+    ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-관리-페이지에서-시급-수정-테스트-chromium-stable/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-2.png
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-관리-페이지에서-시급-수정-테스트-chromium-stable/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ../test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md
+    Error Context: ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-관리-페이지에서-시급-수정-테스트-chromium-stable/error-context.md
 ]]>
 </failure>
 <system-out>
-<![CDATA[🧪 빠른 업무 입력 카드 테스트 시작
+<![CDATA[💰 시급 관리 페이지 테스트 시작
+✅ 시급 관리 페이지 접근 성공
+📊 기존 시급 데이터 행 수: [33m4[39m
+👤 직원명: 최형호MASLABS-004
+💰 현재 시급: 12,000원
 
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-1.png]]
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-관리-페이지에서-시급-수정-테스트-chromium-stable/test-failed-1.png]]
 
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/test-failed-2.png]]
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-관리-페이지에서-시급-수정-테스트-chromium-stable/video.webm]]
 
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-56c82-른-업무-입력-카드-클릭-시-모달이-열리는지-확인-chromium-stable/error-context.md]]
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-관리-페이지에서-시급-수정-테스트-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="업무 완료/추가 버튼 테스트 › 업무 추가 폼 제출 테스트" classname="task-buttons-test.spec.ts" time="31.63">
-<failure message="task-buttons-test.spec.ts:50:7 업무 추가 폼 제출 테스트" type="FAILURE">
-<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:50:7 › 업무 완료/추가 버튼 테스트 › 업무 추가 폼 제출 테스트 ────────────
+<testcase name="시급 수정 기능 테스트 › 직원 관리 페이지에서 시급 수정 테스트" classname="hourly-wage-edit-test.spec.ts" time="18.646">
+<failure message="hourly-wage-edit-test.spec.ts:87:7 직원 관리 페이지에서 시급 수정 테스트" type="FAILURE">
+<![CDATA[  [chromium-stable] › hourly-wage-edit-test.spec.ts:87:7 › 시급 수정 기능 테스트 › 직원 관리 페이지에서 시급 수정 테스트 ────
 
-    Error: Cannot find parent object page@596271f1aea68ea44398951929b01581 to create dialog@3b939e52bc1c1b4ef2621e785cc92dc8
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('tr').filter({ hasText: '허상원' }).locator('button:has-text("수정")')
+
+
+      107 |     // 수정 버튼 클릭
+      108 |     const editButton = heoSangWonRow.locator('button:has-text("수정")');
+    > 109 |     await editButton.click();
+          |                      ^
+      110 |     await page.waitForTimeout(1000);
+      111 |     
+      112 |     // 수정 모달 확인
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wage-edit-test.spec.ts:109:22
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-폼-제출-테스트-chromium-stable/test-failed-1.png
+    ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-직원-관리-페이지에서-시급-수정-테스트-chromium-stable/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-직원-관리-페이지에서-시급-수정-테스트-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-직원-관리-페이지에서-시급-수정-테스트-chromium-stable/error-context.md
 ]]>
 </failure>
 <system-out>
-<![CDATA[🧪 업무 추가 폼 제출 테스트 시작
-✅ 업무 추가 폼 제출이 정상적으로 작동했습니다
+<![CDATA[👥 직원 관리 페이지 시급 수정 테스트 시작
+✅ 직원 관리 페이지 접근 성공
+✅ 허상원 행 찾기 성공
 
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-추가-폼-제출-테스트-chromium-stable/test-failed-1.png]]
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-직원-관리-페이지에서-시급-수정-테스트-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-직원-관리-페이지에서-시급-수정-테스트-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-직원-관리-페이지에서-시급-수정-테스트-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="업무 완료/추가 버튼 테스트 › 업무 완료 버튼 클릭 테스트" classname="task-buttons-test.spec.ts" time="34.853">
-<failure message="task-buttons-test.spec.ts:75:7 업무 완료 버튼 클릭 테스트" type="FAILURE">
-<![CDATA[  [chromium-stable] › task-buttons-test.spec.ts:75:7 › 업무 완료/추가 버튼 테스트 › 업무 완료 버튼 클릭 테스트 ───────────
+<testcase name="시급 수정 기능 테스트 › 시급 수정 후 급여명세서 반영 확인" classname="hourly-wage-edit-test.spec.ts" time="20.278">
+<failure message="hourly-wage-edit-test.spec.ts:147:7 시급 수정 후 급여명세서 반영 확인" type="FAILURE">
+<![CDATA[  [chromium-stable] › hourly-wage-edit-test.spec.ts:147:7 › 시급 수정 기능 테스트 › 시급 수정 후 급여명세서 반영 확인 ─────
 
-    Error: Cannot find object to "loadstate": frame@91b1ebfc8518c135ffba4ca7521e158a
+    TimeoutError: locator.textContent: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('text=시급:').locator('..').locator('span').last()
+
+
+      170 |     
+      171 |     // 시급 정보 확인
+    > 172 |     const hourlyRate = await page.locator('text=시급:').locator('..').locator('span').last().textContent();
+          |                                                                                            ^
+      173 |     console.log('💰 급여명세서의 시급:', hourlyRate);
+      174 |     
+      175 |     // 시급이 13,000원인지 확인
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wage-edit-test.spec.ts:172:92
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/test-failed-1.png
+    ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-수정-후-급여명세서-반영-확인-chromium-stable/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ../test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/error-context.md
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-수정-후-급여명세서-반영-확인-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-수정-후-급여명세서-반영-확인-chromium-stable/error-context.md
 ]]>
 </failure>
 <system-out>
-<![CDATA[🧪 업무 완료 버튼 테스트 시작
-ℹ️ 대기 중인 업무가 없어서 완료 버튼 테스트를 건너뜁니다
+<![CDATA[📋 시급 수정 후 급여명세서 반영 확인 테스트 시작
+✅ 허상원 선택 완료
 
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/test-failed-1.png]]
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-수정-후-급여명세서-반영-확인-chromium-stable/test-failed-1.png]]
 
-[[ATTACHMENT|test-results/task-buttons-test-업무-완료-추가-버튼-테스트-업무-완료-버튼-클릭-테스트-chromium-stable/error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="업무 완료/추가 버튼 테스트 › 브라우저 콘솔 에러 확인" classname="task-buttons-test.spec.ts" time="20.104">
-<system-out>
-<![CDATA[🧪 브라우저 콘솔 에러 확인 테스트 시작
-✅ 콘솔 에러가 없습니다
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-수정-후-급여명세서-반영-확인-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/hourly-wage-edit-test-시급-수정-기능-테스트-시급-수정-후-급여명세서-반영-확인-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 </testcase>
