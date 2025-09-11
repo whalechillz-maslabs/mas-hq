@@ -90,7 +90,7 @@ export default function HourlyWagesPage() {
         .from('hourly_wages')
         .select(`
           *,
-          employees!inner(name, employee_id)
+          employees(name, employee_id)
         `)
         .order('effective_date', { ascending: false });
 
@@ -104,8 +104,8 @@ export default function HourlyWagesPage() {
       // 데이터 정리
       const formattedWages = (wagesData || []).map(wage => ({
         ...wage,
-        employee_name: wage.employees.name,
-        employee_code: wage.employees.employee_id
+        employee_name: wage.employees?.name || '알 수 없음',
+        employee_code: wage.employees?.employee_id || '알 수 없음'
       }));
       
       setWages(formattedWages);
