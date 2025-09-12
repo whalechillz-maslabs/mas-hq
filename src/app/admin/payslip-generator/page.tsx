@@ -211,6 +211,21 @@ export default function PayslipGenerator() {
       throw new Error(`${year}년 ${month}월에 유효한 스케줄이 없습니다.`);
     }
 
+    // 시급 정보 조회
+    const { data: wages, error: wageError } = await supabase
+      .from('hourly_wages')
+      .select('*')
+      .eq('employee_id', employee.id)
+      .order('effective_start_date');
+
+    if (wageError) {
+      throw new Error('시급 정보 조회에 실패했습니다.');
+    }
+
+    if (!wages || wages.length === 0) {
+      throw new Error('시급 정보가 없습니다.');
+    }
+
     // 일별 근무시간 계산 (스케줄 자체가 점심시간 제외된 상태)
     const dailyHours: { [key: string]: number } = {};
     schedules.forEach(schedule => {
@@ -224,10 +239,6 @@ export default function PayslipGenerator() {
       }
       dailyHours[date] += hours;
     });
-
-    // 시급별 계산 (8월 1일~7일: 13,000원, 8월 8일~31일: 12,000원)
-    const hourlyWage1 = 13000;
-    const hourlyWage2 = 12000;
     
     let totalHours = 0;
     let totalWage = 0;
@@ -239,10 +250,17 @@ export default function PayslipGenerator() {
     }> = [];
 
     Object.keys(dailyHours).sort().forEach(date => {
-      const day = parseInt(date.split('-')[2]);
       const hours = dailyHours[date];
-      const wage = day <= 7 ? hourlyWage1 : hourlyWage2;
-      const dayWage = hours * wage;
+      const scheduleDate = new Date(date);
+      
+      // 해당 날짜에 적용되는 시급 찾기
+      const applicableWage = wages.find(wage => 
+        new Date(wage.effective_start_date) <= scheduleDate &&
+        (!wage.effective_end_date || new Date(wage.effective_end_date) >= scheduleDate)
+      );
+      
+      const hourlyWage = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
+      const dayWage = hours * hourlyWage;
       
       totalHours += hours;
       totalWage += dayWage;
@@ -250,7 +268,7 @@ export default function PayslipGenerator() {
       dailyDetails.push({
         date,
         hours,
-        hourly_wage: wage,
+        hourly_wage: hourlyWage,
         daily_wage: dayWage
       });
     });
@@ -276,7 +294,7 @@ export default function PayslipGenerator() {
       net_salary: netSalary,
       status: 'generated',
       total_hours: totalHours,
-      hourly_rate: hourlyWage2, // 최종 시급
+      hourly_rate: wages[wages.length - 1].base_wage, // 최신 시급
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
         hours: detail.hours,
