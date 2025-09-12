@@ -123,7 +123,45 @@ export default function HourlyWagesPage() {
     }
 
     try {
-      // 데이터베이스 스키마에 맞는 필드만 포함
+      // 1. 해당 직원의 기존 활성 시급 조회 (종료일이 없는 시급들)
+      const { data: existingWages, error: fetchError } = await supabase
+        .from('hourly_wages')
+        .select('*')
+        .eq('employee_id', newWage.employee_id)
+        .is('effective_end_date', null)
+        .eq('status', 'active');
+
+      if (fetchError) {
+        console.error('기존 시급 조회 오류:', fetchError);
+        throw fetchError;
+      }
+
+      // 2. 기존 활성 시급이 있으면 종료일 설정
+      if (existingWages && existingWages.length > 0) {
+        const newStartDate = new Date(newWage.effective_start_date);
+        const previousEndDate = new Date(newStartDate);
+        previousEndDate.setDate(previousEndDate.getDate() - 1); // 새 시급 시작일 하루 전
+
+        // 기존 시급들의 종료일을 새 시급 시작일 하루 전으로 설정
+        const { error: updateError } = await supabase
+          .from('hourly_wages')
+          .update({ 
+            effective_end_date: previousEndDate.toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('employee_id', newWage.employee_id)
+          .is('effective_end_date', null)
+          .eq('status', 'active');
+
+        if (updateError) {
+          console.error('기존 시급 종료일 설정 오류:', updateError);
+          throw updateError;
+        }
+
+        console.log(`✅ ${existingWages.length}개의 기존 시급을 ${previousEndDate.toISOString().split('T')[0]}까지로 종료 처리`);
+      }
+
+      // 3. 새로운 시급 데이터 생성
       const wageData: any = {
         employee_id: newWage.employee_id,
         base_wage: newWage.base_wage,
@@ -142,8 +180,9 @@ export default function HourlyWagesPage() {
         delete wageData.effective_end_date;
       }
 
-      console.log('전송할 시급 데이터:', wageData); // 디버깅용
+      console.log('전송할 시급 데이터:', wageData);
 
+      // 4. 새로운 시급 등록
       const { error } = await supabase
         .from('hourly_wages')
         .insert([wageData]);
@@ -153,13 +192,13 @@ export default function HourlyWagesPage() {
         throw error;
       }
 
-      alert('시급이 성공적으로 등록되었습니다.');
+      alert('시급이 성공적으로 등록되었습니다. 기존 시급은 자동으로 종료 처리되었습니다.');
       setNewWage({
         employee_id: '',
-        base_wage: 12000, // 기본 시급을 12,000원으로 변경
-        overtime_multiplier: 1.0, // 초과 근무 가중치 기본값 1.0 (수당 없음)
-        night_multiplier: 1.0, // 야간 근무 가중치 기본값 1.0 (수당 없음)
-        holiday_multiplier: 1.0, // 휴일 근무 가중치 기본값 1.0 (수당 없음)
+        base_wage: 12000,
+        overtime_multiplier: 1.0,
+        night_multiplier: 1.0,
+        holiday_multiplier: 1.0,
         effective_start_date: new Date().toISOString().split('T')[0],
         effective_end_date: '',
         status: 'active'
