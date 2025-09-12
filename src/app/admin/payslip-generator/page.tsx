@@ -792,11 +792,11 @@ export default function PayslipGenerator() {
             }
             .header {
               background: white !important;
-              color: white !important;
+              color: black !important;
             }
             .footer {
               background: white !important;
-              color: white !important;
+              color: black !important;
             }
           }
         </style>
@@ -1078,11 +1078,11 @@ export default function PayslipGenerator() {
             }
             .header {
               background: white !important;
-              color: white !important;
+              color: black !important;
             }
             .footer {
               background: white !important;
-              color: white !important;
+              color: black !important;
             }
           }
         </style>
