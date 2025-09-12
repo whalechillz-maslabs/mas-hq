@@ -253,11 +253,18 @@ export default function PayslipGenerator() {
       const hours = dailyHours[date];
       const scheduleDate = new Date(date);
       
-      // 해당 날짜에 적용되는 시급 찾기
-      const applicableWage = wages.find(wage => 
+      // 해당 날짜에 적용되는 시급 찾기 (가장 최근에 시작된 시급 우선)
+      const applicableWages = wages.filter(wage => 
         new Date(wage.effective_start_date) <= scheduleDate &&
         (!wage.effective_end_date || new Date(wage.effective_end_date) >= scheduleDate)
       );
+      
+      // 가장 최근에 시작된 시급 선택
+      const applicableWage = applicableWages.length > 0 
+        ? applicableWages.reduce((latest, current) => 
+            new Date(current.effective_start_date) > new Date(latest.effective_start_date) ? current : latest
+          )
+        : wages[0];
       
       const hourlyWage = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
       const dayWage = hours * hourlyWage;
