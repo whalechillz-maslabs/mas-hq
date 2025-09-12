@@ -198,7 +198,6 @@ export default function PayslipGenerator() {
       .eq('employee_id', employee.id)
       .gte('schedule_date', startDate)
       .lte('schedule_date', endDate)
-      .eq('status', 'approved')
       .order('schedule_date', { ascending: true });
 
     if (scheduleError) {
@@ -206,7 +205,23 @@ export default function PayslipGenerator() {
     }
 
     if (!schedules || schedules.length === 0) {
-      throw new Error(`${year}년 ${month}월에 승인된 스케줄이 없습니다.`);
+      throw new Error(`${year}년 ${month}월에 스케줄이 없습니다.`);
+    }
+
+    // 스케줄 상태 분석
+    const cancelledSchedules = schedules.filter(s => s.status === 'cancelled');
+    const pendingSchedules = schedules.filter(s => s.status === 'pending' || !s.status);
+    const approvedSchedules = schedules.filter(s => s.status === 'approved');
+
+    // 상세한 오류 메시지 생성
+    if (cancelledSchedules.length > 0) {
+      const cancelledDates = cancelledSchedules.map(s => s.schedule_date).join(', ');
+      throw new Error(`취소된 스케줄이 있어서 정산이 불가능합니다.\n취소된 날짜: ${cancelledDates}\n\n해결 방법:\n1. 취소된 스케줄을 삭제하거나\n2. 취소된 스케줄을 다시 승인하세요.`);
+    }
+
+    if (pendingSchedules.length > 0 && approvedSchedules.length === 0) {
+      const pendingDates = pendingSchedules.map(s => s.schedule_date).join(', ');
+      throw new Error(`승인되지 않은 스케줄이 있어서 정산이 불가능합니다.\n미승인 날짜: ${pendingDates}\n\n해결 방법:\n1. 스케줄을 승인하거나\n2. 승인 조건을 제거하세요.`);
     }
 
     // 일별 근무시간 계산 (스케줄 자체가 점심시간 제외된 상태)
@@ -375,6 +390,29 @@ export default function PayslipGenerator() {
 
     if (!schedules || schedules.length === 0) {
       throw new Error('해당 기간에 스케줄이 없습니다.');
+    }
+
+    // 스케줄 상태 분석
+    const scheduleStatusCounts = schedules.reduce((acc, schedule) => {
+      const status = schedule.status || 'pending';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 취소된 스케줄이 있는지 확인
+    const cancelledSchedules = schedules.filter(s => s.status === 'cancelled');
+    const pendingSchedules = schedules.filter(s => s.status === 'pending' || !s.status);
+    const approvedSchedules = schedules.filter(s => s.status === 'approved');
+
+    // 상세한 오류 메시지 생성
+    if (cancelledSchedules.length > 0) {
+      const cancelledDates = cancelledSchedules.map(s => s.schedule_date).join(', ');
+      throw new Error(`취소된 스케줄이 있어서 정산이 불가능합니다.\n취소된 날짜: ${cancelledDates}\n\n해결 방법:\n1. 취소된 스케줄을 삭제하거나\n2. 취소된 스케줄을 다시 승인하세요.`);
+    }
+
+    if (pendingSchedules.length > 0 && approvedSchedules.length === 0) {
+      const pendingDates = pendingSchedules.map(s => s.schedule_date).join(', ');
+      throw new Error(`승인되지 않은 스케줄이 있어서 정산이 불가능합니다.\n미승인 날짜: ${pendingDates}\n\n해결 방법:\n1. 스케줄을 승인하거나\n2. 승인 조건을 제거하세요.`);
     }
 
     // 시급 정보 조회
