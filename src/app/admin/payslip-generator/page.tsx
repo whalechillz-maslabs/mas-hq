@@ -190,7 +190,9 @@ export default function PayslipGenerator() {
   const generateHourlyPayslip = async (employee: Employee, year: number, month: number) => {
     // 해당 월의 스케줄 조회
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-    const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
+    // 해당 월의 마지막 날짜 계산
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
     const { data: schedules, error: scheduleError } = await supabase
       .from('schedules')
