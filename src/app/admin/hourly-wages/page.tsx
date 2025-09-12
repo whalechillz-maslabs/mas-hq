@@ -16,7 +16,7 @@ interface HourlyWage {
   employee_code: string;
   base_wage: number;
   overtime_multiplier: number;
-  night_shift_multiplier: number;
+  night_multiplier: number;
   holiday_multiplier: number;
   effective_start_date: string;
   effective_end_date?: string;
@@ -79,7 +79,7 @@ export default function HourlyWagesPage() {
         id: emp.id,
         name: emp.name,
         employee_id: emp.employee_id,
-        department: emp.departments?.name || '부서 미지정'
+        department: emp.departments?.[0]?.name || '부서 미지정'
       }));
       
       setEmployees(formattedEmployees);
@@ -123,11 +123,35 @@ export default function HourlyWagesPage() {
     }
 
     try {
+      // 데이터베이스 스키마에 맞는 필드만 포함
+      const wageData: any = {
+        employee_id: newWage.employee_id,
+        base_wage: newWage.base_wage,
+        overtime_multiplier: newWage.overtime_multiplier,
+        night_multiplier: newWage.night_multiplier,
+        holiday_multiplier: newWage.holiday_multiplier,
+        effective_start_date: newWage.effective_start_date,
+        status: newWage.status
+      };
+
+      // effective_end_date가 빈 문자열이 아닌 경우에만 추가
+      if (newWage.effective_end_date && newWage.effective_end_date.trim() !== '') {
+        wageData.effective_end_date = newWage.effective_end_date;
+      } else {
+        // 빈 문자열인 경우 필드를 아예 제거
+        delete wageData.effective_end_date;
+      }
+
+      console.log('전송할 시급 데이터:', wageData); // 디버깅용
+
       const { error } = await supabase
         .from('hourly_wages')
-        .insert([newWage]);
+        .insert([wageData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase 에러:', error);
+        throw error;
+      }
 
       alert('시급이 성공적으로 등록되었습니다.');
       setNewWage({
@@ -156,7 +180,7 @@ export default function HourlyWagesPage() {
         .update({
           base_wage: editingWage.base_wage,
           overtime_multiplier: editingWage.overtime_multiplier,
-          night_shift_multiplier: editingWage.night_shift_multiplier,
+          night_multiplier: editingWage.night_multiplier,
           holiday_multiplier: editingWage.holiday_multiplier,
           effective_start_date: editingWage.effective_start_date,
           updated_at: new Date().toISOString()
@@ -174,7 +198,7 @@ export default function HourlyWagesPage() {
     }
   };
 
-  const handleDeleteWage = async (id: number) => {
+  const handleDeleteWage = async (id: string) => {
     if (!confirm('정말로 이 시급 정보를 삭제하시겠습니까?')) return;
 
     try {
@@ -250,7 +274,9 @@ export default function HourlyWagesPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">초과 근무 가중치</label>
-                <div className="text-xs text-gray-500 mb-1">1.0 = 수당 없음, 1.5 = 50% 추가</div>
+                <div className="text-xs text-gray-500 mb-1 leading-tight">
+                  1.0 = 수당 없음<br/>1.5 = 50% 추가
+                </div>
                 <input
                   type="number"
                   step="0.1"
@@ -263,12 +289,14 @@ export default function HourlyWagesPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">야간 근무 가중치</label>
-                <div className="text-xs text-gray-500 mb-1">1.0 = 수당 없음, 1.3 = 30% 추가</div>
+                <div className="text-xs text-gray-500 mb-1 leading-tight">
+                  1.0 = 수당 없음<br/>1.3 = 30% 추가
+                </div>
                 <input
                   type="number"
                   step="0.1"
-                  value={newWage.night_shift_multiplier}
-                  onChange={(e) => setNewWage({ ...newWage, night_shift_multiplier: Number(e.target.value) })}
+                  value={newWage.night_multiplier}
+                  onChange={(e) => setNewWage({ ...newWage, night_multiplier: Number(e.target.value) })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   placeholder="1.0"
                 />
@@ -276,7 +304,9 @@ export default function HourlyWagesPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">휴일 근무 가중치</label>
-                <div className="block text-xs text-gray-500 mb-1">1.0 = 수당 없음, 2.0 = 100% 추가</div>
+                <div className="text-xs text-gray-500 mb-1 leading-tight">
+                  1.0 = 수당 없음<br/>2.0 = 100% 추가
+                </div>
                 <input
                   type="number"
                   step="0.1"
@@ -312,7 +342,7 @@ export default function HourlyWagesPage() {
                 onClick={() => setNewWage({
                   ...newWage,
                   overtime_multiplier: 1.0,
-                  night_shift_multiplier: 1.0,
+                  night_multiplier: 1.0,
                   holiday_multiplier: 1.0
                 })}
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm"
@@ -324,7 +354,7 @@ export default function HourlyWagesPage() {
                 onClick={() => setNewWage({
                   ...newWage,
                   overtime_multiplier: 1.5,
-                  night_shift_multiplier: 1.0,
+                  night_multiplier: 1.0,
                   holiday_multiplier: 1.0
                 })}
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm"
@@ -336,7 +366,7 @@ export default function HourlyWagesPage() {
                 onClick={() => setNewWage({
                   ...newWage,
                   overtime_multiplier: 1.5,
-                  night_shift_multiplier: 1.3,
+                  night_multiplier: 1.3,
                   holiday_multiplier: 2.0
                 })}
                 className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm"
@@ -386,7 +416,9 @@ export default function HourlyWagesPage() {
                       </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                           {wage.night_shift_multiplier === 1.0 ? '수당 없음' : `${wage.night_shift_multiplier}배`}
+                           {wage.night_multiplier === 1.0 || !wage.night_multiplier 
+                             ? '수당 없음' 
+                             : `${wage.night_multiplier}배`}
                           </div>
                         </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -455,8 +487,8 @@ export default function HourlyWagesPage() {
                 <input
                   type="number"
                   step="0.1"
-                  value={editingWage.night_shift_multiplier}
-                  onChange={(e) => setEditingWage({ ...editingWage, night_shift_multiplier: Number(e.target.value) })}
+                  value={editingWage.night_multiplier}
+                  onChange={(e) => setEditingWage({ ...editingWage, night_multiplier: Number(e.target.value) })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>

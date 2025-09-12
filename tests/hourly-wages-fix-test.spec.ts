@@ -72,9 +72,117 @@ test.describe('시급관리 오류 수정 테스트', () => {
     }
     
     if (!rowFound) {
-      console.log('❌ 허상원 행을 찾을 수 없음');
-      await page.screenshot({ path: 'playwright-report/hourly-wages-no-heo.png', fullPage: true });
-      return;
+      console.log('❌ 허상원 행을 찾을 수 없음 - 새 시급 등록 시도');
+      
+      // 새 시급 등록 섹션 확인
+      const newWageSection = page.locator('text=새 시급 등록');
+      const sectionExists = await newWageSection.count() > 0;
+      
+      if (sectionExists) {
+        console.log('✅ 새 시급 등록 섹션 발견');
+        
+        // 직원 선택 드롭다운 확인
+        const employeeDropdown = page.locator('select').first();
+        const dropdownExists = await employeeDropdown.count() > 0;
+        
+        if (dropdownExists) {
+          console.log('✅ 직원 선택 드롭다운 발견');
+          
+          // 허상원 선택 시도
+          try {
+            // 드롭다운 옵션 확인
+            const options = await employeeDropdown.locator('option').all();
+            console.log('📋 드롭다운 옵션 수:', options.length);
+            
+            for (let i = 0; i < options.length; i++) {
+              const option = options[i];
+              const text = await option.textContent();
+              console.log(`  옵션 ${i}: ${text}`);
+            }
+            
+            // 허상원이 포함된 옵션 찾기
+            let selectedOption = null;
+            for (let i = 0; i < options.length; i++) {
+              const option = options[i];
+              const text = await option.textContent();
+              if (text && text.includes('허상원')) {
+                selectedOption = text;
+                break;
+              }
+            }
+            
+            if (selectedOption) {
+              await employeeDropdown.selectOption({ label: selectedOption });
+              console.log('✅ 허상원 선택:', selectedOption);
+            } else {
+              console.log('❌ 허상원 옵션을 찾을 수 없음');
+              return;
+            }
+            
+            // 기본 시급 입력
+            const baseWageInput = page.locator('input[type="number"]').first();
+            await baseWageInput.fill('13000');
+            console.log('✅ 기본 시급 13000원 입력');
+            
+            // 등록 버튼 클릭
+            const registerButton = page.locator('button:has-text("등록")');
+            await registerButton.click();
+            await page.waitForTimeout(2000);
+            console.log('✅ 시급 등록 버튼 클릭');
+            
+            // 페이지 새로고침
+            await page.reload();
+            await page.waitForLoadState('networkidle');
+            console.log('✅ 페이지 새로고침');
+            
+            // 새로고침 후 테이블 상태 확인
+            const newTableRows = page.locator('tbody tr');
+            const newRowCount = await newTableRows.count();
+            console.log('📊 새로고침 후 테이블 행 수:', newRowCount);
+            
+            // 모든 행의 내용 출력
+            for (let i = 0; i < newRowCount; i++) {
+              const row = newTableRows.nth(i);
+              const rowText = await row.textContent();
+              console.log(`📋 새 행 ${i + 1}:`, rowText);
+            }
+            
+            // 다시 허상원 행 찾기
+            heoSangWonRow = page.locator('tr').filter({ hasText: '허상원' });
+            rowFound = await heoSangWonRow.count() > 0;
+            
+            if (rowFound) {
+              console.log('✅ 시급 등록 후 허상원 행 발견');
+            } else {
+              console.log('❌ 시급 등록 후에도 허상원 행을 찾을 수 없음');
+              
+              // 콘솔 로그에서 오류 확인
+              const errorLogs = consoleLogs.filter(log => 
+                log.includes('error') || 
+                log.includes('Error') || 
+                log.includes('PGRST204') ||
+                log.includes('Could not find')
+              );
+              
+              if (errorLogs.length > 0) {
+                console.log('❌ 발견된 오류:');
+                errorLogs.forEach(log => console.log(`  - ${log}`));
+              }
+            }
+          } catch (error) {
+            console.log('❌ 시급 등록 실패:', error);
+          }
+        } else {
+          console.log('❌ 직원 선택 드롭다운을 찾을 수 없음');
+        }
+      } else {
+        console.log('❌ 새 시급 등록 섹션을 찾을 수 없음');
+      }
+      
+      if (!rowFound) {
+        await page.screenshot({ path: 'playwright-report/hourly-wages-no-heo.png', fullPage: true });
+        return;
+      }
     }
     
     console.log('✅ 허상원 행 확인');
