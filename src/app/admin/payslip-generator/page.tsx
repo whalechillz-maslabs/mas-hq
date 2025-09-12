@@ -71,6 +71,7 @@ export default function PayslipGenerator() {
   });
   const [savedPayslips, setSavedPayslips] = useState<any[]>([]);
   const [showPayslipList, setShowPayslipList] = useState(false);
+  const [payslipFilter, setPayslipFilter] = useState<string>('all'); // 'all', '허상원', '최형호', etc.
 
   useEffect(() => {
     loadEmployees();
@@ -1361,13 +1362,60 @@ export default function PayslipGenerator() {
         {/* 발행된 급여명세서 목록 */}
         {showPayslipList && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">발행된 급여명세서 목록</h2>
-            
-            {savedPayslips.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                발행된 급여명세서가 없습니다.
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">발행된 급여명세서 목록</h2>
+              
+              {/* 직원별 필터 */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">직원별 필터:</label>
+                <select
+                  value={payslipFilter}
+                  onChange={(e) => setPayslipFilter(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">전체</option>
+                  {Array.from(new Set(savedPayslips.map(p => p.employees.name))).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
               </div>
-            ) : (
+            </div>
+            
+            {(() => {
+              const filteredPayslips = payslipFilter === 'all' 
+                ? savedPayslips 
+                : savedPayslips.filter(p => p.employees.name === payslipFilter);
+              
+              // 통계 계산
+              const totalAmount = filteredPayslips.reduce((sum, p) => sum + (p.net_salary || 0), 0);
+              const paidCount = filteredPayslips.filter(p => p.status === 'paid').length;
+              const issuedCount = filteredPayslips.filter(p => p.status === 'issued').length;
+              
+              return filteredPayslips.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {payslipFilter === 'all' ? '발행된 급여명세서가 없습니다.' : `${payslipFilter} 직원의 급여명세서가 없습니다.`}
+                </div>
+              ) : (
+                <>
+                  {/* 통계 정보 */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{filteredPayslips.length}</div>
+                      <div className="text-sm text-gray-600">총 정산서</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{paidCount}</div>
+                      <div className="text-sm text-gray-600">지급완료</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">{issuedCount}</div>
+                      <div className="text-sm text-gray-600">발행됨</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{totalAmount.toLocaleString()}</div>
+                      <div className="text-sm text-gray-600">총 지급액 (원)</div>
+                    </div>
+                  </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1402,7 +1450,7 @@ export default function PayslipGenerator() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {savedPayslips.map((payslip) => (
+                    {filteredPayslips.map((payslip) => (
                       <tr key={payslip.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {payslip.employees.name}
@@ -1448,7 +1496,9 @@ export default function PayslipGenerator() {
                   </tbody>
                 </table>
               </div>
-            )}
+                </>
+              );
+            })()}
           </div>
         )}
 
