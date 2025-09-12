@@ -1,100 +1,133 @@
 const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
 
-const supabase = createClient(
-  'https://cgscbtxtgualkfalouwh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnc2NidHh0Z3VhbGtmYWxvdXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ5MDY3MzYsImV4cCI6MjA3MDQ4MjczNn0.F0iFoFEJr87g4nA6Z7U1BK3t3ModxgZC2eWNIKRA0u8'
-);
+// .env.local 파일에서 환경 변수 읽기
+const envContent = fs.readFileSync('.env.local', 'utf8');
+const envVars = {};
+envContent.split('\n').forEach(line => {
+  const [key, value] = line.split('=');
+  if (key && value) {
+    // 따옴표와 개행 문자 제거
+    envVars[key.trim()] = value.trim().replace(/^["']|["']$/g, '').replace(/\\n/g, '');
+  }
+});
+
+// 환경 변수에서 Supabase 설정 가져오기
+const supabaseUrl = envVars.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = envVars.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkHeoSchedule() {
-  console.log('=== 허상원 8월 스케줄 확인 ===');
-  
-  // 허상원 직원 정보 확인
-  const { data: heo, error: empError } = await supabase
-    .from('employees')
-    .select('*')
-    .eq('name', '허상원')
-    .single();
+  try {
+    console.log('🔍 허상원 스케줄 및 정산 데이터 확인 시작');
     
-  if (empError) {
-    console.error('허상원 직원 정보 조회 실패:', empError);
-    return;
-  }
-  
-  console.log('허상원 정보:', {
-    name: heo.name,
-    employee_id: heo.employee_id,
-    employment_type: heo.employment_type
-  });
-  
-  // 8월 스케줄 확인
-  const { data: schedules, error: scheduleError } = await supabase
-    .from('schedules')
-    .select('*')
-    .eq('employee_id', heo.id)
-    .gte('schedule_date', '2025-08-01')
-    .lte('schedule_date', '2025-08-31')
-    .order('schedule_date');
+    // 1. 허상원 직원 정보 조회
+    const { data: heoEmployee, error: employeeError } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('name', '허상원')
+      .single();
     
-  if (scheduleError) {
-    console.error('스케줄 조회 실패:', scheduleError);
-    return;
-  }
-  
-  console.log(`\n8월 총 스케줄 수: ${schedules.length}개`);
-  
-  // 날짜별로 그룹화
-  const scheduleByDate = {};
-  schedules.forEach(schedule => {
-    const date = schedule.schedule_date;
-    if (!scheduleByDate[date]) {
-      scheduleByDate[date] = [];
+    if (employeeError) {
+      console.error('❌ 허상원 직원 정보 조회 실패:', employeeError);
+      return;
     }
-    scheduleByDate[date].push(schedule);
-  });
-  
-  // 정산서와 비교할 날짜들
-  const targetDates = [
-    '2025-08-11', '2025-08-12', '2025-08-13', '2025-08-18', '2025-08-19', 
-    '2025-08-20', '2025-08-21', '2025-08-25', '2025-08-26', '2025-08-27', 
-    '2025-08-28', '2025-08-29'
-  ];
-  
-  console.log('\n=== 정산서 날짜별 스케줄 확인 ===');
-  let totalHours = 0;
-  
-  targetDates.forEach(date => {
-    const daySchedules = scheduleByDate[date] || [];
-    if (daySchedules.length > 0) {
-      const dayTotalHours = daySchedules.reduce((sum, s) => sum + (s.total_hours || 0), 0);
-      totalHours += dayTotalHours;
-      
-      console.log(`${date}: ${daySchedules.length}개 스케줄, 총 ${dayTotalHours}시간`);
-      daySchedules.forEach(s => {
-        console.log(`  - ${s.scheduled_start} ~ ${s.scheduled_end} (${s.total_hours}시간)`);
+    
+    console.log('👤 허상원 직원 정보:', heoEmployee);
+    
+    // 2. 허상원 스케줄 데이터 조회 (모든 컬럼 확인)
+    const { data: schedules, error: scheduleError } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('employee_id', heoEmployee.id)
+      .limit(5);
+    
+    if (scheduleError) {
+      console.error('❌ 허상원 스케줄 조회 실패:', scheduleError);
+      return;
+    }
+    
+    console.log('📅 허상원 스케줄 데이터:');
+    if (schedules.length > 0) {
+      console.log('  실제 컬럼들:', Object.keys(schedules[0]));
+      schedules.forEach((schedule, index) => {
+        console.log(`  ${index + 1}.`, schedule);
       });
     } else {
-      console.log(`${date}: 스케줄 없음`);
+      console.log('  스케줄 데이터가 없습니다.');
     }
-  });
-  
-  console.log(`\n총 근무시간: ${totalHours}시간`);
-  console.log(`정산서 시간: 87.5시간`);
-  console.log(`차이: ${totalHours - 87.5}시간`);
-  
-  // 전체 8월 스케줄도 확인
-  console.log('\n=== 전체 8월 스케줄 ===');
-  const allDates = Object.keys(scheduleByDate).sort();
-  let totalAllHours = 0;
-  
-  allDates.forEach(date => {
-    const daySchedules = scheduleByDate[date];
-    const dayTotalHours = daySchedules.reduce((sum, s) => sum + (s.total_hours || 0), 0);
-    totalAllHours += dayTotalHours;
     
-    console.log(`${date}: ${dayTotalHours}시간`);
-  });
-  
-  console.log(`\n8월 전체 근무시간: ${totalAllHours}시간`);
+    // 3. 허상원 시급 데이터 조회
+    const { data: wages, error: wageError } = await supabase
+      .from('hourly_wages')
+      .select('*')
+      .eq('employee_id', heoEmployee.id)
+      .order('effective_start_date', { ascending: false });
+    
+    if (wageError) {
+      console.error('❌ 허상원 시급 데이터 조회 실패:', wageError);
+      return;
+    }
+    
+    console.log('💰 허상원 시급 데이터:');
+    wages.forEach((wage, index) => {
+      console.log(`  ${index + 1}. ${wage.effective_start_date}부터: ${wage.base_wage}원/시간`);
+      console.log(`     - 초과근무: ${wage.overtime_multiplier}배`);
+      console.log(`     - 야간근무: ${wage.night_multiplier}배`);
+      console.log(`     - 휴일근무: ${wage.holiday_multiplier}배`);
+    });
+    
+    // 4. 8월 스케줄로 정산 계산 테스트
+    const augustSchedules = schedules.filter(schedule => 
+      schedule.schedule_date.startsWith('2025-08')
+    );
+    
+    console.log('📊 8월 스케줄 정산 계산:');
+    let totalHours = 0;
+    let totalAmount = 0;
+    
+    augustSchedules.forEach(schedule => {
+      const scheduleDate = new Date(schedule.schedule_date);
+      const currentWage = wages.find(wage => 
+        new Date(wage.effective_start_date) <= scheduleDate &&
+        (!wage.effective_end_date || new Date(wage.effective_end_date) >= scheduleDate)
+      );
+      
+      if (currentWage) {
+        const dailyAmount = schedule.total_hours * currentWage.base_wage;
+        totalHours += schedule.total_hours;
+        totalAmount += dailyAmount;
+        
+        console.log(`  ${schedule.schedule_date}: ${schedule.total_hours}시간 × ${currentWage.base_wage}원 = ${dailyAmount.toLocaleString()}원`);
+        console.log(`    - 시간: ${schedule.scheduled_start} ~ ${schedule.scheduled_end}`);
+        console.log(`    - 노트: ${schedule.employee_note}`);
+      }
+    });
+    
+    console.log('💵 정산 요약:');
+    console.log(`  - 총 근무시간: ${totalHours}시간`);
+    console.log(`  - 총 금액: ${totalAmount.toLocaleString()}원`);
+    
+    // 5. 기존 정산 데이터 확인
+    const { data: settlements, error: settlementError } = await supabase
+      .from('payslips')
+      .select('*')
+      .eq('employee_id', heoEmployee.id)
+      .order('created_at', { ascending: false });
+    
+    if (settlementError) {
+      console.log('⚠️ 정산 데이터 조회 실패 (무시):', settlementError.message);
+    } else {
+      console.log('📋 기존 정산 데이터:');
+      settlements.forEach((settlement, index) => {
+        console.log(`  ${index + 1}. ${settlement.period}: ${settlement.net_salary?.toLocaleString()}원 (${settlement.created_at})`);
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ 오류 발생:', error);
+  }
 }
 
-checkHeoSchedule().catch(console.error);
+checkHeoSchedule();
