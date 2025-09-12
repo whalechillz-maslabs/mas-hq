@@ -54,6 +54,12 @@ export default function PayslipGenerator() {
   const [payslipData, setPayslipData] = useState<PayslipData | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  
+  // 분할 생성 관련 상태
+  const [showCustomPeriod, setShowCustomPeriod] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [customPeriodName, setCustomPeriodName] = useState('');
   const [checks, setChecks] = useState({
     baseSalary: false,
     overtimePay: false,
@@ -134,25 +140,47 @@ export default function PayslipGenerator() {
       return;
     }
 
+    const employee = employees.find(emp => emp.id === selectedEmployee);
+    if (!employee) {
+      alert('선택된 직원 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 분할 생성 시 유효성 검사
+    if (showCustomPeriod) {
+      if (!customStartDate || !customEndDate || !customPeriodName) {
+        alert('시작일, 종료일, 정산서명을 모두 입력해주세요.');
+        return;
+      }
+      
+      if (new Date(customStartDate) > new Date(customEndDate)) {
+        alert('시작일이 종료일보다 늦을 수 없습니다.');
+        return;
+      }
+    }
+
     try {
       setGenerating(true);
-      const employee = employees.find(emp => emp.id === selectedEmployee);
-      if (!employee) return;
-
       let payslip: PayslipData;
 
-      if (employee.employment_type === 'part_time') {
-        // 시간제 급여 계산
-        payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
+      if (showCustomPeriod) {
+        // 분할 생성
+        payslip = await generateCustomPeriodPayslip(employee, customStartDate, customEndDate, customPeriodName);
       } else {
-        // 월급제 급여 계산
-        payslip = await generateMonthlyPayslip(employee, selectedYear, selectedMonth);
+        // 월 단위 생성
+        if (employee.employment_type === 'part_time') {
+          // 시간제 급여 계산
+          payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
+        } else {
+          // 월급제 급여 계산
+          payslip = await generateMonthlyPayslip(employee, selectedYear, selectedMonth);
+        }
       }
 
       setPayslipData(payslip);
     } catch (error) {
       console.error('급여 명세서 생성 실패:', error);
-      alert('급여 명세서 생성에 실패했습니다.');
+      alert(`급여 명세서 생성에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     } finally {
       setGenerating(false);
     }
@@ -320,6 +348,154 @@ export default function PayslipGenerator() {
     } catch (saveError) {
       console.error('급여명세서 저장 중 오류:', saveError);
       // 저장 실패해도 화면에는 표시
+    }
+
+    return payslip;
+  };
+
+  // 분할 생성 함수
+  const generateCustomPeriodPayslip = async (employee: Employee, startDate: string, endDate: string, periodName: string) => {
+    if (employee.employment_type !== 'part_time') {
+      throw new Error('분할 생성은 시간제 직원만 가능합니다.');
+    }
+
+    // 해당 기간의 스케줄 조회
+    const { data: schedules, error: scheduleError } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('employee_id', employee.id)
+      .gte('schedule_date', startDate)
+      .lte('schedule_date', endDate)
+      .order('schedule_date');
+
+    if (scheduleError) {
+      throw new Error('스케줄 조회에 실패했습니다.');
+    }
+
+    if (!schedules || schedules.length === 0) {
+      throw new Error('해당 기간에 스케줄이 없습니다.');
+    }
+
+    // 시급 정보 조회
+    const { data: wages, error: wageError } = await supabase
+      .from('hourly_wages')
+      .select('*')
+      .eq('employee_id', employee.id)
+      .order('effective_start_date');
+
+    if (wageError) {
+      throw new Error('시급 정보 조회에 실패했습니다.');
+    }
+
+    if (!wages || wages.length === 0) {
+      throw new Error('시급 정보가 없습니다.');
+    }
+
+    // 일별 근무시간 계산
+    const dailyHours: { [date: string]: number } = {};
+    schedules.forEach(schedule => {
+      if (schedule.total_hours && schedule.total_hours > 0) {
+        dailyHours[schedule.schedule_date] = (dailyHours[schedule.schedule_date] || 0) + schedule.total_hours;
+      }
+    });
+
+    // 시급 적용 및 총액 계산
+    let totalHours = 0;
+    let totalWage = 0;
+    const dailyDetails: Array<{
+      date: string;
+      hours: number;
+      hourly_wage: number;
+      daily_wage: number;
+    }> = [];
+
+    Object.keys(dailyHours).sort().forEach(date => {
+      const hours = dailyHours[date];
+      const scheduleDate = new Date(date);
+      
+      // 해당 날짜에 적용되는 시급 찾기
+      const applicableWage = wages.find(wage => 
+        new Date(wage.effective_start_date) <= scheduleDate &&
+        (!wage.effective_end_date || new Date(wage.effective_end_date) >= scheduleDate)
+      );
+      
+      const hourlyWage = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
+      const dayWage = hours * hourlyWage;
+      
+      totalHours += hours;
+      totalWage += dayWage;
+      
+      dailyDetails.push({
+        date,
+        hours,
+        hourly_wage: hourlyWage,
+        daily_wage: dayWage
+      });
+    });
+
+    // 세금 계산 (3.3%)
+    const taxAmount = Math.round(totalWage * 0.033);
+    const netSalary = totalWage - taxAmount;
+
+    const payslip: PayslipData = {
+      employee_id: employee.id,
+      employee_name: employee.name,
+      employee_code: employee.employee_id,
+      employee_nickname: employee.nickname || employee.name,
+      payment_date: new Date().toISOString().split('T')[0],
+      salary_period: periodName, // 사용자가 입력한 정산서명 사용
+      employment_type: 'part_time',
+      base_salary: totalWage,
+      overtime_pay: 0,
+      incentive: 0,
+      point_bonus: 0,
+      total_earnings: totalWage,
+      tax_amount: taxAmount,
+      net_salary: netSalary,
+      status: 'generated',
+      total_hours: totalHours,
+      hourly_rate: wages[wages.length - 1].base_wage, // 최신 시급
+      daily_details: dailyDetails.map(detail => ({
+        date: detail.date,
+        hours: detail.hours,
+        daily_wage: detail.daily_wage
+      }))
+    };
+
+    // 중복 체크 후 저장
+    try {
+      const { data: existingPayslip, error: checkError } = await supabase
+        .from('payslips')
+        .select('*')
+        .eq('employee_id', employee.id)
+        .eq('period', periodName)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingPayslip) {
+        throw new Error(`이미 '${periodName}' 기간의 정산서가 존재합니다. 다른 이름을 사용해주세요.`);
+      }
+
+      // 새 정산서 저장
+      const { error: saveError } = await supabase
+        .from('payslips')
+        .insert([{
+          ...payslip,
+          period: periodName
+        }]);
+
+      if (saveError) {
+        console.error('급여명세서 저장 실패:', saveError);
+        throw new Error('급여명세서 저장에 실패했습니다.');
+      }
+      
+      console.log('✅ 분할 급여명세서 저장 성공');
+    } catch (saveError) {
+      console.error('급여명세서 저장 중 오류:', saveError);
+      throw saveError;
     }
 
     return payslip;
@@ -1029,6 +1205,30 @@ export default function PayslipGenerator() {
               <p>선택된 직원: {selectedEmployee || '없음'}</p>
             </div>
             
+            {/* 생성 방식 선택 */}
+            <div className="flex gap-4 mb-4">
+              <button
+                onClick={() => setShowCustomPeriod(false)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  !showCustomPeriod 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                월 단위 생성
+              </button>
+              <button
+                onClick={() => setShowCustomPeriod(true)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  showCustomPeriod 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                분할 생성 (기간 지정)
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 직원 선택 */}
               <div>
@@ -1050,51 +1250,103 @@ export default function PayslipGenerator() {
                 </select>
               </div>
 
-              {/* 년도 선택 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  년도
-                </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}년
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* 월 단위 생성 - 년도/월 선택 */}
+              {!showCustomPeriod && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      년도
+                    </label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}년
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* 월 선택 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  월
-                </label>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {monthOptions.map((month) => (
-                    <option key={month} value={month}>
-                      {month}월
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      월
+                    </label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {monthOptions.map((month) => (
+                        <option key={month} value={month}>
+                          {month}월
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* 분할 생성 - 기간 지정 */}
+              {showCustomPeriod && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      시작일
+                    </label>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      종료일
+                    </label>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </>
+              )}
             </div>
+
+            {/* 분할 생성 시 정산서명 입력 */}
+            {showCustomPeriod && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  정산서명 (예: 8월 1차, 7월 2차)
+                </label>
+                <input
+                  type="text"
+                  value={customPeriodName}
+                  onChange={(e) => setCustomPeriodName(e.target.value)}
+                  placeholder="예: 2025-08-1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
 
             {/* 생성 버튼 */}
             <div className="flex justify-center gap-4 pt-4">
               <button
                 onClick={generatePayslip}
-                disabled={!selectedEmployee || generating}
+                disabled={!selectedEmployee || generating || (showCustomPeriod && (!customStartDate || !customEndDate || !customPeriodName))}
                 className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
               >
-                {generating ? '생성 중...' : `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`}
+                {generating ? '생성 중...' : 
+                  showCustomPeriod ? 
+                    `${customStartDate} ~ ${customEndDate} 급여 명세서 생성` :
+                    `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`
+                }
               </button>
               <button
                 onClick={() => setShowPayslipList(!showPayslipList)}
