@@ -511,8 +511,20 @@ export default function PayslipGenerator() {
       const { error: saveError } = await supabase
         .from('payslips')
         .insert([{
-          ...payslip,
-          period: periodName
+          employee_id: payslip.employee_id,
+          period: periodName, // 데이터베이스 필드명
+          employment_type: payslip.employment_type,
+          base_salary: payslip.base_salary,
+          overtime_pay: payslip.overtime_pay,
+          incentive: payslip.incentive,
+          point_bonus: payslip.point_bonus,
+          total_earnings: payslip.total_earnings,
+          tax_amount: payslip.tax_amount,
+          net_salary: payslip.net_salary,
+          total_hours: payslip.total_hours,
+          hourly_rate: payslip.hourly_rate,
+          daily_details: payslip.daily_details,
+          status: payslip.status
         }]);
 
       if (saveError) {
