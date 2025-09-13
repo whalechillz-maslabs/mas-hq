@@ -11,16 +11,16 @@ test('당사자(허상원) 정산서 조회 테스트', async ({ page }) => {
   const pageContent = await page.content();
   console.log('📄 로그인 페이지 접근 완료');
   
-  // 다양한 로그인 방법 시도
-  const usernameInput = page.locator('input[type="text"], input[name="username"], input[name="email"], input[placeholder*="사용자"], input[placeholder*="아이디"]').first();
+  // 전화번호 로그인 방식 시도
+  const phoneInput = page.locator('input[name="phone"], input[type="tel"]').first();
   const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
   const submitButton = page.locator('button[type="submit"], button:has-text("로그인"), button:has-text("Login")').first();
   
-  if (await usernameInput.count() > 0) {
-    await usernameInput.fill('maslabs-003@maslabs.kr');
-    console.log('✅ 허상원 이메일 입력 완료');
+  if (await phoneInput.count() > 0) {
+    await phoneInput.fill('010-8948-4501');
+    console.log('✅ 허상원 전화번호 입력 완료');
   } else {
-    console.log('❌ 사용자명 입력 필드를 찾을 수 없음');
+    console.log('❌ 전화번호 입력 필드를 찾을 수 없음');
   }
   
   if (await passwordInput.count() > 0) {
@@ -96,14 +96,14 @@ test('당사자(허상원) 정산서 조회 테스트', async ({ page }) => {
   }
   
   // 5. 정산서 상세보기 테스트
-  const viewButton = page.locator('button:has-text("상세보기")').first();
+  const viewButton = page.locator('button:has-text("상세보기"), a:has-text("상세보기")').first();
   if (await viewButton.count() > 0) {
     await viewButton.click();
     console.log('✅ 정산서 상세보기 버튼 클릭');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     
-    // 모달이 열렸는지 확인
-    const modal = page.locator('.fixed.inset-0');
+    // 모달이 열렸는지 확인 (더 구체적인 선택자 사용)
+    const modal = page.locator('.fixed.inset-0.bg-gray-600, [role="dialog"], .modal');
     if (await modal.count() > 0) {
       console.log('✅ 정산서 상세 모달 열림');
       
