@@ -2226,6 +2226,90 @@ export default function PayslipGenerator() {
                     </div>
                   </div>
                 )}
+
+                {/* 모달 하단 버튼들 */}
+                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => printSavedPayslip(selectedPayslipForDetails)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      출력/인쇄
+                    </button>
+                    {selectedPayslipForDetails.status === 'generated' && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from('payslips')
+                              .update({ 
+                                status: 'issued',
+                                issued_at: new Date().toISOString()
+                              })
+                              .eq('id', selectedPayslipForDetails.id);
+
+                            if (error) {
+                              throw error;
+                            }
+
+                            // 상태 업데이트
+                            setSelectedPayslipForDetails((prev: any) => prev ? { ...prev, status: 'issued' } : null);
+                            await loadSavedPayslips();
+                            alert('급여 명세서가 발행되었습니다.');
+                          } catch (error) {
+                            console.error('발행 실패:', error);
+                            alert('발행에 실패했습니다.');
+                          }
+                        }}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        발행
+                      </button>
+                    )}
+                    {selectedPayslipForDetails.status === 'issued' && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from('payslips')
+                              .update({ 
+                                status: 'paid',
+                                paid_at: new Date().toISOString()
+                              })
+                              .eq('id', selectedPayslipForDetails.id);
+
+                            if (error) {
+                              throw error;
+                            }
+
+                            // 상태 업데이트
+                            setSelectedPayslipForDetails((prev: any) => prev ? { ...prev, status: 'paid' } : null);
+                            await loadSavedPayslips();
+                            alert('급여 지급이 완료되었습니다.');
+                          } catch (error) {
+                            console.error('지급 완료 실패:', error);
+                            alert('지급 완료 처리에 실패했습니다.');
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        지급 완료
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deletePayslip(selectedPayslipForDetails.id, selectedPayslipForDetails.employees?.name || '알 수 없음', selectedPayslipForDetails.period)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPayslipForDetails(null)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    닫기
+                  </button>
+                </div>
               </div>
             </div>
           </div>
