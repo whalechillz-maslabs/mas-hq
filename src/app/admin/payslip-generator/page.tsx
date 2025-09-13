@@ -42,6 +42,7 @@ interface PayslipData {
     date: string;
     hours: number;
     daily_wage: number;
+    hourly_rate: number;
   }>;
 }
 
@@ -245,7 +246,7 @@ export default function PayslipGenerator() {
     const dailyDetails: Array<{
       date: string;
       hours: number;
-      hourly_wage: number;
+      hourly_rate: number;
       daily_wage: number;
     }> = [];
 
@@ -278,7 +279,7 @@ export default function PayslipGenerator() {
       dailyDetails.push({
         date,
         hours,
-        hourly_wage: hourlyWage,
+        hourly_rate: hourlyWage,
         daily_wage: dayWage
       });
     });
@@ -308,7 +309,8 @@ export default function PayslipGenerator() {
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
         hours: detail.hours,
-        daily_wage: detail.daily_wage
+        daily_wage: detail.daily_wage,
+        hourly_rate: detail.hourly_rate
       }))
     };
 
@@ -436,7 +438,7 @@ export default function PayslipGenerator() {
     const dailyDetails: Array<{
       date: string;
       hours: number;
-      hourly_wage: number;
+      hourly_rate: number;
       daily_wage: number;
     }> = [];
 
@@ -469,7 +471,7 @@ export default function PayslipGenerator() {
       dailyDetails.push({
         date,
         hours,
-        hourly_wage: hourlyWage,
+        hourly_rate: hourlyWage,
         daily_wage: dayWage
       });
     });
@@ -499,7 +501,8 @@ export default function PayslipGenerator() {
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
         hours: detail.hours,
-        daily_wage: detail.daily_wage
+        daily_wage: detail.daily_wage,
+        hourly_rate: detail.hourly_rate
       }))
     };
 
