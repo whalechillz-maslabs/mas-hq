@@ -1352,7 +1352,12 @@ export default function PayslipGenerator() {
             <div className="text-sm text-gray-600">
               <p>로딩 상태: {loading ? '로딩 중...' : '완료'}</p>
               <p>직원 수: {employees.length}명</p>
-              <p>선택된 직원: {selectedEmployee || '없음'}</p>
+              <p>선택된 직원: {selectedEmployee ? 
+                (() => {
+                  const employee = employees.find(emp => emp.id === selectedEmployee);
+                  return employee ? `${employee.name} (${employee.employee_id})` : '알 수 없음';
+                })() 
+                : '없음'}</p>
             </div>
             
             {/* 생성 방식 선택 */}
