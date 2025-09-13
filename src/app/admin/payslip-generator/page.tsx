@@ -185,7 +185,7 @@ export default function PayslipGenerator() {
 
     // 월 단위 생성 시 중복 체크
     if (!showCustomPeriod) {
-      const period = `${year}-${month.toString().padStart(2, '0')}`;
+      const period = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
       
       // 기존 급여명세서가 있는지 확인
       const { data: existingPayslip, error: checkError } = await supabase
@@ -294,7 +294,10 @@ export default function PayslipGenerator() {
       const date = schedule.schedule_date;
       const start = new Date(`${date} ${schedule.scheduled_start}`);
       const end = new Date(`${date} ${schedule.scheduled_end}`);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // 스케줄 자체가 점심시간 제외된 순 근무시간
+      const rawHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // 스케줄 자체가 점심시간 제외된 순 근무시간
+      
+      // 근무시간을 그대로 사용 (정규화하지 않음)
+      const hours = rawHours;
       
       if (!dailyHours[date]) {
         dailyHours[date] = 0;
@@ -345,9 +348,9 @@ export default function PayslipGenerator() {
       });
     });
 
-    // 세금 계산 (3.3%)
+    // 세금 계산 (3.3% 사업소득세)
     const taxAmount = Math.round(totalWage * 0.033);
-    const netSalary = totalWage - taxAmount;
+    const netSalary = totalWage - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -406,8 +409,8 @@ export default function PayslipGenerator() {
     const incentive = 0; // 추후 구현
     const pointBonus = 0; // 추후 구현
     const totalEarnings = baseSalary + overtimePay + incentive + pointBonus;
-    const taxAmount = Math.round(totalEarnings * 0.033); // 3.3% 세금
-    const netSalary = totalEarnings - taxAmount;
+    const taxAmount = Math.round(totalEarnings * 0.033); // 3.3% 사업소득세
+    const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -485,12 +488,21 @@ export default function PayslipGenerator() {
       throw new Error('시급 정보가 없습니다.');
     }
 
-    // 일별 근무시간 계산
+    // 일별 근무시간 계산 (스케줄의 실제 시간을 그대로 사용)
     const dailyHours: { [date: string]: number } = {};
     schedules.forEach(schedule => {
-      if (schedule.total_hours && schedule.total_hours > 0) {
-        dailyHours[schedule.schedule_date] = (dailyHours[schedule.schedule_date] || 0) + schedule.total_hours;
+      const date = schedule.schedule_date;
+      const start = new Date(`${date} ${schedule.scheduled_start}`);
+      const end = new Date(`${date} ${schedule.scheduled_end}`);
+      const rawHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // 스케줄의 실제 근무시간
+      
+      // 근무시간을 그대로 사용 (정규화하지 않음)
+      const hours = rawHours;
+      
+      if (!dailyHours[date]) {
+        dailyHours[date] = 0;
       }
+      dailyHours[date] += hours;
     });
 
     // 시급 적용 및 총액 계산
@@ -537,9 +549,9 @@ export default function PayslipGenerator() {
       });
     });
 
-    // 세금 계산 (3.3%)
+    // 세금 계산 (3.3% 사업소득세)
     const taxAmount = Math.round(totalWage * 0.033);
-    const netSalary = totalWage - taxAmount;
+    const netSalary = totalWage - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
