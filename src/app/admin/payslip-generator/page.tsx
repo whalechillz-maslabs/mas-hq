@@ -520,12 +520,12 @@ export default function PayslipGenerator() {
         throw new Error(`이미 '${periodName}' 기간의 정산서가 존재합니다. 다른 이름을 사용해주세요.`);
       }
 
-      // 새 정산서 저장
+      // 새 정산서 저장 (데이터베이스 스키마에 맞게 필드 제한)
       const { error: saveError } = await supabase
         .from('payslips')
         .insert([{
           employee_id: payslip.employee_id,
-          period: periodName, // 데이터베이스 필드명
+          period: periodName,
           employment_type: payslip.employment_type,
           base_salary: payslip.base_salary,
           overtime_pay: payslip.overtime_pay,
