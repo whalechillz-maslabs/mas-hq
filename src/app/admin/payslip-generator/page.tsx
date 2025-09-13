@@ -55,6 +55,7 @@ export default function PayslipGenerator() {
   const [payslipData, setPayslipData] = useState<PayslipData | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [isDuplicatePeriod, setIsDuplicatePeriod] = useState(false);
   
   // 분할 생성 관련 상태
   const [showCustomPeriod, setShowCustomPeriod] = useState(false);
@@ -78,6 +79,39 @@ export default function PayslipGenerator() {
     loadEmployees();
     loadSavedPayslips();
   }, []);
+
+  // 중복 체크 useEffect
+  useEffect(() => {
+    const checkDuplicatePeriod = async () => {
+      if (!selectedEmployee || showCustomPeriod) {
+        setIsDuplicatePeriod(false);
+        return;
+      }
+
+      try {
+        const period = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+        const { data: existingPayslip, error } = await supabase
+          .from('payslips')
+          .select('*')
+          .eq('employee_id', selectedEmployee)
+          .eq('period', period)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('중복 체크 중 오류:', error);
+          setIsDuplicatePeriod(false);
+          return;
+        }
+
+        setIsDuplicatePeriod(!!existingPayslip);
+      } catch (error) {
+        console.error('중복 체크 중 오류:', error);
+        setIsDuplicatePeriod(false);
+      }
+    };
+
+    checkDuplicatePeriod();
+  }, [selectedEmployee, selectedYear, selectedMonth, showCustomPeriod]);
 
   const loadEmployees = async () => {
     try {
@@ -146,6 +180,32 @@ export default function PayslipGenerator() {
     if (!employee) {
       alert('선택된 직원 정보를 찾을 수 없습니다.');
       return;
+    }
+
+    // 월 단위 생성 시 중복 체크
+    if (!showCustomPeriod) {
+      const period = `${year}-${month.toString().padStart(2, '0')}`;
+      
+      // 기존 급여명세서가 있는지 확인
+      const { data: existingPayslip, error: checkError } = await supabase
+        .from('payslips')
+        .select('*')
+        .eq('employee_id', employee.id)
+        .eq('period', period)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('중복 체크 중 오류:', checkError);
+        alert('급여명세서 중복 체크 중 오류가 발생했습니다.');
+        return;
+      }
+
+      if (existingPayslip) {
+        const statusText = existingPayslip.status === 'generated' ? '생성됨' : 
+                          existingPayslip.status === 'issued' ? '발행됨' : '지급완료';
+        alert(`이미 ${period} 기간의 급여명세서가 존재합니다. (상태: ${statusText})\n\n발행된 급여명세서 목록에서 확인해주세요.`);
+        return;
+      }
     }
 
     // 분할 생성 시 유효성 검사
@@ -1406,10 +1466,12 @@ export default function PayslipGenerator() {
             <div className="flex justify-center gap-4 pt-4">
               <button
                 onClick={generatePayslip}
-                disabled={!selectedEmployee || generating || (showCustomPeriod && (!customStartDate || !customEndDate || !customPeriodName))}
+                disabled={!selectedEmployee || generating || isDuplicatePeriod || (showCustomPeriod && (!customStartDate || !customEndDate || !customPeriodName))}
                 className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
               >
                 {generating ? '생성 중...' : 
+                  isDuplicatePeriod ? 
+                    `${selectedYear}년 ${selectedMonth}월 급여명세서 이미 존재` :
                   showCustomPeriod ? 
                     `${customStartDate} ~ ${customEndDate} 급여 명세서 생성` :
                     `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`
