@@ -716,6 +716,29 @@ export default function PayslipGenerator() {
     }
   };
 
+  const deletePayslip = async (payslipId: string, employeeName: string, period: string) => {
+    if (!confirm(`${employeeName}의 ${period} 급여명세서를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('payslips')
+        .delete()
+        .eq('id', payslipId);
+
+      if (error) {
+        throw error;
+      }
+
+      await loadSavedPayslips(); // 발행된 급여명세서 목록 새로고침
+      alert('급여명세서가 삭제되었습니다.');
+    } catch (error) {
+      console.error('급여명세서 삭제 실패:', error);
+      alert(`급여명세서 삭제에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    }
+  };
+
   function printSavedPayslip(payslip: any) {
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -1612,12 +1635,20 @@ export default function PayslipGenerator() {
                           {payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <button
-                            onClick={() => printSavedPayslip(payslip)}
-                            className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
-                          >
-                            출력/인쇄
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => printSavedPayslip(payslip)}
+                              className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                            >
+                              출력/인쇄
+                            </button>
+                            <button
+                              onClick={() => deletePayslip(payslip.id, payslip.employees.name, payslip.period)}
+                              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                            >
+                              삭제
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
