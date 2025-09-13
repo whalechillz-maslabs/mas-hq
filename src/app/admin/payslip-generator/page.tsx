@@ -75,6 +75,9 @@ export default function PayslipGenerator() {
   const [showPayslipList, setShowPayslipList] = useState(false);
   const [payslipFilter, setPayslipFilter] = useState<string>('all'); // 'all', '허상원', '최형호', etc.
   const [selectedPayslipForDetails, setSelectedPayslipForDetails] = useState<any>(null);
+  const [editingDates, setEditingDates] = useState(false);
+  const [editIssuedDate, setEditIssuedDate] = useState('');
+  const [editPaidDate, setEditPaidDate] = useState('');
 
   useEffect(() => {
     loadEmployees();
@@ -794,6 +797,49 @@ export default function PayslipGenerator() {
     console.log('daily_details:', payslip.daily_details);
     console.log('employees:', payslip.employees);
     setSelectedPayslipForDetails(payslip);
+    setEditingDates(false);
+    // 날짜 편집을 위한 초기값 설정
+    setEditIssuedDate(payslip.issued_at ? new Date(payslip.issued_at).toISOString().split('T')[0] : '');
+    setEditPaidDate(payslip.paid_at ? new Date(payslip.paid_at).toISOString().split('T')[0] : '');
+  };
+
+  const updatePayslipDates = async () => {
+    if (!selectedPayslipForDetails) return;
+
+    try {
+      const updateData: any = {};
+      
+      if (editIssuedDate) {
+        updateData.issued_at = new Date(editIssuedDate).toISOString();
+      }
+      
+      if (editPaidDate) {
+        updateData.paid_at = new Date(editPaidDate).toISOString();
+      }
+
+      const { error } = await supabase
+        .from('payslips')
+        .update(updateData)
+        .eq('id', selectedPayslipForDetails.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // 상태 업데이트
+      setSelectedPayslipForDetails((prev: any) => prev ? {
+        ...prev,
+        issued_at: editIssuedDate ? new Date(editIssuedDate).toISOString() : prev.issued_at,
+        paid_at: editPaidDate ? new Date(editPaidDate).toISOString() : prev.paid_at
+      } : null);
+      
+      await loadSavedPayslips();
+      setEditingDates(false);
+      alert('날짜가 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('날짜 업데이트 실패:', error);
+      alert('날짜 업데이트에 실패했습니다.');
+    }
   };
 
   function printSavedPayslip(payslip: any) {
@@ -2064,6 +2110,74 @@ export default function PayslipGenerator() {
                       {selectedPayslipForDetails.employment_type === 'part_time' ? '파트타임' : '정규직'}
                     </div>
                   </div>
+                </div>
+
+                {/* 발행일/지급일 편집 섹션 */}
+                <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">발행일/지급일 관리</h3>
+                    <button
+                      onClick={() => setEditingDates(!editingDates)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    >
+                      {editingDates ? '취소' : '편집'}
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        발행일
+                      </label>
+                      {editingDates ? (
+                        <input
+                          type="date"
+                          value={editIssuedDate}
+                          onChange={(e) => setEditIssuedDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <div className="px-3 py-2 bg-white border border-gray-300 rounded-lg">
+                          {selectedPayslipForDetails.issued_at 
+                            ? new Date(selectedPayslipForDetails.issued_at).toLocaleDateString('ko-KR')
+                            : '미발행'
+                          }
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        지급일
+                      </label>
+                      {editingDates ? (
+                        <input
+                          type="date"
+                          value={editPaidDate}
+                          onChange={(e) => setEditPaidDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <div className="px-3 py-2 bg-white border border-gray-300 rounded-lg">
+                          {selectedPayslipForDetails.paid_at 
+                            ? new Date(selectedPayslipForDetails.paid_at).toLocaleDateString('ko-KR')
+                            : '미지급'
+                          }
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {editingDates && (
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={updatePayslipDates}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        날짜 저장
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* 급여 요약 */}
