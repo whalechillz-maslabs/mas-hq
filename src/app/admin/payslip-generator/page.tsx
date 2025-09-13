@@ -1666,13 +1666,46 @@ export default function PayslipGenerator() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">일별 상세:</span>
-                      <span className="font-medium text-blue-600 cursor-pointer" onClick={() => {
-                        const details = payslipData.daily_details?.map(d => {
-                          const day = parseInt(d.date.split('-')[2]);
-                          const hourlyRate = day <= 7 ? 13000 : 12000;
+                      <span className="font-medium text-blue-600 cursor-pointer" onClick={async () => {
+                        if (!payslipData.daily_details) {
+                          alert('일별 상세 정보가 없습니다.');
+                          return;
+                        }
+                        
+                        // 시급 정보 조회
+                        const { data: wages, error: wageError } = await supabase
+                          .from('hourly_wages')
+                          .select('*')
+                          .eq('employee_id', payslipData.employee_id)
+                          .order('effective_start_date');
+                        
+                        if (wageError || !wages || wages.length === 0) {
+                          alert('시급 정보를 조회할 수 없습니다.');
+                          return;
+                        }
+                        
+                        const details = payslipData.daily_details.map(d => {
+                          const scheduleDate = new Date(d.date);
+                          
+                          // 해당 날짜에 적용되는 시급 찾기 (명확한 기간 기반)
+                          const applicableWages = wages.filter(wage => {
+                            const startDate = new Date(wage.effective_start_date);
+                            const endDate = wage.effective_end_date ? new Date(wage.effective_end_date) : null;
+                            return startDate <= scheduleDate && (!endDate || endDate >= scheduleDate);
+                          });
+                          
+                          // 가장 최근에 시작된 시급 선택
+                          const applicableWage = applicableWages.length > 0 
+                            ? applicableWages.reduce((latest, current) => 
+                                new Date(current.effective_start_date) > new Date(latest.effective_start_date) ? current : latest
+                              )
+                            : wages[0];
+                          
+                          const hourlyRate = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
                           return `${d.date}: ${d.hours}시간 × ${hourlyRate.toLocaleString()}원 = ${d.daily_wage.toLocaleString()}원`;
                         }).join('\n');
-                        alert(details || '일별 상세 정보가 없습니다.');
+                        
+                        alert(details);
                       }}>
                         클릭하여 확인
                       </span>
