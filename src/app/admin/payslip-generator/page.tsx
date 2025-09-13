@@ -592,12 +592,23 @@ export default function PayslipGenerator() {
           throw error;
         }
       } else {
-        // 기존 레코드가 없으면 새로 생성
+        // 기존 레코드가 없으면 새로 생성 (데이터베이스 스키마에 맞게 필드 제한)
         const { error } = await supabase
           .from('payslips')
           .insert([{
-            ...payslipData,
-            period: payslipData.salary_period, // salary_period를 period로 매핑
+            employee_id: payslipData.employee_id,
+            period: payslipData.salary_period,
+            employment_type: payslipData.employment_type,
+            base_salary: payslipData.base_salary,
+            overtime_pay: payslipData.overtime_pay,
+            incentive: payslipData.incentive,
+            point_bonus: payslipData.point_bonus,
+            total_earnings: payslipData.total_earnings,
+            tax_amount: payslipData.tax_amount,
+            net_salary: payslipData.net_salary,
+            total_hours: payslipData.total_hours,
+            hourly_rate: payslipData.hourly_rate,
+            daily_details: payslipData.daily_details,
             status: 'issued',
             issued_at: new Date().toISOString()
           }]);
@@ -1641,73 +1652,28 @@ export default function PayslipGenerator() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">시급별 계산:</span>
-                      <span className="font-medium text-blue-600 cursor-pointer" onClick={() => {
-                        // 시급별 계산 상세 표시
-                        const hourlyDetails = payslipData.daily_details?.reduce((acc, detail) => {
-                          const day = parseInt(detail.date.split('-')[2]);
-                          const hourlyRate = day <= 7 ? 13000 : 12000;
-                          const key = `${hourlyRate.toLocaleString()}원`;
-                          if (!acc[key]) {
-                            acc[key] = { hours: 0, wage: 0 };
-                          }
-                          acc[key].hours += detail.hours;
-                          acc[key].wage += detail.daily_wage;
-                          return acc;
-                        }, {} as { [key: string]: { hours: number; wage: number } });
+                      <span className="font-medium text-gray-800">
+                        {(() => {
+                          const hourlyDetails = payslipData.daily_details?.reduce((acc, detail) => {
+                            const key = detail.hourly_rate.toString();
+                            if (!acc[key]) {
+                              acc[key] = { hours: 0, wage: 0 };
+                            }
+                            acc[key].hours += detail.hours;
+                            acc[key].wage += detail.daily_wage;
+                            return acc;
+                          }, {} as { [key: string]: { hours: number; wage: number } });
 
-                        const details = Object.entries(hourlyDetails || {}).map(([rate, data]) => 
-                          `${rate}: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
-                        ).join('\n');
-                        
-                        alert(`시급별 계산 상세:\n\n${details}`);
-                      }}>
-                        클릭하여 확인
+                          return Object.entries(hourlyDetails || {}).map(([rate, data]) => 
+                            `${rate.toLocaleString()}원: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
+                          ).join(', ');
+                        })()}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">일별 상세:</span>
-                      <span className="font-medium text-blue-600 cursor-pointer" onClick={async () => {
-                        if (!payslipData.daily_details) {
-                          alert('일별 상세 정보가 없습니다.');
-                          return;
-                        }
-                        
-                        // 시급 정보 조회
-                        const { data: wages, error: wageError } = await supabase
-                          .from('hourly_wages')
-                          .select('*')
-                          .eq('employee_id', payslipData.employee_id)
-                          .order('effective_start_date');
-                        
-                        if (wageError || !wages || wages.length === 0) {
-                          alert('시급 정보를 조회할 수 없습니다.');
-                          return;
-                        }
-                        
-                        const details = payslipData.daily_details.map(d => {
-                          const scheduleDate = new Date(d.date);
-                          
-                          // 해당 날짜에 적용되는 시급 찾기 (명확한 기간 기반)
-                          const applicableWages = wages.filter(wage => {
-                            const startDate = new Date(wage.effective_start_date);
-                            const endDate = wage.effective_end_date ? new Date(wage.effective_end_date) : null;
-                            return startDate <= scheduleDate && (!endDate || endDate >= scheduleDate);
-                          });
-                          
-                          // 가장 최근에 시작된 시급 선택
-                          const applicableWage = applicableWages.length > 0 
-                            ? applicableWages.reduce((latest, current) => 
-                                new Date(current.effective_start_date) > new Date(latest.effective_start_date) ? current : latest
-                              )
-                            : wages[0];
-                          
-                          const hourlyRate = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
-                          return `${d.date}: ${d.hours}시간 × ${hourlyRate.toLocaleString()}원 = ${d.daily_wage.toLocaleString()}원`;
-                        }).join('\n');
-                        
-                        alert(details);
-                      }}>
-                        클릭하여 확인
+                      <span className="font-medium text-gray-800">
+                        {payslipData.daily_details?.length || 0}일 근무
                       </span>
                     </div>
                   </div>
@@ -1756,6 +1722,41 @@ export default function PayslipGenerator() {
               </div>
             </div>
 
+            {/* 일별 상세 리스트 */}
+            {payslipData.daily_details && payslipData.daily_details.length > 0 && (
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-md font-medium text-gray-900 mb-4">일별 상세 내역</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-2">
+                    {payslipData.daily_details.map((detail, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 px-3 bg-white rounded border">
+                        <div className="flex items-center space-x-4">
+                          <span className="text-sm font-medium text-gray-900">
+                            {new Date(detail.date).toLocaleDateString('ko-KR', { 
+                              month: 'long', 
+                              day: 'numeric',
+                              weekday: 'short'
+                            })}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {detail.hours}시간
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-600">
+                            {detail.hourly_rate.toLocaleString()}원/시간
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {detail.daily_wage.toLocaleString()}원
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 체크리스트 */}
             <div className="border-t pt-6 mt-6">
               <h3 className="text-md font-medium text-gray-900 mb-4">급여 명세서 검토 체크리스트</h3>
@@ -1787,7 +1788,7 @@ export default function PayslipGenerator() {
                         onChange={() => handleCheck('incentive')}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">시급 적용 확인 (8/1-7: 13,000원, 8/8-31: 12,000원)</span>
+                      <span className="text-sm text-gray-700">시급 적용 확인 (데이터베이스 기준)</span>
                     </label>
                   </>
                 ) : (
