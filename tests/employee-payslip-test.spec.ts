@@ -103,9 +103,15 @@ test('당사자(허상원) 정산서 조회 테스트', async ({ page }) => {
     await page.waitForTimeout(3000);
     
     // 모달이 열렸는지 확인 (더 구체적인 선택자 사용)
-    const modal = page.locator('.fixed.inset-0.bg-gray-600, [role="dialog"], .modal');
+    const modal = page.locator('.fixed.inset-0.bg-gray-600');
     if (await modal.count() > 0) {
       console.log('✅ 정산서 상세 모달 열림');
+      
+      // 모달 내용 확인
+      const modalContent = page.locator('.relative.top-20.mx-auto');
+      if (await modalContent.count() > 0) {
+        console.log('✅ 모달 내용 확인됨');
+      }
       
       // 정산서 헤더 확인
       const header = page.locator('h1, h2').first();

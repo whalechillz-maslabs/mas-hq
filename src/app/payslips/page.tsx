@@ -39,6 +39,11 @@ export default function PayslipsPage() {
   const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null);
   const [employeeName, setEmployeeName] = useState<string>('');
 
+  // 디버깅: selectedPayslip 상태 변화 추적
+  useEffect(() => {
+    console.log('selectedPayslip 상태 변화:', selectedPayslip);
+  }, [selectedPayslip]);
+
   useEffect(() => {
     loadPayslips();
   }, []);
@@ -225,13 +230,17 @@ export default function PayslipsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => setSelectedPayslip(payslip)}
+                          onClick={() => {
+                            console.log('상세보기 클릭:', payslip);
+                            setSelectedPayslip(payslip);
+                          }}
                           className="text-blue-600 hover:text-blue-900 mr-3"
                         >
                           상세보기
                         </button>
                         <button
                           onClick={() => {
+                            console.log('인쇄 클릭:', payslip);
                             setSelectedPayslip(payslip);
                             setTimeout(printPayslip, 100);
                           }}
@@ -250,8 +259,24 @@ export default function PayslipsPage() {
 
         {/* 정산서 상세 모달 */}
         {selectedPayslip && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div 
+            className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedPayslip(null);
+              }
+            }}
+          >
             <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+              {/* 모달 닫기 버튼 */}
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={() => setSelectedPayslip(null)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
               <div className="mt-3">
                 {/* 정산서 헤더 */}
                 <div className="text-center border-b pb-4 mb-6">
