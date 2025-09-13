@@ -1,6 +1,6 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="16.689499">
-<testsuite name="employee-payslip-test.spec.ts" timestamp="2025-09-13T08:02:20.094Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="14.318" errors="0">
-<testcase name="당사자(허상원) 정산서 조회 테스트" classname="employee-payslip-test.spec.ts" time="14.318">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="17.792379">
+<testsuite name="employee-payslip-test.spec.ts" timestamp="2025-09-13T11:09:02.400Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="14.825" errors="0">
+<testcase name="당사자(허상원) 정산서 조회 테스트" classname="employee-payslip-test.spec.ts" time="14.825">
 <system-out>
 <![CDATA[🧪 당사자(허상원) 정산서 조회 테스트 시작
 📄 로그인 페이지 접근 완료

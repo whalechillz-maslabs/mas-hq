@@ -450,6 +450,43 @@ export default function PayslipGenerator() {
     return payslip;
   };
 
+  // 급여 기간을 더 구체적으로 표시하는 함수
+  const formatSalaryPeriod = (period: string, dailyDetails?: any[]) => {
+    // 분할 급여명세서인 경우 (periodName이 사용된 경우)
+    if (period.includes('차') || period.includes('~')) {
+      return period; // 이미 구체적인 기간이 표시됨
+    }
+    
+    // 월 급여명세서인 경우 (2025-06 형태)
+    if (period.match(/^\d{4}-\d{2}$/)) {
+      const [year, month] = period.split('-');
+      const monthNum = parseInt(month);
+      
+      // daily_details가 있으면 실제 근무 기간 계산
+      if (dailyDetails && dailyDetails.length > 0) {
+        const dates = dailyDetails.map(d => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
+        const startDate = dates[0];
+        const endDate = dates[dates.length - 1];
+        
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+        const endMonth = endDate.getMonth() + 1;
+        const endDay = endDate.getDate();
+        
+        if (startMonth === endMonth) {
+          return `${startMonth}월${startDay}일-${endDay}일`;
+        } else {
+          return `${startMonth}월${startDay}일-${endMonth}월${endDay}일`;
+        }
+      }
+      
+      // daily_details가 없으면 월 전체로 표시
+      return `${monthNum}월`;
+    }
+    
+    return period;
+  };
+
   // 분할 생성 함수
   const generateCustomPeriodPayslip = async (employee: Employee, startDate: string, endDate: string, periodName: string) => {
     if (employee.employment_type !== 'part_time') {
@@ -935,7 +972,7 @@ export default function PayslipGenerator() {
         <div class="payslip-container">
           <div class="header">
             <h1>MASLABS</h1>
-            <div class="period">급여명세서 ${payslip.period}</div>
+            <div class="period">급여명세서 ${formatSalaryPeriod(payslip.period, payslip.daily_details)}</div>
           </div>
           
           <div class="content">
@@ -951,7 +988,7 @@ export default function PayslipGenerator() {
                 </div>
                 <div class="info-item">
                   <span class="info-label">급여 기간:</span>
-                  <span class="info-value">${payslip.period}</span>
+                  <span class="info-value">${formatSalaryPeriod(payslip.period, payslip.daily_details)}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">고용 형태:</span>
@@ -1221,7 +1258,7 @@ export default function PayslipGenerator() {
         <div class="payslip-container">
           <div class="header">
             <h1>MASLABS</h1>
-            <div class="period">급여명세서 ${payslipData.salary_period}</div>
+            <div class="period">급여명세서 ${formatSalaryPeriod(payslipData.salary_period, payslipData.daily_details)}</div>
           </div>
 
           <div class="content">
@@ -1241,10 +1278,10 @@ export default function PayslipGenerator() {
                     <span class="info-label">닉네임:</span>
                     <span class="info-value">${payslipData.employee_nickname || payslipData.employee_name}</span>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">급여 기간:</span>
-                    <span class="info-value">${payslipData.salary_period}</span>
-                  </div>
+                <div class="info-item">
+                  <span class="info-label">급여 기간:</span>
+                  <span class="info-value">${formatSalaryPeriod(payslipData.salary_period, payslipData.daily_details)}</span>
+                </div>
                 </div>
                 <div>
                   <div class="info-item">
@@ -1632,7 +1669,7 @@ export default function PayslipGenerator() {
                           {payslip.employees.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.period}
+                          {formatSalaryPeriod(payslip.period, payslip.daily_details)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {payslip.employment_type === 'full_time' ? '정규직' : '시간제'}
@@ -1742,7 +1779,7 @@ export default function PayslipGenerator() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">급여 기간:</span>
-                    <span className="font-medium">{payslipData.salary_period}</span>
+                    <span className="font-medium">{formatSalaryPeriod(payslipData.salary_period, payslipData.daily_details)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">고용 형태:</span>
@@ -2019,7 +2056,7 @@ export default function PayslipGenerator() {
                   </div>
                   <div className="text-center">
                     <div className="text-sm text-gray-500">정산기간</div>
-                    <div className="font-medium">{selectedPayslipForDetails.period}</div>
+                    <div className="font-medium">{formatSalaryPeriod(selectedPayslipForDetails.period, selectedPayslipForDetails.daily_details)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-sm text-gray-500">고용형태</div>

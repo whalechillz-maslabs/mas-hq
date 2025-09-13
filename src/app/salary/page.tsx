@@ -36,6 +36,43 @@ export default function SalaryPage() {
   const [currentDateInfo, setCurrentDateInfo] = useState<any>(null);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
 
+  // 급여 기간을 더 구체적으로 표시하는 함수
+  const formatSalaryPeriod = (period: string, dailyDetails?: any[]) => {
+    // 분할 급여명세서인 경우 (periodName이 사용된 경우)
+    if (period.includes('차') || period.includes('~')) {
+      return period; // 이미 구체적인 기간이 표시됨
+    }
+    
+    // 월 급여명세서인 경우 (2025-06 형태)
+    if (period.match(/^\d{4}-\d{2}$/)) {
+      const [year, month] = period.split('-');
+      const monthNum = parseInt(month);
+      
+      // daily_details가 있으면 실제 근무 기간 계산
+      if (dailyDetails && dailyDetails.length > 0) {
+        const dates = dailyDetails.map(d => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
+        const startDate = dates[0];
+        const endDate = dates[dates.length - 1];
+        
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+        const endMonth = endDate.getMonth() + 1;
+        const endDay = endDate.getDate();
+        
+        if (startMonth === endMonth) {
+          return `${startMonth}월${startDay}일-${endDay}일`;
+        } else {
+          return `${startMonth}월${startDay}일-${endMonth}월${endDay}일`;
+        }
+      }
+      
+      // daily_details가 없으면 월 전체로 표시
+      return `${monthNum}월`;
+    }
+    
+    return period;
+  };
+
   useEffect(() => {
     loadSalaryData();
     calculateCurrentDateInfo();
@@ -96,7 +133,7 @@ export default function SalaryPage() {
         .select('employment_type, monthly_salary, hourly_rate, bank_account')
         .eq('id', user.id)
         .single();
-      
+
       if (employeeError) {
         console.error('직원 정보 조회 오류:', employeeError);
         return;
@@ -626,7 +663,7 @@ export default function SalaryPage() {
                       {payslip.paid_at ? formatDateKR(payslip.paid_at) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payslip.period}
+                      {formatSalaryPeriod(payslip.period, payslip.daily_details)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(payslip.base_salary)}
@@ -642,7 +679,7 @@ export default function SalaryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-green-600">
+                      <span className="text-sm font-semibold text-green-600">
                           {formatCurrency(payslip.net_salary)}
                         </span>
                         <span className={`text-xs flex items-center ${
@@ -652,18 +689,18 @@ export default function SalaryPage() {
                         }`}>
                           {payslip.status === 'paid' ? '✅ 지급완료' :
                            payslip.status === 'issued' ? '📄 발행됨' : '⏳ 생성됨'}
-                        </span>
+                      </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">
-                        <button
+                      <button
                           onClick={() => handleDownloadPayslip(payslip)}
-                          className="text-indigo-600 hover:text-indigo-900"
+                        className="text-indigo-600 hover:text-indigo-900"
                           title="다운로드"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
                         <button
                           onClick={() => handleViewPayslipDetails(payslip)}
                           className="text-blue-600 hover:text-blue-900"
@@ -787,7 +824,7 @@ export default function SalaryPage() {
               {/* 정산서 헤더 */}
               <div className="text-center border-b pb-4 mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">MASLABS 급여 명세서</h1>
-                <h2 className="text-lg text-gray-600 mt-2">{selectedPayslip.period}</h2>
+                <h2 className="text-lg text-gray-600 mt-2">{formatSalaryPeriod(selectedPayslip.period, selectedPayslip.daily_details)}</h2>
               </div>
 
               {/* 직원 정보 */}
@@ -798,7 +835,7 @@ export default function SalaryPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-gray-500">정산기간</div>
-                  <div className="font-medium">{selectedPayslip.period}</div>
+                  <div className="font-medium">{formatSalaryPeriod(selectedPayslip.period, selectedPayslip.daily_details)}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-gray-500">고용형태</div>
