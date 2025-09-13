@@ -34,6 +34,7 @@ export default function SalaryPage() {
   const [showContractModal, setShowContractModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [currentDateInfo, setCurrentDateInfo] = useState<any>(null);
+  const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
 
   useEffect(() => {
     loadSalaryData();
@@ -416,6 +417,11 @@ export default function SalaryPage() {
     }
   };
 
+  const handleViewPayslipDetails = (payslip: any) => {
+    // 세부 내역서 모달 표시
+    setSelectedPayslip(payslip);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -650,12 +656,22 @@ export default function SalaryPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleDownloadPayslip(payslip)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleDownloadPayslip(payslip)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="다운로드"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleViewPayslipDetails(payslip)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="세부 내역서"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -734,7 +750,6 @@ export default function SalaryPage() {
             <li>• <strong>세율:</strong> 3.3% (사업소득자 원천징수)</li>
             <li>• <strong>지급 상태:</strong> ✅ 지급완료 (계좌이체)</li>
             <li>• <strong>최저임금:</strong> 10,000원/시간 (2025년 기준)</li>
-            <li>• <strong>연장근무:</strong> 1.5배 수당 적용</li>
             <li>• <strong>4대보험:</strong> 별도 계산 (국민연금, 건강보험, 고용보험, 산재보험)</li>
           </ul>
         </div>
@@ -753,6 +768,148 @@ export default function SalaryPage() {
           </ul>
         </div>
       </main>
+
+      {/* 세부 내역서 모달 */}
+      {selectedPayslip && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            {/* 모달 닫기 버튼 */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setSelectedPayslip(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mt-3">
+              {/* 정산서 헤더 */}
+              <div className="text-center border-b pb-4 mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">MASLABS 급여 명세서</h1>
+                <h2 className="text-lg text-gray-600 mt-2">{selectedPayslip.period}</h2>
+              </div>
+
+              {/* 직원 정보 */}
+              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <div className="text-sm text-gray-500">직원명</div>
+                  <div className="font-medium">{currentUser?.name || '허상원'}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-gray-500">정산기간</div>
+                  <div className="font-medium">{selectedPayslip.period}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-gray-500">고용형태</div>
+                  <div className="font-medium">
+                    {selectedPayslip.employment_type === 'part_time' ? '파트타임' : '정규직'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 급여 요약 */}
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-3">지급 내역</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>기본급</span>
+                      <span>{formatCurrency(selectedPayslip.base_salary || 0)}원</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>연장근무수당</span>
+                      <span>{formatCurrency(selectedPayslip.overtime_pay || 0)}원</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>인센티브</span>
+                      <span>{formatCurrency(selectedPayslip.incentive || 0)}원</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>포인트 보너스</span>
+                      <span>{formatCurrency(selectedPayslip.point_bonus || 0)}원</span>
+                    </div>
+                    <div className="border-t pt-2 font-semibold flex justify-between">
+                      <span>총 지급액</span>
+                      <span>{formatCurrency(selectedPayslip.total_earnings || 0)}원</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-green-900 mb-3">공제 내역</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>세금 (3.3%)</span>
+                      <span>{formatCurrency(selectedPayslip.tax_amount || 0)}원</span>
+                    </div>
+                    <div className="border-t pt-2 font-semibold flex justify-between text-green-700">
+                      <span>실수령액</span>
+                      <span>{formatCurrency(selectedPayslip.net_salary || 0)}원</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 근무 정보 */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">근무 정보</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm text-gray-500">총 근무시간</span>
+                    <div className="font-medium">{selectedPayslip.total_hours || 0}시간</div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">시급</span>
+                    <div className="font-medium">{formatCurrency(selectedPayslip.hourly_rate || 0)}원/시간</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 일별 상세 내역 */}
+              {selectedPayslip.daily_details && selectedPayslip.daily_details.length > 0 && (
+                <div className="bg-white border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">일별 상세 내역</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">근무시간</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시급</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일급</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {selectedPayslip.daily_details.map((detail: any, index: number) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(detail.date).toLocaleDateString('ko-KR', {
+                                month: 'long',
+                                day: 'numeric',
+                                weekday: 'short'
+                              })}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {detail.hours}시간
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(detail.hourly_rate || detail.hourly_wage || 0)}원
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(detail.daily_wage || 0)}원
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
