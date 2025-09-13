@@ -881,26 +881,39 @@ export default function SalaryPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {selectedPayslip.daily_details.map((detail: any, index: number) => (
-                          <tr key={index}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {new Date(detail.date).toLocaleDateString('ko-KR', {
-                                month: 'long',
-                                day: 'numeric',
-                                weekday: 'short'
-                              })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {detail.hours}시간
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatCurrency(detail.hourly_rate || detail.hourly_wage || 0)}원
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatCurrency(detail.daily_wage || 0)}원
-                            </td>
-                          </tr>
-                        ))}
+                        {selectedPayslip.daily_details.map((detail: any, index: number) => {
+                          try {
+                            return (
+                              <tr key={index}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {detail.date ? new Date(detail.date).toLocaleDateString('ko-KR', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    weekday: 'short'
+                                  }) : '날짜 없음'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {detail.hours || 0}시간
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatCurrency(detail.hourly_rate || detail.hourly_wage || 0)}원
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatCurrency(detail.daily_wage || 0)}원
+                                </td>
+                              </tr>
+                            );
+                          } catch (error) {
+                            console.error('일별 내역 렌더링 오류:', error, detail);
+                            return (
+                              <tr key={index}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600" colSpan={4}>
+                                  데이터 오류
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
                       </tbody>
                     </table>
                   </div>

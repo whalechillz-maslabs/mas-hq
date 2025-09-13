@@ -741,6 +741,9 @@ export default function PayslipGenerator() {
   };
 
   const viewPayslipDetails = (payslip: any) => {
+    console.log('상세 보기 클릭:', payslip);
+    console.log('daily_details:', payslip.daily_details);
+    console.log('employees:', payslip.employees);
     setSelectedPayslipForDetails(payslip);
   };
 
@@ -2092,19 +2095,29 @@ export default function PayslipGenerator() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="text-sm text-gray-700">
                         {(() => {
-                          const hourlyDetails = selectedPayslipForDetails.daily_details?.reduce((acc: any, detail: any) => {
-                            const key = detail.hourly_rate.toString();
-                            if (!acc[key]) {
-                              acc[key] = { hours: 0, wage: 0 };
-                            }
-                            acc[key].hours += detail.hours;
-                            acc[key].wage += detail.daily_wage;
-                            return acc;
-                          }, {} as { [key: string]: { hours: number; wage: number } });
+                          try {
+                            const hourlyDetails = selectedPayslipForDetails.daily_details?.reduce((acc: any, detail: any) => {
+                              // 안전한 데이터 접근
+                              const hourlyRate = detail.hourly_rate || detail.hourly_wage || 0;
+                              const hours = detail.hours || 0;
+                              const dailyWage = detail.daily_wage || 0;
+                              
+                              const key = hourlyRate.toString();
+                              if (!acc[key]) {
+                                acc[key] = { hours: 0, wage: 0 };
+                              }
+                              acc[key].hours += hours;
+                              acc[key].wage += dailyWage;
+                              return acc;
+                            }, {} as { [key: string]: { hours: number; wage: number } });
 
-                          return Object.entries(hourlyDetails || {}).map(([rate, data]: [string, any]) =>
-                            `${parseInt(rate).toLocaleString()}원: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
-                          ).join(', ');
+                            return Object.entries(hourlyDetails || {}).map(([rate, data]: [string, any]) =>
+                              `${parseInt(rate).toLocaleString()}원: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
+                            ).join(', ');
+                          } catch (error) {
+                            console.error('시급별 계산 오류:', error);
+                            return '시급별 계산 정보를 불러올 수 없습니다.';
+                          }
                         })()}
                       </div>
                     </div>
@@ -2126,26 +2139,39 @@ export default function PayslipGenerator() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {selectedPayslipForDetails.daily_details.map((detail: any, index: number) => (
-                            <tr key={index}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {new Date(detail.date).toLocaleDateString('ko-KR', {
-                                  month: 'long',
-                                  day: 'numeric',
-                                  weekday: 'short'
-                                })}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {detail.hours}시간
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {(detail.hourly_rate || 0).toLocaleString()}원
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {(detail.daily_wage || 0).toLocaleString()}원
-                              </td>
-                            </tr>
-                          ))}
+                          {selectedPayslipForDetails.daily_details.map((detail: any, index: number) => {
+                            try {
+                              return (
+                                <tr key={index}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {detail.date ? new Date(detail.date).toLocaleDateString('ko-KR', {
+                                      month: 'long',
+                                      day: 'numeric',
+                                      weekday: 'short'
+                                    }) : '날짜 없음'}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {detail.hours || 0}시간
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {(detail.hourly_rate || detail.hourly_wage || 0).toLocaleString()}원
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {(detail.daily_wage || 0).toLocaleString()}원
+                                  </td>
+                                </tr>
+                              );
+                            } catch (error) {
+                              console.error('일별 내역 렌더링 오류:', error, detail);
+                              return (
+                                <tr key={index}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600" colSpan={4}>
+                                    데이터 오류
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          })}
                         </tbody>
                       </table>
                     </div>
