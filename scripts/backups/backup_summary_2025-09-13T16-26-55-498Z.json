@@ -1,0 +1,43 @@
+{
+  "backupDate": "2025-09-13T16:26:55.498Z",
+  "totalTables": 7,
+  "successfulBackups": 6,
+  "failedBackups": 1,
+  "totalRecords": 234,
+  "results": [
+    {
+      "table": "employees",
+      "recordCount": 6,
+      "filepath": "/Users/m2/MASLABS/www.maslabs.kr/scripts/backups/employees_backup_2025-09-13T16-26-54-320Z.json"
+    },
+    {
+      "table": "payslips",
+      "recordCount": 7,
+      "filepath": "/Users/m2/MASLABS/www.maslabs.kr/scripts/backups/payslips_backup_2025-09-13T16-26-54-544Z.json"
+    },
+    {
+      "table": "schedules",
+      "recordCount": 175,
+      "filepath": "/Users/m2/MASLABS/www.maslabs.kr/scripts/backups/schedules_backup_2025-09-13T16-26-54-730Z.json"
+    },
+    {
+      "table": "hourly_wages",
+      "recordCount": 5,
+      "filepath": "/Users/m2/MASLABS/www.maslabs.kr/scripts/backups/hourly_wages_backup_2025-09-13T16-26-54-907Z.json"
+    },
+    {
+      "table": "attendance",
+      "error": "Could not find the table 'public.attendance' in the schema cache"
+    },
+    {
+      "table": "employee_tasks",
+      "recordCount": 29,
+      "filepath": "/Users/m2/MASLABS/www.maslabs.kr/scripts/backups/employee_tasks_backup_2025-09-13T16-26-55-233Z.json"
+    },
+    {
+      "table": "operation_types",
+      "recordCount": 12,
+      "filepath": "/Users/m2/MASLABS/www.maslabs.kr/scripts/backups/operation_types_backup_2025-09-13T16-26-55-396Z.json"
+    }
+  ]
+}

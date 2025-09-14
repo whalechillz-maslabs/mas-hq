@@ -1,0 +1,213 @@
+[
+  {
+    "id": "990e8400-e29b-41d4-a716-446655440003",
+    "code": "OP11",
+    "name": "전화 판매(싱싱)",
+    "description": "싱싱골프 전화 판매",
+    "category": null,
+    "points": 20,
+    "is_active": true,
+    "created_at": "2025-09-05T01:58:14.597388+00:00",
+    "updated_at": "2025-09-10T06:45:58.840188+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "990e8400-e29b-41d4-a716-446655440004",
+    "code": "OP12",
+    "name": "CS 응대(싱싱)",
+    "description": "싱싱골프 고객 서비스",
+    "category": null,
+    "points": 8,
+    "is_active": true,
+    "created_at": "2025-09-05T01:58:14.663174+00:00",
+    "updated_at": "2025-09-10T06:45:58.976437+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "5f1bc48f-cf8f-4cc7-97ce-ce1aa6555b1c",
+    "code": "OP1",
+    "name": "전화 판매(신규)",
+    "description": "신규 고객 전화 판매",
+    "category": "phone_sales",
+    "points": 20,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "a6392100-0d90-4bfa-9d2e-f45665eeeb62",
+    "code": "OP2",
+    "name": "전화 판매(재구매/부품)",
+    "description": "재구매 또는 부품(헤드/샤프트) 전화 판매",
+    "category": "phone_sales",
+    "points": 15,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "c6c068fe-ced8-42f0-b8a8-7427d85cfce2",
+    "code": "OP3",
+    "name": "오프라인 판매(신규)",
+    "description": "신규 고객 오프라인 판매",
+    "category": "offline_sales",
+    "points": 40,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "3df5783a-0a4e-43d2-877d-45738d7b922a",
+    "code": "OP4",
+    "name": "오프라인 판매(재구매/부품)",
+    "description": "재구매 또는 부품(헤드/샤프트) 오프라인 판매",
+    "category": "offline_sales",
+    "points": 30,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "01208563-3845-408b-a3fb-e36f551726ad",
+    "code": "OP5",
+    "name": "CS 응대(기본)",
+    "description": "프로모션 설명, 인트라넷/노션 정보 입력, 시타예약 입력",
+    "category": "support",
+    "points": 8,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "9975454f-e7ac-403a-a741-9804a4862ca9",
+    "code": "OP6",
+    "name": "A/S 처리(고급)",
+    "description": "고객 재방문 케어, 재시타 등 전문적인 A/S 처리",
+    "category": "support",
+    "points": 15,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "team_lead",
+      "manager"
+    ]
+  },
+  {
+    "id": "a7a644f6-8279-43fb-8f5a-05db6ce1ae9b",
+    "code": "OP7",
+    "name": "환불 방어",
+    "description": "전화, 시타 서비스 등을 통한 환불 방어 성공",
+    "category": "returns",
+    "points": 25,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "ad2d9b3f-7bcd-45ec-a691-7c673fcfad71",
+    "code": "OP8",
+    "name": "환불 처리",
+    "description": "불완전 판매 등으로 인한 환불 처리 (기존 판매 점수 그대로 차감)",
+    "category": "returns",
+    "points": 0,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "employee",
+      "team_lead",
+      "manager"
+    ]
+  },
+  {
+    "id": "314a4a5c-aea2-4d40-b567-112dc62f3426",
+    "code": "OP9",
+    "name": "택배 입고/출고/회수 (상품)",
+    "description": "상품 관련 택배 입고, 출고, 회수 처리",
+    "category": "logistics",
+    "points": 8,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  },
+  {
+    "id": "9cedc78e-1bcf-4c73-878f-802ee0e9e05e",
+    "code": "OP10",
+    "name": "기타 택배/서비스",
+    "description": "음료/소모품/선물 등 기타 택배 입고, 고객/협력업체 선물 출고 서비스 등",
+    "category": "logistics",
+    "points": 5,
+    "is_active": true,
+    "created_at": "2025-09-08T23:13:09.274313+00:00",
+    "updated_at": "2025-09-08T23:13:09.274313+00:00",
+    "target_roles": [
+      "admin",
+      "manager",
+      "team_lead",
+      "employee",
+      "part_time"
+    ]
+  }
+]

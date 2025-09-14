@@ -1,113 +1,170 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// Supabase 설정
 const supabase = createClient(
   'https://cgscbtxtgualkfalouwh.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnc2NidHh0Z3VhbGtmYWxvdXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ5MDY3MzYsImV4cCI6MjA3MDQ4MjczNn0.F0iFoFEJr87g4nA6Z7U1BK3t3ModxgZC2eWNIKRA0u8'
 );
 
 async function checkDatabaseSchema() {
-  console.log('🔍 데이터베이스 스키마 확인 중...');
-  
+  console.log('🔍 데이터베이스 스키마 점검 시작...\n');
+
   try {
-    // 1. 모든 테이블 목록 조회
-    console.log('\n1. 데이터베이스 테이블 목록 조회 중...');
-    const { data: tables, error: tablesError } = await supabase
-      .rpc('get_table_list');
+    // 1. 모든 테이블 목록 확인
+    console.log('1️⃣ 기존 테이블 목록 확인 중...');
     
-    if (tablesError) {
-      console.log('❌ 테이블 목록 조회 실패:', tablesError.message);
-      console.log('   → 직접 테이블 존재 여부를 확인하겠습니다');
+    const tables = [
+      'employees',
+      'payslips', 
+      'schedules',
+      'hourly_wages',
+      'attendance',
+      'employee_tasks',
+      'operation_types',
+      'contracts',
+      'departments',
+      'positions',
+      'roles',
+      'weekly_settlements',
+      'daily_work_records'
+    ];
+
+    const existingTables = [];
+    const missingTables = [];
+
+    for (const table of tables) {
+      try {
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+          .limit(1);
+
+        if (error) {
+          if (error.message.includes('Could not find the table')) {
+            missingTables.push(table);
+            console.log(`❌ ${table}: 테이블 없음`);
+          } else {
+            existingTables.push(table);
+            console.log(`✅ ${table}: 존재함 (${error.message})`);
+          }
+        } else {
+          existingTables.push(table);
+          console.log(`✅ ${table}: 존재함 (${data.length}개 레코드 샘플)`);
+        }
+      } catch (err) {
+        missingTables.push(table);
+        console.log(`❌ ${table}: 접근 불가 (${err.message})`);
+      }
+    }
+
+    console.log(`\n📊 테이블 현황:`);
+    console.log(`   ✅ 존재하는 테이블: ${existingTables.length}개`);
+    console.log(`   ❌ 없는 테이블: ${missingTables.length}개`);
+
+    // 2. 중복 가능성이 있는 테이블 확인
+    console.log('\n2️⃣ 중복 가능성 있는 테이블 확인...');
+    
+    const potentialDuplicates = [
+      { name: 'attendance', alternatives: ['attendances', 'check_ins', 'time_attendance'] },
+      { name: 'schedules', alternatives: ['schedule', 'work_schedules', 'employee_schedules'] },
+      { name: 'payslips', alternatives: ['payslip', 'salary_slips', 'payroll'] },
+      { name: 'employees', alternatives: ['employee', 'staff', 'users'] }
+    ];
+
+    for (const check of potentialDuplicates) {
+      console.log(`\n🔍 ${check.name} 관련 테이블 확인:`);
       
-      // 직접 테이블 존재 여부 확인
-      const tableNames = [
-        'employees', 'departments', 'schedules', 'employee_tasks', 
-        'hourly_wages', 'salaries', 'contracts', 'operation_types', 
-        'daily_work_records', 'weekly_settlements', 'positions', 'roles'
-      ];
+      // 메인 테이블 확인
+      const mainExists = existingTables.includes(check.name);
+      console.log(`   ${check.name}: ${mainExists ? '✅ 존재' : '❌ 없음'}`);
       
-      console.log('\n📋 테이블 존재 여부 확인:');
-      for (const tableName of tableNames) {
+      // 대안 테이블들 확인
+      for (const alt of check.alternatives) {
         try {
           const { data, error } = await supabase
-            .from(tableName)
-            .select('count')
+            .from(alt)
+            .select('*')
             .limit(1);
-          
-          if (error) {
-            console.log(`❌ ${tableName}: 존재하지 않음 (${error.message})`);
+
+          if (!error || !error.message.includes('Could not find the table')) {
+            console.log(`   ${alt}: ✅ 존재함 (중복 가능성!)`);
           } else {
-            console.log(`✅ ${tableName}: 존재함`);
+            console.log(`   ${alt}: ❌ 없음`);
           }
         } catch (err) {
-          console.log(`❌ ${tableName}: 확인 실패 (${err.message})`);
+          console.log(`   ${alt}: ❌ 없음`);
         }
       }
-    } else {
-      console.log('✅ 테이블 목록:', tables);
     }
+
+    // 3. 테이블 구조 확인 (존재하는 테이블들)
+    console.log('\n3️⃣ 주요 테이블 구조 확인...');
     
-    // 2. 최형호 관련 데이터 요약
-    console.log('\n2. 최형호 관련 데이터 요약:');
+    const importantTables = ['employees', 'schedules', 'payslips'];
     
-    // employees 테이블에서 최형호 정보
-    const { data: choiEmployee, error: empError } = await supabase
-      .from('employees')
-      .select('id, name, employee_id, employment_type, monthly_salary, hourly_rate')
-      .eq('name', '최형호')
-      .single();
-    
-    if (empError) {
-      console.log('❌ 최형호 직원 정보 조회 실패:', empError.message);
-    } else {
-      console.log('✅ 최형호 직원 정보:');
-      console.log('  - 이름:', choiEmployee.name);
-      console.log('  - 직원ID:', choiEmployee.employee_id);
-      console.log('  - 고용형태:', choiEmployee.employment_type);
-      console.log('  - 월급:', choiEmployee.monthly_salary);
-      console.log('  - 시급:', choiEmployee.hourly_rate);
+    for (const table of importantTables) {
+      if (existingTables.includes(table)) {
+        console.log(`\n📋 ${table} 테이블 구조:`);
+        try {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .limit(1);
+
+          if (data && data.length > 0) {
+            const columns = Object.keys(data[0]);
+            console.log(`   컬럼 수: ${columns.length}개`);
+            console.log(`   컬럼 목록: ${columns.join(', ')}`);
+          } else {
+            console.log(`   데이터 없음`);
+          }
+        } catch (err) {
+          console.log(`   구조 확인 실패: ${err.message}`);
+        }
+      }
     }
+
+    // 4. 관계 설정 확인
+    console.log('\n4️⃣ 테이블 관계 설정 확인...');
     
-    // hourly_wages 테이블에서 최형호 시급 데이터
-    if (choiEmployee) {
-      const { data: choiWages, error: wageError } = await supabase
-        .from('hourly_wages')
-        .select('*')
-        .eq('employee_id', choiEmployee.id)
-        .order('effective_start_date', { ascending: false });
-      
-      if (wageError) {
-        console.log('❌ 최형호 시급 데이터 조회 실패:', wageError.message);
+    try {
+      // employees와 schedules 관계 확인
+      const { data: scheduleWithEmployee, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('*, employees(name, employee_id)')
+        .limit(1);
+
+      if (scheduleError) {
+        console.log('❌ schedules-employees 관계 오류:', scheduleError.message);
       } else {
-        console.log('✅ 최형호 시급 데이터 (총 ' + choiWages.length + '개):');
-        if (choiWages.length === 0) {
-          console.log('  - 시급 데이터 없음 (월급제이므로 정상)');
-        } else {
-          choiWages.forEach((wage, index) => {
-            console.log(`  - 시급 기록 ${index + 1}: ${wage.base_wage}원 (${wage.effective_start_date} ~ ${wage.effective_end_date || '현재'})`);
-          });
-        }
+        console.log('✅ schedules-employees 관계 정상');
       }
+    } catch (err) {
+      console.log('❌ 관계 확인 실패:', err.message);
+    }
+
+    // 5. 결론 및 권장사항
+    console.log('\n🎯 점검 결과 및 권장사항:');
+    console.log('='.repeat(50));
+    
+    if (missingTables.includes('attendance')) {
+      console.log('📝 attendance 테이블이 없습니다.');
+      console.log('   → 출근 체크 데이터를 저장할 테이블이 필요합니다.');
     }
     
-    // 3. 결론
-    console.log('\n📊 결론:');
-    if (choiEmployee && choiEmployee.employment_type === 'full_time') {
-      console.log('✅ 최형호는 월급제(full_time)로 설정되어 있습니다');
-      console.log('✅ 9월 이후 시급 데이터가 없는 것이 정상입니다');
-      console.log('⚠️ 급여 관련 테이블(salaries, daily_work_records)이 없어서 급여 데이터를 확인할 수 없습니다');
-      console.log('💡 월급제 직원의 급여 관리를 위해서는 급여 관련 테이블이 필요합니다');
-    } else {
-      console.log('❌ 최형호의 고용형태가 월급제로 설정되지 않았습니다');
+    if (existingTables.includes('schedules') && existingTables.includes('employees')) {
+      console.log('✅ 기본 테이블 구조는 정상입니다.');
     }
     
+    console.log('\n📋 다음 단계:');
+    console.log('1. attendance 테이블 생성');
+    console.log('2. 기존 데이터와의 관계 설정');
+    console.log('3. 샘플 데이터 생성 및 테스트');
+
   } catch (error) {
-    console.error('❌ 확인 중 오류:', error);
+    console.error('❌ 스키마 점검 중 오류 발생:', error);
   }
 }
 
-// 스크립트가 직접 실행될 때만 실행
-if (require.main === module) {
-  checkDatabaseSchema().catch(console.error);
-}
-
-module.exports = { checkDatabaseSchema };
+// 스크립트 실행
+checkDatabaseSchema();

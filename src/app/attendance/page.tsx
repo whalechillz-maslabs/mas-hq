@@ -684,8 +684,10 @@ export default function AttendancePage() {
       setError(null); // 에러 상태 초기화
       
       const now = new Date().toISOString();
+      const today = new Date().toISOString().split('T')[0];
+      const checkInTime = now.split('T')[1].split('.')[0]; // HH:MM:SS 형식
       
-      // 모든 오늘 스케줄에 출근 시간 기록
+      // 1. schedules 테이블에 출근 시간 기록
       const updates = todaySchedules.map(schedule => ({
         id: schedule.id,
         actual_start: now,
@@ -700,6 +702,32 @@ export default function AttendancePage() {
           .eq("id", update.id);
         
         if (error) throw error;
+      }
+      
+      // 2. attendance 테이블에 출근 기록 저장
+      const attendanceData = {
+        employee_id: currentUser.id,
+        date: today,
+        check_in_time: checkInTime,
+        status: 'present',
+        location: {
+          latitude: 37.5665, // 기본값 (실제로는 GPS 위치 사용)
+          longitude: 126.9780,
+          address: '서울시 중구'
+        }
+      };
+      
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert(attendanceData, { 
+          onConflict: 'employee_id,date' 
+        });
+      
+      if (attendanceError) {
+        console.error('attendance 테이블 저장 오류:', attendanceError);
+        // attendance 저장 실패해도 schedules는 성공했으므로 계속 진행
+      } else {
+        console.log('✅ attendance 테이블에 출근 기록 저장 완료');
       }
       
       setDailyAttendance(prev => ({
@@ -728,8 +756,10 @@ export default function AttendancePage() {
       setError(null); // 에러 상태 초기화
       
       const now = new Date().toISOString();
+      const today = new Date().toISOString().split('T')[0];
+      const checkOutTime = now.split('T')[1].split('.')[0]; // HH:MM:SS 형식
       
-      // 모든 오늘 스케줄에 퇴근 시간 기록
+      // 1. schedules 테이블에 퇴근 시간 기록
       const updates = todaySchedules.map(schedule => ({
         id: schedule.id,
         actual_end: now,
@@ -746,7 +776,7 @@ export default function AttendancePage() {
         if (error) throw error;
       }
       
-      // 총 근무 시간 계산
+      // 2. attendance 테이블에 퇴근 시간 업데이트
       const checkInTime = dailyAttendance.checkInTime;
       if (checkInTime) {
         const start = new Date(checkInTime);
@@ -754,6 +784,28 @@ export default function AttendancePage() {
         const diffMs = end.getTime() - start.getTime();
         const hours = Math.floor(diffMs / (1000 * 60 * 60));
         const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const totalHours = hours + (minutes / 60); // 소수점으로 계산
+        const overtimeHours = totalHours > 8 ? totalHours - 8 : 0;
+        
+        const attendanceUpdate = {
+          check_out_time: checkOutTime,
+          total_hours: Math.round(totalHours * 100) / 100,
+          overtime_hours: Math.round(overtimeHours * 100) / 100,
+          status: 'completed'
+        };
+        
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .update(attendanceUpdate)
+          .eq('employee_id', currentUser.id)
+          .eq('date', today);
+        
+        if (attendanceError) {
+          console.error('attendance 테이블 업데이트 오류:', attendanceError);
+        } else {
+          console.log('✅ attendance 테이블에 퇴근 기록 업데이트 완료');
+        }
+        
         const totalTime = `${hours}h ${minutes}m`;
         
         setDailyAttendance(prev => ({

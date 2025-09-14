@@ -1,0 +1,480 @@
+[
+  {
+    "id": "2c9bf774-90bf-4c85-81dd-a5cf0dcaa6c0",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "period": "2025-07-1차",
+    "employment_type": "part_time",
+    "base_salary": 578500,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 578500,
+    "tax_amount": 19091,
+    "net_salary": 559409,
+    "total_hours": 44.5,
+    "hourly_rate": 13000,
+    "daily_details": [
+      {
+        "date": "2025-07-02",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-03",
+        "hours": 6,
+        "daily_wage": 78000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-04",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-07",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-09",
+        "hours": 8,
+        "daily_wage": 104000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-10",
+        "hours": 6.5,
+        "daily_wage": 84500,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-11",
+        "hours": 3,
+        "daily_wage": 39000,
+        "hourly_rate": 13000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-07-11T00:00:00+00:00",
+    "paid_at": "2025-09-13T16:13:25.775+00:00",
+    "created_at": "2025-09-13T16:11:56.030755+00:00",
+    "updated_at": "2025-09-13T16:13:25.894097+00:00"
+  },
+  {
+    "id": "6777cbfd-97ac-46c0-bcd0-1ca49e320cf2",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "period": "2025-08-2차",
+    "employment_type": "part_time",
+    "base_salary": 1137500,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 1137500,
+    "tax_amount": 37538,
+    "net_salary": 1099962,
+    "total_hours": 87.5,
+    "hourly_rate": 13000,
+    "daily_details": [
+      {
+        "date": "2025-08-11",
+        "hours": 7.5,
+        "daily_wage": 97500,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-12",
+        "hours": 8,
+        "daily_wage": 104000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-13",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-18",
+        "hours": 6.5,
+        "daily_wage": 84500,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-19",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-20",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-21",
+        "hours": 8,
+        "daily_wage": 104000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-25",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-26",
+        "hours": 8.5,
+        "daily_wage": 110500,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-27",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-28",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-29",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-08-29T00:00:00+00:00",
+    "paid_at": "2025-08-29T00:00:00+00:00",
+    "created_at": "2025-09-13T16:21:18.272949+00:00",
+    "updated_at": "2025-09-13T16:22:50.257942+00:00"
+  },
+  {
+    "id": "1d9c9c88-3014-4c33-b6bf-6e980df1d696",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "period": "2025-07-2차",
+    "employment_type": "part_time",
+    "base_salary": 598000,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 598000,
+    "tax_amount": 19734,
+    "net_salary": 578266,
+    "total_hours": 46,
+    "hourly_rate": 13000,
+    "daily_details": [
+      {
+        "date": "2025-07-15",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-16",
+        "hours": 4,
+        "daily_wage": 52000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-18",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-21",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-22",
+        "hours": 6,
+        "daily_wage": 78000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-23",
+        "hours": 8,
+        "daily_wage": 104000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-25",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-07-25T00:00:00+00:00",
+    "paid_at": "2025-09-13T16:15:36.332+00:00",
+    "created_at": "2025-09-13T16:14:18.14187+00:00",
+    "updated_at": "2025-09-13T16:15:36.419965+00:00"
+  },
+  {
+    "id": "a16e6411-55c6-40ae-a015-f50d77ee34ad",
+    "employee_id": "e998a540-51bf-4380-bcb1-86fb36ec7eb8",
+    "period": "2025-08",
+    "employment_type": "part_time",
+    "base_salary": 839000,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 839000,
+    "tax_amount": 27687,
+    "net_salary": 811313,
+    "total_hours": 69.5,
+    "hourly_rate": 12000,
+    "daily_details": [
+      {
+        "date": "2025-08-01",
+        "hours": 1,
+        "daily_wage": 13000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-04",
+        "hours": 4,
+        "daily_wage": 52000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-08",
+        "hours": 3.5,
+        "daily_wage": 42000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-11",
+        "hours": 4,
+        "daily_wage": 48000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-13",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-14",
+        "hours": 2,
+        "daily_wage": 24000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-18",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-20",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-22",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-25",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-26",
+        "hours": 7,
+        "daily_wage": 84000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-27",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-28",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-08-29",
+        "hours": 6,
+        "daily_wage": 72000,
+        "hourly_rate": 12000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-09-10T00:00:00+00:00",
+    "paid_at": "2025-09-10T00:00:00+00:00",
+    "created_at": "2025-09-13T11:32:25.580182+00:00",
+    "updated_at": "2025-09-13T16:24:10.595647+00:00"
+  },
+  {
+    "id": "03598c67-4a3d-4ca8-ac1a-b3e351f75211",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "period": "2025-07-3차",
+    "employment_type": "part_time",
+    "base_salary": 273000,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 273000,
+    "tax_amount": 9009,
+    "net_salary": 263991,
+    "total_hours": 21,
+    "hourly_rate": 13000,
+    "daily_details": [
+      {
+        "date": "2025-07-28",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-29",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-07-30",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-08-01T00:00:00+00:00",
+    "paid_at": "2025-08-01T00:00:00+00:00",
+    "created_at": "2025-09-13T16:17:02.075999+00:00",
+    "updated_at": "2025-09-13T16:20:04.594639+00:00"
+  },
+  {
+    "id": "f6a547c4-dfa2-4f9d-a55b-4ff79d5690e9",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "period": "2025-06-1차",
+    "employment_type": "part_time",
+    "base_salary": 348000,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 348000,
+    "tax_amount": 11484,
+    "net_salary": 336516,
+    "total_hours": 27,
+    "hourly_rate": 13000,
+    "daily_details": [
+      {
+        "date": "2025-06-19",
+        "hours": 3,
+        "daily_wage": 36000,
+        "hourly_rate": 12000
+      },
+      {
+        "date": "2025-06-23",
+        "hours": 3,
+        "daily_wage": 39000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-06-24",
+        "hours": 6,
+        "daily_wage": 78000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-06-25",
+        "hours": 5,
+        "daily_wage": 65000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-06-27",
+        "hours": 4,
+        "daily_wage": 52000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-06-30",
+        "hours": 6,
+        "daily_wage": 78000,
+        "hourly_rate": 13000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-06-30T00:00:00+00:00",
+    "paid_at": "2025-06-30T00:00:00+00:00",
+    "created_at": "2025-09-13T13:56:52.847945+00:00",
+    "updated_at": "2025-09-13T14:56:26.392125+00:00"
+  },
+  {
+    "id": "6ab4b70a-dd92-4959-862b-8f48ce2eea09",
+    "employee_id": "2cc1b823-b231-4c90-8eb2-9728f21ba832",
+    "period": "2025-08-1차",
+    "employment_type": "part_time",
+    "base_salary": 435500,
+    "overtime_pay": 0,
+    "incentive": 0,
+    "point_bonus": 0,
+    "total_earnings": 435500,
+    "tax_amount": 14372,
+    "net_salary": 421128,
+    "total_hours": 33.5,
+    "hourly_rate": 13000,
+    "daily_details": [
+      {
+        "date": "2025-08-01",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-04",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-06",
+        "hours": 6,
+        "daily_wage": 78000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-07",
+        "hours": 7,
+        "daily_wage": 91000,
+        "hourly_rate": 13000
+      },
+      {
+        "date": "2025-08-08",
+        "hours": 6.5,
+        "daily_wage": 84500,
+        "hourly_rate": 13000
+      }
+    ],
+    "status": "paid",
+    "issued_at": "2025-08-08T00:00:00+00:00",
+    "paid_at": "2025-08-08T00:00:00+00:00",
+    "created_at": "2025-09-13T16:18:02.507164+00:00",
+    "updated_at": "2025-09-13T16:20:30.18609+00:00"
+  }
+]
