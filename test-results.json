@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 1
+      "actualWorkers": 3
     },
     "preserveOutput": "always",
     "reporter": [
@@ -45,7 +45,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 3
         },
         "id": "chromium-nightly",
         "name": "chromium-nightly",
@@ -61,7 +61,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 3
         },
         "id": "chromium-stable",
         "name": "chromium-stable",
@@ -77,7 +77,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 3
         },
         "id": "firefox",
         "name": "firefox",
@@ -93,7 +93,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 3
         },
         "id": "webkit",
         "name": "webkit",
@@ -114,20 +114,20 @@
   },
   "suites": [
     {
-      "title": "kim_reset_and_checkin_test.spec.ts",
-      "file": "kim_reset_and_checkin_test.spec.ts",
+      "title": "break_status_test.spec.ts",
+      "file": "break_status_test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "김탁수 출근 기록 초기화 및 새 출근 체크 테스트",
-          "file": "kim_reset_and_checkin_test.spec.ts",
+          "title": "휴식 상태 표시 기능 테스트",
+          "file": "break_status_test.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "김탁수 출근 기록 삭제 후 새로운 출근 체크",
+              "title": "김탁수 출근 페이지 상태 확인",
               "ok": true,
               "tags": [],
               "tests": [
@@ -142,163 +142,46 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 14016,
+                      "duration": 10200,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "🚀 김탁수 출근 기록 초기화 및 새 출근 체크 테스트 시작...\n"
+                          "text": "🔍 김탁수 출근 페이지 상태 확인 테스트 시작...\n"
                         },
                         {
-                          "text": "\n👤 김탁수 로그인...\n"
+                          "text": "✅ 김탁수 로그인 완료\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ 로그인 성공 - localStorage에 사용자 정보 저장됨\n"
+                          "text": "✅ 출근 관리 페이지 접속 완료\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ getCurrentUser - localStorage에서 사용자 정보 로드됨\n"
+                          "text": "🔍 현재 상태 확인...\n"
                         },
                         {
-                          "text": "\n📱 출근 체크 페이지 접근...\n"
+                          "text": "🔍 버튼 상태 확인:\n"
                         },
                         {
-                          "text": "🔍 콘솔: Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.\n"
+                          "text": "  - 출근 체크 버튼: 안보임\n"
                         },
                         {
-                          "text": "🔍 콘솔: 🚀 개인별 출근 관리 페이지 마운트됨\n"
+                          "text": "  - 퇴근 체크 버튼: 안보임\n"
                         },
                         {
-                          "text": "🔍 콘솔: 👤 사용자 정보: {id: 74d076b8-ffad-4103-8346-127aff1f1305, employee_id: MASLABS-001, email: maslabs-001@maslabs.kr, name: 김탁수, phone: 010-6669-9000}\n"
+                          "text": "  - 휴식 시작 버튼: 안보임\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ 사용자 정보 설정 완료: MASLABS-001\n"
+                          "text": "  - 휴식 후 복귀 버튼: 안보임\n"
                         },
                         {
-                          "text": "🔍 콘솔: 📅 오늘 스케줄 조회 시작...\n"
+                          "text": "🔍 상태 관련 텍스트 0개 발견:\n"
                         },
                         {
-                          "text": "🔍 콘솔: 📅 오늘 날짜: 2025-09-14 사용자 ID: MASLABS-001\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ 오늘 스케줄 조회 성공: 0 개\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 📊 스케줄 데이터: []\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: 15:46:50}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: true, checkInTime: 2025-09-14T10:52:23, checkOutTime: 2025-09-14T15:46:50, totalWorkTime: 4h 54m}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: === 급여 계산 함수 시작 ===\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: currentUser: null\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: todaySchedules.length: 0\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ 월간 기록 조회 성공: 0 개\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 📊 월간 데이터: []\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 🔄 로딩 상태 해제\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ 모든 데이터 로딩 완료\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: === 급여 계산 함수 시작 ===\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: currentUser: null\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: todaySchedules.length: 0\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
-                        },
-                        {
-                          "text": "\n🔍 현재 출근 상태 확인...\n"
-                        },
-                        {
-                          "text": "\n⏰ 기존 퇴근 기록 확인...\n"
-                        },
-                        {
-                          "text": "❌ 퇴근 체크 버튼이 보이지 않음\n"
-                        },
-                        {
-                          "text": "\n⏰ 출근 체크 버튼 찾기...\n"
-                        },
-                        {
-                          "text": "❌ 출근 체크 버튼이 보이지 않음 - 이미 출근한 상태\n"
-                        },
-                        {
-                          "text": "\n🔍 위치 정보 관련 콘솔 로그 분석...\n"
-                        },
-                        {
-                          "text": "📊 위치 정보 관련 콘솔 로그:\n"
-                        },
-                        {
-                          "text": "   1. 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
-                        },
-                        {
-                          "text": "   2. ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: 15:46:50}\n"
-                        },
-                        {
-                          "text": "   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: true, checkInTime: 2025-09-14T10:52:23, checkOutTime: 2025-09-14T15:46:50, totalWorkTime: 4h 54m}\n"
-                        },
-                        {
-                          "text": "\n🔍 attendance 데이터 관련 로그 분석...\n"
-                        },
-                        {
-                          "text": "📊 attendance 데이터 관련 콘솔 로그:\n"
-                        },
-                        {
-                          "text": "   1. 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
-                        },
-                        {
-                          "text": "   2. ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: 15:46:50}\n"
-                        },
-                        {
-                          "text": "   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: true, checkInTime: 2025-09-14T10:52:23, checkOutTime: 2025-09-14T15:46:50, totalWorkTime: 4h 54m}\n"
-                        },
-                        {
-                          "text": "📸 김탁수 출근 기록 초기화 및 새 출근 체크 테스트 결과 스크린샷 저장\n"
-                        },
-                        {
-                          "text": "\n🎯 김탁수 출근 기록 초기화 및 새 출근 체크 테스트 완료!\n"
-                        },
-                        {
-                          "text": "==================================================\n"
-                        },
-                        {
-                          "text": "✅ 현재 상태 확인 완료\n"
-                        },
-                        {
-                          "text": "✅ 위치 정보 로그 확인 완료\n"
-                        },
-                        {
-                          "text": "✅ attendance 데이터 로그 확인 완료\n"
+                          "text": "✅ 출근 페이지 상태 확인 테스트 완료\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T08:38:48.620Z",
+                      "startTime": "2025-09-14T11:21:49.039Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -306,9 +189,130 @@
                   "status": "expected"
                 }
               ],
-              "id": "d7412076f9640da3eec6-c8f5b0a35ca057dbd48c",
-              "file": "kim_reset_and_checkin_test.spec.ts",
-              "line": 4,
+              "id": "6556f3f18bea0f1ef997-2a3658ceb99d4318b1cb",
+              "file": "break_status_test.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "관리자 페이지에서 휴식 상태 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-stable",
+                  "projectName": "chromium-stable",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 9608,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 관리자 페이지 휴식 상태 확인 테스트 시작...\n"
+                        },
+                        {
+                          "text": "✅ 김탁수 로그인 완료\n"
+                        },
+                        {
+                          "text": "🔍 관리자 페이지 접속...\n"
+                        },
+                        {
+                          "text": "✅ 출근 관리 페이지 직접 접속 완료\n"
+                        },
+                        {
+                          "text": "🔍 휴식 중 카드 확인...\n"
+                        },
+                        {
+                          "text": "ℹ️ 휴식 중 카드가 보이지 않음 (현재 휴식 중인 직원이 없음)\n"
+                        },
+                        {
+                          "text": "🔍 김탁수 상태 확인...\n"
+                        },
+                        {
+                          "text": "ℹ️ 김탁수 행이 보이지 않음\n"
+                        },
+                        {
+                          "text": "🔍 전체 요약 카드 확인...\n"
+                        },
+                        {
+                          "text": "✅ 총 0개의 요약 카드 발견\n"
+                        },
+                        {
+                          "text": "✅ 관리자 페이지 휴식 상태 확인 테스트 완료\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-14T11:21:49.037Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6556f3f18bea0f1ef997-1b85b6704ccd9d26cb2c",
+              "file": "break_status_test.spec.ts",
+              "line": 67,
+              "column": 7
+            },
+            {
+              "title": "휴식 시작부터 복귀까지 전체 플로우 테스트",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-stable",
+                  "projectName": "chromium-stable",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 12415,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔍 휴식 전체 플로우 테스트 시작...\n"
+                        },
+                        {
+                          "text": "✅ 김탁수 로그인 완료\n"
+                        },
+                        {
+                          "text": "🔍 현재 상태 확인...\n"
+                        },
+                        {
+                          "text": "ℹ️ 휴식 시작 버튼이 보이지 않음\n"
+                        },
+                        {
+                          "text": "🔍 관리자 페이지에서 최종 상태 확인...\n"
+                        },
+                        {
+                          "text": "✅ 휴식 전체 플로우 테스트 완료\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-14T11:21:49.046Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6556f3f18bea0f1ef997-89e54b438d39d258ea98",
+              "file": "break_status_test.spec.ts",
+              "line": 168,
               "column": 7
             }
           ]
@@ -318,9 +322,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-14T08:38:48.236Z",
-    "duration": 15813.197,
-    "expected": 1,
+    "startTime": "2025-09-14T11:21:48.588Z",
+    "duration": 14483.312,
+    "expected": 3,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

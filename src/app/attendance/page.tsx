@@ -565,12 +565,19 @@ export default function AttendancePage() {
             console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { workHours, workMinutes, diffMs });
           }
           
+          // schedules 테이블에서 휴식 상태 확인
+          let hasBreakFromSchedules = false;
+          if (todayData && todayData.length > 0) {
+            hasBreakFromSchedules = todayData.some(s => s.status === 'break');
+          }
+          
           setDailyAttendance(prev => ({
             ...prev,
             isCheckedIn: hasCheckedIn,
             checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : prev.checkInTime,
             checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
-            totalWorkTime: totalWorkTime
+            totalWorkTime: totalWorkTime,
+            hasBreak: hasBreakFromSchedules || prev.hasBreak
           }));
           
           console.log('✅ attendance 기반 출근 상태 설정 완료:', {
@@ -1064,28 +1071,26 @@ export default function AttendancePage() {
         };
       }
       
-      // 현재 진행 중인 스케줄에 퇴근 시간 기록
-      const inProgressSchedules = todaySchedules.filter(s => 
-        s.actual_start && !s.actual_end
+      // 휴식 중인 스케줄들을 다시 in_progress로 변경
+      const breakSchedules = todaySchedules.filter(s => 
+        s.status === 'break'
       );
       
-      for (const schedule of inProgressSchedules) {
+      for (const schedule of breakSchedules) {
         const { error } = await supabase
           .from("schedules")
           .update({
-            actual_end: now,
-            check_out_location: returnLocation,
-            status: "break",
-            employee_note: "중간 휴식"
+            status: "in_progress",
+            employee_note: "휴식 후 복귀"
           })
           .eq("id", schedule.id);
         
         if (error) throw error;
       }
       
-      // 새로운 근무 세션 시작
+      // 새로운 근무 세션 시작 (아직 시작되지 않은 스케줄들)
       const remainingSchedules = todaySchedules.filter(s => 
-        !s.actual_start
+        !s.actual_start && s.status === 'pending'
       );
       
       for (const schedule of remainingSchedules) {
@@ -1152,15 +1157,13 @@ export default function AttendancePage() {
       
       // 현재 진행 중인 스케줄들을 휴식 상태로 변경
       const inProgressSchedules = todaySchedules.filter(s => 
-        s.actual_start && !s.actual_end
+        s.status === 'in_progress'
       );
       
       for (const schedule of inProgressSchedules) {
         const { error } = await supabase
           .from('schedules')
           .update({
-            actual_end: now,
-            check_out_location: breakLocation,
             status: 'break',
             employee_note: '휴식 시작'
           })
@@ -1171,7 +1174,7 @@ export default function AttendancePage() {
       
       setDailyAttendance(prev => ({
         ...prev,
-        isCheckedIn: false,
+        isCheckedIn: true, // 휴식 중이어도 출근한 상태 유지
         hasBreak: true
       }));
       
