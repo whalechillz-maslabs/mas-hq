@@ -226,6 +226,11 @@ export default function AttendanceManagementPage() {
       
       schedules = allRecords;
       console.log("통합된 schedules:", schedules);
+      console.log("통합된 schedules 개수:", schedules.length);
+      
+      // 디버그 정보 업데이트
+      debugData.recordsCount = schedules.length;
+      debugData.steps.push(`데이터 통합 완료: ${schedules.length}개`);
       
       // schedules가 null이 아닌지 확인
       if (!schedules || schedules.length === 0) {
