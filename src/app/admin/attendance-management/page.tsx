@@ -158,21 +158,20 @@ export default function AttendanceManagementPage() {
       }
       
       // 2. attendance 테이블에서도 출근 기록 조회 (스케줄 없이 출근한 경우)
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from("attendance")
-        .select(`
-          id,
-          employee_id,
-          date,
-          check_in_time,
-          check_out_time,
-          total_hours,
-          overtime_hours,
-          status,
-          location,
-          check_out_location
-        `)
-        .eq("date", normalizedDate);
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("attendance")
+          .select(`
+            id,
+            employee_id,
+            date,
+            check_in_time,
+            check_out_time,
+            total_hours,
+            overtime_hours,
+            status,
+            location
+          `)
+          .eq("date", normalizedDate);
       
       console.log("attendance 데이터 결과:", { attendanceData, attendanceError });
       
@@ -215,9 +214,9 @@ export default function AttendanceManagementPage() {
               overtime_hours: att.overtime_hours || 0,
               status: att.status || 'pending',
               employee_note: null,
-              // 위치 정보 추가
-              check_in_location: att.location || null,
-              check_out_location: att.check_out_location || null
+            // 위치 정보 추가
+            check_in_location: att.location || null,
+            check_out_location: null
             };
             allRecords.push(convertedRecord);
           }
