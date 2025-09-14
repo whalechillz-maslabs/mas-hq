@@ -837,17 +837,36 @@ export default function AttendancePage() {
         console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
       }
       
-      // 2. attendance 테이블에 출근 기록 저장 (항상 실행)
+      // 2. 위치 정보 가져오기
+      let location = null;
+      try {
+        const position = await getCurrentLocation();
+        location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+        console.log('✅ 위치 정보 가져오기 성공:', location);
+      } catch (locationError) {
+        console.warn('⚠️ 위치 정보를 가져올 수 없습니다:', locationError);
+        // 위치 정보 없이도 출근 체크 가능
+        location = {
+          latitude: 37.5665, // 기본값 (서울시 중구)
+          longitude: 126.9780,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          note: '위치 정보 없음'
+        };
+      }
+
+      // 3. attendance 테이블에 출근 기록 저장 (항상 실행)
       const attendanceData = {
         employee_id: currentUser.id,
         date: today,
         check_in_time: checkInTime,
         status: 'present',
-        location: {
-          latitude: 37.5665, // 기본값 (실제로는 GPS 위치 사용)
-          longitude: 126.9780,
-          address: '서울시 중구'
-        }
+        location: location
       };
       
       const { error: attendanceError } = await supabase
@@ -917,7 +936,30 @@ export default function AttendancePage() {
         console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
       }
       
-      // 2. attendance 테이블에 퇴근 시간 업데이트 (항상 실행)
+      // 2. 위치 정보 가져오기
+      let checkOutLocation = null;
+      try {
+        const position = await getCurrentLocation();
+        checkOutLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+        console.log('✅ 퇴근 위치 정보 가져오기 성공:', checkOutLocation);
+      } catch (locationError) {
+        console.warn('⚠️ 퇴근 위치 정보를 가져올 수 없습니다:', locationError);
+        // 위치 정보 없이도 퇴근 체크 가능
+        checkOutLocation = {
+          latitude: 37.5665, // 기본값 (서울시 중구)
+          longitude: 126.9780,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          note: '위치 정보 없음'
+        };
+      }
+
+      // 3. attendance 테이블에 퇴근 시간 업데이트 (항상 실행)
       const checkInTime = dailyAttendance.checkInTime;
       if (checkInTime) {
         const start = new Date(checkInTime);
@@ -930,6 +972,7 @@ export default function AttendancePage() {
         
         const attendanceUpdate = {
           check_out_time: checkOutTime,
+          check_out_location: checkOutLocation,
           total_hours: Math.round(totalHours * 100) / 100,
           overtime_hours: Math.round(overtimeHours * 100) / 100,
           status: 'completed'
