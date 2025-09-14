@@ -6,7 +6,8 @@ import { auth, supabase } from '@/lib/supabase';
 import { 
   Clock, MapPin, Users, Calendar, Filter, Download,
   Search, Eye, CheckCircle, XCircle, AlertCircle,
-  TrendingUp, BarChart3, Download as DownloadIcon
+  TrendingUp, BarChart3, Download as DownloadIcon,
+  Coffee
 } from 'lucide-react';
 
 interface AttendanceRecord {
@@ -529,6 +530,7 @@ export default function AttendanceManagementPage() {
     switch (status) {
       case 'completed': return 'text-green-600 bg-green-100';
       case 'confirmed': return 'text-blue-600 bg-blue-100';
+      case 'break': return 'text-orange-600 bg-orange-100';
       case 'pending': return 'text-yellow-600 bg-yellow-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -538,6 +540,7 @@ export default function AttendanceManagementPage() {
     switch (status) {
       case 'completed': return <CheckCircle className="w-4 h-4" />;
       case 'confirmed': return <Clock className="w-4 h-4" />;
+      case 'break': return <Coffee className="w-4 h-4" />;
       case 'pending': return <AlertCircle className="w-4 h-4" />;
       default: return <XCircle className="w-4 h-4" />;
     }
@@ -548,6 +551,24 @@ export default function AttendanceManagementPage() {
     console.log(`🔍 getActualStatus 호출: ${record.employee_name}`);
     console.log(`  - actual_start: ${record.actual_start}`);
     console.log(`  - actual_end: ${record.actual_end}`);
+    console.log(`  - status: ${record.status}`);
+    console.log(`  - employee_note: ${record.employee_note}`);
+    
+    // 휴식 상태 확인 (schedules 테이블의 status가 'break'인 경우)
+    if (record.status === 'break') {
+      console.log(`  ✅ 휴식 상태 감지 → 'break' 반환`);
+      return 'break';
+    }
+    
+    // 휴식 메모 확인 (employee_note에 '휴식' 관련 내용이 있는 경우)
+    if (record.employee_note && (
+      record.employee_note.includes('휴식') || 
+      record.employee_note.includes('break') ||
+      record.employee_note.includes('중간 휴식')
+    )) {
+      console.log(`  ✅ 휴식 메모 감지 → 'break' 반환`);
+      return 'break';
+    }
     
     // 출근 시간과 퇴근 시간이 모두 있는 경우
     if (record.actual_start && record.actual_end) {
@@ -621,6 +642,7 @@ export default function AttendanceManagementPage() {
     switch (status) {
       case 'completed': return '완료';
       case 'confirmed': return '근무중';
+      case 'break': return '휴식중';
       case 'pending': return '미출근';
       default: return '미출근';
     }
@@ -778,7 +800,7 @@ export default function AttendanceManagementPage() {
         )}
 
         {/* 통계 요약 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center">
               <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
@@ -797,6 +819,17 @@ export default function AttendanceManagementPage() {
                 <p className="text-sm text-gray-600">근무 중</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {filteredRecords.filter(r => getActualStatus(r) === 'confirmed').length}명
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <Coffee className="h-8 w-8 text-orange-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">휴식 중</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {filteredRecords.filter(r => getActualStatus(r) === 'break').length}명
                 </p>
               </div>
             </div>
