@@ -61,6 +61,47 @@ export default function AttendancePage() {
   } | null>(null);
   const [pointBonus, setPointBonus] = useState<number>(0); // 포인트 수당
   const [totalEarnings, setTotalEarnings] = useState<number>(0); // 총 수입 (급여 + 포인트)
+  // 실시간 근무 시간 계산을 위한 useEffect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime) {
+      // 출근했지만 퇴근하지 않은 경우, 1분마다 근무 시간 업데이트
+      interval = setInterval(() => {
+        if (dailyAttendance.checkInTime) {
+          const now = new Date();
+          const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+          const start = new Date(dailyAttendance.checkInTime);
+          const diffMs = koreaTime.getTime() - start.getTime();
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          const totalHours = hours + (minutes / 60);
+          
+          setDailyAttendance(prev => ({
+            ...prev,
+            totalWorkTime: `${hours}h ${minutes}m`
+          }));
+          
+          // 급여 계산도 업데이트
+          if (wageType === 'hourly') {
+            const currentPay = totalHours * hourlyWage;
+            setWageCalculation(prev => prev ? {
+              ...prev,
+              actualPay: currentPay,
+              difference: currentPay - prev.scheduledPay
+            } : null);
+          }
+        }
+      }, 60000); // 1분마다 업데이트
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [dailyAttendance.isCheckedIn, dailyAttendance.checkInTime, dailyAttendance.checkOutTime, hourlyWage, wageType]);
+
   // getCurrentUser 함수 정의
   // 일일 근무 시간 계산 함수
   const calculateDailyWorkHours = (schedules: AttendanceRecord[]) => {
@@ -479,12 +520,27 @@ export default function AttendancePage() {
           const hasCheckedIn = !!attendanceData.check_in_time;
           const hasCheckedOut = !!attendanceData.check_out_time;
           
+          let totalWorkTime = null;
+          if (attendanceData.total_hours) {
+            // 퇴근한 경우: 저장된 총 근무 시간 사용
+            totalWorkTime = `${Math.floor(attendanceData.total_hours)}h ${Math.round((attendanceData.total_hours % 1) * 60)}m`;
+          } else if (hasCheckedIn && !hasCheckedOut) {
+            // 출근했지만 퇴근하지 않은 경우: 실시간 계산
+            const now = new Date();
+            const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+            const start = new Date(`${today}T${attendanceData.check_in_time}`);
+            const diffMs = koreaTime.getTime() - start.getTime();
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            totalWorkTime = `${hours}h ${minutes}m`;
+          }
+          
           setDailyAttendance(prev => ({
             ...prev,
             isCheckedIn: hasCheckedIn,
             checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : prev.checkInTime,
             checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
-            totalWorkTime: attendanceData.total_hours ? `${Math.floor(attendanceData.total_hours)}h ${Math.round((attendanceData.total_hours % 1) * 60)}m` : prev.totalWorkTime
+            totalWorkTime: totalWorkTime
           }));
           
           console.log('✅ attendance 기반 출근 상태 설정 완료:', {
@@ -721,15 +777,18 @@ export default function AttendancePage() {
       setCheckingIn(true);
       setError(null); // 에러 상태 초기화
       
-      const now = new Date().toISOString();
-      const today = new Date().toISOString().split('T')[0];
-      const checkInTime = now.split('T')[1].split('.')[0]; // HH:MM:SS 형식
+      // 한국 시간으로 현재 시간 계산
+      const now = new Date();
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+      const nowISO = koreaTime.toISOString();
+      const today = koreaTime.toISOString().split('T')[0];
+      const checkInTime = koreaTime.toISOString().split('T')[1].split('.')[0]; // HH:MM:SS 형식
       
       // 1. schedules 테이블에 출근 시간 기록 (스케줄이 있는 경우에만)
       if (todaySchedules && todaySchedules.length > 0) {
         const updates = todaySchedules.map(schedule => ({
           id: schedule.id,
-          actual_start: now,
+          actual_start: nowISO,
           status: "in_progress"
         }));
         
@@ -776,7 +835,7 @@ export default function AttendancePage() {
       setDailyAttendance(prev => ({
         ...prev,
         isCheckedIn: true,
-        checkInTime: now
+        checkInTime: nowISO
       }));
       
       alert("출근 체크가 완료되었습니다!");
@@ -798,15 +857,18 @@ export default function AttendancePage() {
       setCheckingIn(true);
       setError(null); // 에러 상태 초기화
       
-      const now = new Date().toISOString();
-      const today = new Date().toISOString().split('T')[0];
-      const checkOutTime = now.split('T')[1].split('.')[0]; // HH:MM:SS 형식
+      // 한국 시간으로 현재 시간 계산
+      const now = new Date();
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+      const nowISO = koreaTime.toISOString();
+      const today = koreaTime.toISOString().split('T')[0];
+      const checkOutTime = koreaTime.toISOString().split('T')[1].split('.')[0]; // HH:MM:SS 형식
       
       // 1. schedules 테이블에 퇴근 시간 기록 (스케줄이 있는 경우에만)
       if (todaySchedules && todaySchedules.length > 0) {
         const updates = todaySchedules.map(schedule => ({
           id: schedule.id,
-          actual_end: now,
+          actual_end: nowISO,
           status: "completed"
         }));
         
