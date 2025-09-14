@@ -543,26 +543,39 @@ export default function AttendancePage() {
             
             // 출근 시간을 한국 시간으로 올바르게 파싱
             const [hours, minutes, seconds] = attendanceData.check_in_time.split(':');
+            
+            // 한국 시간으로 출근 시간 생성 (로컬 시간대 사용)
             const startKoreaTime = new Date();
             startKoreaTime.setFullYear(parseInt(today.split('-')[0]));
             startKoreaTime.setMonth(parseInt(today.split('-')[1]) - 1);
             startKoreaTime.setDate(parseInt(today.split('-')[2]));
             startKoreaTime.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds), 0);
             
+            // 현재 시간도 한국 시간으로 설정
+            const nowKorea = new Date();
+            
             // 디버깅 로그 추가
             console.log('🕐 attendance 데이터 로드 시 근무 시간 계산:', {
               today,
               checkInTime: attendanceData.check_in_time,
               startKoreaTime: startKoreaTime.toISOString(),
-              now: now.toISOString()
+              nowKorea: nowKorea.toISOString(),
+              timezoneOffset: nowKorea.getTimezoneOffset()
             });
             
-            const diffMs = now.getTime() - startKoreaTime.getTime();
-            const workHours = Math.floor(diffMs / (1000 * 60 * 60));
-            const workMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            totalWorkTime = `${workHours}h ${workMinutes}m`;
+            const diffMs = nowKorea.getTime() - startKoreaTime.getTime();
             
-            console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { workHours, workMinutes, diffMs });
+            // 음수 시간 방지
+            if (diffMs < 0) {
+              console.log('⚠️ 음수 시간 감지 - 0시간으로 설정');
+              totalWorkTime = '0h 0m';
+            } else {
+              const workHours = Math.floor(diffMs / (1000 * 60 * 60));
+              const workMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+              totalWorkTime = `${workHours}h ${workMinutes}m`;
+            }
+            
+            console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { totalWorkTime, diffMs });
           }
           
           // schedules 테이블에서 휴식 상태 확인

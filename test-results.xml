@@ -1,12 +1,36 @@
-<testsuites id="" name="" tests="2" failures="0" skipped="2" errors="0" time="199.200489">
-<testsuite name="location_logic_test.spec.ts" timestamp="2025-09-14T14:08:42.170Z" hostname="chromium-stable" tests="2" failures="0" skipped="2" time="198.296" errors="0">
-<testcase name="위치 정보 로직 테스트 › 김탁수 계정으로 출근/퇴근 시 위치 정보 저장 및 표시 확인" classname="location_logic_test.spec.ts" time="198.296">
-<skipped>
-</skipped>
+<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="12.635046">
+<testsuite name="attendance_check_test.spec.ts" timestamp="2025-09-14T23:41:49.936Z" hostname="chromium-stable" tests="4" failures="0" skipped="0" time="34.547" errors="0">
+<testcase name="출근 체크 문제 해결 테스트 › 김탁수 출근 체크 - 스케줄 없을 때 시간 계산 문제 테스트" classname="attendance_check_test.spec.ts" time="8.966">
+<system-out>
+<![CDATA[🔍 김탁수 출근 체크 테스트 시작...
+📍 로그인 후 URL: https://www.maslabs.kr/login
+❌ 로그인 실패
+]]>
+</system-out>
 </testcase>
-<testcase name="위치 정보 로직 테스트 › 김탁수 계정으로 휴식 기능 테스트" classname="location_logic_test.spec.ts" time="0">
-<skipped>
-</skipped>
+<testcase name="출근 체크 문제 해결 테스트 › 허상원 출근 체크 - 스케줄 있을 때 테스트" classname="attendance_check_test.spec.ts" time="7.957">
+<system-out>
+<![CDATA[🔍 허상원 출근 체크 테스트 시작...
+📍 로그인 후 URL: https://www.maslabs.kr/login
+❌ 로그인 실패
+]]>
+</system-out>
+</testcase>
+<testcase name="출근 체크 문제 해결 테스트 › 최형호 출근 체크 - 스케줄 있을 때 테스트" classname="attendance_check_test.spec.ts" time="8.688">
+<system-out>
+<![CDATA[🔍 최형호 출근 체크 테스트 시작...
+📍 로그인 후 URL: https://www.maslabs.kr/login
+❌ 로그인 실패
+]]>
+</system-out>
+</testcase>
+<testcase name="출근 체크 문제 해결 테스트 › 관리자 페이지에서 출근 기록 확인 테스트" classname="attendance_check_test.spec.ts" time="8.936">
+<system-out>
+<![CDATA[🔍 관리자 페이지 출근 기록 확인 테스트 시작...
+📍 로그인 후 URL: https://www.maslabs.kr/login
+❌ 로그인 실패
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>
