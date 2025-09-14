@@ -943,28 +943,7 @@ export default function AttendancePage() {
         console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
       }
       
-      // 2. 위치 정보 가져오기
-      let checkOutLocation = null;
-      try {
-        const position = await getCurrentLocation();
-        checkOutLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString()
-        };
-        console.log('✅ 퇴근 위치 정보 가져오기 성공:', checkOutLocation);
-      } catch (locationError) {
-        console.warn('⚠️ 퇴근 위치 정보를 가져올 수 없습니다:', locationError);
-        // 위치 정보 없이도 퇴근 체크 가능
-        checkOutLocation = {
-          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714828,
-          accuracy: null,
-          timestamp: new Date().toISOString(),
-          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
-        };
-      }
+      // 2. 퇴근 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
 
       // 3. attendance 테이블에 퇴근 시간 업데이트 (항상 실행)
       const checkInTime = dailyAttendance.checkInTime;
@@ -1010,8 +989,7 @@ export default function AttendancePage() {
         // 출근 시간이 없는 경우에도 퇴근 시간만 기록
         const attendanceUpdate = {
           check_out_time: checkOutTime,
-          status: 'completed',
-          location: checkOutLocation
+          status: 'completed'
         };
         
         const { error: attendanceError } = await supabase
@@ -1048,28 +1026,7 @@ export default function AttendancePage() {
       
       const now = new Date().toISOString();
       
-      // 위치 정보 가져오기
-      let returnLocation = null;
-      try {
-        const position = await getCurrentLocation();
-        returnLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString()
-        };
-        console.log('✅ 휴식 복귀 위치 정보 가져오기 성공:', returnLocation);
-      } catch (locationError) {
-        console.warn('⚠️ 휴식 복귀 위치 정보를 가져올 수 없습니다:', locationError);
-        // 위치 정보 없이도 휴식 복귀 가능
-        returnLocation = {
-          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714828,
-          accuracy: null,
-          timestamp: new Date().toISOString(),
-          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
-        };
-      }
+      // 휴식 후 복귀 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
       
       // 최신 스케줄 데이터 가져오기
       const { data: currentSchedules, error: scheduleError } = await supabase
@@ -1112,7 +1069,6 @@ export default function AttendancePage() {
           .from("schedules")
           .update({
             actual_start: now,
-            check_in_location: returnLocation,
             status: "in_progress"
           })
           .eq("id", schedule.id);
@@ -1146,28 +1102,7 @@ export default function AttendancePage() {
       
       const now = new Date().toISOString();
       
-      // 위치 정보 가져오기
-      let breakLocation = null;
-      try {
-        const position = await getCurrentLocation();
-        breakLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString()
-        };
-        console.log('✅ 휴식 시작 위치 정보 가져오기 성공:', breakLocation);
-      } catch (locationError) {
-        console.warn('⚠️ 휴식 시작 위치 정보를 가져올 수 없습니다:', locationError);
-        // 위치 정보 없이도 휴식 시작 가능
-        breakLocation = {
-          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714828,
-          accuracy: null,
-          timestamp: new Date().toISOString(),
-          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
-        };
-      }
+      // 휴식 시작 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
       
       // 최신 스케줄 데이터 가져오기
       const { data: currentSchedules, error: scheduleError } = await supabase
