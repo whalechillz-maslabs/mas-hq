@@ -547,7 +547,10 @@ export default function AttendancePage() {
             // 출근 시간을 한국 시간으로 올바르게 파싱
             const [hours, minutes, seconds] = attendanceData.check_in_time.split(':');
             const startKoreaTime = new Date();
-            startKoreaTime.setUTCHours(parseInt(hours) - 9, parseInt(minutes), parseInt(seconds), 0); // 한국 시간을 UTC로 변환
+            startKoreaTime.setFullYear(parseInt(today.split('-')[0]));
+            startKoreaTime.setMonth(parseInt(today.split('-')[1]) - 1);
+            startKoreaTime.setDate(parseInt(today.split('-')[2]));
+            startKoreaTime.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds), 0);
             
             // 디버깅 로그 추가
             console.log('🕐 attendance 데이터 로드 시 근무 시간 계산:', {

@@ -142,7 +142,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 44757,
+                      "duration": 44167,
                       "errors": [],
                       "stdout": [
                         {
@@ -191,13 +191,13 @@
                           "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 849987b3-8cb4-4d70-b7a3-76c43d7df4e3, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:41:20, check_out_time: null}\n"
                         },
                         {
-                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:48:21.925Z}\n"
+                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:49:48.784Z}\n"
                         },
                         {
-                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 7, diffMs: 32821925}\n"
+                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 8, diffMs: 32908784}\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 10:41:20, checkOutTime: null}\n"
+                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:41:20, checkOutTime: null, totalWorkTime: 9h 8m}\n"
                         },
                         {
                           "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
@@ -248,13 +248,13 @@
                           "text": "\n⏱️ 근무 시간 표시 확인...\n"
                         },
                         {
-                          "text": "📊 현재 표시된 근무 시간: 총 근무: 9h 7m\n"
+                          "text": "📊 현재 표시된 근무 시간: 총 근무: 9h 8m\n"
                         },
                         {
                           "text": "\n⏳ 30초 대기하여 실시간 업데이트 확인...\n"
                         },
                         {
-                          "text": "📊 30초 후 근무 시간: 총 근무: 9h 7m\n"
+                          "text": "📊 30초 후 근무 시간: 총 근무: 9h 8m\n"
                         },
                         {
                           "text": "\n🔍 시간 계산 관련 콘솔 로그 분석...\n"
@@ -263,13 +263,13 @@
                           "text": "📊 시간 계산 관련 콘솔 로그:\n"
                         },
                         {
-                          "text": "   1. 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:48:21.925Z}\n"
+                          "text": "   1. 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:49:48.784Z}\n"
                         },
                         {
-                          "text": "   2. ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 7, diffMs: 32821925}\n"
+                          "text": "   2. ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 8, diffMs: 32908784}\n"
                         },
                         {
-                          "text": "   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 10:41:20, checkOutTime: null}\n"
+                          "text": "   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:41:20, checkOutTime: null, totalWorkTime: 9h 8m}\n"
                         },
                         {
                           "text": "📸 디버깅 테스트 결과 스크린샷 저장\n"
@@ -289,7 +289,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T01:48:10.191Z",
+                      "startTime": "2025-09-14T01:49:38.085Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -309,8 +309,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-14T01:48:09.867Z",
-    "duration": 48080.724,
+    "startTime": "2025-09-14T01:49:37.750Z",
+    "duration": 46385.19,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

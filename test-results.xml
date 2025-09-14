@@ -1,6 +1,6 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="48.080724000000004">
-<testsuite name="attendance_debug_time_test.spec.ts" timestamp="2025-09-14T01:48:09.888Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="44.757" errors="0">
-<testcase name="실시간 근무 시간 계산 디버깅 테스트 › 김탁수 출근 체크 후 근무 시간 계산 로그 확인" classname="attendance_debug_time_test.spec.ts" time="44.757">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="46.38519">
+<testsuite name="attendance_debug_time_test.spec.ts" timestamp="2025-09-14T01:49:37.771Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="44.167" errors="0">
+<testcase name="실시간 근무 시간 계산 디버깅 테스트 › 김탁수 출근 체크 후 근무 시간 계산 로그 확인" classname="attendance_debug_time_test.spec.ts" time="44.167">
 <system-out>
 <![CDATA[🚀 실시간 근무 시간 계산 디버깅 테스트 시작...
 
@@ -19,9 +19,9 @@
 🔍 콘솔: 📊 스케줄 데이터: []
 🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...
 🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 849987b3-8cb4-4d70-b7a3-76c43d7df4e3, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:41:20, check_out_time: null}
-🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:48:21.925Z}
-🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 7, diffMs: 32821925}
-🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 10:41:20, checkOutTime: null}
+🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:49:48.784Z}
+🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 8, diffMs: 32908784}
+🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:41:20, checkOutTime: null, totalWorkTime: 9h 8m}
 🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30
 🔍 콘솔: === 급여 계산 함수 시작 ===
 🔍 콘솔: currentUser: null
@@ -40,16 +40,16 @@
 ✅ 이미 출근 체크됨 (퇴근 체크 버튼 표시)
 
 ⏱️ 근무 시간 표시 확인...
-📊 현재 표시된 근무 시간: 총 근무: 9h 7m
+📊 현재 표시된 근무 시간: 총 근무: 9h 8m
 
 ⏳ 30초 대기하여 실시간 업데이트 확인...
-📊 30초 후 근무 시간: 총 근무: 9h 7m
+📊 30초 후 근무 시간: 총 근무: 9h 8m
 
 🔍 시간 계산 관련 콘솔 로그 분석...
 📊 시간 계산 관련 콘솔 로그:
-   1. 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:48:21.925Z}
-   2. ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 7, diffMs: 32821925}
-   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 10:41:20, checkOutTime: null}
+   1. 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:49:48.784Z}
+   2. ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 8, diffMs: 32908784}
+   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:41:20, checkOutTime: null, totalWorkTime: 9h 8m}
 📸 디버깅 테스트 결과 스크린샷 저장
 
 🎯 디버깅 테스트 완료!
