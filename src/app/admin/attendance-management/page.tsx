@@ -147,6 +147,7 @@ export default function AttendanceManagementPage() {
       // 디버그 정보 업데이트
       debugData.schedulesCount = schedules?.length || 0;
       debugData.steps.push(`스케줄 조회 완료: ${debugData.schedulesCount}개`);
+      setDebugInfo({...debugData}); // 디버그 정보 즉시 업데이트
       
       if (schedulesError) {
         console.error("스케줄 데이터 로딩 오류:", schedulesError);
@@ -175,9 +176,14 @@ export default function AttendanceManagementPage() {
       
       console.log("attendance 데이터 결과:", { attendanceData, attendanceError });
       
+      // 디버그 정보 업데이트
+      debugData.steps.push(`attendance 조회 완료: ${attendanceData?.length || 0}개`);
+      setDebugInfo({...debugData}); // 디버그 정보 즉시 업데이트
+      
       if (attendanceError) {
         console.error("attendance 데이터 로딩 오류:", attendanceError);
         debugData.errors.push(`attendance 조회 오류: ${attendanceError.message}`);
+        setDebugInfo({...debugData});
       }
       
       // 3. schedules와 attendance 데이터 통합
@@ -231,6 +237,7 @@ export default function AttendanceManagementPage() {
       // 디버그 정보 업데이트
       debugData.recordsCount = schedules.length;
       debugData.steps.push(`데이터 통합 완료: ${schedules.length}개`);
+      setDebugInfo({...debugData}); // 디버그 정보 즉시 업데이트
       
       // schedules가 null이 아닌지 확인
       if (!schedules || schedules.length === 0) {
@@ -289,6 +296,7 @@ export default function AttendanceManagementPage() {
       // 디버그 정보 업데이트
       debugData.employeesCount = employees?.length || 0;
       debugData.steps.push(`직원 조회 완료: ${debugData.employeesCount}명`);
+      setDebugInfo({...debugData}); // 디버그 정보 즉시 업데이트
       
       if (employeesError) {
         console.error("직원 데이터 로딩 오류:", employeesError);
