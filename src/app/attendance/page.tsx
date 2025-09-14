@@ -71,6 +71,8 @@ export default function AttendancePage() {
         if (dailyAttendance.checkInTime) {
           const now = new Date();
           const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+          
+          // checkInTime이 "2025-09-14T10:41:20" 형식인 경우
           const start = new Date(dailyAttendance.checkInTime);
           
           // 디버깅 로그 추가
@@ -541,19 +543,22 @@ export default function AttendancePage() {
             // 출근했지만 퇴근하지 않은 경우: 실시간 계산
             const now = new Date();
             const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
-            const start = new Date(`${today}T${attendanceData.check_in_time}`);
+            
+            // 출근 시간을 한국 시간으로 올바르게 파싱
+            const [hours, minutes, seconds] = attendanceData.check_in_time.split(':');
+            const startKoreaTime = new Date();
+            startKoreaTime.setUTCHours(parseInt(hours) - 9, parseInt(minutes), parseInt(seconds), 0); // 한국 시간을 UTC로 변환
             
             // 디버깅 로그 추가
             console.log('🕐 attendance 데이터 로드 시 근무 시간 계산:', {
               today,
               checkInTime: attendanceData.check_in_time,
-              startTime: `${today}T${attendanceData.check_in_time}`,
-              start: start.toISOString(),
+              startKoreaTime: startKoreaTime.toISOString(),
               koreaTime: koreaTime.toISOString(),
               now: now.toISOString()
             });
             
-            const diffMs = koreaTime.getTime() - start.getTime();
+            const diffMs = koreaTime.getTime() - startKoreaTime.getTime();
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
             totalWorkTime = `${hours}h ${minutes}m`;
