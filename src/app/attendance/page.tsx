@@ -687,24 +687,29 @@ export default function AttendancePage() {
       const today = new Date().toISOString().split('T')[0];
       const checkInTime = now.split('T')[1].split('.')[0]; // HH:MM:SS 형식
       
-      // 1. schedules 테이블에 출근 시간 기록
-      const updates = todaySchedules.map(schedule => ({
-        id: schedule.id,
-        actual_start: now,
-        status: "in_progress"
-      }));
-      
-      // 일괄 업데이트
-      for (const update of updates) {
-        const { error } = await supabase
-          .from("schedules")
-          .update(update)
-          .eq("id", update.id);
+      // 1. schedules 테이블에 출근 시간 기록 (스케줄이 있는 경우에만)
+      if (todaySchedules && todaySchedules.length > 0) {
+        const updates = todaySchedules.map(schedule => ({
+          id: schedule.id,
+          actual_start: now,
+          status: "in_progress"
+        }));
         
-        if (error) throw error;
+        // 일괄 업데이트
+        for (const update of updates) {
+          const { error } = await supabase
+            .from("schedules")
+            .update(update)
+            .eq("id", update.id);
+          
+          if (error) throw error;
+        }
+        console.log('✅ schedules 테이블에 출근 시간 기록 완료');
+      } else {
+        console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
       }
       
-      // 2. attendance 테이블에 출근 기록 저장
+      // 2. attendance 테이블에 출근 기록 저장 (항상 실행)
       const attendanceData = {
         employee_id: currentUser.id,
         date: today,
@@ -725,7 +730,7 @@ export default function AttendancePage() {
       
       if (attendanceError) {
         console.error('attendance 테이블 저장 오류:', attendanceError);
-        // attendance 저장 실패해도 schedules는 성공했으므로 계속 진행
+        throw attendanceError; // attendance 저장 실패 시 오류 발생
       } else {
         console.log('✅ attendance 테이블에 출근 기록 저장 완료');
       }
@@ -759,24 +764,29 @@ export default function AttendancePage() {
       const today = new Date().toISOString().split('T')[0];
       const checkOutTime = now.split('T')[1].split('.')[0]; // HH:MM:SS 형식
       
-      // 1. schedules 테이블에 퇴근 시간 기록
-      const updates = todaySchedules.map(schedule => ({
-        id: schedule.id,
-        actual_end: now,
-        status: "completed"
-      }));
-      
-      // 일괄 업데이트
-      for (const update of updates) {
-        const { error } = await supabase
-          .from("schedules")
-          .update(update)
-          .eq("id", update.id);
+      // 1. schedules 테이블에 퇴근 시간 기록 (스케줄이 있는 경우에만)
+      if (todaySchedules && todaySchedules.length > 0) {
+        const updates = todaySchedules.map(schedule => ({
+          id: schedule.id,
+          actual_end: now,
+          status: "completed"
+        }));
         
-        if (error) throw error;
+        // 일괄 업데이트
+        for (const update of updates) {
+          const { error } = await supabase
+            .from("schedules")
+            .update(update)
+            .eq("id", update.id);
+          
+          if (error) throw error;
+        }
+        console.log('✅ schedules 테이블에 퇴근 시간 기록 완료');
+      } else {
+        console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
       }
       
-      // 2. attendance 테이블에 퇴근 시간 업데이트
+      // 2. attendance 테이블에 퇴근 시간 업데이트 (항상 실행)
       const checkInTime = dailyAttendance.checkInTime;
       if (checkInTime) {
         const start = new Date(checkInTime);
@@ -802,6 +812,7 @@ export default function AttendancePage() {
         
         if (attendanceError) {
           console.error('attendance 테이블 업데이트 오류:', attendanceError);
+          throw attendanceError; // attendance 업데이트 실패 시 오류 발생
         } else {
           console.log('✅ attendance 테이블에 퇴근 기록 업데이트 완료');
         }
@@ -814,6 +825,24 @@ export default function AttendancePage() {
           checkOutTime: now,
           totalWorkTime: totalTime
         }));
+      } else {
+        // 출근 시간이 없는 경우에도 퇴근 시간만 기록
+        const attendanceUpdate = {
+          check_out_time: checkOutTime,
+          status: 'completed'
+        };
+        
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .update(attendanceUpdate)
+          .eq('employee_id', currentUser.id)
+          .eq('date', today);
+        
+        if (attendanceError) {
+          console.error('attendance 테이블 퇴근 시간 업데이트 오류:', attendanceError);
+        } else {
+          console.log('✅ attendance 테이블에 퇴근 시간만 기록 완료');
+        }
       }
       
       alert("퇴근 체크가 완료되었습니다!");

@@ -1,159 +1,125 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// Supabase 설정
 const supabase = createClient(
   'https://cgscbtxtgualkfalouwh.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnc2NidHh0Z3VhbGtmYWxvdXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ5MDY3MzYsImV4cCI6MjA3MDQ4MjczNn0.F0iFoFEJr87g4nA6Z7U1BK3t3ModxgZC2eWNIKRA0u8'
 );
 
 async function checkTodayAttendance() {
-  console.log('🔍 오늘 출근 체크한 사람 확인 중...');
-  
+  console.log('🔍 오늘 출근 데이터 확인 시작...\n');
+
   try {
-    // 오늘 날짜 계산
-    const today = new Date();
-    const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD 형식
-    console.log('📅 오늘 날짜:', todayString);
-    
-    // 1. daily_work_records 테이블 확인
-    console.log('\n1. daily_work_records 테이블에서 오늘 출근 체크 확인...');
-    const { data: todayWorkRecords, error: workError } = await supabase
-      .from('daily_work_records')
-      .select(`
-        *,
-        employees!inner(name, employee_id, employment_type)
-      `)
-      .eq('work_date', todayString)
-      .order('check_in_time', { ascending: true });
-    
-    if (workError) {
-      console.log('❌ daily_work_records 테이블 조회 실패:', workError.message);
-      console.log('   → daily_work_records 테이블이 존재하지 않습니다');
+    const today = new Date().toISOString().split('T')[0];
+    console.log(`📅 오늘 날짜: ${today}`);
+
+    // 1. 오늘 attendance 데이터 확인
+    console.log('\n1️⃣ 오늘 attendance 데이터 확인...');
+    const { data: todayAttendance, error: attendanceError } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('date', today);
+
+    if (attendanceError) {
+      console.log('❌ 오늘 attendance 데이터 조회 실패:', attendanceError.message);
     } else {
-      console.log('✅ daily_work_records 테이블에서 오늘 출근 체크 (총 ' + todayWorkRecords.length + '명):');
-      
-      if (todayWorkRecords.length === 0) {
-        console.log('⚠️ 오늘 출근 체크한 사람이 없습니다');
+      console.log(`✅ 오늘 attendance 데이터: ${todayAttendance.length}개`);
+      if (todayAttendance.length > 0) {
+        todayAttendance.forEach((record, index) => {
+          console.log(`   ${index + 1}. 직원ID: ${record.employee_id}, 출근: ${record.check_in_time}, 퇴근: ${record.check_out_time || '미퇴근'}`);
+        });
       } else {
-        todayWorkRecords.forEach((record, index) => {
-          console.log(`\n  📋 출근 체크 ${index + 1}:`);
-          console.log('    - 이름:', record.employees.name);
-          console.log('    - 직원ID:', record.employees.employee_id);
-          console.log('    - 고용형태:', record.employees.employment_type);
-          console.log('    - 출근시간:', record.check_in_time);
-          console.log('    - 퇴근시간:', record.check_out_time || '미퇴근');
-          console.log('    - 근무시간:', record.work_hours + '시간');
-          console.log('    - 위치:', record.location || '미지정');
+        console.log('   📝 오늘 출근 데이터가 없습니다.');
+      }
+    }
+
+    // 2. 최근 3일 attendance 데이터 확인
+    console.log('\n2️⃣ 최근 3일 attendance 데이터 확인...');
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
+
+    const { data: recentAttendance, error: recentError } = await supabase
+      .from('attendance')
+      .select('*')
+      .gte('date', threeDaysAgoStr)
+      .order('date', { ascending: false });
+
+    if (recentError) {
+      console.log('❌ 최근 attendance 데이터 조회 실패:', recentError.message);
+    } else {
+      console.log(`✅ 최근 3일 attendance 데이터: ${recentAttendance.length}개`);
+      if (recentAttendance.length > 0) {
+        recentAttendance.forEach((record, index) => {
+          console.log(`   ${index + 1}. 날짜: ${record.date}, 직원ID: ${record.employee_id}, 출근: ${record.check_in_time}, 퇴근: ${record.check_out_time || '미퇴근'}`);
         });
       }
     }
-    
-    // 2. employee_tasks 테이블에서 오늘 업무 기록 확인
-    console.log('\n2. employee_tasks 테이블에서 오늘 업무 기록 확인...');
-    const { data: todayTasks, error: taskError } = await supabase
-      .from('employee_tasks')
-      .select(`
-        *,
-        employees!inner(name, employee_id, employment_type)
-      `)
-      .eq('task_date', todayString)
-      .order('created_at', { ascending: true });
-    
-    if (taskError) {
-      console.log('❌ employee_tasks 테이블 조회 실패:', taskError.message);
+
+    // 3. 직원별 오늘 스케줄 확인
+    console.log('\n3️⃣ 직원별 오늘 스케줄 확인...');
+    const { data: employees, error: employeesError } = await supabase
+      .from('employees')
+      .select('id, name, employee_id')
+      .eq('is_active', true);
+
+    if (employeesError) {
+      console.log('❌ 직원 목록 조회 실패:', employeesError.message);
     } else {
-      console.log('✅ employee_tasks 테이블에서 오늘 업무 기록 (총 ' + todayTasks.length + '개):');
+      console.log(`✅ 활성 직원 수: ${employees.length}명`);
       
-      if (todayTasks.length === 0) {
-        console.log('⚠️ 오늘 업무 기록이 없습니다');
-      } else {
-        // 직원별로 그룹화
-        const tasksByEmployee = {};
-        todayTasks.forEach(task => {
-          const employeeName = task.employees.name;
-          if (!tasksByEmployee[employeeName]) {
-            tasksByEmployee[employeeName] = {
-              employee_id: task.employees.employee_id,
-              employment_type: task.employees.employment_type,
-              tasks: []
-            };
+      for (const employee of employees) {
+        const { data: todaySchedule, error: scheduleError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('employee_id', employee.id)
+          .eq('schedule_date', today);
+
+        if (scheduleError) {
+          console.log(`   ❌ ${employee.name} 오늘 스케줄 조회 실패: ${scheduleError.message}`);
+        } else {
+          console.log(`   📋 ${employee.name} (${employee.employee_id}): ${todaySchedule.length}개 스케줄`);
+          if (todaySchedule.length > 0) {
+            todaySchedule.forEach((schedule, index) => {
+              console.log(`      ${index + 1}. ${schedule.scheduled_start} ~ ${schedule.scheduled_end} (상태: ${schedule.status})`);
+            });
           }
-          tasksByEmployee[employeeName].tasks.push(task);
-        });
-        
-        Object.keys(tasksByEmployee).forEach(employeeName => {
-          const employeeData = tasksByEmployee[employeeName];
-          console.log(`\n  👤 ${employeeName} (${employeeData.employee_id}):`);
-          console.log('    - 고용형태:', employeeData.employment_type);
-          console.log('    - 오늘 업무 수:', employeeData.tasks.length + '개');
-          
-          employeeData.tasks.forEach((task, index) => {
-            console.log(`    - 업무 ${index + 1}: ${task.title} (${task.achievement_status})`);
-          });
-        });
+        }
       }
     }
-    
-    // 3. schedules 테이블에서 오늘 스케줄 확인
-    console.log('\n3. schedules 테이블에서 오늘 스케줄 확인...');
-    const { data: todaySchedules, error: scheduleError } = await supabase
-      .from('schedules')
-      .select(`
-        *,
-        employees!inner(name, employee_id, employment_type)
-      `)
-      .eq('date', todayString)
-      .order('start_time', { ascending: true });
-    
-    if (scheduleError) {
-      console.log('❌ schedules 테이블 조회 실패:', scheduleError.message);
+
+    // 4. 전체 attendance 테이블 통계
+    console.log('\n4️⃣ 전체 attendance 테이블 통계...');
+    const { data: allAttendance, error: allError } = await supabase
+      .from('attendance')
+      .select('*');
+
+    if (allError) {
+      console.log('❌ 전체 attendance 데이터 조회 실패:', allError.message);
     } else {
-      console.log('✅ schedules 테이블에서 오늘 스케줄 (총 ' + todaySchedules.length + '개):');
+      console.log(`✅ 전체 attendance 레코드 수: ${allAttendance.length}개`);
       
-      if (todaySchedules.length === 0) {
-        console.log('⚠️ 오늘 스케줄이 없습니다');
-      } else {
-        todaySchedules.forEach((schedule, index) => {
-          console.log(`\n  📅 스케줄 ${index + 1}:`);
-          console.log('    - 이름:', schedule.employees.name);
-          console.log('    - 직원ID:', schedule.employees.employee_id);
-          console.log('    - 고용형태:', schedule.employees.employment_type);
-          console.log('    - 시작시간:', schedule.start_time);
-          console.log('    - 종료시간:', schedule.end_time);
-          console.log('    - 근무시간:', schedule.work_hours + '시간');
+      // 날짜별 통계
+      const dateStats = {};
+      allAttendance.forEach(record => {
+        if (!dateStats[record.date]) {
+          dateStats[record.date] = 0;
+        }
+        dateStats[record.date]++;
+      });
+      
+      console.log('📊 날짜별 출근 통계:');
+      Object.entries(dateStats)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .forEach(([date, count]) => {
+          console.log(`   ${date}: ${count}명`);
         });
-      }
     }
-    
-    // 4. 결론
-    console.log('\n📊 오늘 출근 체크 현황 요약:');
-    
-    if (workError) {
-      console.log('❌ daily_work_records 테이블이 없어서 정확한 출근 체크 정보를 확인할 수 없습니다');
-      console.log('💡 employee_tasks 테이블의 업무 기록으로 활동 여부를 추정할 수 있습니다');
-      
-      if (todayTasks.length > 0) {
-        const activeEmployees = [...new Set(todayTasks.map(task => task.employees.name))];
-        console.log('✅ 오늘 활동한 직원 (업무 기록 기준):', activeEmployees.join(', '));
-      } else {
-        console.log('⚠️ 오늘 활동한 직원이 없습니다 (업무 기록 기준)');
-      }
-    } else {
-      if (todayWorkRecords.length > 0) {
-        const checkedInEmployees = todayWorkRecords.map(record => record.employees.name);
-        console.log('✅ 오늘 출근 체크한 직원:', checkedInEmployees.join(', '));
-      } else {
-        console.log('⚠️ 오늘 출근 체크한 직원이 없습니다');
-      }
-    }
-    
+
   } catch (error) {
-    console.error('❌ 확인 중 오류:', error);
+    console.error('❌ 오늘 출근 데이터 확인 중 오류:', error);
   }
 }
 
-// 스크립트가 직접 실행될 때만 실행
-if (require.main === module) {
-  checkTodayAttendance().catch(console.error);
-}
-
-module.exports = { checkTodayAttendance };
+// 스크립트 실행
+checkTodayAttendance();

@@ -1,6 +1,6 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="26.49826">
-<testsuite name="attendance_real_test.spec.ts" timestamp="2025-09-14T01:12:16.054Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="24.594" errors="0">
-<testcase name="실제 출근 체크 데이터 저장 테스트 › 출근 체크 후 데이터베이스 저장 확인" classname="attendance_real_test.spec.ts" time="24.594">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="27.818765">
+<testsuite name="attendance_real_test.spec.ts" timestamp="2025-09-14T01:15:18.758Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="25.62" errors="0">
+<testcase name="실제 출근 체크 데이터 저장 테스트 › 출근 체크 후 데이터베이스 저장 확인" classname="attendance_real_test.spec.ts" time="25.62">
 <system-out>
 <![CDATA[🚀 실제 출근 체크 데이터 저장 테스트 시작...
 
