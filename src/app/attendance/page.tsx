@@ -866,8 +866,7 @@ export default function AttendancePage() {
         date: today,
         check_in_time: checkInTime,
         status: 'present',
-        location: location,
-        check_in_location: location // 출근 위치 정보를 명시적으로 저장
+        location: location
       };
       
       const { error: attendanceError } = await supabase
@@ -976,8 +975,7 @@ export default function AttendancePage() {
           total_hours: Math.round(totalHours * 100) / 100,
           overtime_hours: Math.round(overtimeHours * 100) / 100,
           status: 'completed',
-          location: checkOutLocation, // 퇴근 위치 정보 추가
-          check_out_location: checkOutLocation // 퇴근 위치 정보를 명시적으로 저장
+          location: checkOutLocation
         };
         
         const { error: attendanceError } = await supabase
@@ -1006,8 +1004,7 @@ export default function AttendancePage() {
         const attendanceUpdate = {
           check_out_time: checkOutTime,
           status: 'completed',
-          location: checkOutLocation, // 퇴근 위치 정보 추가
-          check_out_location: checkOutLocation // 퇴근 위치 정보를 명시적으로 저장
+          location: checkOutLocation
         };
         
         const { error: attendanceError } = await supabase
