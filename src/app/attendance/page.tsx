@@ -1071,10 +1071,22 @@ export default function AttendancePage() {
         };
       }
       
+      // 최신 스케줄 데이터 가져오기
+      const { data: currentSchedules, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('employee_id', currentUser.id)
+        .eq('schedule_date', new Date().toISOString().split('T')[0])
+        .order('scheduled_start', { ascending: true });
+      
+      if (scheduleError) throw scheduleError;
+      
       // 휴식 중인 스케줄들을 다시 in_progress로 변경
-      const breakSchedules = todaySchedules.filter(s => 
+      const breakSchedules = currentSchedules?.filter(s => 
         s.status === 'break'
-      );
+      ) || [];
+      
+      console.log(`🔄 휴식 중인 스케줄 ${breakSchedules.length}개를 in_progress로 변경...`);
       
       for (const schedule of breakSchedules) {
         const { error } = await supabase
@@ -1089,9 +1101,11 @@ export default function AttendancePage() {
       }
       
       // 새로운 근무 세션 시작 (아직 시작되지 않은 스케줄들)
-      const remainingSchedules = todaySchedules.filter(s => 
+      const remainingSchedules = currentSchedules?.filter(s => 
         !s.actual_start && s.status === 'pending'
-      );
+      ) || [];
+      
+      console.log(`🔄 새로운 근무 세션 시작할 스케줄 ${remainingSchedules.length}개...`);
       
       for (const schedule of remainingSchedules) {
         const { error } = await supabase
@@ -1155,10 +1169,22 @@ export default function AttendancePage() {
         };
       }
       
+      // 최신 스케줄 데이터 가져오기
+      const { data: currentSchedules, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('employee_id', currentUser.id)
+        .eq('schedule_date', new Date().toISOString().split('T')[0])
+        .order('scheduled_start', { ascending: true });
+      
+      if (scheduleError) throw scheduleError;
+      
       // 현재 진행 중인 스케줄들을 휴식 상태로 변경
-      const inProgressSchedules = todaySchedules.filter(s => 
+      const inProgressSchedules = currentSchedules?.filter(s => 
         s.status === 'in_progress'
-      );
+      ) || [];
+      
+      console.log(`🔄 진행 중인 스케줄 ${inProgressSchedules.length}개를 break로 변경...`);
       
       for (const schedule of inProgressSchedules) {
         const { error } = await supabase
