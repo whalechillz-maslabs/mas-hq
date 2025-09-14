@@ -562,11 +562,11 @@ export default function AttendancePage() {
             });
             
             const diffMs = koreaTime.getTime() - startKoreaTime.getTime();
-            const hours = Math.floor(diffMs / (1000 * 60 * 60));
-            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            totalWorkTime = `${hours}h ${minutes}m`;
+            const workHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const workMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            totalWorkTime = `${workHours}h ${workMinutes}m`;
             
-            console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { hours, minutes, diffMs });
+            console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { workHours, workMinutes, diffMs });
           }
           
           setDailyAttendance(prev => ({
@@ -1358,10 +1358,10 @@ export default function AttendancePage() {
                     
                     if (difference === 0) return '0h 0m';
                     
-                    const hours = Math.floor(Math.abs(difference));
-                    const minutes = Math.round((Math.abs(difference) - hours) * 60);
+                    const diffHours = Math.floor(Math.abs(difference));
+                    const diffMinutes = Math.round((Math.abs(difference) - diffHours) * 60);
                     const sign = difference > 0 ? '+' : '-';
-                    return `${sign}${hours}h ${minutes}m`;
+                    return `${sign}${diffHours}h ${diffMinutes}m`;
                   }
                   
                   if (todaySchedules.length === 0) return '0h 0m';
@@ -1390,11 +1390,11 @@ export default function AttendancePage() {
                   
                   if (difference === 0) return '0h 0m';
                   
-                  const hours = Math.floor(Math.abs(difference));
-                  const minutes = Math.round((Math.abs(difference) - hours) * 60);
+                  const diffHours = Math.floor(Math.abs(difference));
+                  const diffMinutes = Math.round((Math.abs(difference) - diffHours) * 60);
                   const sign = difference > 0 ? '+' : '-';
                   
-                  return `${sign}${hours}h ${minutes}m`;
+                  return `${sign}${diffHours}h ${diffMinutes}m`;
                 })()}
               </div>
               <div className="text-sm text-purple-700">시간 차이</div>
