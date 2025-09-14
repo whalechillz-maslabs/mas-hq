@@ -78,7 +78,9 @@ export default function AttendancePage() {
             checkInTime: dailyAttendance.checkInTime,
             start: start.toISOString(),
             koreaTime: koreaTime.toISOString(),
-            now: now.toISOString()
+            now: now.toISOString(),
+            startTime: start.getTime(),
+            koreaTimeTime: koreaTime.getTime()
           });
           
           const diffMs = koreaTime.getTime() - start.getTime();
@@ -570,8 +572,9 @@ export default function AttendancePage() {
           console.log('✅ attendance 기반 출근 상태 설정 완료:', {
             hasCheckedIn,
             hasCheckedOut,
-            checkInTime: attendanceData.check_in_time,
-            checkOutTime: attendanceData.check_out_time
+            checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : null,
+            checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : null,
+            totalWorkTime: totalWorkTime
           });
         } else {
           console.log('📝 오늘 attendance 데이터 없음');
