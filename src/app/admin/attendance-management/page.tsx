@@ -63,7 +63,14 @@ export default function AttendanceManagementPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // 한국 시간 기준으로 오늘 날짜 설정
+  const getKoreaToday = () => {
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+    return koreaTime.toISOString().split('T')[0];
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(getKoreaToday());
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -102,6 +109,112 @@ export default function AttendanceManagementPage() {
     }
     
     setCurrentUser(user);
+  };
+
+  // 자동 퇴근 처리 함수
+  const processAutoCheckout = async (employeeId: string, date: string) => {
+    try {
+      console.log(`🔄 자동 퇴근 처리 시작: ${employeeId}, ${date}`);
+      
+      // 1. 현재 attendance 데이터 조회
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('date', date)
+        .single();
+      
+      if (!attendanceData || attendanceData.check_out_time) {
+        console.log('자동 퇴근 처리 불필요: 출근 기록 없음 또는 이미 퇴근함');
+        return;
+      }
+      
+      // 2. 스케줄 데이터 조회
+      const { data: scheduleData } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('schedule_date', date)
+        .order('scheduled_start', { ascending: true });
+      
+      const now = new Date();
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+      const currentTime = koreaTime.toTimeString().split(' ')[0]; // HH:MM:SS
+      
+      let expectedEndTime = null;
+      let totalHours = 0;
+      let overtimeHours = 0;
+      
+      if (scheduleData && scheduleData.length > 0) {
+        // 스케줄이 있는 경우
+        const lastSchedule = scheduleData[scheduleData.length - 1];
+        expectedEndTime = lastSchedule.scheduled_end;
+        
+        // 기본 근무 시간 계산 (스케줄 기준)
+        const scheduledStart = new Date(`2000-01-01T${scheduleData[0].scheduled_start}`);
+        const scheduledEnd = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
+        const scheduledDuration = (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
+        totalHours = scheduledDuration;
+        
+        // 초과 근무 시간 계산
+        const expectedEnd = new Date(`2000-01-01T${expectedEndTime}`);
+        const current = new Date(`2000-01-01T${currentTime}`);
+        if (current > expectedEnd) {
+          overtimeHours = (current.getTime() - expectedEnd.getTime()) / (1000 * 60 * 60);
+        }
+      } else {
+        // 스케줄이 없는 경우 - 기본 8시간 근무
+        const checkInTime = new Date(`2000-01-01T${attendanceData.check_in_time}`);
+        const defaultEndTime = new Date(checkInTime.getTime() + (8 * 60 * 60 * 1000));
+        expectedEndTime = defaultEndTime.toTimeString().split(' ')[0];
+        totalHours = 8;
+        
+        // 초과 근무 시간 계산
+        const expectedEnd = new Date(`2000-01-01T${expectedEndTime}`);
+        const current = new Date(`2000-01-01T${currentTime}`);
+        if (current > expectedEnd) {
+          overtimeHours = (current.getTime() - expectedEnd.getTime()) / (1000 * 60 * 60);
+        }
+      }
+      
+      // 3. 자동 퇴근 조건 확인 (예상 종료 시간 + 30분 후)
+      const expectedEndDate = new Date(`2000-01-01T${expectedEndTime}`);
+      const currentDate = new Date(`2000-01-01T${currentTime}`);
+      const autoCheckoutTime = new Date(expectedEndDate.getTime() + (30 * 60 * 1000)); // 30분 후
+      
+      if (currentDate > autoCheckoutTime) {
+        console.log(`✅ 자동 퇴근 처리 실행: ${expectedEndTime}`);
+        
+        // 4. 자동 퇴근 처리
+        const { error: updateError } = await supabase
+          .from('attendance')
+          .update({
+            check_out_time: expectedEndTime,
+            total_hours: totalHours,
+            overtime_hours: overtimeHours,
+            status: 'completed',
+            auto_checkout: true,
+            auto_checkout_reason: '근무 시간 종료 후 자동 퇴근 처리'
+          })
+          .eq('employee_id', employeeId)
+          .eq('date', date);
+        
+        if (updateError) {
+          console.error('자동 퇴근 처리 오류:', updateError);
+        } else {
+          console.log('✅ 자동 퇴근 처리 완료');
+        }
+      } else {
+        console.log('자동 퇴근 처리 대기 중:', {
+          expectedEndTime,
+          currentTime,
+          autoCheckoutTime: autoCheckoutTime.toTimeString().split(' ')[0]
+        });
+      }
+      
+    } catch (error) {
+      console.error('자동 퇴근 처리 중 오류:', error);
+    }
   };
 
   const loadData = async () => {
@@ -449,13 +562,23 @@ export default function AttendanceManagementPage() {
       setDebugInfo(debugData);
       
       setAttendanceRecords(attendanceRecords);
+      // 자동 퇴근 처리 실행
+      console.log('🔄 자동 퇴근 처리 시작...');
+      const autoCheckoutEmployeeIds = [...new Set(convertedRecords.map(record => record.employee_id))];
+      
+      for (const employeeId of autoCheckoutEmployeeIds) {
+        await processAutoCheckout(employeeId, normalizedDate);
+      }
+      
+      console.log('✅ 자동 퇴근 처리 완료');
+      
     } catch (error) {
       console.error("출근 데이터 로딩 중 오류:", error);
       debugData.errors.push(`전체 오류: ${error}`);
       setDebugInfo(debugData);
       setAttendanceRecords([]);
     } finally {
-    setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
