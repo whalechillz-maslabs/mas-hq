@@ -157,37 +157,52 @@ export default function AttendanceManagementPage() {
       }
       
       if (!schedules || schedules.length === 0) {
-        console.log("해당 날짜에 스케줄이 없습니다. 다른 날짜 형식으로 시도...");
+        console.log("해당 날짜에 스케줄이 없습니다. attendance 테이블에서 출근 기록 확인...");
         
-        // 2. 다른 날짜 형식으로 시도 (YYYY-MM-DD vs YYYY.MM.DD)
-        const alternativeDate = selectedDate.replace(/\./g, '-');
-        console.log("대안 날짜 형식:", alternativeDate);
-        
-        const { data: altSchedules, error: altError } = await supabase
-          .from("schedules")
+        // 2. attendance 테이블에서 출근 기록 조회 (스케줄 없이 출근한 경우)
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("attendance")
           .select(`
             id,
             employee_id,
-            schedule_date,
-            scheduled_start,
-            scheduled_end,
-            actual_start,
-            actual_end,
-            break_minutes,
+            date,
+            check_in_time,
+            check_out_time,
             total_hours,
             overtime_hours,
             status,
-            employee_note
+            location
           `)
-          .eq("schedule_date", alternativeDate);
+          .eq("date", normalizedDate);
         
-        if (altError) {
-          console.error("대안 날짜 형식 쿼리 오류:", altError);
-        } else if (altSchedules && altSchedules.length > 0) {
-          console.log("대안 날짜 형식으로 데이터 찾음:", altSchedules);
-          schedules = altSchedules;
+        console.log("attendance 데이터 결과:", { attendanceData, attendanceError });
+        
+        if (attendanceError) {
+          console.error("attendance 데이터 로딩 오류:", attendanceError);
+          debugData.errors.push(`attendance 조회 오류: ${attendanceError.message}`);
+        } else if (attendanceData && attendanceData.length > 0) {
+          console.log("attendance 테이블에서 출근 기록 찾음:", attendanceData);
+          
+          // attendance 데이터를 schedules 형식으로 변환
+          const convertedSchedules = attendanceData.map(att => ({
+            id: att.id,
+            employee_id: att.employee_id,
+            schedule_date: att.date,
+            scheduled_start: null,
+            scheduled_end: null,
+            actual_start: att.check_in_time ? `${att.date}T${att.check_in_time}` : null,
+            actual_end: att.check_out_time ? `${att.date}T${att.check_out_time}` : null,
+            break_minutes: 0,
+            total_hours: att.total_hours || 0,
+            overtime_hours: att.overtime_hours || 0,
+            status: att.status || 'pending',
+            employee_note: null
+          }));
+          
+          schedules = convertedSchedules;
+          console.log("변환된 schedules:", schedules);
         } else {
-          console.log("모든 날짜 형식으로 시도했지만 데이터가 없습니다.");
+          console.log("attendance 테이블에도 데이터가 없습니다.");
           setAttendanceRecords([]);
           return;
         }
