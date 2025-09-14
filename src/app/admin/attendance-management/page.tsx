@@ -156,60 +156,76 @@ export default function AttendanceManagementPage() {
         return;
       }
       
-      if (!schedules || schedules.length === 0) {
-        console.log("해당 날짜에 스케줄이 없습니다. attendance 테이블에서 출근 기록 확인...");
-        
-        // 2. attendance 테이블에서 출근 기록 조회 (스케줄 없이 출근한 경우)
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from("attendance")
-          .select(`
-            id,
-            employee_id,
-            date,
-            check_in_time,
-            check_out_time,
-            total_hours,
-            overtime_hours,
-            status,
-            location
-          `)
-          .eq("date", normalizedDate);
-        
-        console.log("attendance 데이터 결과:", { attendanceData, attendanceError });
-        
-        if (attendanceError) {
-          console.error("attendance 데이터 로딩 오류:", attendanceError);
-          debugData.errors.push(`attendance 조회 오류: ${attendanceError.message}`);
-        } else if (attendanceData && attendanceData.length > 0) {
-          console.log("attendance 테이블에서 출근 기록 찾음:", attendanceData);
-          
-          // attendance 데이터를 schedules 형식으로 변환
-          const convertedSchedules = attendanceData.map(att => ({
-            id: att.id,
-            employee_id: att.employee_id,
-            schedule_date: att.date,
-            scheduled_start: null,
-            scheduled_end: null,
-            actual_start: att.check_in_time ? `${att.date}T${att.check_in_time}` : null,
-            actual_end: att.check_out_time ? `${att.date}T${att.check_out_time}` : null,
-            break_minutes: 0,
-            total_hours: att.total_hours || 0,
-            overtime_hours: att.overtime_hours || 0,
-            status: att.status || 'pending',
-            employee_note: null,
-            // 위치 정보 추가
-            check_in_location: att.location || null,
-            check_out_location: att.check_out_location || null
-          }));
-          
-          schedules = convertedSchedules;
-          console.log("변환된 schedules:", schedules);
-        } else {
-          console.log("attendance 테이블에도 데이터가 없습니다.");
-          setAttendanceRecords([]);
-          return;
-        }
+      // 2. attendance 테이블에서도 출근 기록 조회 (스케줄 없이 출근한 경우)
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("attendance")
+        .select(`
+          id,
+          employee_id,
+          date,
+          check_in_time,
+          check_out_time,
+          total_hours,
+          overtime_hours,
+          status,
+          location,
+          check_out_location
+        `)
+        .eq("date", normalizedDate);
+      
+      console.log("attendance 데이터 결과:", { attendanceData, attendanceError });
+      
+      if (attendanceError) {
+        console.error("attendance 데이터 로딩 오류:", attendanceError);
+        debugData.errors.push(`attendance 조회 오류: ${attendanceError.message}`);
       }
+      
+      // 3. schedules와 attendance 데이터 통합
+      let allRecords = [];
+      
+      // schedules 데이터 추가
+      if (schedules && schedules.length > 0) {
+        allRecords = [...schedules];
+      }
+      
+      // attendance 데이터 추가 (중복 제거)
+      if (attendanceData && attendanceData.length > 0) {
+        attendanceData.forEach(att => {
+          // 이미 schedules에 있는 직원인지 확인
+          const existingRecord = allRecords.find(record => record.employee_id === att.employee_id);
+          
+          if (!existingRecord) {
+            // attendance 데이터를 schedules 형식으로 변환
+            const convertedRecord = {
+              id: att.id,
+              employee_id: att.employee_id,
+              schedule_date: att.date,
+              scheduled_start: null,
+              scheduled_end: null,
+              actual_start: att.check_in_time ? `${att.date}T${att.check_in_time}` : null,
+              actual_end: att.check_out_time ? `${att.date}T${att.check_out_time}` : null,
+              break_minutes: 0,
+              total_hours: att.total_hours || 0,
+              overtime_hours: att.overtime_hours || 0,
+              status: att.status || 'pending',
+              employee_note: null,
+              // 위치 정보 추가
+              check_in_location: att.location || null,
+              check_out_location: att.check_out_location || null
+            };
+            allRecords.push(convertedRecord);
+          }
+        });
+      }
+      
+      if (allRecords.length === 0) {
+        console.log("해당 날짜에 출근 기록이 없습니다.");
+        setAttendanceRecords([]);
+        return;
+      }
+      
+      schedules = allRecords;
+      console.log("통합된 schedules:", schedules);
       
       // schedules가 null이 아닌지 확인
       if (!schedules || schedules.length === 0) {
