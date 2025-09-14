@@ -946,6 +946,15 @@ export default function AttendanceManagementPage() {
                               `위치: ${record.check_in_location.latitude.toFixed(4)}, ${record.check_in_location.longitude.toFixed(4)}` : 
                               '위치 정보 있음')}
                           </div>
+                        ) : record.check_out_location ? (
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
+                            {record.check_out_location.address || 
+                             record.check_out_location.note || 
+                             (record.check_out_location.latitude && record.check_out_location.longitude ? 
+                              `위치: ${record.check_out_location.latitude.toFixed(4)}, ${record.check_out_location.longitude.toFixed(4)}` : 
+                              '위치 정보 있음')}
+                          </div>
                         ) : (
                           <div className="text-xs text-gray-400 mt-1">
                             위치 없음
@@ -982,6 +991,15 @@ export default function AttendanceManagementPage() {
                               `위치: ${record.check_out_location.latitude.toFixed(4)}, ${record.check_out_location.longitude.toFixed(4)}` : 
                               '위치 정보 있음')}
                           </div>
+                        ) : record.check_in_location ? (
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
+                            {record.check_in_location.address || 
+                             record.check_in_location.note || 
+                             (record.check_in_location.latitude && record.check_in_location.longitude ? 
+                              `위치: ${record.check_in_location.latitude.toFixed(4)}, ${record.check_in_location.longitude.toFixed(4)}` : 
+                              '위치 정보 있음')}
+                          </div>
                         ) : (
                           <div className="text-xs text-gray-400 mt-1">
                             위치 없음
@@ -1004,6 +1022,21 @@ export default function AttendanceManagementPage() {
                         <div className="text-xs text-gray-600">
                           <div>위도: {record.check_in_location.latitude.toFixed(6)}</div>
                           <div>경도: {record.check_in_location.longitude.toFixed(6)}</div>
+                          {record.check_in_location.note && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              {record.check_in_location.note}
+                            </div>
+                          )}
+                        </div>
+                      ) : record.check_out_location ? (
+                        <div className="text-xs text-gray-600">
+                          <div>위도: {record.check_out_location.latitude.toFixed(6)}</div>
+                          <div>경도: {record.check_out_location.longitude.toFixed(6)}</div>
+                          {record.check_out_location.note && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              {record.check_out_location.note}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-gray-500">위치 없음</span>
