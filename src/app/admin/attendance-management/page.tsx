@@ -169,7 +169,8 @@ export default function AttendanceManagementPage() {
             total_hours,
             overtime_hours,
             status,
-            location
+            location,
+            break_minutes
           `)
           .eq("date", normalizedDate);
       
@@ -209,14 +210,14 @@ export default function AttendanceManagementPage() {
               scheduled_end: null,
               actual_start: att.check_in_time ? `${att.date}T${att.check_in_time}` : null,
               actual_end: att.check_out_time ? `${att.date}T${att.check_out_time}` : null,
-              break_minutes: 0,
+              break_minutes: att.break_minutes || 0,
               total_hours: att.total_hours || 0,
               overtime_hours: att.overtime_hours || 0,
               status: att.status || 'pending',
               employee_note: null,
             // 위치 정보 추가
             check_in_location: att.location || null,
-            check_out_location: null
+            check_out_location: att.check_out_location || null
             };
             allRecords.push(convertedRecord);
           }

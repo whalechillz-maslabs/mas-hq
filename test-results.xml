@@ -1,6 +1,6 @@
-<testsuites id="" name="" tests="4" failures="2" skipped="0" errors="0" time="65.190594">
-<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:43:46.936Z" hostname="chromium-nightly" tests="1" failures="1" skipped="0" time="0.004" errors="0">
-<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="0.004">
+<testsuites id="" name="" tests="4" failures="2" skipped="0" errors="0" time="64.82459800000001">
+<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:46:34.930Z" hostname="chromium-nightly" tests="1" failures="1" skipped="0" time="0.002" errors="0">
+<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="0.002">
 <failure message="attendance_final_test.spec.ts:110:7 김탁수 퇴근 체크 테스트" type="FAILURE">
 <![CDATA[  [chromium-nightly] › attendance_final_test.spec.ts:110:7 › 최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트 ──────────
 
@@ -9,8 +9,8 @@
 </failure>
 </testcase>
 </testsuite>
-<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:43:46.936Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="14.86" errors="0">
-<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="14.86">
+<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:46:34.930Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="16.786" errors="0">
+<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="16.786">
 <system-out>
 <![CDATA[🚀 퇴근 체크 테스트 시작...
 
@@ -29,9 +29,9 @@
 🔍 콘솔: 📊 스케줄 데이터: []
 🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...
 🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}
-🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:43:56.406Z}
-🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 51, diffMs: 17493406}
-🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 51m}
+🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:46:45.505Z}
+🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 54, diffMs: 17662505}
+🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 54m}
 🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30
 🔍 콘솔: === 급여 계산 함수 시작 ===
 🔍 콘솔: currentUser: null
@@ -55,7 +55,7 @@
 🔍 퇴근 후 상태 확인...
 
 ⏱️ 최종 근무 시간 확인...
-📊 최종 근무 시간: 총 근무: 4h 51m
+📊 최종 근무 시간: 총 근무: 4h 54m
 📸 퇴근 체크 테스트 결과 스크린샷 저장
 
 🎯 퇴근 체크 테스트 완료!
@@ -65,8 +65,8 @@
 </system-out>
 </testcase>
 </testsuite>
-<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:43:46.936Z" hostname="firefox" tests="1" failures="1" skipped="0" time="60.046" errors="0">
-<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="60.046">
+<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:46:34.930Z" hostname="firefox" tests="1" failures="1" skipped="0" time="60.039" errors="0">
+<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="60.039">
 <failure message="attendance_final_test.spec.ts:110:7 김탁수 퇴근 체크 테스트" type="FAILURE">
 <![CDATA[  [firefox] › attendance_final_test.spec.ts:110:7 › 최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트 ───────────────────
 
@@ -77,8 +77,8 @@
 </failure>
 </testcase>
 </testsuite>
-<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:43:46.936Z" hostname="webkit" tests="1" failures="0" skipped="0" time="15.835" errors="0">
-<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="15.835">
+<testsuite name="attendance_final_test.spec.ts" timestamp="2025-09-14T06:46:34.930Z" hostname="webkit" tests="1" failures="0" skipped="0" time="17.654" errors="0">
+<testcase name="최종 출근 체크 테스트 › 김탁수 퇴근 체크 테스트" classname="attendance_final_test.spec.ts" time="17.654">
 <system-out>
 <![CDATA[🚀 퇴근 체크 테스트 시작...
 
@@ -96,15 +96,15 @@
 🔍 콘솔: ✅ 오늘 스케줄 조회 성공: 0 개
 🔍 콘솔: 📊 스케줄 데이터: []
 🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...
-🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}
-🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:43:55.964Z}
-🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 51, diffMs: 17492964}
-🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 51m}
-🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30
 🔍 콘솔: === 급여 계산 함수 시작 ===
 🔍 콘솔: currentUser: null
 🔍 콘솔: todaySchedules.length: 0
 🔍 콘솔: ❌ currentUser가 없습니다.
+🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}
+🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:46:45.549Z}
+🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 54, diffMs: 17662549}
+🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 54m}
+🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30
 🔍 콘솔: ✅ 월간 기록 조회 성공: 0 개
 🔍 콘솔: 📊 월간 데이터: []
 🔍 콘솔: 🔄 로딩 상태 해제
@@ -120,14 +120,15 @@
 🔍 콘솔: 📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀
 ✅ 퇴근 체크 버튼 클릭
 🔍 콘솔: ⚠️ 퇴근 위치 정보를 가져올 수 없습니다: GeolocationPositionError
-🔍 콘솔: Failed to load resource: the server responded with a status of 400 (Bad Request)
-🔍 콘솔: attendance 테이블 업데이트 오류: {code: PGRST204, details: null, hint: null, message: Could not find the 'check_out_location' column of 'attendance' in the schema cache}
-🔍 콘솔: 퇴근 체크 오류: {code: PGRST204, details: null, hint: null, message: Could not find the 'check_out_location' column of 'attendance' in the schema cache}
+🔍 콘솔: ✅ attendance 테이블에 퇴근 기록 업데이트 완료
+🔍 콘솔: 📅 오늘 날짜: 2025-09-14 사용자 ID: MASLABS-001
+🔍 콘솔: ✅ 오늘 스케줄 조회 성공: 0 개
+🔍 콘솔: 📊 스케줄 데이터: []
 
 🔍 퇴근 후 상태 확인...
 
 ⏱️ 최종 근무 시간 확인...
-📊 최종 근무 시간: 총 근무: 4h 51m
+📊 최종 근무 시간: 총 근무: 4h 54m
 📸 퇴근 체크 테스트 결과 스크린샷 저장
 
 🎯 퇴근 체크 테스트 완료!

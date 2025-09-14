@@ -142,7 +142,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 4,
+                      "duration": 2,
                       "error": {
                         "message": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\"",
                         "stack": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\""
@@ -155,7 +155,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T06:43:47.413Z",
+                      "startTime": "2025-09-14T06:46:35.295Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -184,7 +184,7 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 14860,
+                      "duration": 16786,
                       "errors": [],
                       "stdout": [
                         {
@@ -233,13 +233,13 @@
                           "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}\n"
                         },
                         {
-                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:43:56.406Z}\n"
+                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:46:45.505Z}\n"
                         },
                         {
-                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 51, diffMs: 17493406}\n"
+                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 54, diffMs: 17662505}\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 51m}\n"
+                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 54m}\n"
                         },
                         {
                           "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
@@ -299,7 +299,7 @@
                           "text": "\n⏱️ 최종 근무 시간 확인...\n"
                         },
                         {
-                          "text": "📊 최종 근무 시간: 총 근무: 4h 51m\n"
+                          "text": "📊 최종 근무 시간: 총 근무: 4h 54m\n"
                         },
                         {
                           "text": "📸 퇴근 체크 테스트 결과 스크린샷 저장\n"
@@ -316,7 +316,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T06:43:47.400Z",
+                      "startTime": "2025-09-14T06:46:35.302Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -345,7 +345,7 @@
                       "workerIndex": 2,
                       "parallelIndex": 2,
                       "status": "timedOut",
-                      "duration": 60046,
+                      "duration": 60039,
                       "error": {
                         "message": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m",
                         "stack": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m"
@@ -361,7 +361,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T06:43:47.378Z",
+                      "startTime": "2025-09-14T06:46:35.291Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -390,7 +390,7 @@
                       "workerIndex": 3,
                       "parallelIndex": 3,
                       "status": "passed",
-                      "duration": 15835,
+                      "duration": 17654,
                       "errors": [],
                       "stdout": [
                         {
@@ -436,21 +436,6 @@
                           "text": "🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:43:55.964Z}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 51, diffMs: 17492964}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 51m}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
-                        },
-                        {
                           "text": "🔍 콘솔: === 급여 계산 함수 시작 ===\n"
                         },
                         {
@@ -461,6 +446,21 @@
                         },
                         {
                           "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:46:45.549Z}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 54, diffMs: 17662549}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 54m}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
                         },
                         {
                           "text": "🔍 콘솔: ✅ 월간 기록 조회 성공: 0 개\n"
@@ -502,13 +502,16 @@
                           "text": "🔍 콘솔: ⚠️ 퇴근 위치 정보를 가져올 수 없습니다: GeolocationPositionError\n"
                         },
                         {
-                          "text": "🔍 콘솔: Failed to load resource: the server responded with a status of 400 (Bad Request)\n"
+                          "text": "🔍 콘솔: ✅ attendance 테이블에 퇴근 기록 업데이트 완료\n"
                         },
                         {
-                          "text": "🔍 콘솔: attendance 테이블 업데이트 오류: {code: PGRST204, details: null, hint: null, message: Could not find the 'check_out_location' column of 'attendance' in the schema cache}\n"
+                          "text": "🔍 콘솔: 📅 오늘 날짜: 2025-09-14 사용자 ID: MASLABS-001\n"
                         },
                         {
-                          "text": "🔍 콘솔: 퇴근 체크 오류: {code: PGRST204, details: null, hint: null, message: Could not find the 'check_out_location' column of 'attendance' in the schema cache}\n"
+                          "text": "🔍 콘솔: ✅ 오늘 스케줄 조회 성공: 0 개\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 📊 스케줄 데이터: []\n"
                         },
                         {
                           "text": "\n🔍 퇴근 후 상태 확인...\n"
@@ -517,7 +520,7 @@
                           "text": "\n⏱️ 최종 근무 시간 확인...\n"
                         },
                         {
-                          "text": "📊 최종 근무 시간: 총 근무: 4h 51m\n"
+                          "text": "📊 최종 근무 시간: 총 근무: 4h 54m\n"
                         },
                         {
                           "text": "📸 퇴근 체크 테스트 결과 스크린샷 저장\n"
@@ -534,7 +537,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T06:43:47.400Z",
+                      "startTime": "2025-09-14T06:46:35.302Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -554,8 +557,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-14T06:43:46.907Z",
-    "duration": 65190.594000000005,
+    "startTime": "2025-09-14T06:46:34.906Z",
+    "duration": 64824.598000000005,
     "expected": 2,
     "skipped": 0,
     "unexpected": 2,
