@@ -232,7 +232,14 @@ export default function AttendanceManagementPage() {
               status: att.status || 'pending',
               employee_note: null,
             // 위치 정보 추가 (attendance 테이블의 location 필드 사용)
-            check_in_location: att.location || null,
+            check_in_location: att.location ? {
+              latitude: att.location.latitude,
+              longitude: att.location.longitude,
+              accuracy: att.location.accuracy,
+              timestamp: att.location.timestamp,
+              note: att.location.note,
+              address: att.location.address
+            } : null,
             check_out_location: null
             };
             
