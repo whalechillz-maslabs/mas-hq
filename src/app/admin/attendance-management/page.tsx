@@ -561,11 +561,12 @@ export default function AttendanceManagementPage() {
     }
     
     // 휴식 메모 확인 (employee_note에 '휴식' 관련 내용이 있는 경우)
+    // 단, '휴식 후 복귀'는 휴식이 끝났다는 의미이므로 제외
     if (record.employee_note && (
-      record.employee_note.includes('휴식') || 
-      record.employee_note.includes('break') ||
-      record.employee_note.includes('중간 휴식')
-    )) {
+      record.employee_note.includes('휴식 시작') || 
+      record.employee_note.includes('중간 휴식') ||
+      record.employee_note.includes('break')
+    ) && !record.employee_note.includes('휴식 후 복귀')) {
       console.log(`  ✅ 휴식 메모 감지 → 'break' 반환`);
       return 'break';
     }
