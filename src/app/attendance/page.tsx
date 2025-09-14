@@ -852,11 +852,11 @@ export default function AttendancePage() {
         console.warn('⚠️ 위치 정보를 가져올 수 없습니다:', locationError);
         // 위치 정보 없이도 출근 체크 가능
         location = {
-          latitude: 37.5665, // 기본값 (서울시 중구)
-          longitude: 126.9780,
+          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714,
           accuracy: null,
           timestamp: new Date().toISOString(),
-          note: '위치 정보 없음'
+          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
         };
       }
 
@@ -951,11 +951,11 @@ export default function AttendancePage() {
         console.warn('⚠️ 퇴근 위치 정보를 가져올 수 없습니다:', locationError);
         // 위치 정보 없이도 퇴근 체크 가능
         checkOutLocation = {
-          latitude: 37.5665, // 기본값 (서울시 중구)
-          longitude: 126.9780,
+          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714,
           accuracy: null,
           timestamp: new Date().toISOString(),
-          note: '위치 정보 없음'
+          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
         };
       }
 
@@ -1040,6 +1040,29 @@ export default function AttendancePage() {
       
       const now = new Date().toISOString();
       
+      // 위치 정보 가져오기
+      let returnLocation = null;
+      try {
+        const position = await getCurrentLocation();
+        returnLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+        console.log('✅ 휴식 복귀 위치 정보 가져오기 성공:', returnLocation);
+      } catch (locationError) {
+        console.warn('⚠️ 휴식 복귀 위치 정보를 가져올 수 없습니다:', locationError);
+        // 위치 정보 없이도 휴식 복귀 가능
+        returnLocation = {
+          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
+        };
+      }
+      
       // 현재 진행 중인 스케줄에 퇴근 시간 기록
       const inProgressSchedules = todaySchedules.filter(s => 
         s.actual_start && !s.actual_end
@@ -1050,6 +1073,7 @@ export default function AttendancePage() {
           .from("schedules")
           .update({
             actual_end: now,
+            check_out_location: returnLocation,
             status: "break",
             employee_note: "중간 휴식"
           })
@@ -1068,6 +1092,7 @@ export default function AttendancePage() {
           .from("schedules")
           .update({
             actual_start: now,
+            check_in_location: returnLocation,
             status: "in_progress"
           })
           .eq("id", schedule.id);
@@ -1101,6 +1126,29 @@ export default function AttendancePage() {
       
       const now = new Date().toISOString();
       
+      // 위치 정보 가져오기
+      let breakLocation = null;
+      try {
+        const position = await getCurrentLocation();
+        breakLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+        console.log('✅ 휴식 시작 위치 정보 가져오기 성공:', breakLocation);
+      } catch (locationError) {
+        console.warn('⚠️ 휴식 시작 위치 정보를 가져올 수 없습니다:', locationError);
+        // 위치 정보 없이도 휴식 시작 가능
+        breakLocation = {
+          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
+        };
+      }
+      
       // 현재 진행 중인 스케줄들을 휴식 상태로 변경
       const inProgressSchedules = todaySchedules.filter(s => 
         s.actual_start && !s.actual_end
@@ -1111,6 +1159,7 @@ export default function AttendancePage() {
           .from('schedules')
           .update({
             actual_end: now,
+            check_out_location: breakLocation,
             status: 'break',
             employee_note: '휴식 시작'
           })
