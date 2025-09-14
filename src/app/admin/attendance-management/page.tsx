@@ -169,8 +169,7 @@ export default function AttendanceManagementPage() {
             total_hours,
             overtime_hours,
             status,
-            location,
-            break_minutes
+            location
           `)
           .eq("date", normalizedDate);
       
@@ -210,7 +209,7 @@ export default function AttendanceManagementPage() {
               scheduled_end: null,
               actual_start: att.check_in_time ? `${att.date}T${att.check_in_time}` : null,
               actual_end: att.check_out_time ? `${att.date}T${att.check_out_time}` : null,
-              break_minutes: att.break_minutes || 0,
+              break_minutes: 0,
               total_hours: att.total_hours || 0,
               overtime_hours: att.overtime_hours || 0,
               status: att.status || 'pending',
