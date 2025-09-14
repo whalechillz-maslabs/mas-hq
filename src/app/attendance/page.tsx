@@ -458,6 +458,44 @@ export default function AttendancePage() {
           // 추가로 급여 계산 강제 실행
           setTimeout(() => calculateWage(), 500);
         }
+
+        // attendance 테이블에서 오늘 출근 상태 확인 (스케줄이 없어도 확인)
+        console.log('🔍 attendance 테이블에서 오늘 출근 상태 확인...');
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from('attendance')
+          .select('*')
+          .eq('employee_id', user.id)
+          .eq('date', today)
+          .single();
+
+        if (!isMounted) return;
+
+        if (attendanceError && attendanceError.code !== 'PGRST116') { // PGRST116은 데이터 없음 오류
+          console.error('❌ attendance 데이터 조회 오류:', attendanceError);
+        } else if (attendanceData) {
+          console.log('✅ attendance 데이터 조회 성공:', attendanceData);
+          
+          // attendance 데이터를 기반으로 출근 상태 설정 (스케줄 데이터보다 우선)
+          const hasCheckedIn = !!attendanceData.check_in_time;
+          const hasCheckedOut = !!attendanceData.check_out_time;
+          
+          setDailyAttendance(prev => ({
+            ...prev,
+            isCheckedIn: hasCheckedIn,
+            checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : prev.checkInTime,
+            checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
+            totalWorkTime: attendanceData.total_hours ? `${Math.floor(attendanceData.total_hours)}h ${Math.round((attendanceData.total_hours % 1) * 60)}m` : prev.totalWorkTime
+          }));
+          
+          console.log('✅ attendance 기반 출근 상태 설정 완료:', {
+            hasCheckedIn,
+            hasCheckedOut,
+            checkInTime: attendanceData.check_in_time,
+            checkOutTime: attendanceData.check_out_time
+          });
+        } else {
+          console.log('📝 오늘 attendance 데이터 없음');
+        }
         
         // 월간 기록 조회 시작...
         const startDate = startOfMonth(new Date());
