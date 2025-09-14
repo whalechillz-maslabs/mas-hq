@@ -175,6 +175,18 @@ export default function AttendanceManagementPage() {
       
       console.log("attendance 데이터 결과:", { attendanceData, attendanceError });
       
+      // 위치 정보 디버깅
+      if (attendanceData && attendanceData.length > 0) {
+        attendanceData.forEach((att, index) => {
+          console.log(`attendance[${index}] 위치 정보:`, {
+            employee_id: att.employee_id,
+            location: att.location,
+            location_type: typeof att.location,
+            location_keys: att.location ? Object.keys(att.location) : 'null'
+          });
+        });
+      }
+      
       // 디버그 정보 업데이트
       debugData.steps.push(`attendance 조회 완료: ${attendanceData?.length || 0}개`);
       setDebugInfo({...debugData}); // 디버그 정보 즉시 업데이트
@@ -881,7 +893,11 @@ export default function AttendanceManagementPage() {
                         {record.check_in_location ? (
                         <div className="text-xs text-gray-500 flex items-center mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_in_location.address || '위치 정보 있음'}
+                            {record.check_in_location.address || 
+                             record.check_in_location.note || 
+                             (record.check_in_location.latitude && record.check_in_location.longitude ? 
+                              `위치: ${record.check_in_location.latitude.toFixed(4)}, ${record.check_in_location.longitude.toFixed(4)}` : 
+                              '위치 정보 있음')}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-400 mt-1">
@@ -913,7 +929,11 @@ export default function AttendanceManagementPage() {
                         {record.check_out_location ? (
                         <div className="text-xs text-gray-500 flex items-center mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_out_location.address || '위치 정보 있음'}
+                            {record.check_out_location.address || 
+                             record.check_out_location.note || 
+                             (record.check_out_location.latitude && record.check_out_location.longitude ? 
+                              `위치: ${record.check_out_location.latitude.toFixed(4)}, ${record.check_out_location.longitude.toFixed(4)}` : 
+                              '위치 정보 있음')}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-400 mt-1">
