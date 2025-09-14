@@ -72,10 +72,21 @@ export default function AttendancePage() {
           const now = new Date();
           const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
           const start = new Date(dailyAttendance.checkInTime);
+          
+          // 디버깅 로그 추가
+          console.log('🕐 실시간 근무 시간 계산:', {
+            checkInTime: dailyAttendance.checkInTime,
+            start: start.toISOString(),
+            koreaTime: koreaTime.toISOString(),
+            now: now.toISOString()
+          });
+          
           const diffMs = koreaTime.getTime() - start.getTime();
           const hours = Math.floor(diffMs / (1000 * 60 * 60));
           const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           const totalHours = hours + (minutes / 60);
+          
+          console.log('⏱️ 계산된 근무 시간:', { hours, minutes, totalHours, diffMs });
           
           setDailyAttendance(prev => ({
             ...prev,
@@ -529,10 +540,23 @@ export default function AttendancePage() {
             const now = new Date();
             const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
             const start = new Date(`${today}T${attendanceData.check_in_time}`);
+            
+            // 디버깅 로그 추가
+            console.log('🕐 attendance 데이터 로드 시 근무 시간 계산:', {
+              today,
+              checkInTime: attendanceData.check_in_time,
+              startTime: `${today}T${attendanceData.check_in_time}`,
+              start: start.toISOString(),
+              koreaTime: koreaTime.toISOString(),
+              now: now.toISOString()
+            });
+            
             const diffMs = koreaTime.getTime() - start.getTime();
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
             totalWorkTime = `${hours}h ${minutes}m`;
+            
+            console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { hours, minutes, diffMs });
           }
           
           setDailyAttendance(prev => ({
