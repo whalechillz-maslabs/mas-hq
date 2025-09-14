@@ -1250,6 +1250,13 @@ export default function AttendancePage() {
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
                 {(() => {
+                  // attendance 데이터가 있으면 실시간 근무 시간 사용
+                  if (dailyAttendance.totalWorkTime) {
+                    const [hours, minutes] = dailyAttendance.totalWorkTime.split('h ');
+                    const totalHours = parseInt(hours) + (parseInt(minutes.replace('m', '')) / 60);
+                    return totalHours.toFixed(1);
+                  }
+                  
                   if (todaySchedules.length === 0) return '0.0';
                   
                   // 스케줄된 시간 계산 (각 스케줄의 시간 합계 - 점심시간 자동 제외)
@@ -1303,6 +1310,11 @@ export default function AttendancePage() {
             <div>
               <div className="text-2xl font-bold text-green-600">
                 {(() => {
+                  // attendance 데이터가 있으면 실시간 근무 시간 사용
+                  if (dailyAttendance.totalWorkTime) {
+                    return dailyAttendance.totalWorkTime;
+                  }
+                  
                   if (todaySchedules.length === 0) return '0h 0m';
                   
                   const totalHours = todaySchedules
@@ -1326,6 +1338,32 @@ export default function AttendancePage() {
             <div className="relative group">
               <div className="text-2xl font-bold text-purple-600">
                 {(() => {
+                  // attendance 데이터가 있으면 실시간 근무 시간 사용
+                  if (dailyAttendance.totalWorkTime) {
+                    const [hours, minutes] = dailyAttendance.totalWorkTime.split('h ');
+                    const actualHours = parseInt(hours) + (parseInt(minutes.replace('m', '')) / 60);
+                    
+                    // 스케줄된 시간이 있으면 차이 계산, 없으면 0
+                    const scheduledHours = todaySchedules.length > 0 ? todaySchedules.reduce((total, schedule) => {
+                      if (schedule.scheduled_start && schedule.scheduled_end) {
+                        const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+                        const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+                        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                        return total + hours;
+                      }
+                      return total;
+                    }, 0) : 0;
+                    
+                    const difference = actualHours - scheduledHours;
+                    
+                    if (difference === 0) return '0h 0m';
+                    
+                    const hours = Math.floor(Math.abs(difference));
+                    const minutes = Math.round((Math.abs(difference) - hours) * 60);
+                    const sign = difference > 0 ? '+' : '-';
+                    return `${sign}${hours}h ${minutes}m`;
+                  }
+                  
                   if (todaySchedules.length === 0) return '0h 0m';
                   
                   // 스케줄된 시간 계산 (각 스케줄의 시간 합계 - 점심시간 자동 제외)

@@ -114,21 +114,21 @@
   },
   "suites": [
     {
-      "title": "attendance_debug_time_test.spec.ts",
-      "file": "attendance_debug_time_test.spec.ts",
+      "title": "attendance_final_test.spec.ts",
+      "file": "attendance_final_test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "실시간 근무 시간 계산 디버깅 테스트",
-          "file": "attendance_debug_time_test.spec.ts",
+          "title": "최종 출근 체크 테스트",
+          "file": "attendance_final_test.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "김탁수 출근 체크 후 근무 시간 계산 로그 확인",
-              "ok": true,
+              "title": "김탁수 새로운 출근 체크 후 정확한 근무 시간 확인",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -141,12 +141,28 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 44167,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 60112,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/attendance_final_test.spec.ts",
+                            "column": 16,
+                            "line": 68
+                          },
+                          "message": "Error: page.waitForTimeout: Test timeout of 60000ms exceeded.\n\n\u001b[0m \u001b[90m 66 |\u001b[39m     \u001b[90m// 6. 1분 대기 후 근무 시간 확인\u001b[39m\n \u001b[90m 67 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'\\n⏳ 1분 대기 후 근무 시간 확인...'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 68 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m60000\u001b[39m)\u001b[33m;\u001b[39m \u001b[90m// 1분 대기\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 69 |\u001b[39m     \n \u001b[90m 70 |\u001b[39m     \u001b[36mconst\u001b[39m workTimeElementAfter \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=총 근무:'\u001b[39m)\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\n \u001b[90m 71 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m workTimeElementAfter\u001b[33m.\u001b[39misVisible()) {\u001b[0m\n\u001b[2m    at /Users/m2/MASLABS/www.maslabs.kr/tests/attendance_final_test.spec.ts:68:16\u001b[22m"
+                        }
+                      ],
                       "stdout": [
                         {
-                          "text": "🚀 실시간 근무 시간 계산 디버깅 테스트 시작...\n"
+                          "text": "🚀 최종 출근 체크 테스트 시작...\n"
                         },
                         {
                           "text": "\n👤 김탁수 로그인...\n"
@@ -188,16 +204,10 @@
                           "text": "🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 849987b3-8cb4-4d70-b7a3-76c43d7df4e3, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:41:20, check_out_time: null}\n"
+                          "text": "🔍 콘솔: Failed to load resource: the server responded with a status of 406 ()\n"
                         },
                         {
-                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:49:48.784Z}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 8, diffMs: 32908784}\n"
-                        },
-                        {
-                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:41:20, checkOutTime: null, totalWorkTime: 9h 8m}\n"
+                          "text": "🔍 콘솔: 📝 오늘 attendance 데이터 없음\n"
                         },
                         {
                           "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
@@ -239,66 +249,67 @@
                           "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
                         },
                         {
-                          "text": "\n⏰ 출근 체크 상태 확인...\n"
+                          "text": "\n⏰ 출근 체크 실행...\n"
                         },
                         {
-                          "text": "✅ 이미 출근 체크됨 (퇴근 체크 버튼 표시)\n"
+                          "text": "🔍 콘솔: 📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀\n"
                         },
                         {
-                          "text": "\n⏱️ 근무 시간 표시 확인...\n"
+                          "text": "✅ 출근 체크 버튼 클릭\n"
                         },
                         {
-                          "text": "📊 현재 표시된 근무 시간: 총 근무: 9h 8m\n"
+                          "text": "🔍 콘솔: ✅ attendance 테이블에 출근 기록 저장 완료\n"
                         },
                         {
-                          "text": "\n⏳ 30초 대기하여 실시간 업데이트 확인...\n"
+                          "text": "🔍 콘솔: 📅 오늘 날짜: 2025-09-14 사용자 ID: MASLABS-001\n"
                         },
                         {
-                          "text": "📊 30초 후 근무 시간: 총 근무: 9h 8m\n"
+                          "text": "🔍 콘솔: ✅ 오늘 스케줄 조회 성공: 0 개\n"
                         },
                         {
-                          "text": "\n🔍 시간 계산 관련 콘솔 로그 분석...\n"
+                          "text": "🔍 콘솔: 📊 스케줄 데이터: []\n"
                         },
                         {
-                          "text": "📊 시간 계산 관련 콘솔 로그:\n"
+                          "text": "\n🔍 출근 시간 확인...\n"
                         },
                         {
-                          "text": "   1. 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:41:20, startTime: 2025-09-14T10:41:20, start: 2025-09-14T01:41:20.000Z, koreaTime: 2025-09-14T10:49:48.784Z}\n"
+                          "text": "📅 출근 시간: 출근: 09/14 19:52\n"
                         },
                         {
-                          "text": "   2. ⏱️ attendance 로드 시 계산된 근무 시간: {hours: 9, minutes: 8, diffMs: 32908784}\n"
+                          "text": "\n⏱️ 출근 체크 직후 근무 시간 확인...\n"
                         },
                         {
-                          "text": "   3. ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:41:20, checkOutTime: null, totalWorkTime: 9h 8m}\n"
-                        },
-                        {
-                          "text": "📸 디버깅 테스트 결과 스크린샷 저장\n"
-                        },
-                        {
-                          "text": "\n🎯 디버깅 테스트 완료!\n"
-                        },
-                        {
-                          "text": "==================================================\n"
-                        },
-                        {
-                          "text": "✅ 실시간 근무 시간 계산 로그 확인 완료\n"
-                        },
-                        {
-                          "text": "✅ 시간 계산 오류 원인 파악 완료\n"
+                          "text": "\n⏳ 1분 대기 후 근무 시간 확인...\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T01:49:38.085Z",
+                      "startTime": "2025-09-14T01:52:09.378Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/attendance_final_test-최종-출-6ee0f-탁수-새로운-출근-체크-후-정확한-근무-시간-확인-chromium-stable/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/attendance_final_test-최종-출-6ee0f-탁수-새로운-출근-체크-후-정확한-근무-시간-확인-chromium-stable/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/attendance_final_test-최종-출-6ee0f-탁수-새로운-출근-체크-후-정확한-근무-시간-확인-chromium-stable/error-context.md"
+                        }
+                      ]
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "6d2d0afa7522f4fa209d-4d01506e5920c979a0df",
-              "file": "attendance_debug_time_test.spec.ts",
+              "id": "c3966ffba5cb37e02ddb-ae386be806415a580022",
+              "file": "attendance_final_test.spec.ts",
               "line": 4,
               "column": 7
             }
@@ -309,11 +320,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-14T01:49:37.750Z",
-    "duration": 46385.19,
-    "expected": 1,
+    "startTime": "2025-09-14T01:52:09.006Z",
+    "duration": 61701.015,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }
