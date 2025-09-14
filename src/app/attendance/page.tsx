@@ -852,8 +852,8 @@ export default function AttendancePage() {
         console.warn('⚠️ 위치 정보를 가져올 수 없습니다:', locationError);
         // 위치 정보 없이도 출근 체크 가능
         location = {
-          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714,
+          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714828,
           accuracy: null,
           timestamp: new Date().toISOString(),
           note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
@@ -951,8 +951,8 @@ export default function AttendancePage() {
         console.warn('⚠️ 퇴근 위치 정보를 가져올 수 없습니다:', locationError);
         // 위치 정보 없이도 퇴근 체크 가능
         checkOutLocation = {
-          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714,
+          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714828,
           accuracy: null,
           timestamp: new Date().toISOString(),
           note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
@@ -1055,8 +1055,8 @@ export default function AttendancePage() {
         console.warn('⚠️ 휴식 복귀 위치 정보를 가져올 수 없습니다:', locationError);
         // 위치 정보 없이도 휴식 복귀 가능
         returnLocation = {
-          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714,
+          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714828,
           accuracy: null,
           timestamp: new Date().toISOString(),
           note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
@@ -1141,8 +1141,8 @@ export default function AttendancePage() {
         console.warn('⚠️ 휴식 시작 위치 정보를 가져올 수 없습니다:', locationError);
         // 위치 정보 없이도 휴식 시작 가능
         breakLocation = {
-          latitude: 37.2934, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714,
+          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714828,
           accuracy: null,
           timestamp: new Date().toISOString(),
           note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'

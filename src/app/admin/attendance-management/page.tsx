@@ -866,8 +866,14 @@ export default function AttendanceManagementPage() {
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">점심 휴식</div>
                         <div className="text-xs text-gray-500">
-                          {record.break_minutes ? `${record.break_minutes}분` : '-'}
+                          {record.status === 'break' ? '휴식 중' : 
+                           record.break_minutes ? `${record.break_minutes}분` : '-'}
                         </div>
+                        {record.status === 'break' && (
+                          <div className="text-xs text-orange-500 mt-1">
+                            ☕ 휴식 중
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
