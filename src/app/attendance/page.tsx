@@ -972,7 +972,6 @@ export default function AttendancePage() {
         
         const attendanceUpdate = {
           check_out_time: checkOutTime,
-          check_out_location: checkOutLocation,
           total_hours: Math.round(totalHours * 100) / 100,
           overtime_hours: Math.round(overtimeHours * 100) / 100,
           status: 'completed'

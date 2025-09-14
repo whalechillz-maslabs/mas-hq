@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 1
+      "actualWorkers": 4
     },
     "preserveOutput": "always",
     "reporter": [
@@ -45,7 +45,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "chromium-nightly",
         "name": "chromium-nightly",
@@ -61,7 +61,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "chromium-stable",
         "name": "chromium-stable",
@@ -77,7 +77,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "firefox",
         "name": "firefox",
@@ -93,7 +93,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "webkit",
         "name": "webkit",
@@ -127,8 +127,50 @@
           "column": 6,
           "specs": [
             {
-              "title": "김탁수 새로운 출근 체크 후 정확한 근무 시간 확인",
+              "title": "김탁수 퇴근 체크 테스트",
               "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-nightly",
+                  "projectName": "chromium-nightly",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4,
+                      "error": {
+                        "message": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\"",
+                        "stack": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\""
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.launch: Unsupported chromium channel \"chrome-nightly\""
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-14T06:43:47.413Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "c3966ffba5cb37e02ddb-837ad41792a505935668",
+              "file": "attendance_final_test.spec.ts",
+              "line": 110,
+              "column": 7
+            },
+            {
+              "title": "김탁수 퇴근 체크 테스트",
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -139,30 +181,14 @@
                   "projectName": "chromium-stable",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 60112,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
-                        },
-                        {
-                          "location": {
-                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/attendance_final_test.spec.ts",
-                            "column": 16,
-                            "line": 68
-                          },
-                          "message": "Error: page.waitForTimeout: Test timeout of 60000ms exceeded.\n\n\u001b[0m \u001b[90m 66 |\u001b[39m     \u001b[90m// 6. 1분 대기 후 근무 시간 확인\u001b[39m\n \u001b[90m 67 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'\\n⏳ 1분 대기 후 근무 시간 확인...'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 68 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m60000\u001b[39m)\u001b[33m;\u001b[39m \u001b[90m// 1분 대기\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 69 |\u001b[39m     \n \u001b[90m 70 |\u001b[39m     \u001b[36mconst\u001b[39m workTimeElementAfter \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=총 근무:'\u001b[39m)\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\n \u001b[90m 71 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[36mawait\u001b[39m workTimeElementAfter\u001b[33m.\u001b[39misVisible()) {\u001b[0m\n\u001b[2m    at /Users/m2/MASLABS/www.maslabs.kr/tests/attendance_final_test.spec.ts:68:16\u001b[22m"
-                        }
-                      ],
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 14860,
+                      "errors": [],
                       "stdout": [
                         {
-                          "text": "🚀 최종 출근 체크 테스트 시작...\n"
+                          "text": "🚀 퇴근 체크 테스트 시작...\n"
                         },
                         {
                           "text": "\n👤 김탁수 로그인...\n"
@@ -204,10 +230,16 @@
                           "text": "🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
                         },
                         {
-                          "text": "🔍 콘솔: Failed to load resource: the server responded with a status of 406 ()\n"
+                          "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}\n"
                         },
                         {
-                          "text": "🔍 콘솔: 📝 오늘 attendance 데이터 없음\n"
+                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:43:56.406Z}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 51, diffMs: 17493406}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 51m}\n"
                         },
                         {
                           "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
@@ -249,16 +281,147 @@
                           "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
                         },
                         {
-                          "text": "\n⏰ 출근 체크 실행...\n"
+                          "text": "\n🔍 현재 출근 상태 확인...\n"
+                        },
+                        {
+                          "text": "\n⏰ 퇴근 체크 실행...\n"
                         },
                         {
                           "text": "🔍 콘솔: 📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀\n"
                         },
                         {
-                          "text": "✅ 출근 체크 버튼 클릭\n"
+                          "text": "✅ 퇴근 체크 버튼 클릭\n"
                         },
                         {
-                          "text": "🔍 콘솔: ✅ attendance 테이블에 출근 기록 저장 완료\n"
+                          "text": "\n🔍 퇴근 후 상태 확인...\n"
+                        },
+                        {
+                          "text": "\n⏱️ 최종 근무 시간 확인...\n"
+                        },
+                        {
+                          "text": "📊 최종 근무 시간: 총 근무: 4h 51m\n"
+                        },
+                        {
+                          "text": "📸 퇴근 체크 테스트 결과 스크린샷 저장\n"
+                        },
+                        {
+                          "text": "\n🎯 퇴근 체크 테스트 완료!\n"
+                        },
+                        {
+                          "text": "==================================================\n"
+                        },
+                        {
+                          "text": "✅ 퇴근 체크 기능 테스트 완료\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-14T06:43:47.400Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c3966ffba5cb37e02ddb-5e2ee606b1c257a6a763",
+              "file": "attendance_final_test.spec.ts",
+              "line": 110,
+              "column": 7
+            },
+            {
+              "title": "김탁수 퇴근 체크 테스트",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 60046,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded while setting up \"page\".\u001b[39m"
+                        },
+                        {
+                          "message": "Error: browserContext.newPage: Test timeout of 60000ms exceeded."
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-14T06:43:47.378Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "c3966ffba5cb37e02ddb-0d5d782e0be55f94e357",
+              "file": "attendance_final_test.spec.ts",
+              "line": 110,
+              "column": 7
+            },
+            {
+              "title": "김탁수 퇴근 체크 테스트",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 15835,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 퇴근 체크 테스트 시작...\n"
+                        },
+                        {
+                          "text": "\n👤 김탁수 로그인...\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ 로그인 성공 - localStorage에 사용자 정보 저장됨\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ getCurrentUser - localStorage에서 사용자 정보 로드됨\n"
+                        },
+                        {
+                          "text": "\n📱 출근 체크 페이지 접근...\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 🚀 개인별 출근 관리 페이지 마운트됨\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 👤 사용자 정보: {id: 74d076b8-ffad-4103-8346-127aff1f1305, employee_id: MASLABS-001, email: maslabs-001@maslabs.kr, name: 김탁수, phone: 010-6669-9000}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ 사용자 정보 설정 완료: MASLABS-001\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 📅 오늘 스케줄 조회 시작...\n"
                         },
                         {
                           "text": "🔍 콘솔: 📅 오늘 날짜: 2025-09-14 사용자 ID: MASLABS-001\n"
@@ -270,47 +433,118 @@
                           "text": "🔍 콘솔: 📊 스케줄 데이터: []\n"
                         },
                         {
-                          "text": "\n🔍 출근 시간 확인...\n"
+                          "text": "🔍 콘솔: 🔍 attendance 테이블에서 오늘 출근 상태 확인...\n"
                         },
                         {
-                          "text": "📅 출근 시간: 출근: 09/14 19:52\n"
+                          "text": "🔍 콘솔: ✅ attendance 데이터 조회 성공: {id: 6e6630ff-2fc2-4f93-8672-12699f92029d, employee_id: 74d076b8-ffad-4103-8346-127aff1f1305, date: 2025-09-14, check_in_time: 10:52:23, check_out_time: null}\n"
                         },
                         {
-                          "text": "\n⏱️ 출근 체크 직후 근무 시간 확인...\n"
+                          "text": "🔍 콘솔: 🕐 attendance 데이터 로드 시 근무 시간 계산: {today: 2025-09-14, checkInTime: 10:52:23, startKoreaTime: 2025-09-14T01:52:23.000Z, now: 2025-09-14T06:43:55.964Z}\n"
                         },
                         {
-                          "text": "\n⏳ 1분 대기 후 근무 시간 확인...\n"
+                          "text": "🔍 콘솔: ⏱️ attendance 로드 시 계산된 근무 시간: {workHours: 4, workMinutes: 51, diffMs: 17492964}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ attendance 기반 출근 상태 설정 완료: {hasCheckedIn: true, hasCheckedOut: false, checkInTime: 2025-09-14T10:52:23, checkOutTime: null, totalWorkTime: 4h 51m}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 📅 월간 조회 기간: 2025-09-01 ~ 2025-09-30\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: === 급여 계산 함수 시작 ===\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: currentUser: null\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: todaySchedules.length: 0\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ 월간 기록 조회 성공: 0 개\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 📊 월간 데이터: []\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 🔄 로딩 상태 해제\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ✅ 모든 데이터 로딩 완료\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: === 급여 계산 함수 시작 ===\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: currentUser: null\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: todaySchedules.length: 0\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ❌ currentUser가 없습니다.\n"
+                        },
+                        {
+                          "text": "\n🔍 현재 출근 상태 확인...\n"
+                        },
+                        {
+                          "text": "\n⏰ 퇴근 체크 실행...\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀\n"
+                        },
+                        {
+                          "text": "✅ 퇴근 체크 버튼 클릭\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: ⚠️ 퇴근 위치 정보를 가져올 수 없습니다: GeolocationPositionError\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: Failed to load resource: the server responded with a status of 400 (Bad Request)\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: attendance 테이블 업데이트 오류: {code: PGRST204, details: null, hint: null, message: Could not find the 'check_out_location' column of 'attendance' in the schema cache}\n"
+                        },
+                        {
+                          "text": "🔍 콘솔: 퇴근 체크 오류: {code: PGRST204, details: null, hint: null, message: Could not find the 'check_out_location' column of 'attendance' in the schema cache}\n"
+                        },
+                        {
+                          "text": "\n🔍 퇴근 후 상태 확인...\n"
+                        },
+                        {
+                          "text": "\n⏱️ 최종 근무 시간 확인...\n"
+                        },
+                        {
+                          "text": "📊 최종 근무 시간: 총 근무: 4h 51m\n"
+                        },
+                        {
+                          "text": "📸 퇴근 체크 테스트 결과 스크린샷 저장\n"
+                        },
+                        {
+                          "text": "\n🎯 퇴근 체크 테스트 완료!\n"
+                        },
+                        {
+                          "text": "==================================================\n"
+                        },
+                        {
+                          "text": "✅ 퇴근 체크 기능 테스트 완료\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-14T01:52:09.378Z",
+                      "startTime": "2025-09-14T06:43:47.400Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/attendance_final_test-최종-출-6ee0f-탁수-새로운-출근-체크-후-정확한-근무-시간-확인-chromium-stable/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/attendance_final_test-최종-출-6ee0f-탁수-새로운-출근-체크-후-정확한-근무-시간-확인-chromium-stable/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/attendance_final_test-최종-출-6ee0f-탁수-새로운-출근-체크-후-정확한-근무-시간-확인-chromium-stable/error-context.md"
-                        }
-                      ]
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
-              "id": "c3966ffba5cb37e02ddb-ae386be806415a580022",
+              "id": "c3966ffba5cb37e02ddb-7e2771c40a7c654f7c09",
               "file": "attendance_final_test.spec.ts",
-              "line": 4,
+              "line": 110,
               "column": 7
             }
           ]
@@ -320,11 +554,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-14T01:52:09.006Z",
-    "duration": 61701.015,
-    "expected": 0,
+    "startTime": "2025-09-14T06:43:46.907Z",
+    "duration": 65190.594000000005,
+    "expected": 2,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 2,
     "flaky": 0
   }
 }
