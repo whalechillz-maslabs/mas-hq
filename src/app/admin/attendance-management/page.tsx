@@ -178,11 +178,15 @@ export default function AttendanceManagementPage() {
       // 위치 정보 디버깅
       if (attendanceData && attendanceData.length > 0) {
         attendanceData.forEach((att, index) => {
-          console.log(`attendance[${index}] 위치 정보:`, {
+          console.log(`🔍 attendance[${index}] 위치 정보 상세:`, {
             employee_id: att.employee_id,
+            date: att.date,
+            check_in_time: att.check_in_time,
+            check_out_time: att.check_out_time,
             location: att.location,
             location_type: typeof att.location,
-            location_keys: att.location ? Object.keys(att.location) : 'null'
+            location_keys: att.location ? Object.keys(att.location) : 'null',
+            location_stringified: JSON.stringify(att.location, null, 2)
           });
         });
       }
@@ -230,6 +234,15 @@ export default function AttendanceManagementPage() {
             check_in_location: att.location || null,
             check_out_location: att.check_out_location || null
             };
+            
+            // 위치 정보 변환 디버깅
+            console.log(`🔄 attendance 데이터 변환:`, {
+              employee_id: att.employee_id,
+              original_location: att.location,
+              converted_check_in_location: convertedRecord.check_in_location,
+              converted_check_out_location: convertedRecord.check_out_location
+            });
+            
             allRecords.push(convertedRecord);
           }
         });
