@@ -318,16 +318,13 @@ export default function AttendanceManagementPage() {
       return timeString.substring(0, 5); // HH:MM만 반환
     }
     
-    // ISO 날짜 형식인 경우 - 한국 시간으로 변환
+    // ISO 날짜 형식인 경우 - 이미 한국 시간이므로 추가 변환 불필요
     try {
       const date = new Date(timeString);
       
-      // UTC 시간을 한국 시간(UTC+9)으로 변환
-      const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
-      
-      // 한국 시간으로 변환된 후 올바른 시간 추출
-      const hours = koreaTime.getHours().toString().padStart(2, '0');
-      const minutes = koreaTime.getMinutes().toString().padStart(2, '0');
+      // 이미 한국 시간이므로 추가 변환 없이 바로 시간 추출
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
       
       return `${hours}:${minutes}`;
     } catch (error) {

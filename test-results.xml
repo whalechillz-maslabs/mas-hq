@@ -1,44 +1,16 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="21.065378">
-<testsuite name="simple_admin_test.spec.ts" timestamp="2025-09-15T15:15:53.454Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="18.078" errors="0">
-<testcase name="관리자 페이지 직접 접근하여 표시 문제 확인" classname="simple_admin_test.spec.ts" time="18.078">
-<failure message="simple_admin_test.spec.ts:3:5 관리자 페이지 직접 접근하여 표시 문제 확인" type="FAILURE">
-<![CDATA[  [chromium-stable] › simple_admin_test.spec.ts:3:5 › 관리자 페이지 직접 접근하여 표시 문제 확인 ─────────────────────
-
-    TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
-    =========================== logs ===========================
-    waiting for navigation to "**/tasks" until "load"
-    ============================================================
-
-      24 |     
-      25 |     // 로그인 성공 대기 (tasks 페이지로 이동)
-    > 26 |     await page.waitForURL('**/tasks', { timeout: 10000 });
-         |                ^
-      27 |     console.log('✅ 로그인 성공 (tasks 페이지로 이동)');
-      28 |     
-      29 |     // 다시 관리자 페이지로 이동
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts:26:16
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/error-context.md
-]]>
-</failure>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="16.419401">
+<testsuite name="final_admin_test.spec.ts" timestamp="2025-09-15T23:39:57.788Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="14.762" errors="0">
+<testcase name="Final Admin Page Test › 김탁수 로그인 후 관리자 페이지 및 출근 페이지 확인" classname="final_admin_test.spec.ts" time="14.762">
 <system-out>
-<![CDATA[🔍 관리자 페이지 직접 접근...
-현재 URL: https://www.maslabs.kr/login
-❌ 로그인이 필요합니다. 로그인 페이지로 리다이렉트됨
-
-[[ATTACHMENT|test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/video.webm]]
-
-[[ATTACHMENT|test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/error-context.md]]
+<![CDATA[✅ 로그인 성공
+✅ 관리자 페이지 제목 확인
+✅ 요약 카드들 확인
+✅ 테이블 헤더 확인
+출근 시간: 출근: 09/16 08:17
+✅ 출근 시간 형식 확인
+현재 시간: 오늘 근무 시간
+✅ 현재 시간 표시 확인
+🎉 모든 테스트 통과!
 ]]>
 </system-out>
 </testcase>

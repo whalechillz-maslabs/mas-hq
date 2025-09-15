@@ -114,105 +114,92 @@
   },
   "suites": [
     {
-      "title": "simple_admin_test.spec.ts",
-      "file": "simple_admin_test.spec.ts",
+      "title": "final_admin_test.spec.ts",
+      "file": "final_admin_test.spec.ts",
       "column": 0,
       "line": 0,
-      "specs": [
+      "specs": [],
+      "suites": [
         {
-          "title": "관리자 페이지 직접 접근하여 표시 문제 확인",
-          "ok": false,
-          "tags": [],
-          "tests": [
+          "title": "Final Admin Page Test",
+          "file": "final_admin_test.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
             {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium-stable",
-              "projectName": "chromium-stable",
-              "results": [
+              "title": "김탁수 로그인 후 관리자 페이지 및 출근 페이지 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 18078,
-                  "error": {
-                    "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/tasks\" until \"load\"\n============================================================",
-                    "stack": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/tasks\" until \"load\"\n============================================================\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts:26:16",
-                    "location": {
-                      "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts",
-                      "column": 16,
-                      "line": 26
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 24 |\u001b[39m     \n \u001b[90m 25 |\u001b[39m     \u001b[90m// 로그인 성공 대기 (tasks 페이지로 이동)\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/tasks'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 27 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'✅ 로그인 성공 (tasks 페이지로 이동)'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 28 |\u001b[39m     \n \u001b[90m 29 |\u001b[39m     \u001b[90m// 다시 관리자 페이지로 이동\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts",
-                        "column": 16,
-                        "line": 26
-                      },
-                      "message": "TimeoutError: page.waitForURL: Timeout 10000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/tasks\" until \"load\"\n============================================================\n\n\u001b[0m \u001b[90m 24 |\u001b[39m     \n \u001b[90m 25 |\u001b[39m     \u001b[90m// 로그인 성공 대기 (tasks 페이지로 이동)\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/tasks'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 27 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'✅ 로그인 성공 (tasks 페이지로 이동)'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 28 |\u001b[39m     \n \u001b[90m 29 |\u001b[39m     \u001b[90m// 다시 관리자 페이지로 이동\u001b[39m\u001b[0m\n\u001b[2m    at /Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts:26:16\u001b[22m"
-                    }
-                  ],
-                  "stdout": [
-                    {
-                      "text": "🔍 관리자 페이지 직접 접근...\n"
-                    },
-                    {
-                      "text": "현재 URL: https://www.maslabs.kr/login\n"
-                    },
-                    {
-                      "text": "❌ 로그인이 필요합니다. 로그인 페이지로 리다이렉트됨\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2025-09-15T15:15:53.755Z",
+                  "timeout": 60000,
                   "annotations": [],
-                  "attachments": [
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-stable",
+                  "projectName": "chromium-stable",
+                  "results": [
                     {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/error-context.md"
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14762,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ 로그인 성공\n"
+                        },
+                        {
+                          "text": "✅ 관리자 페이지 제목 확인\n"
+                        },
+                        {
+                          "text": "✅ 요약 카드들 확인\n"
+                        },
+                        {
+                          "text": "✅ 테이블 헤더 확인\n"
+                        },
+                        {
+                          "text": "출근 시간: 출근: 09/16 08:17\n"
+                        },
+                        {
+                          "text": "✅ 출근 시간 형식 확인\n"
+                        },
+                        {
+                          "text": "현재 시간: 오늘 근무 시간\n"
+                        },
+                        {
+                          "text": "✅ 현재 시간 표시 확인\n"
+                        },
+                        {
+                          "text": "🎉 모든 테스트 통과!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-15T23:39:58.143Z",
+                      "annotations": [],
+                      "attachments": []
                     }
                   ],
-                  "errorLocation": {
-                    "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts",
-                    "column": 16,
-                    "line": 26
-                  }
+                  "status": "expected"
                 }
               ],
-              "status": "unexpected"
+              "id": "10f304a6796bed333699-49395f2059bede761b93",
+              "file": "final_admin_test.spec.ts",
+              "line": 4,
+              "column": 7
             }
-          ],
-          "id": "70f17f6cea741f4dd3b5-0c3a13e6837cf9985c85",
-          "file": "simple_admin_test.spec.ts",
-          "line": 3,
-          "column": 5
+          ]
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-15T15:15:53.430Z",
-    "duration": 21065.378,
-    "expected": 0,
+    "startTime": "2025-09-15T23:39:57.713Z",
+    "duration": 16419.401,
+    "expected": 1,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }
