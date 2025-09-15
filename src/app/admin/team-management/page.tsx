@@ -35,12 +35,33 @@ export default function TeamManagementPage() {
   }, []);
 
   const checkAuth = async () => {
-    const user = await auth.getCurrentUser();
-    if (!user) {
+    try {
+      // localStorage 기반 인증 확인
+      if (typeof window === 'undefined') return;
+      
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      
+      if (!isLoggedIn || !currentEmployee) {
+        router.push('/login');
+        return;
+      }
+      
+      const employee = JSON.parse(currentEmployee);
+      
+      // 관리자 권한 확인
+      if (employee.role !== 'admin' && 
+          employee.role !== 'manager' &&
+          employee.name !== '김탁수') {
+        router.push('/dashboard');
+        return;
+      }
+      
+      setCurrentUser(employee);
+    } catch (error) {
+      console.error('사용자 확인 오류:', error);
       router.push('/login');
-      return;
     }
-    setCurrentUser(user);
   };
 
   const loadData = async () => {

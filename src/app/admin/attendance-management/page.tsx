@@ -66,22 +66,28 @@ export default function AttendanceManagementPage() {
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // localStorage 기반 인증 확인
+      if (typeof window === 'undefined') return;
       
-      if (!user) {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      
+      if (!isLoggedIn || !currentEmployee) {
         router.push('/login');
         return;
       }
-
+      
+      const employee = JSON.parse(currentEmployee);
+      
       // 관리자 권한 확인
-      if (user.user_metadata?.role !== 'admin' && 
-          user.user_metadata?.role !== 'manager' &&
-          user.user_metadata?.name !== '김탁수') {
+      if (employee.role !== 'admin' && 
+          employee.role !== 'manager' &&
+          employee.name !== '김탁수') {
         router.push('/dashboard');
         return;
       }
       
-      setCurrentUser(user);
+      setCurrentUser(employee);
     } catch (error) {
       console.error('사용자 확인 오류:', error);
       router.push('/login');

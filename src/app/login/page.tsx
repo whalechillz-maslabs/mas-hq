@@ -83,7 +83,7 @@ function LoginForm() {
             MASLABS
           </h2>
           <p className="mt-2 text-center text-lg text-gray-600">
-            오늘도 화이팅! 💪
+            직원 관리 시스템
           </p>
         </div>
 
