@@ -16,6 +16,9 @@ interface Schedule {
   scheduled_end: string;
   status: string;
   employee_note?: string;
+  break_minutes?: number;
+  total_hours?: number;
+  created_at?: string;
   employee: {
     name: string;
     employee_id: string;
@@ -173,8 +176,26 @@ export default function SchedulesPage() {
         console.error('Error fetching schedules:', error);
         setSchedules([]);
       } else {
+        // 중복 제거 로직 추가
+        const uniqueSchedules = new Map();
+        
+        (data || []).forEach(schedule => {
+          // 중복 체크를 위한 고유 키 생성
+          const uniqueKey = `${schedule.employee_id}_${schedule.schedule_date}_${schedule.scheduled_start}_${schedule.scheduled_end}`;
+          
+          if (!uniqueSchedules.has(uniqueKey)) {
+            uniqueSchedules.set(uniqueKey, schedule);
+          } else {
+            // 중복 발견 시 더 최근에 생성된 것을 유지
+            const existing = uniqueSchedules.get(uniqueKey);
+            if (new Date(schedule.created_at) > new Date(existing.created_at)) {
+              uniqueSchedules.set(uniqueKey, schedule);
+            }
+          }
+        });
+        
         // 클라이언트 사이드에서 시간순, 이름순으로 정렬
-        const sortedSchedules = (data || []).sort((a, b) => {
+        const sortedSchedules = Array.from(uniqueSchedules.values()).sort((a, b) => {
           // 1순위: 날짜순
           if (a.schedule_date !== b.schedule_date) {
             return a.schedule_date.localeCompare(b.schedule_date);
@@ -188,6 +209,8 @@ export default function SchedulesPage() {
           const nameB = b.employee?.name || '';
           return nameA.localeCompare(nameB, 'ko');
         });
+        
+        console.log(`📊 중복 제거 후 스케줄 수: ${sortedSchedules.length}개 (원본: ${data?.length || 0}개)`);
         setSchedules(sortedSchedules);
       }
     } catch (error) {
@@ -542,14 +565,16 @@ export default function SchedulesPage() {
 
       console.log('일괄 스케줄 추가 데이터:', schedulesToAdd);
 
-      // 기존 스케줄 삭제 (선택된 요일들과 시간대)
-      const deletePromises = schedulesToAdd.map(schedule => 
+      // 기존 스케줄 삭제 (선택된 요일들 전체)
+      const uniqueDates = [...new Set(schedulesToAdd.map(s => s.schedule_date))];
+      console.log(`🗑️ 삭제할 날짜들: ${uniqueDates.join(', ')}`);
+      
+      const deletePromises = uniqueDates.map(date => 
         supabase
           .from('schedules')
           .delete()
           .eq('employee_id', currentUser.id)
-          .eq('schedule_date', schedule.schedule_date)
-          .eq('scheduled_start', schedule.scheduled_start)
+          .eq('schedule_date', date)
       );
 
       const deleteResults = await Promise.all(deletePromises);
@@ -557,6 +582,8 @@ export default function SchedulesPage() {
       
       if (deleteErrors.length > 0) {
         console.error('기존 스케줄 삭제 오류:', deleteErrors);
+      } else {
+        console.log(`✅ ${uniqueDates.length}개 날짜의 기존 스케줄 삭제 완료`);
       }
 
       // 새 스케줄 추가
@@ -1027,7 +1054,7 @@ export default function SchedulesPage() {
                         총 근무예정시간: {schedules.reduce((total, schedule) => {
                           const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
                           const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
-                          const hours = (end - start) / (1000 * 60 * 60);
+                          const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                           const breakHours = (schedule.break_minutes || 0) / 60;
                           return total + (hours - breakHours);
                         }, 0).toFixed(1)}시간
@@ -1044,9 +1071,9 @@ export default function SchedulesPage() {
                 ) : (
                   schedules
                     .sort((a, b) => new Date(a.schedule_date).getTime() - new Date(b.schedule_date).getTime())
-                    .map((schedule) => (
+                    .map((schedule, index) => (
                       <div
-                        key={schedule.id}
+                        key={`${schedule.id}-${index}`}
                         className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center justify-between">
@@ -1056,6 +1083,10 @@ export default function SchedulesPage() {
                                 {format(new Date(schedule.schedule_date), 'MM월 dd일 (EEE)', { locale: ko })} {schedule.scheduled_start} - {schedule.scheduled_end}
                                 {schedule.employee_note && (
                                   <span className="ml-2 text-gray-500">• {schedule.employee_note}</span>
+                                )}
+                                {/* 디버깅용 ID 표시 (개발 모드에서만) */}
+                                {process.env.NODE_ENV === 'development' && (
+                                  <span className="ml-2 text-xs text-gray-400">ID: {schedule.id.substring(0, 8)}</span>
                                 )}
                             </div>
                               <div className={`px-2 py-1 text-xs rounded-full ${
