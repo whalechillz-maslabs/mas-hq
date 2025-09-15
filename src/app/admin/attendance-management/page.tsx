@@ -645,13 +645,19 @@ export default function AttendanceManagementPage() {
       return timeString.substring(0, 5); // HH:MM만 반환
     }
     
-    // ISO 날짜 형식인 경우
+    // ISO 날짜 형식인 경우 - 한국 시간으로 변환
     try {
-    return new Date(timeString).toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+      const date = new Date(timeString);
+      // UTC 시간을 한국 시간(UTC+9)으로 변환
+      const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+      
+      return koreaTime.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false // 24시간 형식 사용
+      });
     } catch (error) {
+      console.error('시간 변환 오류:', error, timeString);
       return timeString; // 파싱 실패 시 원본 반환
     }
   };
