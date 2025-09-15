@@ -653,14 +653,19 @@ export default function AttendanceManagementPage() {
       const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
       
       // 시간만 추출 (HH:MM 형식)
-      const hours = koreaTime.getUTCHours().toString().padStart(2, '0');
-      const minutes = koreaTime.getUTCMinutes().toString().padStart(2, '0');
+      const hours = koreaTime.getHours().toString().padStart(2, '0');
+      const minutes = koreaTime.getMinutes().toString().padStart(2, '0');
       
       return `${hours}:${minutes}`;
     } catch (error) {
       console.error('시간 변환 오류:', error, timeString);
       return timeString; // 파싱 실패 시 원본 반환
     }
+  };
+  const formatWorkTime = (hours: number) => {
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    return `${wholeHours}h ${minutes}m`;
   };
 
   const getStatusColor = (status: string) => {
@@ -1074,110 +1079,7 @@ export default function AttendanceManagementPage() {
                         <div className="text-xs text-gray-500">
                           {formatTime(record.actual_start)}
                         </div>
-                        {record.check_in_location ? (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_in_location.address || 
-                             record.check_in_location.note || 
-                             (record.check_in_location.latitude && record.check_in_location.longitude ? 
-                              `위치: ${record.check_in_location.latitude.toFixed(4)}, ${record.check_in_location.longitude.toFixed(4)}` : 
-                              '위치 정보 있음')}
-                          </div>
-                        ) : record.check_out_location ? (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_out_location.address || 
-                             record.check_out_location.note || 
-                             (record.check_out_location.latitude && record.check_out_location.longitude ? 
-                              `위치: ${record.check_out_location.latitude.toFixed(4)}, ${record.check_out_location.longitude.toFixed(4)}` : 
-                              '위치 정보 있음')}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-400 mt-1">
-                            위치 없음
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div className="font-medium">점심 휴식</div>
-                        <div className="text-xs text-gray-500">
-                          {record.status === 'break' ? '휴식 중' : 
-                           record.break_minutes ? `${record.break_minutes}분` : '-'}
-                        </div>
-                        {record.status === 'break' && (
-                          <div className="text-xs text-orange-500 mt-1">
-                            ☕ 휴식 중
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div className="font-medium">실제 퇴근</div>
-                        <div className="text-xs text-gray-500">
-                          {formatTime(record.actual_end)}
-                        </div>
-                        {record.check_out_location ? (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_out_location.address || 
-                             record.check_out_location.note || 
-                             (record.check_out_location.latitude && record.check_out_location.longitude ? 
-                              `위치: ${record.check_out_location.latitude.toFixed(4)}, ${record.check_out_location.longitude.toFixed(4)}` : 
-                              '위치 정보 있음')}
-                          </div>
-                        ) : record.check_in_location ? (
-                        <div className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                            {record.check_in_location.address || 
-                             record.check_in_location.note || 
-                             (record.check_in_location.latitude && record.check_in_location.longitude ? 
-                              `위치: ${record.check_in_location.latitude.toFixed(4)}, ${record.check_in_location.longitude.toFixed(4)}` : 
-                              '위치 정보 있음')}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-400 mt-1">
-                            위치 없음
-                        </div>
-                      )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {record.total_hours > 0 ? `${record.total_hours.toFixed(2)}시간` : '-'}
-                      </div>
-                      {record.overtime_hours > 0 && (
-                        <div className="text-xs text-orange-600">
-                          연장: {record.overtime_hours}시간
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {record.check_in_location ? (
-                        <div className="text-xs text-gray-600">
-                          <div>위도: {record.check_in_location.latitude.toFixed(6)}</div>
-                          <div>경도: {record.check_in_location.longitude.toFixed(6)}</div>
-                          {record.check_in_location.note && (
-                            <div className="text-xs text-blue-600 mt-1">
-                              {record.check_in_location.note}
-                            </div>
-                          )}
-                        </div>
-                      ) : record.check_out_location ? (
-                        <div className="text-xs text-gray-600">
-                          <div>위도: {record.check_out_location.latitude.toFixed(6)}</div>
-                          <div>경도: {record.check_out_location.longitude.toFixed(6)}</div>
-                          {record.check_out_location.note && (
-                            <div className="text-xs text-blue-600 mt-1">
-                              {record.check_out_location.note}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
                         <span className="text-xs text-gray-500">위치 없음</span>
-                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {(() => {
