@@ -7,7 +7,7 @@ import {
   Clock, MapPin, Users, Calendar, Filter, Download,
   Search, Eye, CheckCircle, XCircle, AlertCircle,
   TrendingUp, BarChart3, Download as DownloadIcon,
-  Coffee
+  Coffee, Edit3, Save, X
 } from 'lucide-react';
 
 interface AttendanceRecord {
@@ -63,6 +63,11 @@ export default function AttendanceManagementPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    checkInTime: '',
+    checkOutTime: ''
+  });
   // 한국 시간 기준으로 오늘 날짜 설정
   const getKoreaToday = () => {
     const now = new Date();
@@ -111,109 +116,79 @@ export default function AttendanceManagementPage() {
     setCurrentUser(user);
   };
 
-  // 자동 퇴근 처리 함수
-  const processAutoCheckout = async (employeeId: string, date: string) => {
+  // 자동 퇴근 처리 함수잘못   // 관리자가 출근/퇴근 시간을 수정하는 함수
+  const updateAttendanceTime = async (employeeId: string, date: string, checkInTime: string, checkOutTime: string) => {
     try {
-      console.log(`🔄 자동 퇴근 처리 시작: ${employeeId}, ${date}`);
+      console.log(`🔄 출근/퇴근 시간 수정: ${employeeId}, ${date}, ${checkInTime}, ${checkOutTime}`);
       
-      // 1. 현재 attendance 데이터 조회
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .eq('date', date)
-        .single();
-      
-      if (!attendanceData || attendanceData.check_out_time) {
-        console.log('자동 퇴근 처리 불필요: 출근 기록 없음 또는 이미 퇴근함');
-        return;
-      }
-      
-      // 2. 스케줄 데이터 조회
-      const { data: scheduleData } = await supabase
-        .from('schedules')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .eq('schedule_date', date)
-        .order('scheduled_start', { ascending: true });
-      
-      const now = new Date();
-      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-      const currentTime = koreaTime.toTimeString().split(' ')[0]; // HH:MM:SS
-      
-      let expectedEndTime = null;
+      // 근무 시간 계산
       let totalHours = 0;
-      let overtimeHours = 0;
-      
-      if (scheduleData && scheduleData.length > 0) {
-        // 스케줄이 있는 경우
-        const lastSchedule = scheduleData[scheduleData.length - 1];
-        expectedEndTime = lastSchedule.scheduled_end;
-        
-        // 기본 근무 시간 계산 (스케줄 기준)
-        const scheduledStart = new Date(`2000-01-01T${scheduleData[0].scheduled_start}`);
-        const scheduledEnd = new Date(`2000-01-01T${lastSchedule.scheduled_end}`);
-        const scheduledDuration = (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
-        totalHours = scheduledDuration;
-        
-        // 초과 근무 시간 계산
-        const expectedEnd = new Date(`2000-01-01T${expectedEndTime}`);
-        const current = new Date(`2000-01-01T${currentTime}`);
-        if (current > expectedEnd) {
-          overtimeHours = (current.getTime() - expectedEnd.getTime()) / (1000 * 60 * 60);
-        }
-      } else {
-        // 스케줄이 없는 경우 - 기본 8시간 근무
-        const checkInTime = new Date(`2000-01-01T${attendanceData.check_in_time}`);
-        const defaultEndTime = new Date(checkInTime.getTime() + (8 * 60 * 60 * 1000));
-        expectedEndTime = defaultEndTime.toTimeString().split(' ')[0];
-        totalHours = 8;
-        
-        // 초과 근무 시간 계산
-        const expectedEnd = new Date(`2000-01-01T${expectedEndTime}`);
-        const current = new Date(`2000-01-01T${currentTime}`);
-        if (current > expectedEnd) {
-          overtimeHours = (current.getTime() - expectedEnd.getTime()) / (1000 * 60 * 60);
-        }
+      if (checkInTime && checkOutTime) {
+        const startTime = new Date(`2000-01-01T${checkInTime}`);
+        const endTime = new Date(`2000-01-01T${checkOutTime}`);
+        totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
       }
       
-      // 3. 자동 퇴근 조건 확인 (예상 종료 시간 + 30분 후)
-      const expectedEndDate = new Date(`2000-01-01T${expectedEndTime}`);
-      const currentDate = new Date(`2000-01-01T${currentTime}`);
-      const autoCheckoutTime = new Date(expectedEndDate.getTime() + (30 * 60 * 1000)); // 30분 후
-      
-      if (currentDate > autoCheckoutTime) {
-        console.log(`✅ 자동 퇴근 처리 실행: ${expectedEndTime}`);
-        
-        // 4. 자동 퇴근 처리
-        const { error: updateError } = await supabase
-          .from('attendance')
-          .update({
-            check_out_time: expectedEndTime,
-            total_hours: totalHours,
-            overtime_hours: overtimeHours,
-            status: 'completed',
-            auto_checkout: true,
-            auto_checkout_reason: '근무 시간 종료 후 자동 퇴근 처리'
-          })
-          .eq('employee_id', employeeId)
-          .eq('date', date);
-        
-        if (updateError) {
-          console.error('자동 퇴근 처리 오류:', updateError);
-        } else {
-          console.log('✅ 자동 퇴근 처리 완료');
-        }
-      } else {
-        console.log('자동 퇴근 처리 대기 중:', {
-          expectedEndTime,
-          currentTime,
-          autoCheckoutTime: autoCheckoutTime.toTimeString().split(' ')[0]
+      // attendance 테이블 업데이트 또는 생성
+      const { error: updateError } = await supabase
+        .from('attendance')
+        .upsert({
+          employee_id: employeeId,
+          date: date,
+          check_in_time: checkInTime,
+          check_out_time: checkOutTime,
+          total_hours: totalHours,
+          overtime_hours: 0,
+          status: checkOutTime ? 'completed' : 'confirmed',
+          auto_checkout: false,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'employee_id,date'
         });
-      }
       
+      if (updateError) {
+        console.error('❌ 출근/퇴근 시간 수정 실패:', updateError);
+        throw updateError;
+      } else {
+        console.log('✅ 출근/퇴근 시간 수정 완료');
+        // 데이터 다시 로드
+        loadData();
+      }
     } catch (error) {
-      console.error('자동 퇴근 처리 중 오류:', error);
+      console.error('출근/퇴근 시간 수정 오류:', error);
+      throw error;
+    }
+  };
+
+  // 편집 모드 시작
+  const startEdit = (record: AttendanceRecord) => {
+    setEditingRecord(record.employee_id);
+    setEditForm({
+      checkInTime: record.actual_start ? record.actual_start.split('T')[1]?.substring(0, 5) || '' : '',
+      checkOutTime: record.actual_end ? record.actual_end.split('T')[1]?.substring(0, 5) || '' : ''
+    });
+  };
+
+  // 편집 취소
+  const cancelEdit = () => {
+    setEditingRecord(null);
+    setEditForm({ checkInTime: '', checkOutTime: '' });
+  };
+
+  // 편집 저장
+  const saveEdit = async (record: AttendanceRecord) => {
+    try {
+      await updateAttendanceTime(
+        record.employee_id,
+        record.schedule_date,
+        editForm.checkInTime,
+        editForm.checkOutTime
+      );
+      setEditingRecord(null);
+      setEditForm({ checkInTime: '', checkOutTime: '' });
+    } catch (error) {
+      console.error('편집 저장 실패:', error);
+      alert('출근/퇴근 시간 수정에 실패했습니다.');
     }
   };
 
@@ -562,15 +537,8 @@ export default function AttendanceManagementPage() {
       setDebugInfo(debugData);
       
       setAttendanceRecords(attendanceRecords);
-      // 자동 퇴근 처리 실행
-      console.log('🔄 자동 퇴근 처리 시작...');
-      const autoCheckoutEmployeeIds = [...new Set(convertedRecords.map(record => record.employee_id))];
-      
-      for (const employeeId of autoCheckoutEmployeeIds) {
-        await processAutoCheckout(employeeId, normalizedDate);
-      }
-      
-      console.log('✅ 자동 퇴근 처리 완료');
+      // 자동 출근 로직 제거됨 - 관리자가 수동으로 출근/퇴근 시간을 관리
+      console.log('✅ 출근 데이터 로딩 완료 (자동 출근 로직 비활성화)');
       
     } catch (error) {
       console.error("출근 데이터 로딩 중 오류:", error);
@@ -1077,22 +1045,46 @@ export default function AttendanceManagementPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div className="font-medium">실제 출근</div>
-                        <div className="text-xs text-gray-500">
-                          {formatTime(record.actual_start || null)}
+                      {editingRecord === record.employee_id ? (
+                        <div className="text-sm text-gray-900">
+                          <div className="font-medium mb-1">실제 출근</div>
+                          <input
+                            type="time"
+                            value={editForm.checkInTime}
+                            onChange={(e) => setEditForm({...editForm, checkInTime: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                          />
                         </div>
-                        <span className="text-xs text-gray-500">위치 없음</span>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-gray-900">
+                          <div className="font-medium">실제 출근</div>
+                          <div className="text-xs text-gray-500">
+                            {formatTime(record.actual_start || null)}
+                          </div>
+                          <span className="text-xs text-gray-500">위치 없음</span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div className="font-medium">실제 퇴근</div>
-                        <div className="text-xs text-gray-500">
-                          {formatTime(record.actual_end || null)}
+                      {editingRecord === record.employee_id ? (
+                        <div className="text-sm text-gray-900">
+                          <div className="font-medium mb-1">실제 퇴근</div>
+                          <input
+                            type="time"
+                            value={editForm.checkOutTime}
+                            onChange={(e) => setEditForm({...editForm, checkOutTime: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                          />
                         </div>
-                        <span className="text-xs text-gray-500">위치 없음</span>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-gray-900">
+                          <div className="font-medium">실제 퇴근</div>
+                          <div className="text-xs text-gray-500">
+                            {formatTime(record.actual_end || null)}
+                          </div>
+                          <span className="text-xs text-gray-500">위치 없음</span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
@@ -1118,12 +1110,40 @@ export default function AttendanceManagementPage() {
                       })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-900">
-                        <BarChart3 className="w-4 h-4" />
-                      </button>
+                      {editingRecord === record.employee_id ? (
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => saveEdit(record)}
+                            className="text-green-600 hover:text-green-900"
+                            title="저장"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={cancelEdit}
+                            className="text-red-600 hover:text-red-900"
+                            title="취소"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => startEdit(record)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="출근/퇴근 시간 수정"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button className="text-indigo-600 hover:text-indigo-900" title="상세보기">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button className="text-green-600 hover:text-green-900" title="통계보기">
+                            <BarChart3 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
