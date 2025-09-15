@@ -1,34 +1,44 @@
-<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="12.635046">
-<testsuite name="attendance_check_test.spec.ts" timestamp="2025-09-14T23:41:49.936Z" hostname="chromium-stable" tests="4" failures="0" skipped="0" time="34.547" errors="0">
-<testcase name="출근 체크 문제 해결 테스트 › 김탁수 출근 체크 - 스케줄 없을 때 시간 계산 문제 테스트" classname="attendance_check_test.spec.ts" time="8.966">
-<system-out>
-<![CDATA[🔍 김탁수 출근 체크 테스트 시작...
-📍 로그인 후 URL: https://www.maslabs.kr/login
-❌ 로그인 실패
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="21.065378">
+<testsuite name="simple_admin_test.spec.ts" timestamp="2025-09-15T15:15:53.454Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="18.078" errors="0">
+<testcase name="관리자 페이지 직접 접근하여 표시 문제 확인" classname="simple_admin_test.spec.ts" time="18.078">
+<failure message="simple_admin_test.spec.ts:3:5 관리자 페이지 직접 접근하여 표시 문제 확인" type="FAILURE">
+<![CDATA[  [chromium-stable] › simple_admin_test.spec.ts:3:5 › 관리자 페이지 직접 접근하여 표시 문제 확인 ─────────────────────
+
+    TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "**/tasks" until "load"
+    ============================================================
+
+      24 |     
+      25 |     // 로그인 성공 대기 (tasks 페이지로 이동)
+    > 26 |     await page.waitForURL('**/tasks', { timeout: 10000 });
+         |                ^
+      27 |     console.log('✅ 로그인 성공 (tasks 페이지로 이동)');
+      28 |     
+      29 |     // 다시 관리자 페이지로 이동
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/simple_admin_test.spec.ts:26:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/error-context.md
 ]]>
-</system-out>
-</testcase>
-<testcase name="출근 체크 문제 해결 테스트 › 허상원 출근 체크 - 스케줄 있을 때 테스트" classname="attendance_check_test.spec.ts" time="7.957">
+</failure>
 <system-out>
-<![CDATA[🔍 허상원 출근 체크 테스트 시작...
-📍 로그인 후 URL: https://www.maslabs.kr/login
-❌ 로그인 실패
-]]>
-</system-out>
-</testcase>
-<testcase name="출근 체크 문제 해결 테스트 › 최형호 출근 체크 - 스케줄 있을 때 테스트" classname="attendance_check_test.spec.ts" time="8.688">
-<system-out>
-<![CDATA[🔍 최형호 출근 체크 테스트 시작...
-📍 로그인 후 URL: https://www.maslabs.kr/login
-❌ 로그인 실패
-]]>
-</system-out>
-</testcase>
-<testcase name="출근 체크 문제 해결 테스트 › 관리자 페이지에서 출근 기록 확인 테스트" classname="attendance_check_test.spec.ts" time="8.936">
-<system-out>
-<![CDATA[🔍 관리자 페이지 출근 기록 확인 테스트 시작...
-📍 로그인 후 URL: https://www.maslabs.kr/login
-❌ 로그인 실패
+<![CDATA[🔍 관리자 페이지 직접 접근...
+현재 URL: https://www.maslabs.kr/login
+❌ 로그인이 필요합니다. 로그인 페이지로 리다이렉트됨
+
+[[ATTACHMENT|test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/simple_admin_test-관리자-페이지-직접-접근하여-표시-문제-확인-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 </testcase>

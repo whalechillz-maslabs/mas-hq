@@ -994,7 +994,10 @@ export default function AttendanceManagementPage() {
               <div>
                 <p className="text-sm text-gray-600">평균 근무시간</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {(filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / Math.max(filteredRecords.length, 1)).toFixed(1)}시간
+                  {(() => {
+                    const avgHours = filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / Math.max(filteredRecords.length, 1);
+                    return avgHours > 0 ? formatWorkTime(avgHours) : '0h 0m';
+                  })()}
                 </p>
               </div>
             </div>
@@ -1064,10 +1067,10 @@ export default function AttendanceManagementPage() {
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">스케줄</div>
                         <div className="text-xs text-gray-500">
-                          {formatTime(record.first_schedule_start)} - {formatTime(record.last_schedule_end)}
+                          {formatTime(record.first_schedule_start || null)} - {formatTime(record.last_schedule_end || null)}
                           {record.first_schedule_start && record.last_schedule_end && (
                             <span className="ml-2 text-blue-600">
-                              ({formatScheduleDuration(record.first_schedule_start, record.last_schedule_end)})
+                              ({formatScheduleDuration(record.first_schedule_start || '', record.last_schedule_end || '')})
                             </span>
                           )}
                         </div>
@@ -1077,9 +1080,27 @@ export default function AttendanceManagementPage() {
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">실제 출근</div>
                         <div className="text-xs text-gray-500">
-                          {formatTime(record.actual_start)}
+                          {formatTime(record.actual_start || null)}
                         </div>
                         <span className="text-xs text-gray-500">위치 없음</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        <div className="font-medium">실제 퇴근</div>
+                        <div className="text-xs text-gray-500">
+                          {formatTime(record.actual_end || null)}
+                        </div>
+                        <span className="text-xs text-gray-500">위치 없음</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {record.total_hours > 0 ? formatWorkTime(record.total_hours) : '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-xs text-gray-500">위치 없음</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {(() => {
