@@ -648,14 +648,15 @@ export default function AttendanceManagementPage() {
     // ISO 날짜 형식인 경우 - 한국 시간으로 변환
     try {
       const date = new Date(timeString);
+      
       // UTC 시간을 한국 시간(UTC+9)으로 변환
       const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
       
-      return koreaTime.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false // 24시간 형식 사용
-      });
+      // 시간만 추출 (HH:MM 형식)
+      const hours = koreaTime.getUTCHours().toString().padStart(2, '0');
+      const minutes = koreaTime.getUTCMinutes().toString().padStart(2, '0');
+      
+      return `${hours}:${minutes}`;
     } catch (error) {
       console.error('시간 변환 오류:', error, timeString);
       return timeString; // 파싱 실패 시 원본 반환
