@@ -180,7 +180,7 @@ export default function AttendanceManagementPage() {
         .from('schedules')
         .select(`
           *,
-          employees (
+          employees!schedules_employee_id_fkey (
             id,
             name,
             employee_id,
