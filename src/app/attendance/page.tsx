@@ -1498,7 +1498,17 @@ export default function AttendancePage() {
               
               {dailyAttendance.checkInTime && (
                 <div className="text-lg text-gray-600">
-                  출근: {format(new Date(dailyAttendance.checkInTime), "MM/dd HH:mm", { locale: ko })}
+                  출근: {(() => {
+                    try {
+                      const date = new Date(dailyAttendance.checkInTime);
+                      // UTC 시간을 한국 시간(UTC+9)으로 변환
+                      const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+                      return format(koreaTime, "MM/dd HH:mm", { locale: ko });
+                    } catch (error) {
+                      console.error('출근 시간 변환 오류:', error);
+                      return dailyAttendance.checkInTime;
+                    }
+                  })()}
                 </div>
               )}
               
