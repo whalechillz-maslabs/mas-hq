@@ -71,19 +71,21 @@ export default function AttendancePage() {
         if (dailyAttendance.checkInTime) {
           const now = new Date();
           
-          // checkInTime이 "2025-09-14T10:52:23" 형식인 경우 - 이미 한국 시간
+          // checkInTime이 UTC 시간이므로 한국 시간으로 변환
           const start = new Date(dailyAttendance.checkInTime);
+          const koreaStart = new Date(start.getTime() + (9 * 60 * 60 * 1000));
           
           // 디버깅 로그 추가
           console.log('🕐 실시간 근무 시간 계산:', {
             checkInTime: dailyAttendance.checkInTime,
             start: start.toISOString(),
+            koreaStart: koreaStart.toISOString(),
             now: now.toISOString(),
-            startTime: start.getTime(),
+            startTime: koreaStart.getTime(),
             nowTime: now.getTime()
           });
           
-          const diffMs = now.getTime() - start.getTime();
+          const diffMs = now.getTime() - koreaStart.getTime();
           const hours = Math.floor(diffMs / (1000 * 60 * 60));
           const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           const totalHours = hours + (minutes / 60);
@@ -1381,7 +1383,13 @@ export default function AttendancePage() {
                     return dailyAttendance.totalWorkTime;
                   }
                   
-                  if (todaySchedules.length === 0) return '0h 0m';
+                  // 스케줄이 없어도 실제 근무시간이 있으면 표시
+                  if (todaySchedules.length === 0) {
+                    if (dailyAttendance.totalWorkTime) {
+                      return dailyAttendance.totalWorkTime;
+                    }
+                    return '0h 0m';
+                  }
                   
                   const totalHours = todaySchedules
                     .filter(s => s.actual_start && s.actual_end)
@@ -1430,7 +1438,13 @@ export default function AttendancePage() {
                     return `${sign}${diffHours}h ${diffMinutes}m`;
                   }
                   
-                  if (todaySchedules.length === 0) return '0h 0m';
+                  // 스케줄이 없어도 실제 근무시간이 있으면 표시
+                  if (todaySchedules.length === 0) {
+                    if (dailyAttendance.totalWorkTime) {
+                      return dailyAttendance.totalWorkTime;
+                    }
+                    return '0h 0m';
+                  }
                   
                   // 스케줄된 시간 계산 (각 스케줄의 시간 합계 - 점심시간 자동 제외)
                   const scheduledHours = todaySchedules.reduce((total, schedule) => {
@@ -1501,8 +1515,9 @@ export default function AttendancePage() {
                   출근: {(() => {
                     try {
                       const date = new Date(dailyAttendance.checkInTime);
-                      // dailyAttendance.checkInTime이 이미 한국 시간이므로 추가 변환 불필요
-                      return format(date, "MM/dd HH:mm", { locale: ko });
+                      // UTC 시간을 한국 시간으로 변환
+                      const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+                      return format(koreaTime, "MM/dd HH:mm", { locale: ko });
                     } catch (error) {
                       console.error('출근 시간 변환 오류:', error);
                       return dailyAttendance.checkInTime;
