@@ -43,13 +43,15 @@ export default function AttendancePage() {
     totalWorkTime: string | null;
     hasBreak: boolean;
     breakStartTime: string | null;
+    breakRecords: Array<{ type: 'start' | 'end'; time: string; timestamp: string }>;
   }>({
     isCheckedIn: false,
     checkInTime: null,
     checkOutTime: null,
     totalWorkTime: null,
     hasBreak: false,
-    breakStartTime: null
+    breakStartTime: null,
+    breakRecords: []
   });
   
   // 급여 계산 관련 상태
@@ -595,12 +597,28 @@ export default function AttendancePage() {
           
           // attendance 테이블에서 휴식 상태 확인 (스케줄이 없어도 확인)
           let hasBreakFromAttendance = false;
-          if (attendanceData.notes && 
-              attendanceData.notes.includes('휴식 시작') && 
-              !attendanceData.notes.includes('휴식 후 복귀')) {
-            hasBreakFromAttendance = true;
-            // 휴식 시작 시간을 현재 시간으로 설정 (정확한 시간은 데이터베이스에 저장되지 않으므로)
-            breakStartTime = new Date().toISOString();
+          let breakRecords: Array<{ type: 'start' | 'end'; time: string; timestamp: string }> = [];
+          
+          if (attendanceData.notes) {
+            // 휴식 시작 시각 추출
+            const breakStartMatch = attendanceData.notes.match(/휴식 시작: (\d{2}:\d{2})/);
+            if (breakStartMatch) {
+              const startTime = breakStartMatch[1];
+              breakRecords.push({ type: 'start', time: startTime, timestamp: attendanceData.updated_at });
+              
+              // 휴식 후 복귀가 없으면 현재 휴식 중
+              if (!attendanceData.notes.includes('휴식 후 복귀')) {
+                hasBreakFromAttendance = true;
+                breakStartTime = new Date().toISOString();
+              }
+            }
+            
+            // 휴식 종료 시각 추출
+            const breakEndMatch = attendanceData.notes.match(/휴식 후 복귀: (\d{2}:\d{2})/);
+            if (breakEndMatch) {
+              const endTime = breakEndMatch[1];
+              breakRecords.push({ type: 'end', time: endTime, timestamp: attendanceData.updated_at });
+            }
           }
           
           setDailyAttendance(prev => ({
@@ -610,7 +628,8 @@ export default function AttendancePage() {
             checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
             totalWorkTime: totalWorkTime,
             hasBreak: hasBreakFromSchedules || hasBreakFromAttendance || prev.hasBreak,
-            breakStartTime: breakStartTime || prev.breakStartTime
+            breakStartTime: breakStartTime || prev.breakStartTime,
+            breakRecords: breakRecords.length > 0 ? breakRecords : prev.breakRecords
           }));
           
           console.log('✅ attendance 기반 출근 상태 설정 완료:', {
@@ -1130,7 +1149,7 @@ export default function AttendancePage() {
           total_hours: null,
           overtime_hours: 0,
           status: 'present',
-          notes: '휴식 후 복귀', // 휴식 종료 정보 저장
+          notes: `휴식 후 복귀: ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`, // 휴식 종료 시각 저장
           updated_at: now
         }, {
           onConflict: 'employee_id,date'
@@ -1141,11 +1160,14 @@ export default function AttendancePage() {
         // 에러가 발생해도 계속 진행
       }
       
+      const breakEndTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      
       setDailyAttendance(prev => ({
         ...prev,
         hasBreak: false,
         isCheckedIn: true,
-        breakStartTime: null // 휴식 시작 시간 초기화
+        breakStartTime: null, // 휴식 시작 시간 초기화
+        breakRecords: [...prev.breakRecords, { type: 'end', time: breakEndTime, timestamp: now }]
       }));
       
       await fetchTodaySchedules(currentUser);
@@ -1228,7 +1250,7 @@ export default function AttendancePage() {
           total_hours: null,
           overtime_hours: 0,
           status: 'present',
-          notes: '휴식 시작', // 휴식 정보 저장
+          notes: `휴식 시작: ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`, // 휴식 시작 시각 저장
           updated_at: now
         }, {
           onConflict: 'employee_id,date'
@@ -1241,11 +1263,14 @@ export default function AttendancePage() {
         console.log('✅ attendance 테이블 휴식 정보 저장 성공');
       }
       
+      const breakStartTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      
       setDailyAttendance(prev => ({
         ...prev,
         isCheckedIn: true, // 휴식 중이어도 출근한 상태 유지
         hasBreak: true,
-        breakStartTime: now // 휴식 시작 시간 저장
+        breakStartTime: now, // 휴식 시작 시간 저장
+        breakRecords: [...prev.breakRecords, { type: 'start', time: breakStartTime, timestamp: now }]
       }));
       
       await fetchTodaySchedules(currentUser);
@@ -1717,23 +1742,39 @@ export default function AttendancePage() {
                   <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <p className="text-lg">오늘 등록된 근무 스케줄이 없습니다.</p>
                   
-                  {/* 스케줄이 없어도 휴식 정보 표시 */}
-                  {dailyAttendance.hasBreak && (
+                  {/* 휴식 기록 표시 */}
+                  {(dailyAttendance.hasBreak || dailyAttendance.breakRecords.length > 0) && (
                     <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                      <div className="flex items-center justify-center text-orange-600">
+                      <div className="flex items-center justify-center text-orange-600 mb-3">
                         <Coffee className="h-5 w-5 mr-2" />
-                        <span className="font-semibold">휴식 중</span>
+                        <span className="font-semibold">휴식 기록</span>
                       </div>
-                      <div className="text-sm text-orange-500 mt-1">
-                        휴식 시작: {(() => {
-                          try {
-                            const date = new Date(dailyAttendance.breakStartTime || '');
-                            return format(date, "HH:mm", { locale: ko });
-                          } catch (error) {
-                            return '--:--';
-                          }
-                        })()}
-                      </div>
+                      
+                      {/* 현재 휴식 중인 경우 */}
+                      {dailyAttendance.hasBreak && (
+                        <div className="text-sm text-orange-600 mb-2">
+                          🔴 휴식 중 (시작: {(() => {
+                            try {
+                              const date = new Date(dailyAttendance.breakStartTime || '');
+                              return format(date, "HH:mm", { locale: ko });
+                            } catch (error) {
+                              return '--:--';
+                            }
+                          })()})
+                        </div>
+                      )}
+                      
+                      {/* 휴식 기록 목록 */}
+                      {dailyAttendance.breakRecords.length > 0 && (
+                        <div className="space-y-1">
+                          {dailyAttendance.breakRecords.map((record, index) => (
+                            <div key={index} className="text-xs text-orange-500">
+                              {record.type === 'start' ? '🟡' : '🟢'} 
+                              {record.type === 'start' ? '휴식 시작' : '휴식 종료'}: {record.time}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
