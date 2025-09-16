@@ -125,7 +125,11 @@ export default function TasksPage() {
           customer_name: quickTaskData.customer_name,
           sales_amount: quickTaskData.sales_amount,
           notes: quickTaskData.notes,
-          task_date: new Date().toISOString().split('T')[0]
+          // 한국 시간 기준으로 오늘 날짜 계산
+          task_date: (() => {
+            const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+            return koreaDate.toISOString().split('T')[0];
+          })()
         });
 
       if (error) throw error;
@@ -217,7 +221,9 @@ export default function TasksPage() {
       }, 0) || 0;
 
       // 오늘 매출 계산 (오늘 날짜의 업무만)
-      const today = new Date().toISOString().split('T')[0];
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate.toISOString().split('T')[0];
       const todaySales = tasksData?.filter(t => t.task_date === today).reduce((sum, t) => {
         // 환불 업무는 음수로 계산
         if (t.title && t.title.includes('[환불]')) {

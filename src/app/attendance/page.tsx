@@ -234,7 +234,10 @@ export default function AttendancePage() {
         console.log(`시급제 (employees): ${baseWage.toLocaleString()}원/시간`);
       } else {
         // hourly_wages 테이블에서 시급 조회 (fallback)
-        const wageInfo = await getHourlyWage(currentUser.id, new Date().toISOString().split('T')[0]);
+        // 한국 시간 기준으로 오늘 날짜 계산
+        const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+        const todayStr = koreaDate.toISOString().split('T')[0];
+        const wageInfo = await getHourlyWage(currentUser.id, todayStr);
         baseWage = wageInfo?.base_wage || 12000;
         wageType = 'hourly';
         setMonthlySalary(null);
@@ -269,7 +272,9 @@ export default function AttendancePage() {
       setWageCalculation(calculation);
       
       // 포인트 수당 계산
-      const today = new Date().toISOString().split('T')[0];
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate.toISOString().split('T')[0];
       const pointBonusAmount = await calculatePointBonus(currentUser.id, today);
       setPointBonus(pointBonusAmount);
       
@@ -1082,11 +1087,14 @@ export default function AttendancePage() {
       // 휴식 후 복귀 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
       
       // 최신 스케줄 데이터 가져오기
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const todayStr = koreaDate.toISOString().split('T')[0];
       const { data: currentSchedules, error: scheduleError } = await supabase
         .from('schedules')
         .select('*')
         .eq('employee_id', currentUser.id)
-        .eq('schedule_date', new Date().toISOString().split('T')[0])
+        .eq('schedule_date', todayStr)
         .order('scheduled_start', { ascending: true });
       
       if (scheduleError) throw scheduleError;
@@ -1130,7 +1138,9 @@ export default function AttendancePage() {
       }
       
       // attendance 테이블에서 휴식 정보 제거
-      const today = new Date().toISOString().split('T')[0];
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate2 = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate2.toISOString().split('T')[0];
       
       // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
       const { data: existingAttendance } = await supabase
@@ -1250,11 +1260,14 @@ export default function AttendancePage() {
       // 휴식 시작 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
       
       // 최신 스케줄 데이터 가져오기
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate3 = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const todayStr = koreaDate3.toISOString().split('T')[0];
       const { data: currentSchedules, error: scheduleError } = await supabase
         .from('schedules')
         .select('*')
         .eq('employee_id', currentUser.id)
-        .eq('schedule_date', new Date().toISOString().split('T')[0])
+        .eq('schedule_date', todayStr)
         .order('scheduled_start', { ascending: true });
       
       if (scheduleError) throw scheduleError;
@@ -1279,7 +1292,9 @@ export default function AttendancePage() {
       }
       
       // attendance 테이블에 휴식 정보 저장 (스케줄이 없어도 관리자 페이지에서 감지할 수 있도록)
-      const today = new Date().toISOString().split('T')[0];
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate4 = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate4.toISOString().split('T')[0];
       
       console.log('🔄 attendance 테이블에 휴식 정보 저장 시작...', {
         employee_id: currentUser.id,
