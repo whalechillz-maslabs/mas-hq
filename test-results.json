@@ -114,20 +114,20 @@
   },
   "suites": [
     {
-      "title": "final_admin_test.spec.ts",
-      "file": "final_admin_test.spec.ts",
+      "title": "admin_time_fix_test.spec.ts",
+      "file": "admin_time_fix_test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Final Admin Page Test",
-          "file": "final_admin_test.spec.ts",
+          "title": "Admin Page Time Display Fix Test",
+          "file": "admin_time_fix_test.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "김탁수 로그인 후 관리자 페이지 및 출근 페이지 확인",
+              "title": "관리자 페이지에서 김탁수 출근 시간 확인",
               "ok": true,
               "tags": [],
               "tests": [
@@ -142,40 +142,40 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 14762,
+                      "duration": 14925,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "✅ 로그인 성공\n"
                         },
                         {
-                          "text": "✅ 관리자 페이지 제목 확인\n"
+                          "text": "✅ 관리자 페이지 로딩 완료\n"
                         },
                         {
-                          "text": "✅ 요약 카드들 확인\n"
+                          "text": "김탁수 실제 출근 시간: 실제 출근08:17위치 없음\n"
                         },
                         {
-                          "text": "✅ 테이블 헤더 확인\n"
+                          "text": "✅ 김탁수 출근 시간 형식 확인\n"
                         },
                         {
-                          "text": "출근 시간: 출근: 09/16 08:17\n"
+                          "text": "김탁수 위치 정보: 위치 없음\n"
                         },
                         {
-                          "text": "✅ 출근 시간 형식 확인\n"
+                          "text": "✅ 위치 정보 확인\n"
                         },
                         {
-                          "text": "현재 시간: 오늘 근무 시간\n"
+                          "text": "김탁수 상태: 근무중\n"
                         },
                         {
-                          "text": "✅ 현재 시간 표시 확인\n"
+                          "text": "✅ 상태 확인\n"
                         },
                         {
-                          "text": "🎉 모든 테스트 통과!\n"
+                          "text": "🎉 관리자 페이지 시간 표시 수정 확인 완료!\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-09-15T23:39:58.143Z",
+                      "startTime": "2025-09-15T23:47:02.440Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -183,8 +183,8 @@
                   "status": "expected"
                 }
               ],
-              "id": "10f304a6796bed333699-49395f2059bede761b93",
-              "file": "final_admin_test.spec.ts",
+              "id": "a697f667fe176411a0b9-6251712fa2dcacb691db",
+              "file": "admin_time_fix_test.spec.ts",
               "line": 4,
               "column": 7
             }
@@ -195,8 +195,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-15T23:39:57.713Z",
-    "duration": 16419.401,
+    "startTime": "2025-09-15T23:47:02.008Z",
+    "duration": 17217.693,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

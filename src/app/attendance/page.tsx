@@ -1516,6 +1516,19 @@ export default function AttendancePage() {
                   총 근무: {dailyAttendance.totalWorkTime}
                 </div>
               )}
+              
+              {dailyAttendance.hasBreak && (
+                <div className="text-sm text-orange-600 mt-1">
+                  ☕ 휴식 중 (휴식 시작: {(() => {
+                    try {
+                      const date = new Date(dailyAttendance.breakStartTime || '');
+                      return format(date, "HH:mm", { locale: ko });
+                    } catch (error) {
+                      return '--:--';
+                    }
+                  })()})
+                </div>
+              )}
             </div>
             
             {/* 간단한 버튼들 */}
