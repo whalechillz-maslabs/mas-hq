@@ -392,8 +392,20 @@ ${record.employee_name} 통계 정보:
     }
   };
 
-  // 상태 확인 함수
+  // 상태 확인 함수 - 휴식 상태 감지 로직 추가
   const getActualStatus = (record: AttendanceRecord) => {
+    // 휴식 상태 확인 (schedules 테이블의 status가 'break'인 경우)
+    if (record.status === 'break') {
+      return 'break';
+    }
+    
+    // 휴식 메모 확인 (employee_note에 '휴식 시작'이 있는 경우)
+    if (record.employee_note && 
+        record.employee_note.includes('휴식 시작') && 
+        !record.employee_note.includes('휴식 후 복귀')) {
+      return 'break';
+    }
+    
     if (!record.actual_start) return 'not_checked_in';
     if (!record.actual_end) return 'working';
     return 'completed';
@@ -441,10 +453,10 @@ ${record.employee_name} 통계 정보:
     return matchesSearch;
   });
 
-  // 통계 계산
+  // 통계 계산 - 휴식 상태도 실제로 계산
   const completedCount = filteredRecords.filter(r => getActualStatus(r) === 'completed').length;
   const workingCount = filteredRecords.filter(r => getActualStatus(r) === 'working').length;
-  const breakCount = 0; // 휴식 상태는 별도 로직으로 처리
+  const breakCount = filteredRecords.filter(r => getActualStatus(r) === 'break').length;
   const notCheckedInCount = filteredRecords.filter(r => getActualStatus(r) === 'not_checked_in').length;
   
   const avgHours = filteredRecords.length > 0 
