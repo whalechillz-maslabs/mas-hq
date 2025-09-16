@@ -42,12 +42,14 @@ export default function AttendancePage() {
     checkOutTime: string | null;
     totalWorkTime: string | null;
     hasBreak: boolean;
+    breakStartTime: string | null;
   }>({
     isCheckedIn: false,
     checkInTime: null,
     checkOutTime: null,
     totalWorkTime: null,
-    hasBreak: false
+    hasBreak: false,
+    breakStartTime: null
   });
   
   // 급여 계산 관련 상태
@@ -580,8 +582,15 @@ export default function AttendancePage() {
           
           // schedules 테이블에서 휴식 상태 확인
           let hasBreakFromSchedules = false;
+          let breakStartTime = null;
           if (todayData && todayData.length > 0) {
             hasBreakFromSchedules = todayData.some(s => s.status === 'break');
+            // 휴식 중인 스케줄에서 휴식 시작 시간 찾기
+            const breakSchedule = todayData.find(s => s.status === 'break');
+            if (breakSchedule && breakSchedule.employee_note === '휴식 시작') {
+              // 휴식 시작 시간을 현재 시간으로 설정 (정확한 시간은 데이터베이스에 저장되지 않으므로)
+              breakStartTime = new Date().toISOString();
+            }
           }
           
           setDailyAttendance(prev => ({
@@ -590,7 +599,8 @@ export default function AttendancePage() {
             checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : prev.checkInTime,
             checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
             totalWorkTime: totalWorkTime,
-            hasBreak: hasBreakFromSchedules || prev.hasBreak
+            hasBreak: hasBreakFromSchedules || prev.hasBreak,
+            breakStartTime: breakStartTime || prev.breakStartTime
           }));
           
           console.log('✅ attendance 기반 출근 상태 설정 완료:', {
@@ -1092,7 +1102,8 @@ export default function AttendancePage() {
       setDailyAttendance(prev => ({
         ...prev,
         hasBreak: false,
-        isCheckedIn: true
+        isCheckedIn: true,
+        breakStartTime: null // 휴식 시작 시간 초기화
       }));
       
       await fetchTodaySchedules(currentUser);
@@ -1149,7 +1160,8 @@ export default function AttendancePage() {
       setDailyAttendance(prev => ({
         ...prev,
         isCheckedIn: true, // 휴식 중이어도 출근한 상태 유지
-        hasBreak: true
+        hasBreak: true,
+        breakStartTime: now // 휴식 시작 시간 저장
       }));
       
       await fetchTodaySchedules(currentUser);
