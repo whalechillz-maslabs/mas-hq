@@ -27,6 +27,7 @@ interface AttendanceRecord {
   status: string;
   employee_note: string;
   manager_note: string;
+  notes: string | null;
   schedule_count: number;
   first_schedule_start: string;
   last_schedule_end: string;
@@ -275,6 +276,7 @@ ${record.employee_name} 통계 정보:
             status: schedule.status || 'pending',
             employee_note: schedule.employee_note || "",
             manager_note: schedule.manager_note || "",
+            notes: null,
             schedule_count: 1,
             first_schedule_start: schedule.scheduled_start,
             last_schedule_end: schedule.scheduled_end
@@ -295,6 +297,7 @@ ${record.employee_name} 통계 정보:
               record.total_hours = attendance.total_hours || 0;
               record.overtime_hours = attendance.overtime_hours || 0;
               record.status = attendance.status || record.status;
+              record.notes = attendance.notes || null;
             }
           }
           
@@ -350,9 +353,17 @@ ${record.employee_name} 통계 정보:
   const formatTime = (timeString: string | null) => {
     if (!timeString) return '-';
     
-    // 시간만 있는 경우 (HH:MM:SS 형식)
+    // 시간만 있는 경우 (HH:MM:SS 형식) - UTC 시간을 한국 시간으로 변환
     if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
-      return timeString.substring(0, 5); // HH:MM만 반환
+      try {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        // UTC 시간에 9시간 추가 (한국 시간)
+        const koreaHours = (hours + 9) % 24;
+        return `${koreaHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      } catch (error) {
+        console.error('시간 변환 오류:', error, timeString);
+        return timeString.substring(0, 5); // 파싱 실패 시 원본 반환
+      }
     }
     
     // ISO 날짜 형식인 경우 - 이미 한국 시간이므로 추가 변환 불필요
@@ -404,6 +415,13 @@ ${record.employee_name} 통계 정보:
     if (record.employee_note && 
         record.employee_note.includes('휴식 시작') && 
         !record.employee_note.includes('휴식 후 복귀')) {
+      return 'break';
+    }
+    
+    // attendance 테이블의 notes 필드에서 휴식 상태 확인
+    if (record.notes && 
+        record.notes.includes('휴식 시작') && 
+        !record.notes.includes('휴식 후 복귀')) {
       return 'break';
     }
     
