@@ -1199,8 +1199,6 @@ export default function AttendancePage() {
         // 에러가 발생해도 계속 진행
       }
       
-      const breakEndTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-      
       setDailyAttendance(prev => ({
         ...prev,
         hasBreak: false,
@@ -1337,8 +1335,6 @@ export default function AttendancePage() {
       } else {
         console.log('✅ attendance 테이블 휴식 정보 저장 성공');
       }
-      
-      const breakStartTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       
       setDailyAttendance(prev => ({
         ...prev,
