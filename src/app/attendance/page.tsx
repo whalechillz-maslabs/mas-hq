@@ -1849,6 +1849,60 @@ export default function AttendancePage() {
               )}
             </div>
 
+            {/* 휴식 기록 섹션 - 스케줄이 있어도 표시 */}
+            {(dailyAttendance.hasBreak || dailyAttendance.breakRecords.length > 0) && (
+              <div className="bg-white rounded-lg border p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 text-center flex items-center justify-center">
+                  <Coffee className="h-6 w-6 mr-2 text-orange-600" />
+                  휴식 기록
+                </h2>
+                
+                <div className="space-y-3">
+                  {/* 현재 휴식 중인 경우 */}
+                  {dailyAttendance.hasBreak && (
+                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center text-orange-600">
+                        <Coffee className="h-5 w-5 mr-2" />
+                        <span className="font-semibold">현재 휴식 중</span>
+                      </div>
+                      <div className="text-sm text-orange-500 mt-1">
+                        휴식 시작: {(() => {
+                          try {
+                            const date = new Date(dailyAttendance.breakStartTime || '');
+                            return format(date, "HH:mm", { locale: ko });
+                          } catch (error) {
+                            return '--:--';
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 휴식 기록 목록 */}
+                  {dailyAttendance.breakRecords.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-gray-700">오늘의 휴식 기록</h3>
+                      {dailyAttendance.breakRecords.map((record, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                          <div className="flex items-center">
+                            <span className="text-lg mr-2">
+                              {record.type === 'start' ? '🟡' : '🟢'}
+                            </span>
+                            <span className="text-sm font-medium">
+                              {record.type === 'start' ? '휴식 시작' : '휴식 종료'}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-600 font-mono">
+                            {record.time}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* 이번 달 출근 요약 */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
