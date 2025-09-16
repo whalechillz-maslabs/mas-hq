@@ -1099,6 +1099,29 @@ export default function AttendancePage() {
         if (error) throw error;
       }
       
+      // attendance 테이블에서 휴식 정보 제거
+      const today = new Date().toISOString().split('T')[0];
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert({
+          employee_id: currentUser.id,
+          date: today,
+          check_in_time: null, // 기존 출근 시간 유지
+          check_out_time: null,
+          total_hours: null,
+          overtime_hours: 0,
+          status: 'present',
+          notes: '휴식 후 복귀', // 휴식 종료 정보 저장
+          updated_at: now
+        }, {
+          onConflict: 'employee_id,date'
+        });
+      
+      if (attendanceError) {
+        console.error('attendance 테이블 휴식 정보 제거 실패:', attendanceError);
+        // 에러가 발생해도 계속 진행
+      }
+      
       setDailyAttendance(prev => ({
         ...prev,
         hasBreak: false,
@@ -1155,6 +1178,29 @@ export default function AttendancePage() {
           .eq('id', schedule.id);
         
         if (error) throw error;
+      }
+      
+      // attendance 테이블에 휴식 정보 저장 (스케줄이 없어도 관리자 페이지에서 감지할 수 있도록)
+      const today = new Date().toISOString().split('T')[0];
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert({
+          employee_id: currentUser.id,
+          date: today,
+          check_in_time: null, // 기존 출근 시간 유지
+          check_out_time: null,
+          total_hours: null,
+          overtime_hours: 0,
+          status: 'present',
+          notes: '휴식 시작', // 휴식 정보 저장
+          updated_at: now
+        }, {
+          onConflict: 'employee_id,date'
+        });
+      
+      if (attendanceError) {
+        console.error('attendance 테이블 휴식 정보 저장 실패:', attendanceError);
+        // 에러가 발생해도 계속 진행
       }
       
       setDailyAttendance(prev => ({
