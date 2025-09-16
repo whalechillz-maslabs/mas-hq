@@ -117,8 +117,7 @@ export default function AttendanceManagementPage() {
           check_out_time: checkOutTime,
           total_hours: totalHours,
           overtime_hours: 0,
-          status: checkOutTime ? 'completed' : 'confirmed',
-          auto_checkout: false,
+          status: checkOutTime ? 'completed' : 'present',
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'employee_id,date'
