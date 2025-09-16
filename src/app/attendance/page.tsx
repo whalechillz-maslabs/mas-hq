@@ -593,13 +593,23 @@ export default function AttendancePage() {
             }
           }
           
+          // attendance 테이블에서 휴식 상태 확인 (스케줄이 없어도 확인)
+          let hasBreakFromAttendance = false;
+          if (attendanceData.notes && 
+              attendanceData.notes.includes('휴식 시작') && 
+              !attendanceData.notes.includes('휴식 후 복귀')) {
+            hasBreakFromAttendance = true;
+            // 휴식 시작 시간을 현재 시간으로 설정 (정확한 시간은 데이터베이스에 저장되지 않으므로)
+            breakStartTime = new Date().toISOString();
+          }
+          
           setDailyAttendance(prev => ({
             ...prev,
             isCheckedIn: hasCheckedIn,
             checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : prev.checkInTime,
             checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
             totalWorkTime: totalWorkTime,
-            hasBreak: hasBreakFromSchedules || prev.hasBreak,
+            hasBreak: hasBreakFromSchedules || hasBreakFromAttendance || prev.hasBreak,
             breakStartTime: breakStartTime || prev.breakStartTime
           }));
           
@@ -1192,6 +1202,12 @@ export default function AttendancePage() {
       // attendance 테이블에 휴식 정보 저장 (스케줄이 없어도 관리자 페이지에서 감지할 수 있도록)
       const today = new Date().toISOString().split('T')[0];
       
+      console.log('🔄 attendance 테이블에 휴식 정보 저장 시작...', {
+        employee_id: currentUser.id,
+        date: today,
+        now
+      });
+      
       // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
       const { data: existingAttendance } = await supabase
         .from('attendance')
@@ -1199,6 +1215,8 @@ export default function AttendancePage() {
         .eq('employee_id', currentUser.id)
         .eq('date', today)
         .single();
+      
+      console.log('📊 기존 attendance 데이터:', existingAttendance);
       
       const { error: attendanceError } = await supabase
         .from('attendance')
@@ -1217,8 +1235,10 @@ export default function AttendancePage() {
         });
       
       if (attendanceError) {
-        console.error('attendance 테이블 휴식 정보 저장 실패:', attendanceError);
+        console.error('❌ attendance 테이블 휴식 정보 저장 실패:', attendanceError);
         // 에러가 발생해도 계속 진행
+      } else {
+        console.log('✅ attendance 테이블 휴식 정보 저장 성공');
       }
       
       setDailyAttendance(prev => ({
