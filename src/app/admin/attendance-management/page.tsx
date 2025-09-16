@@ -248,58 +248,58 @@ ${record.employee_name} 통계 정보:
       // 3. 데이터 변환 및 병합
       const employeeMap = new Map();
       
-      // 스케줄 데이터 처리
+      // 스케줄 데이터 처리 - 각 스케줄을 별도 레코드로 처리
       if (scheduleData) {
         scheduleData.forEach(schedule => {
           const employee = schedule.employees;
           if (!employee) return;
 
-          const employeeKey = schedule.employee_id;
+          // 각 스케줄을 고유한 키로 처리 (employee_id + scheduled_start)
+          const scheduleKey = `${schedule.employee_id}_${schedule.scheduled_start}`;
           
-          if (!employeeMap.has(employeeKey)) {
-            employeeMap.set(employeeKey, {
-              id: schedule.id,
-              employee_id: schedule.employee_id,
-              employee_name: employee.name,
-              employee_id_code: employee.employee_id,
-              employment_type: employee.employment_type || "미지정",
-              schedule_date: schedule.schedule_date,
-              scheduled_start: schedule.scheduled_start,
-              scheduled_end: schedule.scheduled_end,
-              actual_start: schedule.actual_start,
-              actual_end: schedule.actual_end,
-              break_minutes: schedule.break_minutes || 0,
-              total_hours: 0,
-              overtime_hours: 0,
-              status: schedule.status || 'pending',
-              employee_note: schedule.employee_note || "",
-              manager_note: schedule.manager_note || "",
-              schedule_count: 1,
-              first_schedule_start: schedule.scheduled_start,
-              last_schedule_end: schedule.scheduled_end
-            });
-          } else {
-            const existing = employeeMap.get(employeeKey);
-            existing.schedule_count += 1;
-            existing.last_schedule_end = schedule.scheduled_end;
-          }
+          employeeMap.set(scheduleKey, {
+            id: schedule.id,
+            employee_id: schedule.employee_id,
+            employee_name: employee.name,
+            employee_id_code: employee.employee_id,
+            employment_type: employee.employment_type || "미지정",
+            schedule_date: schedule.schedule_date,
+            scheduled_start: schedule.scheduled_start,
+            scheduled_end: schedule.scheduled_end,
+            actual_start: schedule.actual_start,
+            actual_end: schedule.actual_end,
+            break_minutes: schedule.break_minutes || 0,
+            total_hours: 0,
+            overtime_hours: 0,
+            status: schedule.status || 'pending',
+            employee_note: schedule.employee_note || "",
+            manager_note: schedule.manager_note || "",
+            schedule_count: 1,
+            first_schedule_start: schedule.scheduled_start,
+            last_schedule_end: schedule.scheduled_end
+          });
         });
       }
 
       // 출근 데이터와 병합
       if (attendanceData) {
         for (const attendance of attendanceData) {
-          const employeeKey = attendance.employee_id;
+          const employeeId = attendance.employee_id;
           
-          if (employeeMap.has(employeeKey)) {
-            const record = employeeMap.get(employeeKey);
-            record.actual_start = attendance.check_in_time ? `${selectedDate}T${attendance.check_in_time}` : null;
-            record.actual_end = attendance.check_out_time ? `${selectedDate}T${attendance.check_out_time}` : null;
-            record.total_hours = attendance.total_hours || 0;
-            record.overtime_hours = attendance.overtime_hours || 0;
-            record.status = attendance.status || record.status;
-          } else {
-            // 출근 데이터만 있고 스케줄이 없는 경우
+          // 해당 직원의 모든 스케줄에 출근 데이터 적용
+          for (const [key, record] of employeeMap.entries()) {
+            if (record.employee_id === employeeId) {
+              record.actual_start = attendance.check_in_time ? `${selectedDate}T${attendance.check_in_time}` : null;
+              record.actual_end = attendance.check_out_time ? `${selectedDate}T${attendance.check_out_time}` : null;
+              record.total_hours = attendance.total_hours || 0;
+              record.overtime_hours = attendance.overtime_hours || 0;
+              record.status = attendance.status || record.status;
+            }
+          }
+          
+          // 출근 데이터만 있고 스케줄이 없는 경우
+          const hasSchedule = Array.from(employeeMap.values()).some(record => record.employee_id === employeeId);
+          if (!hasSchedule) {
             const { data: employee } = await supabase
               .from('employees')
               .select('name, employee_id, employment_type')
@@ -307,7 +307,8 @@ ${record.employee_name} 통계 정보:
               .single();
 
             if (employee) {
-              employeeMap.set(employeeKey, {
+              const noScheduleKey = `${employeeId}_no_schedule`;
+              employeeMap.set(noScheduleKey, {
                 id: attendance.id,
                 employee_id: attendance.employee_id,
                 employee_name: employee.name,
