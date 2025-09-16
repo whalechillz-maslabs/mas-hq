@@ -243,7 +243,7 @@ export default function AttendancePage() {
       
       // 급여 상태 업데이트
       setHourlyWage(baseWage);
-      setWageType(wageType);
+      setWageType('hourly');
       
       // 스케줄된 시간과 실제 근무 시간 계산
       const scheduledHours = todaySchedules.length > 0 ? todaySchedules.reduce((total, schedule) => {
@@ -503,7 +503,9 @@ export default function AttendancePage() {
               checkInTime: analysis.checkInTime,
               checkOutTime: analysis.hasCheckedOut ? analysis.checkOutTime : null,
               totalWorkTime: null,
-              hasBreak: hasBreak
+              hasBreak: hasBreak,
+              breakStartTime: null,
+              breakRecords: []
             });
             
             // 스케줄 로드 후 급여 계산
@@ -1012,8 +1014,7 @@ export default function AttendancePage() {
           check_out_time: checkOutTime,
           total_hours: Math.round(totalHours * 100) / 100,
           overtime_hours: Math.round(overtimeHours * 100) / 100,
-          status: 'completed',
-          location: checkOutLocation
+          status: 'completed'
         };
         
         const { error: attendanceError } = await supabase
@@ -1034,7 +1035,7 @@ export default function AttendancePage() {
         setDailyAttendance(prev => ({
           ...prev,
           isCheckedIn: false,
-          checkOutTime: now,
+          checkOutTime: now.toISOString(),
           totalWorkTime: totalTime
         }));
       } else {
