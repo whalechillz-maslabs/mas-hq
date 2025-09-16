@@ -73,6 +73,7 @@ export default function TasksPage() {
     totalTasks: 0,
     totalPoints: 0,
     totalSales: 0,
+    todaySales: 0,
     pendingTasks: 0,
     completedTasks: 0,
     refundedTasks: 0
@@ -215,6 +216,16 @@ export default function TasksPage() {
         return sum + points;
       }, 0) || 0;
 
+      // 오늘 매출 계산 (오늘 날짜의 업무만)
+      const today = new Date().toISOString().split('T')[0];
+      const todaySales = tasksData?.filter(t => t.task_date === today).reduce((sum, t) => {
+        // 환불 업무는 음수로 계산
+        if (t.title && t.title.includes('[환불]')) {
+          return sum - Math.abs(t.sales_amount || 0);
+        }
+        return sum + (t.sales_amount || 0);
+      }, 0) || 0;
+
       setStats({
         totalTasks,
         totalPoints,
@@ -225,6 +236,7 @@ export default function TasksPage() {
           }
           return sum + (t.sales_amount || 0);
         }, 0) || 0,
+        todaySales, // 오늘 매출 추가
         pendingTasks: tasksData?.filter(t => t.achievement_status === 'pending').length || 0,
         completedTasks: tasksData?.filter(t => t.achievement_status === 'completed').length || 0,
         refundedTasks: tasksData?.filter(t => t.title && t.title.includes('[환불]')).length || 0
@@ -507,7 +519,7 @@ export default function TasksPage() {
               <div>
                 <p className="text-xs text-gray-500">오늘 매출</p>
                 <p className="text-lg font-bold text-green-600">
-                  {stats.totalSales.toLocaleString()}원
+                  {(stats.todaySales || 0).toLocaleString()}원
                 </p>
               </div>
             </div>
