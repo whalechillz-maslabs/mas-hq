@@ -177,7 +177,13 @@ export default function TasksPage() {
 
       setOperationTypes(sortedOperationTypes);
 
-      // 업무 데이터 로드
+      // 선택된 월의 시작일과 종료일 계산
+      const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+      const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+      const startDateStr = startOfMonth.toISOString().split('T')[0];
+      const endDateStr = endOfMonth.toISOString().split('T')[0];
+
+      // 업무 데이터 로드 (선택된 월로 필터링, task_date 기준)
       const { data: tasksData, error: tasksError } = await supabase
         .from('employee_tasks')
         .select(`
@@ -185,7 +191,9 @@ export default function TasksPage() {
           operation_type:operation_types(*)
         `)
         .eq('employee_id', user.id)
-        .order('created_at', { ascending: false });
+        .gte('task_date', startDateStr)
+        .lte('task_date', endDateStr)
+        .order('task_date', { ascending: false });
 
       if (tasksError) {
         console.error('업무 데이터 로드 실패:', tasksError);

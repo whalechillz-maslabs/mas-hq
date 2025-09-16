@@ -140,26 +140,25 @@ export default function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // 오늘의 업무 데이터 가져오기
+      // 오늘의 업무 데이터 가져오기 (task_date 기준)
       const { data: todayTasks } = await supabase
         .from('employee_tasks')
         .select(`
           *,
           operation_type:operation_types(code, name, points)
         `)
-        .gte('created_at', todayStr + 'T00:00:00')
-        .lte('created_at', todayStr + 'T23:59:59')
+        .eq('task_date', todayStr)
         .eq('employee_id', currentUser.id);
 
-      // 이번 달 업무 데이터 가져오기
+      // 이번 달 업무 데이터 가져오기 (task_date 기준)
       const { data: monthlyTasks } = await supabase
         .from('employee_tasks')
         .select(`
           *,
           operation_type:operation_types(code, name, points)
         `)
-        .gte('created_at', startOfMonthStr + 'T00:00:00')
-        .lte('created_at', endOfMonthStr + 'T23:59:59')
+        .gte('task_date', startOfMonthStr)
+        .lte('task_date', endOfMonthStr)
         .eq('employee_id', currentUser.id);
 
       // 오늘의 매출 계산 (OP5 제외)
