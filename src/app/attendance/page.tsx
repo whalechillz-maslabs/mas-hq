@@ -1101,12 +1101,21 @@ export default function AttendancePage() {
       
       // attendance 테이블에서 휴식 정보 제거
       const today = new Date().toISOString().split('T')[0];
+      
+      // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('check_in_time')
+        .eq('employee_id', currentUser.id)
+        .eq('date', today)
+        .single();
+      
       const { error: attendanceError } = await supabase
         .from('attendance')
         .upsert({
           employee_id: currentUser.id,
           date: today,
-          check_in_time: null, // 기존 출근 시간 유지
+          check_in_time: existingAttendance?.check_in_time || null, // 기존 출근 시간 유지
           check_out_time: null,
           total_hours: null,
           overtime_hours: 0,
@@ -1182,12 +1191,21 @@ export default function AttendancePage() {
       
       // attendance 테이블에 휴식 정보 저장 (스케줄이 없어도 관리자 페이지에서 감지할 수 있도록)
       const today = new Date().toISOString().split('T')[0];
+      
+      // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('check_in_time')
+        .eq('employee_id', currentUser.id)
+        .eq('date', today)
+        .single();
+      
       const { error: attendanceError } = await supabase
         .from('attendance')
         .upsert({
           employee_id: currentUser.id,
           date: today,
-          check_in_time: null, // 기존 출근 시간 유지
+          check_in_time: existingAttendance?.check_in_time || null, // 기존 출근 시간 유지
           check_out_time: null,
           total_hours: null,
           overtime_hours: 0,
@@ -1678,6 +1696,26 @@ export default function AttendancePage() {
                 <div className="text-center py-8 text-gray-500">
                   <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <p className="text-lg">오늘 등록된 근무 스케줄이 없습니다.</p>
+                  
+                  {/* 스케줄이 없어도 휴식 정보 표시 */}
+                  {dailyAttendance.hasBreak && (
+                    <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center justify-center text-orange-600">
+                        <Coffee className="h-5 w-5 mr-2" />
+                        <span className="font-semibold">휴식 중</span>
+                      </div>
+                      <div className="text-sm text-orange-500 mt-1">
+                        휴식 시작: {(() => {
+                          try {
+                            const date = new Date(dailyAttendance.breakStartTime || '');
+                            return format(date, "HH:mm", { locale: ko });
+                          } catch (error) {
+                            return '--:--';
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
