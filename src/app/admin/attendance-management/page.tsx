@@ -120,6 +120,8 @@ export default function AttendanceManagementPage() {
           status: checkOutTime ? 'completed' : 'confirmed',
           auto_checkout: false,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'employee_id,date'
         });
       
       if (updateError) {
