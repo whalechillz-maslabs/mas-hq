@@ -1195,8 +1195,21 @@ export default function AttendancePage() {
       }
       
       if (attendanceError) {
-        console.error('attendance 테이블 휴식 정보 제거 실패:', attendanceError);
-        // 에러가 발생해도 계속 진행
+        console.error('❌ attendance 테이블 휴식 정보 저장 실패 (복귀):', attendanceError);
+        alert(`휴식 복귀 정보 저장 실패: ${attendanceError.message}`);
+        throw attendanceError; // 에러를 다시 던져서 함수 중단
+      } else {
+        console.log('✅ attendance 테이블 휴식 복귀 정보 저장 성공');
+        
+        // 저장 성공 후 실제 데이터 확인
+        const { data: verifyData } = await supabase
+          .from('attendance')
+          .select('notes')
+          .eq('employee_id', currentUser.id)
+          .eq('date', today)
+          .single();
+        
+        console.log('🔍 저장 후 확인 (복귀):', verifyData);
       }
       
       setDailyAttendance(prev => ({
@@ -1331,9 +1344,20 @@ export default function AttendancePage() {
       
       if (attendanceError) {
         console.error('❌ attendance 테이블 휴식 정보 저장 실패:', attendanceError);
-        // 에러가 발생해도 계속 진행
+        alert(`휴식 정보 저장 실패: ${attendanceError.message}`);
+        throw attendanceError; // 에러를 다시 던져서 함수 중단
       } else {
         console.log('✅ attendance 테이블 휴식 정보 저장 성공');
+        
+        // 저장 성공 후 실제 데이터 확인
+        const { data: verifyData } = await supabase
+          .from('attendance')
+          .select('notes')
+          .eq('employee_id', currentUser.id)
+          .eq('date', today)
+          .single();
+        
+        console.log('🔍 저장 후 확인:', verifyData);
       }
       
       setDailyAttendance(prev => ({
