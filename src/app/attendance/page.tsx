@@ -71,21 +71,19 @@ export default function AttendancePage() {
         if (dailyAttendance.checkInTime) {
           const now = new Date();
           
-          // checkInTime이 UTC 시간이므로 한국 시간으로 변환
+          // checkInTime이 이미 한국 시간이므로 추가 변환 불필요
           const start = new Date(dailyAttendance.checkInTime);
-          const koreaStart = new Date(start.getTime() + (9 * 60 * 60 * 1000));
           
           // 디버깅 로그 추가
           console.log('🕐 실시간 근무 시간 계산:', {
             checkInTime: dailyAttendance.checkInTime,
             start: start.toISOString(),
-            koreaStart: koreaStart.toISOString(),
             now: now.toISOString(),
-            startTime: koreaStart.getTime(),
+            startTime: start.getTime(),
             nowTime: now.getTime()
           });
           
-          const diffMs = now.getTime() - koreaStart.getTime();
+          const diffMs = now.getTime() - start.getTime();
           const hours = Math.floor(diffMs / (1000 * 60 * 60));
           const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           const totalHours = hours + (minutes / 60);
@@ -1515,9 +1513,8 @@ export default function AttendancePage() {
                   출근: {(() => {
                     try {
                       const date = new Date(dailyAttendance.checkInTime);
-                      // UTC 시간을 한국 시간으로 변환
-                      const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
-                      return format(koreaTime, "MM/dd HH:mm", { locale: ko });
+                      // dailyAttendance.checkInTime이 이미 한국 시간이므로 추가 변환 불필요
+                      return format(date, "MM/dd HH:mm", { locale: ko });
                     } catch (error) {
                       console.error('출근 시간 변환 오류:', error);
                       return dailyAttendance.checkInTime;
