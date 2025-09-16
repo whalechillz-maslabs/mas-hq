@@ -539,6 +539,17 @@ export default function AttendancePage() {
           console.error('❌ attendance 데이터 조회 오류:', attendanceError);
         } else if (attendanceData) {
           console.log('✅ attendance 데이터 조회 성공:', attendanceData);
+          console.log('🔍 attendance 데이터 상세 분석:', {
+            id: attendanceData.id,
+            employee_id: attendanceData.employee_id,
+            date: attendanceData.date,
+            check_in_time: attendanceData.check_in_time,
+            check_out_time: attendanceData.check_out_time,
+            notes: attendanceData.notes,
+            text: attendanceData.text,
+            sonb: attendanceData.sonb,
+            allKeys: Object.keys(attendanceData)
+          });
           
           // attendance 데이터를 기반으로 출근 상태 설정 (스케줄 데이터보다 우선)
           const hasCheckedIn = !!attendanceData.check_in_time;
@@ -606,26 +617,32 @@ export default function AttendancePage() {
           let hasBreakFromAttendance = false;
           let breakRecords: Array<{ type: 'start' | 'end'; time: string; timestamp: string }> = [];
           
-          if (attendanceData.notes) {
+          // 휴식 기록을 text 컬럼에서 확인 (Supabase 대시보드에서 확인한 실제 저장 위치)
+          const breakData = attendanceData.text || attendanceData.notes;
+          console.log('🔍 휴식 데이터 확인:', { text: attendanceData.text, notes: attendanceData.notes, breakData });
+          
+          if (breakData) {
             // 휴식 시작 시각 추출
-            const breakStartMatch = attendanceData.notes.match(/휴식 시작: (\d{2}:\d{2})/);
+            const breakStartMatch = breakData.match(/휴식 시작: (\d{2}:\d{2})/);
             if (breakStartMatch) {
               const startTime = breakStartMatch[1];
               breakRecords.push({ type: 'start', time: startTime, timestamp: attendanceData.updated_at });
               
               // 휴식 후 복귀가 없으면 현재 휴식 중
-              if (!attendanceData.notes.includes('휴식 후 복귀')) {
+              if (!breakData.includes('휴식 후 복귀')) {
                 hasBreakFromAttendance = true;
                 breakStartTime = new Date().toISOString();
               }
             }
             
             // 휴식 종료 시각 추출
-            const breakEndMatch = attendanceData.notes.match(/휴식 후 복귀: (\d{2}:\d{2})/);
+            const breakEndMatch = breakData.match(/휴식 후 복귀: (\d{2}:\d{2})/);
             if (breakEndMatch) {
               const endTime = breakEndMatch[1];
               breakRecords.push({ type: 'end', time: endTime, timestamp: attendanceData.updated_at });
             }
+            
+            console.log('📊 휴식 기록 파싱 결과:', { hasBreakFromAttendance, breakRecords });
           }
           
           setDailyAttendance(prev => ({
@@ -1145,7 +1162,7 @@ export default function AttendancePage() {
       // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
       const { data: existingAttendance } = await supabase
         .from('attendance')
-        .select('check_in_time, notes')
+        .select('check_in_time, notes, text')
         .eq('employee_id', currentUser.id)
         .eq('date', today)
         .single();
@@ -1155,11 +1172,12 @@ export default function AttendancePage() {
       // 휴식 종료 시각 생성
       const breakEndTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       
-      // 기존 notes에 휴식 종료 정보 추가
+      // 기존 text/notes에 휴식 종료 정보 추가
       let newNotes = `휴식 후 복귀: ${breakEndTime}`;
-      if (existingAttendance?.notes) {
-        // 기존 notes가 있으면 추가
-        newNotes = `${existingAttendance.notes}, 휴식 후 복귀: ${breakEndTime}`;
+      const existingBreakData = existingAttendance?.text || existingAttendance?.notes;
+      if (existingBreakData) {
+        // 기존 휴식 기록이 있으면 추가
+        newNotes = `${existingBreakData}, 휴식 후 복귀: ${breakEndTime}`;
       }
       
       console.log('📝 새로운 notes (복귀):', newNotes);
@@ -1179,7 +1197,7 @@ export default function AttendancePage() {
         const { error } = await supabase
           .from('attendance')
           .update({
-            notes: newNotes,
+            text: newNotes, // text 컬럼에 휴식 기록 저장
             updated_at: now
           })
           .eq('id', existingRecord.id);
@@ -1197,7 +1215,7 @@ export default function AttendancePage() {
             total_hours: null,
             overtime_hours: 0,
             status: 'present',
-            notes: newNotes,
+            text: newNotes, // text 컬럼에 휴식 기록 저장
             created_at: now,
             updated_at: now
           });
@@ -1214,7 +1232,7 @@ export default function AttendancePage() {
         // 저장 성공 후 실제 데이터 확인
         const { data: verifyData } = await supabase
           .from('attendance')
-          .select('notes')
+          .select('notes, text')
           .eq('employee_id', currentUser.id)
           .eq('date', today)
           .single();
@@ -1310,7 +1328,7 @@ export default function AttendancePage() {
       
       const { data: existingAttendance, error: existingError } = await supabase
         .from('attendance')
-        .select('check_in_time, notes')
+        .select('check_in_time, notes, text')
         .eq('employee_id', currentUser.id)
         .eq('date', today)
         .single();
@@ -1325,11 +1343,12 @@ export default function AttendancePage() {
       // 휴식 시작 시각 생성
       const breakStartTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       
-      // 기존 notes에 휴식 시작 정보 추가 (기존 휴식 기록이 있으면 유지)
+      // 기존 text/notes에 휴식 시작 정보 추가 (기존 휴식 기록이 있으면 유지)
       let newNotes = `휴식 시작: ${breakStartTime}`;
-      if (existingAttendance?.notes) {
-        // 기존 notes가 있으면 추가
-        newNotes = `${existingAttendance.notes}, 휴식 시작: ${breakStartTime}`;
+      const existingBreakData = existingAttendance?.text || existingAttendance?.notes;
+      if (existingBreakData) {
+        // 기존 휴식 기록이 있으면 추가
+        newNotes = `${existingBreakData}, 휴식 시작: ${breakStartTime}`;
       }
       
       console.log('📝 새로운 notes:', newNotes);
@@ -1359,7 +1378,7 @@ export default function AttendancePage() {
         const { error, data } = await supabase
           .from('attendance')
           .update({
-            notes: newNotes,
+            text: newNotes, // text 컬럼에 휴식 기록 저장
             updated_at: now
           })
           .eq('id', existingRecord.id)
@@ -1385,7 +1404,7 @@ export default function AttendancePage() {
             total_hours: null,
             overtime_hours: 0,
             status: 'present',
-            notes: newNotes,
+            text: newNotes, // text 컬럼에 휴식 기록 저장
             created_at: now,
             updated_at: now
           })
@@ -1405,7 +1424,7 @@ export default function AttendancePage() {
         // 저장 성공 후 실제 데이터 확인
         const { data: verifyData } = await supabase
           .from('attendance')
-          .select('notes')
+          .select('notes, text')
           .eq('employee_id', currentUser.id)
           .eq('date', today)
           .single();
