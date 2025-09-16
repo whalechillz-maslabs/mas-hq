@@ -1232,13 +1232,20 @@ export default function AttendancePage() {
 
   // 휴식 시작 함수 추가
   const handleBreakStart = async () => {
-    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    console.log('🚀 handleBreakStart 함수 시작');
+    
+    if (checkingIn) {
+      console.log('⚠️ 이미 처리 중이므로 중복 실행 방지');
+      return; // 이미 처리 중이면 중복 실행 방지
+    }
     
     try {
+      console.log('✅ 휴식 시작 처리 시작');
       setCheckingIn(true);
       setError(null); // 에러 상태 초기화
       
       const now = new Date().toISOString();
+      console.log('⏰ 현재 시간:', now);
       
       // 휴식 시작 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
       
@@ -1281,14 +1288,24 @@ export default function AttendancePage() {
       });
       
       // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
-      const { data: existingAttendance } = await supabase
+      console.log('🔍 기존 attendance 데이터 조회 중...', {
+        employee_id: currentUser.id,
+        date: today
+      });
+      
+      const { data: existingAttendance, error: existingError } = await supabase
         .from('attendance')
         .select('check_in_time, notes')
         .eq('employee_id', currentUser.id)
         .eq('date', today)
         .single();
       
+      if (existingError && existingError.code !== 'PGRST116') {
+        console.error('❌ 기존 attendance 데이터 조회 실패:', existingError);
+      }
+      
       console.log('📊 기존 attendance 데이터:', existingAttendance);
+      console.log('📊 기존 attendance 조회 에러:', existingError);
       
       // 휴식 시작 시각 생성
       const breakStartTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -1303,29 +1320,47 @@ export default function AttendancePage() {
       console.log('📝 새로운 notes:', newNotes);
       
       // 먼저 기존 레코드가 있는지 확인
-      const { data: existingRecord } = await supabase
+      console.log('🔍 기존 레코드 존재 여부 확인 중...');
+      const { data: existingRecord, error: recordCheckError } = await supabase
         .from('attendance')
         .select('id')
         .eq('employee_id', currentUser.id)
         .eq('date', today)
         .single();
       
+      console.log('📊 기존 레코드 확인 결과:', {
+        existingRecord,
+        recordCheckError
+      });
+      
       let attendanceError;
       if (existingRecord) {
         // 기존 레코드가 있으면 업데이트
-        console.log('🔄 기존 레코드 업데이트...');
-        const { error } = await supabase
+        console.log('🔄 기존 레코드 업데이트 시작...', {
+          recordId: existingRecord.id,
+          newNotes
+        });
+        
+        const { error, data } = await supabase
           .from('attendance')
           .update({
             notes: newNotes,
             updated_at: now
           })
-          .eq('id', existingRecord.id);
+          .eq('id', existingRecord.id)
+          .select();
+        
         attendanceError = error;
+        console.log('📊 업데이트 결과:', { error, data });
       } else {
         // 기존 레코드가 없으면 새로 생성
-        console.log('🆕 새 레코드 생성...');
-        const { error } = await supabase
+        console.log('🆕 새 레코드 생성 시작...', {
+          employee_id: currentUser.id,
+          date: today,
+          notes: newNotes
+        });
+        
+        const { error, data } = await supabase
           .from('attendance')
           .insert({
             employee_id: currentUser.id,
@@ -1338,8 +1373,11 @@ export default function AttendancePage() {
             notes: newNotes,
             created_at: now,
             updated_at: now
-          });
+          })
+          .select();
+        
         attendanceError = error;
+        console.log('📊 생성 결과:', { error, data });
       }
       
       if (attendanceError) {
