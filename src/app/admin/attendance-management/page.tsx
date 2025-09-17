@@ -119,15 +119,25 @@ export default function AttendanceManagementPage() {
       
       console.log('👤 직원 정보 조회 성공:', employeeData);
       
-      // 근무 시간 계산
+      // 근무 시간 계산 (정리된 시간 사용)
       let totalHours = 0;
-      if (checkInTime && checkOutTime) {
-        const startTime = new Date(`2000-01-01T${checkInTime}`);
-        const endTime = new Date(`2000-01-01T${checkOutTime}`);
+      const cleanCheckInTime = checkInTime && checkInTime.trim() !== '' ? checkInTime.trim() : null;
+      const cleanCheckOutTime = checkOutTime && checkOutTime.trim() !== '' ? checkOutTime.trim() : null;
+      
+      if (cleanCheckInTime && cleanCheckOutTime) {
+        const startTime = new Date(`2000-01-01T${cleanCheckInTime}`);
+        const endTime = new Date(`2000-01-01T${cleanCheckOutTime}`);
         totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
       }
       
       console.log('📊 계산된 근무 시간:', totalHours);
+      
+      console.log('🧹 정리된 시간:', {
+        originalCheckIn: checkInTime,
+        originalCheckOut: checkOutTime,
+        cleanCheckIn: cleanCheckInTime,
+        cleanCheckOut: cleanCheckOutTime
+      });
       
       // attendance 테이블 업데이트 또는 생성 (실제 UUID 사용)
       const { error: updateError } = await supabase
@@ -135,11 +145,11 @@ export default function AttendanceManagementPage() {
         .upsert({
           employee_id: employeeData.id, // 실제 UUID 사용
           date: date,
-          check_in_time: checkInTime,
-          check_out_time: checkOutTime,
+          check_in_time: cleanCheckInTime, // 정리된 시간 사용
+          check_out_time: cleanCheckOutTime, // 정리된 시간 사용
           total_hours: totalHours,
           overtime_hours: 0,
-          status: checkOutTime ? 'completed' : 'present',
+          status: cleanCheckOutTime ? 'completed' : 'present',
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'employee_id,date'
