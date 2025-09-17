@@ -839,7 +839,27 @@ export default function AttendanceManagementPage() {
             if (record.employee_id === employeeId) {
               record.actual_start = attendance.check_in_time ? `${selectedDate}T${attendance.check_in_time}` : null;
               record.actual_end = attendance.check_out_time ? `${selectedDate}T${attendance.check_out_time}` : null;
-              record.total_hours = attendance.total_hours || 0;
+              
+              // 근무시간 계산 (휴식시간 공제)
+              let calculatedTotalHours = 0;
+              if (attendance.check_in_time && attendance.check_out_time) {
+                const startTime = new Date(`2000-01-01T${attendance.check_in_time}`);
+                const endTime = new Date(`2000-01-01T${attendance.check_out_time}`);
+                const grossHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                
+                // 휴식시간 공제
+                const breakMinutes = calculateTotalBreakMinutes(attendance.notes);
+                const breakHours = breakMinutes / 60;
+                calculatedTotalHours = Math.max(0, grossHours - breakHours);
+                
+                console.log(`📊 ${record.employee_name} 근무시간 재계산:`, {
+                  grossHours: grossHours.toFixed(2),
+                  breakHours: breakHours.toFixed(2),
+                  netHours: calculatedTotalHours.toFixed(2)
+                });
+              }
+              
+              record.total_hours = calculatedTotalHours;
               record.overtime_hours = attendance.overtime_hours || 0;
               record.status = attendance.status || record.status;
               record.notes = attendance.notes || null;
@@ -858,6 +878,25 @@ export default function AttendanceManagementPage() {
               .single();
 
             if (employee) {
+              // 근무시간 계산 (휴식시간 공제)
+              let calculatedTotalHours = 0;
+              if (attendance.check_in_time && attendance.check_out_time) {
+                const startTime = new Date(`2000-01-01T${attendance.check_in_time}`);
+                const endTime = new Date(`2000-01-01T${attendance.check_out_time}`);
+                const grossHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                
+                // 휴식시간 공제
+                const breakMinutes = calculateTotalBreakMinutes(attendance.notes);
+                const breakHours = breakMinutes / 60;
+                calculatedTotalHours = Math.max(0, grossHours - breakHours);
+                
+                console.log(`📊 ${employee.name} (스케줄 없음) 근무시간 재계산:`, {
+                  grossHours: grossHours.toFixed(2),
+                  breakHours: breakHours.toFixed(2),
+                  netHours: calculatedTotalHours.toFixed(2)
+                });
+              }
+              
               const noScheduleKey = `${employeeId}_no_schedule`;
               employeeMap.set(noScheduleKey, {
                 id: attendance.id,
@@ -871,7 +910,7 @@ export default function AttendanceManagementPage() {
                 actual_start: attendance.check_in_time ? `${selectedDate}T${attendance.check_in_time}` : null,
                 actual_end: attendance.check_out_time ? `${selectedDate}T${attendance.check_out_time}` : null,
                 break_minutes: 0,
-                total_hours: attendance.total_hours || 0,
+                total_hours: calculatedTotalHours,
                 overtime_hours: attendance.overtime_hours || 0,
                 status: attendance.status || 'pending',
                 employee_note: "",
