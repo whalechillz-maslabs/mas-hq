@@ -145,15 +145,15 @@ export default function AttendanceManagementPage() {
   const calculateTotalBreakMinutes = (notes: string | null): number => {
     if (!notes) return 0;
     
-    let totalMinutes = 0;
-    
-    // 관리자가 입력한 휴식 시간 확인
+    // 관리자가 입력한 휴식 시간 확인 (최우선)
     const adminBreakMatch = notes.match(/관리자 입력 휴식 시간: (\d+)분/);
     if (adminBreakMatch) {
+      console.log('📝 관리자 입력 휴식 시간 사용:', parseInt(adminBreakMatch[1]), '분');
       return parseInt(adminBreakMatch[1]);
     }
     
-    // 휴식 시작과 종료 시간을 찾아서 총 휴식 시간 계산
+    // 직원이 버튼으로 입력한 휴식 시간 계산
+    let totalMinutes = 0;
     const breakStartMatches = notes.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
     const breakEndMatches = notes.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
     
@@ -630,6 +630,7 @@ ${record.employee_name} 통계 정보:
     const breakTimeInput = prompt(
       `${record.employee_name}의 휴식 시간을 입력하세요:\n\n` +
       `현재: ${currentBreakHours}시간 ${currentBreakMins}분\n\n` +
+      `⚠️ 주의: 관리자 입력 시 기존 직원 휴식 기록이 덮어쓰기됩니다.\n\n` +
       `입력 형식: "1시간 30분" 또는 "90분" 또는 "1.5시간"`,
       `${currentBreakHours}시간 ${currentBreakMins}분`
     );
@@ -684,7 +685,7 @@ ${record.employee_name} 통계 정보:
         newBreakMinutes: totalMinutes
       });
 
-      // attendance 테이블에서 휴식 시간을 notes 필드에 저장
+      // attendance 테이블에서 휴식 시간을 notes 필드에 저장 (기존 휴식 기록 덮어쓰기)
       const { error: updateError } = await supabase
         .from('attendance')
         .update({
