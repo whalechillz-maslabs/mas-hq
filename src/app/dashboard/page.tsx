@@ -25,9 +25,8 @@ interface DashboardData {
   };
   personalKPI: {
     phoneSales: number;
-    offlineSatisfaction: number | string;
-    onlineSales: number;
-    contentViews: number | string;
+    storeSales: number;
+    csResponse: number;
   };
   teamKPI: {
     totalSales: number;
@@ -197,18 +196,24 @@ export default function DashboardPage() {
 
       // 개인 KPI (실제 데이터)
       const phoneSales = monthlyTasks?.filter(task => 
-        task.operation_type?.code === 'OP1' || task.operation_type?.code === 'OP2'
+        (task.operation_type?.code === 'OP1' || task.operation_type?.code === 'OP2') && 
+        !task.title?.includes('[환불]')
       ).length || 0;
 
-      const offlineSales = monthlyTasks?.filter(task => 
-        task.operation_type?.code === 'OP3' || task.operation_type?.code === 'OP4'
+      const storeSales = monthlyTasks?.filter(task => 
+        (task.operation_type?.code === 'OP3' || task.operation_type?.code === 'OP4') && 
+        !task.title?.includes('[환불]')
+      ).length || 0;
+
+      const csResponse = monthlyTasks?.filter(task => 
+        task.operation_type?.code === 'OP5' && 
+        !task.title?.includes('[환불]')
       ).length || 0;
 
       const personalKPI = {
         phoneSales: phoneSales,
-        offlineSatisfaction: 'Na', // 만족도는 별도 데이터 필요
-        onlineSales: offlineSales,
-        contentViews: 'Na' // 콘텐츠 조회수는 별도 데이터 필요
+        storeSales: storeSales,
+        csResponse: csResponse
       };
 
       // 전체 팀의 이번 달 업무 데이터 가져오기 (협업 성과 계산용)
@@ -310,9 +315,8 @@ export default function DashboardPage() {
         },
         personalKPI: {
           phoneSales: 7,
-          offlineSatisfaction: 'Na',
-          onlineSales: 3,
-          contentViews: 'Na'
+          storeSales: 3,
+          csResponse: 2
         },
         teamKPI: {
           totalSales: 35000000,
@@ -588,52 +592,40 @@ export default function DashboardPage() {
             <User className="h-6 w-6 mr-3 text-indigo-600" />
               개인 KPI
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-indigo-600">전화 판매 건수</p>
-                  <p className="text-2xl font-bold text-indigo-900">{data?.personalKPI?.phoneSales || 0}건</p>
-                </div>
-                <Phone className="h-8 w-8 text-indigo-600" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Phone className="h-6 w-6 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-800">전화 판매 건수</span>
               </div>
+              <p className="text-2xl font-bold text-blue-600">
+                {data?.personalKPI?.phoneSales || 0}건
+              </p>
+              <p className="text-xs text-blue-500 mt-1">OP1, OP2 합계</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-600">오프라인 시타 만족도</p>
-                  <p className="text-2xl font-bold text-green-900">
-                  {typeof data?.personalKPI?.offlineSatisfaction === 'number' 
-                    ? `${data.personalKPI.offlineSatisfaction}%` 
-                    : data?.personalKPI?.offlineSatisfaction || 'Na'}
-                </p>
-                </div>
-                <Star className="h-8 w-8 text-green-600" />
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <ShoppingCart className="h-6 w-6 text-green-600 mr-2" />
+                <span className="text-sm font-medium text-green-800">매장 판매 건수</span>
               </div>
+              <p className="text-2xl font-bold text-green-600">
+                {data?.personalKPI?.storeSales || 0}건
+              </p>
+              <p className="text-xs text-green-500 mt-1">OP3, OP4 합계</p>
             </div>
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600">온라인 판매 성사</p>
-                  <p className="text-2xl font-bold text-blue-900">{data?.personalKPI?.onlineSales || 0}건</p>
-                </div>
-                <ShoppingCart className="h-8 w-8 text-blue-600" />
+            
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <BarChart3 className="h-6 w-6 text-purple-600 mr-2" />
+                <span className="text-sm font-medium text-purple-800">CS 응대</span>
               </div>
+              <p className="text-2xl font-bold text-purple-600">
+                {data?.personalKPI?.csResponse || 0}건
+              </p>
+              <p className="text-xs text-purple-500 mt-1">OP5</p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-600">콘텐츠 조회수</p>
-                  <p className="text-2xl font-bold text-purple-900">
-                  {typeof data?.personalKPI?.contentViews === 'number' 
-                    ? formatCurrency(data.personalKPI.contentViews) 
-                    : data?.personalKPI?.contentViews || 'Na'}
-                </p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-purple-600" />
-              </div>
-              </div>
-            </div>
+          </div>
           </div>
 
           {/* 협업 성과 */}
