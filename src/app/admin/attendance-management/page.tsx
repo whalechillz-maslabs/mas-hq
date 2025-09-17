@@ -403,7 +403,7 @@ ${record.employee_name} 통계 정보:
     }
   };
 
-  // 상태 확인 함수 - 휴식 상태 감지 로직 추가
+  // 상태 확인 함수 - 휴식 상태 감지 로직 및 시간 기반 상태 판단 추가
   const getActualStatus = (record: AttendanceRecord) => {
     // 휴식 상태 확인 (schedules 테이블의 status가 'break'인 경우)
     if (record.status === 'break') {
@@ -424,9 +424,32 @@ ${record.employee_name} 통계 정보:
       return 'break';
     }
     
-    if (!record.actual_start) return 'not_checked_in';
-    if (!record.actual_end) return 'working';
-    return 'completed';
+    // 출근한 경우
+    if (record.actual_start) {
+      if (!record.actual_end) return 'working';
+      return 'completed';
+    }
+    
+    // 출근하지 않은 경우 - 스케줄 시간을 고려한 상태 판단
+    if (record.scheduled_start) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes(); // 현재 시간을 분으로 변환
+      
+      // 스케줄 시작 시간을 분으로 변환
+      const [scheduleHour, scheduleMinute] = record.scheduled_start.split(':').map(Number);
+      const scheduleStartTime = scheduleHour * 60 + scheduleMinute;
+      
+      // 아직 출근 시간이 안된 경우
+      if (currentTime < scheduleStartTime) {
+        return 'pending';
+      }
+      
+      // 출근 시간이 지났는데 출근하지 않은 경우
+      return 'not_checked_in';
+    }
+    
+    // 스케줄이 없는 경우
+    return 'not_checked_in';
   };
 
   // 상태별 스타일
@@ -436,6 +459,7 @@ ${record.employee_name} 통계 정보:
       case 'working': return 'text-blue-600 bg-blue-100';
       case 'break': return 'text-orange-600 bg-orange-100';
       case 'not_checked_in': return 'text-red-600 bg-red-100';
+      case 'pending': return 'text-gray-600 bg-gray-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -447,6 +471,7 @@ ${record.employee_name} 통계 정보:
       case 'working': return <Clock className="w-4 h-4" />;
       case 'break': return <Coffee className="w-4 h-4" />;
       case 'not_checked_in': return <XCircle className="w-4 h-4" />;
+      case 'pending': return <AlertCircle className="w-4 h-4" />;
       default: return <AlertCircle className="w-4 h-4" />;
     }
   };
@@ -458,6 +483,7 @@ ${record.employee_name} 통계 정보:
       case 'working': return '근무중';
       case 'break': return '휴식중';
       case 'not_checked_in': return '미출근';
+      case 'pending': return '대기중';
       default: return '대기';
     }
   };
@@ -476,6 +502,7 @@ ${record.employee_name} 통계 정보:
   const workingCount = filteredRecords.filter(r => getActualStatus(r) === 'working').length;
   const breakCount = filteredRecords.filter(r => getActualStatus(r) === 'break').length;
   const notCheckedInCount = filteredRecords.filter(r => getActualStatus(r) === 'not_checked_in').length;
+  const pendingCount = filteredRecords.filter(r => getActualStatus(r) === 'pending').length;
   
   const avgHours = filteredRecords.length > 0 
     ? filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / filteredRecords.length 
