@@ -579,6 +579,42 @@ ${record.employee_name} 통계 정보:
     }
   };
 
+  // 출근 기록 삭제 함수
+  const deleteAttendanceRecord = async (record: AttendanceRecord) => {
+    if (!confirm(`${record.employee_name}의 ${record.schedule_date} 출근 기록을 완전히 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ 출근 기록 삭제 시작:', {
+        attendanceId: record.id,
+        employeeName: record.employee_name,
+        scheduleDate: record.schedule_date
+      });
+
+      // attendance 테이블에서 출근 기록 삭제
+      const { error: deleteError } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('id', record.id);
+
+      if (deleteError) {
+        console.error('❌ 출근 기록 삭제 실패:', deleteError);
+        alert(`출근 기록 삭제에 실패했습니다: ${deleteError.message}`);
+        return;
+      }
+
+      console.log('✅ 출근 기록 삭제 완료');
+      alert('출근 기록이 성공적으로 삭제되었습니다.');
+      
+      // 데이터 다시 로드
+      loadData();
+    } catch (error: any) {
+      console.error('출근 기록 삭제 오류:', error);
+      alert(`출근 기록 삭제 중 오류가 발생했습니다: ${error.message}`);
+    }
+  };
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -1233,11 +1269,19 @@ ${record.employee_name} 통계 정보:
                             >
                               <BarChart3 className="w-4 h-4" />
                             </button>
-                            {record.scheduled_start && record.scheduled_end && (
+                            {record.scheduled_start && record.scheduled_end ? (
                               <button 
                                 onClick={() => deleteSchedule(record)}
                                 className="text-red-600 hover:text-red-900" 
                                 title="스케줄 삭제"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => deleteAttendanceRecord(record)}
+                                className="text-red-600 hover:text-red-900" 
+                                title="출근 기록 삭제"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
