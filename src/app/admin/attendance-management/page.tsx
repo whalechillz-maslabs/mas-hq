@@ -685,14 +685,46 @@ ${record.employee_name} 통계 정보:
         newBreakMinutes: totalMinutes
       });
 
-      // attendance 테이블에서 휴식 시간을 notes 필드에 저장 (기존 휴식 기록 덮어쓰기)
-      const { error: updateError } = await supabase
+      // attendance 레코드를 직원(UUID) + 날짜로 조회 후 업데이트/생성
+      // record.employee_id는 UUID, record.schedule_date는 YYYY-MM-DD
+      const { data: existingAttendance, error: findError } = await supabase
         .from('attendance')
-        .update({
-          notes: `관리자 입력 휴식 시간: ${totalMinutes}분 (${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분)`,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', record.id);
+        .select('id')
+        .eq('employee_id', record.employee_id)
+        .eq('date', record.schedule_date)
+        .single();
+
+      if (findError && findError.code !== 'PGRST116') {
+        // PGRST116: No rows found
+        console.error('❌ 휴식 시간 수정 - 기존 출근 기록 조회 실패:', findError);
+      }
+
+      const notesValue = `관리자 입력 휴식 시간: ${totalMinutes}분 (${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분)`;
+
+      let updateError: any = null;
+      if (existingAttendance && existingAttendance.id) {
+        // 업데이트
+        const { error } = await supabase
+          .from('attendance')
+          .update({
+            notes: notesValue,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingAttendance.id);
+        updateError = error;
+      } else {
+        // 없으면 생성 (최소 필드 포함)
+        const { error } = await supabase
+          .from('attendance')
+          .insert({
+            employee_id: record.employee_id,
+            date: record.schedule_date,
+            notes: notesValue,
+            status: 'present',
+            updated_at: new Date().toISOString(),
+          });
+        updateError = error;
+      }
 
       if (updateError) {
         console.error('❌ 휴식 시간 수정 실패:', updateError);
