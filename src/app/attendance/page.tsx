@@ -397,6 +397,13 @@ export default function AttendancePage() {
     });
   };
 
+  // 시간을 h m 형식으로 변환하는 함수
+  const formatHoursToHm = (hours: number): string => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
   // 월간 실제 근무시간 합계(중복 스케줄 제외, 날짜 기준으로 1회만 계산)
   const computeMonthlyActualHours = (records: AttendanceRecord[]) => {
     try {
@@ -426,6 +433,36 @@ export default function AttendancePage() {
       return total;
     } catch (err) {
       console.error('월간 실제 근무시간 계산 오류:', err);
+      return 0;
+    }
+  };
+
+  // 일별 실제 근무시간 계산 (중복 제거)
+  const computeDailyActualHours = (records: AttendanceRecord[], targetDate: string) => {
+    try {
+      const dayRecords = records.filter(r => r.schedule_date === targetDate);
+      if (dayRecords.length === 0) return 0;
+
+      let minStart: Date | null = null;
+      let maxEnd: Date | null = null;
+
+      dayRecords.forEach((r) => {
+        if (r.actual_start) {
+          const start = new Date(r.actual_start);
+          if (!minStart || start < minStart) minStart = start;
+        }
+        if (r.actual_end) {
+          const end = new Date(r.actual_end);
+          if (!maxEnd || end > maxEnd) maxEnd = end;
+        }
+      });
+
+      if (minStart && maxEnd) {
+        return ((maxEnd as Date).getTime() - (minStart as Date).getTime()) / (1000 * 60 * 60);
+      }
+      return 0;
+    } catch (err) {
+      console.error('일별 실제 근무시간 계산 오류:', err);
       return 0;
     }
   };
@@ -2287,7 +2324,7 @@ export default function AttendancePage() {
                     <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
                         <div className="text-2xl font-bold text-green-600">
-                          {computeMonthlyActualHours(monthlyRecords).toFixed(1)}
+                          {formatHoursToHm(computeMonthlyActualHours(monthlyRecords))}
                         </div>
                         <div className="text-sm text-gray-600">완료된 시간</div>
                       </div>
@@ -2306,7 +2343,7 @@ export default function AttendancePage() {
                               return total;
                             }, 0);
                             console.log(`총 스케줄 시간: ${totalScheduledHours}시간`);
-                            return totalScheduledHours.toFixed(1);
+                            return formatHoursToHm(totalScheduledHours);
                           })()}
                         </div>
                         <div className="text-sm text-gray-600">스케줄 시간</div>
@@ -2349,12 +2386,8 @@ export default function AttendancePage() {
                             acc[date].scheduledHours += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                           }
                           
-                          if (record.actual_start && record.actual_end) {
-                            acc[date].completedSchedules++;
-                            const start = new Date(record.actual_start);
-                            const end = new Date(record.actual_end);
-                            acc[date].totalHours += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                          }
+                          // 실제 근무시간은 날짜별로 중복 제거하여 계산
+                          acc[date].totalHours = computeDailyActualHours(recentRecords, date);
                           return acc;
                         }, {} as Record<string, { date: string; totalSchedules: number; completedSchedules: number; totalHours: number; scheduledHours: number }>);
                         
@@ -2364,8 +2397,8 @@ export default function AttendancePage() {
                               {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
-                              <span className="text-xs text-gray-500">스케줄: {summary.scheduledHours.toFixed(1)}시간</span>
-                              <span className="text-xs text-gray-500">실제: {summary.totalHours.toFixed(1)}시간</span>
+                              <span className="text-xs text-gray-500">스케줄: {formatHoursToHm(summary.scheduledHours)}</span>
+                              <span className="text-xs text-gray-500">실제: {formatHoursToHm(summary.totalHours)}</span>
                             </div>
                           </div>
                         ));
