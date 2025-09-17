@@ -147,6 +147,12 @@ export default function AttendanceManagementPage() {
     
     let totalMinutes = 0;
     
+    // 관리자가 입력한 휴식 시간 확인
+    const adminBreakMatch = notes.match(/관리자 입력 휴식 시간: (\d+)분/);
+    if (adminBreakMatch) {
+      return parseInt(adminBreakMatch[1]);
+    }
+    
     // 휴식 시작과 종료 시간을 찾아서 총 휴식 시간 계산
     const breakStartMatches = notes.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
     const breakEndMatches = notes.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
@@ -678,11 +684,11 @@ ${record.employee_name} 통계 정보:
         newBreakMinutes: totalMinutes
       });
 
-      // attendance 테이블에서 휴식 시간 업데이트
+      // attendance 테이블에서 휴식 시간을 notes 필드에 저장
       const { error: updateError } = await supabase
         .from('attendance')
         .update({
-          break_minutes: totalMinutes,
+          notes: `관리자 입력 휴식 시간: ${totalMinutes}분 (${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분)`,
           updated_at: new Date().toISOString()
         })
         .eq('id', record.id);
