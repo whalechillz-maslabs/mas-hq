@@ -1088,20 +1088,16 @@ export default function AttendanceManagementPage() {
               <button 
                 onClick={convertCoordinatesToAddress}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                title="GPS 좌표를 실제 주소로 변환"
               >
                 좌표→주소 변환
               </button>
               <button 
                 onClick={clearLocationData}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                title="선택된 날짜의 모든 위치 데이터 삭제"
               >
                 위치 데이터 초기화
-              </button>
-              <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
-                디버그 보기
-              </button>
-              <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                엑셀 다운로드
               </button>
             </div>
           </div>
