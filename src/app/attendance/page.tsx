@@ -700,41 +700,58 @@ export default function AttendancePage() {
           console.log('🔍 휴식 데이터 확인:', { notes: attendanceData.notes, breakData });
           
           if (breakData) {
-            // 휴식 시작 시각 추출 (한국어 형식: "오전 09:43" 또는 "오후 14:30")
-            const breakStartMatch = breakData.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
-            if (breakStartMatch) {
-              breakStartMatch.forEach((match: string) => {
-                const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
-                if (timeMatch) {
-                  const period = timeMatch[1]; // 오전 또는 오후
-                  const time = timeMatch[2]; // 09:43
-                  const displayTime = `${period} ${time}`;
-                  breakRecords.push({ type: 'start', time: displayTime, timestamp: attendanceData.updated_at });
-                }
+            // 관리자 입력 휴식시간 확인 (최우선)
+            const adminBreakMatch = breakData.match(/관리자 입력 휴식 시간: (\d+)분/);
+            if (adminBreakMatch) {
+              const totalMinutes = parseInt(adminBreakMatch[1]);
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+              
+              // 관리자 입력 휴식시간을 기록으로 추가
+              breakRecords.push({ 
+                type: 'start', 
+                time: `관리자 입력: ${hours}시간 ${minutes}분`, 
+                timestamp: attendanceData.updated_at 
               });
               
-              // 마지막 휴식 시작 후 복귀가 없으면 현재 휴식 중
-              const lastBreakStart = breakStartMatch[breakStartMatch.length - 1];
-              const breakStartIndex = breakData.lastIndexOf(lastBreakStart);
-              const afterLastBreak = breakData.substring(breakStartIndex);
-              if (!afterLastBreak.includes('휴식 후 복귀')) {
-                hasBreakFromAttendance = true;
-                breakStartTime = new Date().toISOString();
-              }
-            }
-            
-            // 휴식 종료 시각 추출 (한국어 형식: "오전 09:43" 또는 "오후 14:30")
-            const breakEndMatch = breakData.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
-            if (breakEndMatch) {
-              breakEndMatch.forEach((match: string) => {
-                const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
-                if (timeMatch) {
-                  const period = timeMatch[1]; // 오전 또는 오후
-                  const time = timeMatch[2]; // 09:43
-                  const displayTime = `${period} ${time}`;
-                  breakRecords.push({ type: 'end', time: displayTime, timestamp: attendanceData.updated_at });
+              console.log('📝 관리자 입력 휴식시간 발견:', `${hours}시간 ${minutes}분`);
+            } else {
+              // 직원 버튼 입력 휴식시간 파싱 (기존 로직)
+              const breakStartMatch = breakData.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
+              if (breakStartMatch) {
+                breakStartMatch.forEach((match: string) => {
+                  const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
+                  if (timeMatch) {
+                    const period = timeMatch[1]; // 오전 또는 오후
+                    const time = timeMatch[2]; // 09:43
+                    const displayTime = `${period} ${time}`;
+                    breakRecords.push({ type: 'start', time: displayTime, timestamp: attendanceData.updated_at });
+                  }
+                });
+                
+                // 마지막 휴식 시작 후 복귀가 없으면 현재 휴식 중
+                const lastBreakStart = breakStartMatch[breakStartMatch.length - 1];
+                const breakStartIndex = breakData.lastIndexOf(lastBreakStart);
+                const afterLastBreak = breakData.substring(breakStartIndex);
+                if (!afterLastBreak.includes('휴식 후 복귀')) {
+                  hasBreakFromAttendance = true;
+                  breakStartTime = new Date().toISOString();
                 }
-              });
+              }
+              
+              // 휴식 종료 시각 추출 (한국어 형식: "오전 09:43" 또는 "오후 14:30")
+              const breakEndMatch = breakData.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
+              if (breakEndMatch) {
+                breakEndMatch.forEach((match: string) => {
+                  const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
+                  if (timeMatch) {
+                    const period = timeMatch[1]; // 오전 또는 오후
+                    const time = timeMatch[2]; // 09:43
+                    const displayTime = `${period} ${time}`;
+                    breakRecords.push({ type: 'end', time: displayTime, timestamp: attendanceData.updated_at });
+                  }
+                });
+              }
             }
             
             console.log('📊 휴식 기록 파싱 결과:', { hasBreakFromAttendance, breakRecords });
