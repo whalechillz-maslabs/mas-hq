@@ -762,6 +762,22 @@ export default function AttendancePage() {
           console.log('📝 오늘 attendance 데이터 없음');
         }
         
+        // attendance 데이터를 schedules 데이터와 병합
+        if (todayData && todayData.length > 0 && attendanceData) {
+          console.log('🔄 attendance 데이터를 schedules와 병합 중...');
+          const mergedSchedules = todayData.map(schedule => ({
+            ...schedule,
+            actual_start: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : schedule.actual_start,
+            actual_end: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : schedule.actual_end,
+            status: attendanceData.check_out_time ? 'completed' : 
+                   attendanceData.check_in_time ? 'in-progress' : 
+                   schedule.status
+          }));
+          
+          console.log('✅ 병합된 스케줄 데이터:', mergedSchedules);
+          setTodaySchedules(mergedSchedules);
+        }
+        
         // 월간 기록 조회 시작...
         const startDate = startOfMonth(new Date());
         const endDate = endOfMonth(new Date());
