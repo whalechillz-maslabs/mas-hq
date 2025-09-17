@@ -952,8 +952,21 @@ export default function AttendanceManagementPage() {
 
   // 상태 확인 함수 - 휴식 상태 감지 로직 및 시간 기반 상태 판단 추가
   const getActualStatus = (record: AttendanceRecord) => {
+    // 디버깅: 허상원의 상태 확인
+    if (record.employee_name === '허상원') {
+      console.log('🔍 허상원 상태 디버깅:', {
+        employee_name: record.employee_name,
+        status: record.status,
+        employee_note: record.employee_note,
+        notes: record.notes,
+        actual_start: record.actual_start,
+        actual_end: record.actual_end
+      });
+    }
+    
     // 휴식 상태 확인 (schedules 테이블의 status가 'break'인 경우)
     if (record.status === 'break') {
+      console.log('✅ schedules 테이블에서 break 상태 감지:', record.employee_name);
       return 'break';
     }
     
@@ -961,6 +974,7 @@ export default function AttendanceManagementPage() {
     if (record.employee_note && 
         record.employee_note.includes('휴식 시작') && 
         !record.employee_note.includes('휴식 후 복귀')) {
+      console.log('✅ employee_note에서 휴식 상태 감지:', record.employee_name, record.employee_note);
       return 'break';
     }
     
@@ -968,6 +982,7 @@ export default function AttendanceManagementPage() {
     if (record.notes && 
         record.notes.includes('휴식 시작') && 
         !record.notes.includes('휴식 후 복귀')) {
+      console.log('✅ attendance notes에서 휴식 상태 감지:', record.employee_name, record.notes);
       return 'break';
     }
     
