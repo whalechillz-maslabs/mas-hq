@@ -397,6 +397,39 @@ export default function AttendancePage() {
     });
   };
 
+  // 월간 실제 근무시간 합계(중복 스케줄 제외, 날짜 기준으로 1회만 계산)
+  const computeMonthlyActualHours = (records: AttendanceRecord[]) => {
+    try {
+      const byDate = new Map<string, { start?: Date; end?: Date }>();
+      records.forEach((r) => {
+        if (!r.schedule_date) return;
+        const key = r.schedule_date;
+        const bucket = byDate.get(key) || {};
+
+        if (r.actual_start) {
+          const s = new Date(r.actual_start);
+          if (!bucket.start || s < bucket.start) bucket.start = s;
+        }
+        if (r.actual_end) {
+          const e = new Date(r.actual_end);
+          if (!bucket.end || e > bucket.end) bucket.end = e;
+        }
+        byDate.set(key, bucket);
+      });
+
+      let total = 0;
+      byDate.forEach(({ start, end }) => {
+        if (start && end) {
+          total += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        }
+      });
+      return total;
+    } catch (err) {
+      console.error('월간 실제 근무시간 계산 오류:', err);
+      return 0;
+    }
+  };
+
   // 일일 출근 상태 분석
   const analyzeDailyAttendance = (schedules: AttendanceRecord[]) => {
     const completedSchedules = schedules.filter(s => s.actual_start && s.actual_end);
@@ -2254,16 +2287,7 @@ export default function AttendancePage() {
                     <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
                         <div className="text-2xl font-bold text-green-600">
-                          {(() => {
-                            const totalHours = monthlyRecords
-                              .filter(r => r.actual_start && r.actual_end)
-                              .reduce((total, r) => {
-                                const start = new Date(r.actual_start!);
-                                const end = new Date(r.actual_end!);
-                                return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                              }, 0);
-                            return totalHours.toFixed(1);
-                          })()}
+                          {computeMonthlyActualHours(monthlyRecords).toFixed(1)}
                         </div>
                         <div className="text-sm text-gray-600">완료된 시간</div>
                       </div>
