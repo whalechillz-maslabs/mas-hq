@@ -117,10 +117,10 @@ export default function TasksPage() {
 
   const getOperationDisplayName = (code: string, originalName: string): string => {
     const displayNames: { [key: string]: string } = {
-      'OP5': 'CS 응대 (제품안내, 시타보조)',
+      'OP5': 'CS 응대 (제품안내, 시타보조) [신규/기존]',
       'OP9': '상품 택배, 인트라넷',
       'OP10': '내부전달, 택배, 환경개선',
-      'OP12': 'CS 응대 (제품안내, 견적)'
+      'OP12': 'CS 응대 (제품안내, 견적) [신규/기존]'
     };
     return displayNames[code] || originalName;
   };
@@ -441,13 +441,22 @@ export default function TasksPage() {
 
   const handleUpdateTask = async (taskData: any) => {
     try {
+      const updateData: any = {
+        ...taskData,
+        updated_at: new Date().toISOString(),
+        sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0
+      };
+
+      // OP5, OP12인 경우에만 customer_type과 consultation_channel 추가
+      const selectedOpType = operationTypes.find(op => op.id === taskData.operation_type_id);
+      if (selectedOpType?.code === 'OP5' || selectedOpType?.code === 'OP12') {
+        updateData.customer_type = taskData.customer_type || 'existing';
+        updateData.consultation_channel = taskData.consultation_channel || 'phone';
+      }
+
       const { error } = await supabase
         .from('employee_tasks')
-        .update({
-          ...taskData,
-          updated_at: new Date().toISOString(),
-          sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0
-        })
+        .update(updateData)
         .eq('id', editingTask?.id);
 
       if (error) throw error;
@@ -943,7 +952,7 @@ export default function TasksPage() {
                         {task.operation_type?.code}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {task.operation_type?.name}
+                        {getOperationDisplayName(task.operation_type?.code || '', task.operation_type?.name || '')}
                       </p>
                     </div>
                   </td>
@@ -1382,7 +1391,9 @@ export default function TasksPage() {
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
                   sales_amount: formData.get('sales_amount') as string,
-                  task_priority: formData.get('task_priority') || 'normal'
+                  task_priority: formData.get('task_priority') || 'normal',
+                  customer_type: formData.get('customer_type') || 'existing',
+                  consultation_channel: formData.get('consultation_channel') || 'phone'
                 });
               }}
             >
@@ -1538,6 +1549,41 @@ export default function TasksPage() {
                     placeholder="추가 메모 (선택)"
                   />
                 </div>
+
+                {/* OP5, OP12인 경우 추가 필드 */}
+                {editingTask.operation_type?.code === 'OP5' || editingTask.operation_type?.code === 'OP12' ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        고객 유형
+                      </label>
+                      <select
+                        name="customer_type"
+                        defaultValue={editingTask.customer_type || 'existing'}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      >
+                        <option value="new">신규 고객</option>
+                        <option value="existing">기존 고객</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        상담 채널
+                      </label>
+                      <select
+                        name="consultation_channel"
+                        defaultValue={editingTask.consultation_channel || 'phone'}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      >
+                        <option value="phone">전화</option>
+                        <option value="kakao">카카오채널</option>
+                        <option value="smartstore">스마트스토어</option>
+                        <option value="official_website">공홈</option>
+                      </select>
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               <div className="mt-6 flex justify-end space-x-2">
@@ -1573,7 +1619,7 @@ export default function TasksPage() {
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
               <h4 className="font-medium text-gray-800 mb-2">원본 업무 정보</h4>
               <div className="text-sm text-gray-600 space-y-1">
-                <p><strong>업무:</strong> {refundTargetTask.operation_type?.code} - {refundTargetTask.operation_type?.name}</p>
+                <p><strong>업무:</strong> {refundTargetTask.operation_type?.code} - {getOperationDisplayName(refundTargetTask.operation_type?.code || '', refundTargetTask.operation_type?.name || '')}</p>
                 <p><strong>제목:</strong> {refundTargetTask.title}</p>
                 <p><strong>고객:</strong> {refundTargetTask.customer_name || '-'}</p>
                 <p><strong>매출:</strong> {refundTargetTask.sales_amount ? `${refundTargetTask.sales_amount.toLocaleString()}원` : '-'}</p>
