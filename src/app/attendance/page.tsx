@@ -167,7 +167,10 @@ export default function AttendancePage() {
       
       // 포인트 합계 계산
       const totalPoints = (tasks || []).reduce((sum, task) => {
-        return sum + (task.operation_types?.points || 0);
+        const points = Array.isArray(task.operation_types) 
+          ? (task.operation_types[0] as any)?.points || 0
+          : (task.operation_types as any)?.points || 0;
+        return sum + points;
       }, 0);
       
       // 포인트를 원화로 환산 (1포인트 = 100원 가정)
@@ -591,9 +594,85 @@ export default function AttendancePage() {
               console.log('⚠️ 음수 시간 감지 - 0시간으로 설정');
               totalWorkTime = '0h 0m';
             } else {
-              const workHours = Math.floor(diffMs / (1000 * 60 * 60));
-              const workMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+              const grossWorkHours = diffMs / (1000 * 60 * 60);
+              
+              // 휴식시간 공제
+              let breakMinutes = 0;
+              if (attendanceData.notes) {
+                // 휴식시간 계산 함수 (관리자 페이지와 동일한 로직)
+                const adminBreakMatch = attendanceData.notes.match(/관리자 입력 휴식 시간: (\d+)분/);
+                if (adminBreakMatch) {
+                  breakMinutes = parseInt(adminBreakMatch[1]);
+                } else {
+                  // 직원 버튼 입력 휴식시간 계산
+                  const breakStartMatches = attendanceData.notes.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
+                  const breakEndMatches = attendanceData.notes.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
+                  
+                  if (breakStartMatches && breakEndMatches) {
+                    const breakPeriods: { start: string; end: string }[] = [];
+                    
+                    // 휴식 시작 시간들 파싱
+                    breakStartMatches.forEach((match: string) => {
+                      const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
+                      if (timeMatch) {
+                        const period = timeMatch[1];
+                        const time = timeMatch[2];
+                        const [hours, minutes] = time.split(':').map(Number);
+                        let hour24 = hours;
+                        if (period === '오후' && hours !== 12) hour24 += 12;
+                        if (period === '오전' && hours === 12) hour24 = 0;
+                        breakPeriods.push({ start: `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`, end: '' });
+                      }
+                    });
+                    
+                    // 휴식 종료 시간들 파싱
+                    breakEndMatches.forEach((match: string) => {
+                      const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
+                      if (timeMatch) {
+                        const period = timeMatch[1];
+                        const time = timeMatch[2];
+                        const [hours, minutes] = time.split(':').map(Number);
+                        let hour24 = hours;
+                        if (period === '오후' && hours !== 12) hour24 += 12;
+                        if (period === '오전' && hours === 12) hour24 = 0;
+                        const endTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        
+                        for (let i = breakPeriods.length - 1; i >= 0; i--) {
+                          if (!breakPeriods[i].end) {
+                            breakPeriods[i].end = endTime;
+                            break;
+                          }
+                        }
+                      }
+                    });
+                    
+                    // 각 휴식 시간 계산
+                    breakPeriods.forEach(period => {
+                      if (period.start && period.end) {
+                        const [startHour, startMin] = period.start.split(':').map(Number);
+                        const [endHour, endMin] = period.end.split(':').map(Number);
+                        const startMinutes = startHour * 60 + startMin;
+                        const endMinutes = endHour * 60 + endMin;
+                        breakMinutes += endMinutes - startMinutes;
+                      }
+                    });
+                  }
+                }
+              }
+              
+              const breakHours = breakMinutes / 60;
+              const netWorkHours = Math.max(0, grossWorkHours - breakHours);
+              
+              const workHours = Math.floor(netWorkHours);
+              const workMinutes = Math.floor((netWorkHours % 1) * 60);
               totalWorkTime = `${workHours}h ${workMinutes}m`;
+              
+              console.log('⏱️ 휴식시간 공제된 근무시간:', {
+                grossWorkHours: grossWorkHours.toFixed(2),
+                breakHours: breakHours.toFixed(2),
+                netWorkHours: netWorkHours.toFixed(2),
+                totalWorkTime
+              });
             }
             
             console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { totalWorkTime, diffMs });
@@ -624,7 +703,7 @@ export default function AttendancePage() {
             // 휴식 시작 시각 추출 (한국어 형식: "오전 09:43" 또는 "오후 14:30")
             const breakStartMatch = breakData.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
             if (breakStartMatch) {
-              breakStartMatch.forEach(match => {
+              breakStartMatch.forEach((match: string) => {
                 const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
                 if (timeMatch) {
                   const period = timeMatch[1]; // 오전 또는 오후
@@ -647,7 +726,7 @@ export default function AttendancePage() {
             // 휴식 종료 시각 추출 (한국어 형식: "오전 09:43" 또는 "오후 14:30")
             const breakEndMatch = breakData.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
             if (breakEndMatch) {
-              breakEndMatch.forEach(match => {
+              breakEndMatch.forEach((match: string) => {
                 const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
                 if (timeMatch) {
                   const period = timeMatch[1]; // 오전 또는 오후

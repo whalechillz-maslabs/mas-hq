@@ -414,7 +414,7 @@ export default function AttendanceManagementPage() {
         };
       }
       
-      // 근무 시간 계산 (정리된 시간 사용)
+      // 근무 시간 계산 (정리된 시간 사용, 휴식시간 공제)
       let totalHours = 0;
       const cleanCheckInTime = checkInTime && checkInTime.trim() !== '' ? checkInTime.trim() : null;
       const cleanCheckOutTime = checkOutTime && checkOutTime.trim() !== '' ? checkOutTime.trim() : null;
@@ -422,7 +422,29 @@ export default function AttendanceManagementPage() {
       if (cleanCheckInTime && cleanCheckOutTime) {
         const startTime = new Date(`2000-01-01T${cleanCheckInTime}`);
         const endTime = new Date(`2000-01-01T${cleanCheckOutTime}`);
-        totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        const grossHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        
+        // 기존 휴식시간 조회하여 공제
+        const { data: existingAttendance } = await supabase
+          .from('attendance')
+          .select('notes')
+          .eq('employee_id', employeeData.id)
+          .eq('date', date)
+          .single();
+        
+        let breakMinutes = 0;
+        if (existingAttendance?.notes) {
+          breakMinutes = calculateTotalBreakMinutes(existingAttendance.notes);
+        }
+        
+        const breakHours = breakMinutes / 60;
+        totalHours = Math.max(0, grossHours - breakHours); // 휴식시간 공제, 음수 방지
+        
+        console.log('📊 근무시간 계산:', {
+          grossHours: grossHours.toFixed(2),
+          breakHours: breakHours.toFixed(2),
+          netHours: totalHours.toFixed(2)
+        });
       }
       
       console.log('📊 계산된 근무 시간:', totalHours);
