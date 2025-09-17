@@ -61,6 +61,86 @@ export default function AttendanceManagementPage() {
     });
   };
 
+  // 좌표를 주소로 변환하는 함수 (Reverse Geocoding)
+  const getAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string> => {
+    try {
+      // 1. Google Maps Geocoding API 시도 (API 키가 있는 경우)
+      if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=ko&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status === 'OK' && data.results.length > 0) {
+            const result = data.results[0];
+            const addressComponents = result.address_components;
+            
+            // 시/도, 구/군, 동/읍/면 정보 추출
+            let city = '';
+            let district = '';
+            let neighborhood = '';
+            
+            addressComponents.forEach((component: any) => {
+              if (component.types.includes('administrative_area_level_1')) {
+                city = component.long_name;
+              } else if (component.types.includes('administrative_area_level_2')) {
+                district = component.long_name;
+              } else if (component.types.includes('sublocality_level_1') || 
+                         component.types.includes('sublocality_level_2') ||
+                         component.types.includes('neighborhood')) {
+                neighborhood = component.long_name;
+              }
+            });
+            
+            // 주소 조합
+            let address = '';
+            if (city) address += city;
+            if (district) address += ` ${district}`;
+            if (neighborhood) address += ` ${neighborhood}`;
+            
+            return address.trim() || result.formatted_address;
+          }
+        }
+      }
+      
+      // 2. 무료 Nominatim API 사용 (OpenStreetMap 기반)
+      const nominatimResponse = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko&addressdetails=1`
+      );
+      
+      if (nominatimResponse.ok) {
+        const data = await nominatimResponse.json();
+        
+        if (data.display_name) {
+          // 한국 주소 형식으로 변환
+          const address = data.address;
+          if (address) {
+            let koreanAddress = '';
+            if (address.state) koreanAddress += address.state;
+            if (address.city || address.town || address.village) {
+              koreanAddress += ` ${address.city || address.town || address.village}`;
+            }
+            if (address.suburb || address.neighbourhood) {
+              koreanAddress += ` ${address.suburb || address.neighbourhood}`;
+            }
+            return koreanAddress.trim() || data.display_name;
+          }
+          return data.display_name;
+        }
+      }
+      
+      // 3. 모든 API 실패 시 좌표 반환
+      throw new Error('모든 Geocoding API 실패');
+      
+    } catch (error) {
+      console.warn('주소 변환 오류:', error);
+      // 실패 시 좌표 반환
+      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    }
+  };
+
   // 휴식 시간 계산 함수
   const calculateTotalBreakMinutes = (notes: string | null): number => {
     if (!notes) return 0;
@@ -156,6 +236,77 @@ export default function AttendanceManagementPage() {
     }
   };
 
+  // 기존 좌표 데이터를 주소로 변환하는 함수
+  const convertCoordinatesToAddress = async () => {
+    if (!confirm('기존 좌표 데이터를 주소로 변환하시겠습니까? 이 작업은 시간이 걸릴 수 있습니다.')) {
+      return;
+    }
+
+    try {
+      // 현재 날짜의 출근 데이터 조회
+      const { data: attendanceData, error: fetchError } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('date', selectedDate);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!attendanceData || attendanceData.length === 0) {
+        alert('변환할 위치 데이터가 없습니다.');
+        return;
+      }
+
+      let convertedCount = 0;
+      
+      for (const record of attendanceData) {
+        if (record.location && 
+            record.location.latitude && 
+            record.location.longitude && 
+            !record.location.address) {
+          
+          try {
+            const address = await getAddressFromCoordinates(
+              record.location.latitude, 
+              record.location.longitude
+            );
+            
+            const updatedLocation = {
+              ...record.location,
+              address: address,
+              note: `위치 추적됨 - ${address}`
+            };
+            
+            const { error: updateError } = await supabase
+              .from('attendance')
+              .update({ location: updatedLocation })
+              .eq('id', record.id);
+            
+            if (updateError) {
+              console.error('위치 업데이트 오류:', updateError);
+            } else {
+              convertedCount++;
+            }
+            
+            // API 호출 제한을 위한 지연
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+          } catch (error) {
+            console.error('주소 변환 오류:', error);
+          }
+        }
+      }
+      
+      alert(`${convertedCount}개의 위치 데이터가 주소로 변환되었습니다.`);
+      loadData();
+      
+    } catch (error: any) {
+      console.error('좌표 변환 오류:', error);
+      alert(`좌표 변환에 실패했습니다: ${error.message}`);
+    }
+  };
+
   const [selectedDate, setSelectedDate] = useState(getKoreaToday());
   const [selectedDepartment, setSelectedDepartment] = useState('전체 부서');
   const [searchTerm, setSearchTerm] = useState('');
@@ -228,12 +379,20 @@ export default function AttendanceManagementPage() {
       let location = null;
       try {
         const position = await getCurrentLocation();
+        
+        // 좌표를 주소로 변환
+        const address = await getAddressFromCoordinates(
+          position.coords.latitude, 
+          position.coords.longitude
+        );
+        
         location = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
           timestamp: new Date().toISOString(),
-          note: `위치 추적됨 (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`
+          address: address,
+          note: `위치 추적됨 - ${address}`
         };
         console.log('📍 위치 정보 가져오기 성공:', location);
       } catch (locationError) {
@@ -244,6 +403,7 @@ export default function AttendanceManagementPage() {
           longitude: 127.0714828,
           accuracy: null,
           timestamp: new Date().toISOString(),
+          address: '수원시 영통구 법조로 149번길 200',
           note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
         };
       }
@@ -745,6 +905,12 @@ ${record.employee_name} 통계 정보:
             </div>
             <div className="flex space-x-3">
               <button 
+                onClick={convertCoordinatesToAddress}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                좌표→주소 변환
+              </button>
+              <button 
                 onClick={clearLocationData}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
@@ -1003,7 +1169,8 @@ ${record.employee_name} 통계 정보:
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-xs text-gray-500">
                           {record.location 
-                            ? (record.location.note || 
+                            ? (record.location.address || 
+                               record.location.note || 
                                (record.location.latitude && record.location.longitude 
                                  ? `위치 추적됨 (${record.location.latitude.toFixed(4)}, ${record.location.longitude.toFixed(4)})`
                                  : '위치 추적됨'))
