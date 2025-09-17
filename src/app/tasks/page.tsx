@@ -125,12 +125,29 @@ export default function TasksPage() {
     return displayNames[code] || originalName;
   };
 
+  const getDefaultTitle = (code: string): string => {
+    const defaultTitles: { [key: string]: string } = {
+      'OP1': '전화 판매(신규)',
+      'OP2': '전화 판매(재구매/부품)',
+      'OP3': '오프라인 판매(신규)',
+      'OP4': '오프라인 판매(재구매/부품)',
+      'OP5': 'CS 응대(제품안내, 시타보조)',
+      'OP6': 'A/S 처리(고급)',
+      'OP7': '환불 방어',
+      'OP9': '상품 택배, 인트라넷',
+      'OP10': '내부전달, 택배, 환경개선',
+      'OP11': '전화 판매(싱싱)',
+      'OP12': 'CS 응대(제품안내, 견적)'
+    };
+    return defaultTitles[code] || '';
+  };
+
   const handleQuickTaskSelect = (opType: OperationType) => {
     setSelectedOperationTypeForAdd(opType.id);
     setQuickTaskData(prev => ({
       ...prev,
       operation_type_id: opType.id,
-      title: '', // 사용자가 직접 입력하도록 빈 문자열로 초기화
+      title: getDefaultTitle(opType.code), // 각 업무 유형에 맞는 기본 제목 설정
       customer_name: '',
       sales_amount: 0,
       notes: '',
