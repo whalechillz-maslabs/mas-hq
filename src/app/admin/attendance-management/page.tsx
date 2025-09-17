@@ -353,13 +353,12 @@ ${record.employee_name} 통계 정보:
   const formatTime = (timeString: string | null) => {
     if (!timeString) return '-';
     
-    // 시간만 있는 경우 (HH:MM:SS 형식) - UTC 시간을 한국 시간으로 변환
+    // 시간만 있는 경우 (HH:MM:SS 형식) - 스케줄 시간은 이미 한국 시간이므로 변환하지 않음
     if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
       try {
         const [hours, minutes] = timeString.split(':').map(Number);
-        // UTC 시간에 9시간 추가 (한국 시간)
-        const koreaHours = (hours + 9) % 24;
-        return `${koreaHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        // 스케줄 시간은 이미 한국 시간이므로 그대로 사용
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       } catch (error) {
         console.error('시간 변환 오류:', error, timeString);
         return timeString.substring(0, 5); // 파싱 실패 시 원본 반환
