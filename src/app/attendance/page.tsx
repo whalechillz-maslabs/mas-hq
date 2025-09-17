@@ -476,7 +476,7 @@ export default function AttendancePage() {
         // 스케줄 데이터 로딩
         console.log('📅 오늘 스케줄 조회 시작...');
         const today = format(new Date(), 'yyyy-MM-dd');
-        console.log('📅 오늘 날짜:', today, '사용자 ID:', user.employee_id);
+        console.log('📅 오늘 날짜:', today, '사용자 UUID:', user.id);
         
         const { data: todayData, error: todayError } = await supabase
           .from('schedules')
@@ -849,15 +849,15 @@ export default function AttendancePage() {
 
 
   const fetchTodaySchedules = async (user: any) => {
-    if (!user?.employee_id) {
-      console.log('❌ fetchTodaySchedules: 사용자 ID 없음');
+    if (!user?.id) {
+      console.log('❌ fetchTodaySchedules: 사용자 UUID 없음');
       setTodaySchedules([]);
       return;
     }
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      console.log('📅 오늘 날짜:', today, '사용자 ID:', user.employee_id);
+      console.log('📅 오늘 날짜:', today, '사용자 UUID:', user.id);
       
       // 단순한 쿼리로 테스트
       const { data, error } = await supabase
@@ -881,8 +881,8 @@ export default function AttendancePage() {
   };
 
   const fetchMonthlyRecords = async (user: any) => {
-    if (!user?.employee_id) {
-      console.log('❌ fetchMonthlyRecords: 사용자 ID 없음');
+    if (!user?.id) {
+      console.log('❌ fetchMonthlyRecords: 사용자 UUID 없음');
       setMonthlyRecords([]);
       setLoading(false);
       return;
@@ -898,7 +898,7 @@ export default function AttendancePage() {
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.employee_id)
+        .eq('employee_id', user.id) // UUID 사용
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .not('actual_start', 'is', null);
