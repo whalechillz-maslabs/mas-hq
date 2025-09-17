@@ -1035,14 +1035,22 @@ export default function AttendanceManagementPage() {
     }
   };
 
-  // 필터링된 데이터
-  const filteredRecords = attendanceRecords.filter(record => {
-    const matchesSearch = !searchTerm || 
-      record.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.employee_id_code.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
+  // 필터링된 데이터 (이름순 정렬)
+  const filteredRecords = attendanceRecords
+    .filter(record => {
+      const matchesSearch = !searchTerm || 
+        record.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.employee_id_code.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      // 이름순 정렬, 이름이 같으면 사번순 정렬
+      if (a.employee_name !== b.employee_name) {
+        return a.employee_name.localeCompare(b.employee_name, 'ko');
+      }
+      return a.employee_id_code.localeCompare(b.employee_id_code, 'ko');
+    });
 
   // 통계 계산 - 직원별로 중복 제거하여 계산
   const uniqueEmployees = new Map();
