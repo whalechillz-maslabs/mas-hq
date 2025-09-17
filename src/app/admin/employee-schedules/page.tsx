@@ -661,6 +661,48 @@ export default function EmployeeSchedulesPage() {
     }
   };
 
+  // 스케줄 수정 함수 추가
+  const handleEditSchedule = async (schedule: Schedule) => {
+    const newStartTime = prompt('시작 시간을 입력하세요 (HH:MM 형식):', schedule.scheduled_start);
+    if (!newStartTime) return;
+    
+    const newEndTime = prompt('종료 시간을 입력하세요 (HH:MM 형식):', schedule.scheduled_end);
+    if (!newEndTime) return;
+    
+    const newNote = prompt('메모를 입력하세요 (선택사항):', schedule.employee_note || '');
+    
+    if (!confirm(`스케줄을 수정하시겠습니까?\n${schedule.scheduled_start}-${schedule.scheduled_end} → ${newStartTime}-${newEndTime}`)) {
+      return;
+    }
+
+    setUpdating(schedule.id);
+
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .update({
+          scheduled_start: newStartTime,
+          scheduled_end: newEndTime,
+          employee_note: newNote || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', schedule.id);
+
+      if (error) {
+        console.error('스케줄 수정 실패:', error);
+        throw error;
+      }
+
+      await fetchSchedules();
+      alert('스케줄이 성공적으로 수정되었습니다.');
+    } catch (error: any) {
+      console.error('스케줄 수정 오류:', error);
+      alert(`스케줄 수정에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-1 sm:p-2">
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4">
@@ -1111,7 +1153,7 @@ export default function EmployeeSchedulesPage() {
                                 총 근무예정시간: {schedules.reduce((total, schedule) => {
                                   const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
                                   const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
-                                  const hours = (end - start) / (1000 * 60 * 60);
+                                  const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                                   const breakHours = (schedule.break_minutes || 0) / 60;
                                   return total + (hours - breakHours);
                                 }, 0).toFixed(1)}시간
@@ -1214,6 +1256,28 @@ export default function EmployeeSchedulesPage() {
                                         onClick={() => handleDeleteSchedule(schedule.id)}
                                         disabled={updating === schedule.id}
                                         className="flex items-center space-x-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span>삭제</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  {/* 승인된 스케줄 수정/삭제 버튼 추가 */}
+                                  {schedule.status === 'approved' && (
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleEditSchedule(schedule)}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                        <span>수정</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSchedule(schedule.id)}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                         <span>삭제</span>
