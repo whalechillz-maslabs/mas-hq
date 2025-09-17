@@ -161,7 +161,7 @@ export default function AttendanceManagementPage() {
 
   // 편집 모드 시작
   const startEdit = (record: AttendanceRecord) => {
-    setEditingRecord(record.employee_id);
+    setEditingRecord(record.employee_id_code); // MASLABS-003 형식 사용
     setEditForm({
       checkInTime: record.actual_start ? record.actual_start.split('T')[1]?.substring(0, 5) || '' : '',
       checkOutTime: record.actual_end ? record.actual_end.split('T')[1]?.substring(0, 5) || '' : ''
@@ -183,7 +183,7 @@ export default function AttendanceManagementPage() {
       });
 
       await updateAttendanceTime(
-        record.employee_id,
+        record.employee_id_code, // MASLABS-003 형식 사용
         record.schedule_date,
         editForm.checkInTime,
         editForm.checkOutTime
@@ -792,7 +792,7 @@ ${record.employee_name} 통계 정보:
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {editingRecord === record.employee_id ? (
+                        {editingRecord === record.employee_id_code ? (
                           <div className="text-sm text-gray-900">
                             <div className="font-medium mb-1">실제 출근</div>
                             <input
@@ -815,7 +815,7 @@ ${record.employee_name} 통계 정보:
                         <div className="text-sm text-gray-900">-</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {editingRecord === record.employee_id ? (
+                        {editingRecord === record.employee_id_code ? (
                           <div className="text-sm text-gray-900">
                             <div className="font-medium mb-1">실제 퇴근</div>
                             <input
@@ -849,7 +849,7 @@ ${record.employee_name} 통계 정보:
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {editingRecord === record.employee_id ? (
+                        {editingRecord === record.employee_id_code ? (
                           <div className="flex space-x-2">
                             <button 
                               onClick={() => saveEdit(record)}
