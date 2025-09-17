@@ -7,7 +7,7 @@ import {
   Clock, MapPin, Users, Calendar, Filter, Download,
   Search, Eye, CheckCircle, XCircle, AlertCircle,
   TrendingUp, BarChart3, Download as DownloadIcon,
-  Coffee, Edit3, Save, X
+  Coffee, Edit3, Save, X, Trash2
 } from 'lucide-react';
 
 interface AttendanceRecord {
@@ -177,17 +177,24 @@ export default function AttendanceManagementPage() {
   // 편집 저장
   const saveEdit = async (record: AttendanceRecord) => {
     try {
+      console.log('💾 편집 저장 시작:', {
+        record: record,
+        editForm: editForm
+      });
+
       await updateAttendanceTime(
         record.employee_id,
         record.schedule_date,
         editForm.checkInTime,
         editForm.checkOutTime
       );
+      
       setEditingRecord(null);
       setEditForm({ checkInTime: '', checkOutTime: '' });
+      alert('출근/퇴근 시간이 성공적으로 수정되었습니다.');
     } catch (error) {
-      console.error('편집 저장 실패:', error);
-      alert('출근/퇴근 시간 수정에 실패했습니다.');
+      console.error('❌ 편집 저장 실패:', error);
+      alert(`출근/퇴근 시간 수정에 실패했습니다.\n오류: ${error.message || error}`);
     }
   };
 
@@ -226,6 +233,42 @@ ${record.employee_name} 통계 정보:
 참고: 상세한 월별/주별 통계는 추후 구현 예정입니다.
     `;
     alert(stats);
+  };
+
+  // 스케줄 삭제 함수
+  const deleteSchedule = async (record: AttendanceRecord) => {
+    if (!confirm(`${record.employee_name}의 ${record.schedule_date} 스케줄을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ 스케줄 삭제 시작:', {
+        scheduleId: record.id,
+        employeeName: record.employee_name,
+        scheduleDate: record.schedule_date
+      });
+
+      // schedules 테이블에서 스케줄 삭제
+      const { error: deleteError } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', record.id);
+
+      if (deleteError) {
+        console.error('❌ 스케줄 삭제 실패:', deleteError);
+        alert('스케줄 삭제에 실패했습니다.');
+        return;
+      }
+
+      console.log('✅ 스케줄 삭제 완료');
+      alert('스케줄이 성공적으로 삭제되었습니다.');
+      
+      // 데이터 다시 로드
+      loadData();
+    } catch (error) {
+      console.error('스케줄 삭제 오류:', error);
+      alert('스케줄 삭제 중 오류가 발생했습니다.');
+    }
   };
 
   const loadData = async () => {
@@ -845,6 +888,13 @@ ${record.employee_name} 통계 정보:
                               title="통계보기"
                             >
                               <BarChart3 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => deleteSchedule(record)}
+                              className="text-red-600 hover:text-red-900" 
+                              title="스케줄 삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         )}
