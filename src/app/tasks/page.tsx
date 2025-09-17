@@ -110,6 +110,15 @@ export default function TasksPage() {
     return iconMap[code] || Coffee;
   };
 
+  const getOperationDisplayName = (code: string, originalName: string): string => {
+    const displayNames: { [key: string]: string } = {
+      'OP5': 'CS 응대 (제품안내, 시타보조)',
+      'OP9': '상품 택배, 인트라넷',
+      'OP10': '내부전달, 택배, 환경개선'
+    };
+    return displayNames[code] || originalName;
+  };
+
   const handleQuickTaskSelect = (opType: OperationType) => {
     setSelectedOperationTypeForAdd(opType.id);
     setQuickTaskData(prev => ({
@@ -654,7 +663,7 @@ export default function TasksPage() {
                     <Icon className="h-6 w-6 mr-2" />
                     <span className="text-sm font-medium">{opType.code}</span>
                   </div>
-                  <p className="text-sm font-semibold mb-1">{opType.name}</p>
+                  <p className="text-sm font-semibold mb-1">{getOperationDisplayName(opType.code, opType.name)}</p>
                   <p className="text-xs text-gray-500">{opType.points}점</p>
                 </button>
               );
@@ -1013,7 +1022,7 @@ export default function TasksPage() {
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-gray-800 mb-1 leading-tight">
-                    {opType.name}
+                    {getOperationDisplayName(opType.code, opType.name)}
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
                     {opType.code === 'OP8' ? '환불 처리' : `${opType.points}점`}
@@ -1045,7 +1054,7 @@ export default function TasksPage() {
                     <span className="text-sm bg-indigo-100 text-indigo-800 px-2 py-1 rounded font-medium">
                       {selectedOperationType.code}
                     </span>
-                    <h4 className="text-lg font-semibold">{selectedOperationType.name}</h4>
+                    <h4 className="text-lg font-semibold">{getOperationDisplayName(selectedOperationType.code, selectedOperationType.name)}</h4>
                   </div>
                   
                   <div className="bg-blue-50 p-3 rounded-lg">
@@ -1162,7 +1171,7 @@ export default function TasksPage() {
                       .filter(opType => opType.code !== 'OP8') // OP8 제외
                       .map((opType) => (
                       <option key={opType.id} value={opType.id}>
-                        {opType.code} - {opType.name} ({opType.points}점)
+                        {opType.code} - {getOperationDisplayName(opType.code, opType.name)} ({opType.points}점)
                       </option>
                     ))}
                   </select>
@@ -1359,7 +1368,7 @@ export default function TasksPage() {
                       .filter(opType => opType.code !== 'OP8') // OP8 제외
                       .map((opType) => (
                       <option key={opType.id} value={opType.id}>
-                        {opType.code} - {opType.name} ({opType.points}점)
+                        {opType.code} - {getOperationDisplayName(opType.code, opType.name)} ({opType.points}점)
                       </option>
                     ))}
                   </select>
