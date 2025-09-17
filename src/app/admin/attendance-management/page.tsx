@@ -526,41 +526,28 @@ export default function AttendanceManagementPage() {
     }
   };
 
-  // 상세보기 함수
+  // 상세보기 함수 (통계 정보 포함)
   const viewDetails = (record: AttendanceRecord) => {
     const details = `
-직원 정보:
-- 이름: ${record.employee_name}
-- 사번: ${record.employee_id_code}
-- 고용형태: ${record.employment_type}
+📋 ${record.employee_name} 상세 정보
 
-출근 정보:
-- 스케줄: ${record.scheduled_start ? formatTime(record.scheduled_start) : '-'} ~ ${record.scheduled_end ? formatTime(record.scheduled_end) : '-'}
-- 실제 출근: ${formatTime(record.actual_start)}
-- 실제 퇴근: ${formatTime(record.actual_end)}
-- 근무 시간: ${record.total_hours > 0 ? formatWorkTime(record.total_hours) : '-'}
-- 상태: ${getStatusText(getActualStatus(record))}
+👤 직원 정보:
+• 이름: ${record.employee_name}
+• 사번: ${record.employee_id_code}
+• 고용형태: ${record.employment_type}
 
-위치 정보:
-- 위치 추적: 비활성화됨
+⏰ 근무 현황:
+• 예정 시간: ${record.scheduled_start ? formatTime(record.scheduled_start) : '없음'} - ${record.scheduled_end ? formatTime(record.scheduled_end) : '없음'}
+• 실제 출근: ${record.actual_start ? formatTime(record.actual_start) : '미출근'}
+• 실제 퇴근: ${record.actual_end ? formatTime(record.actual_end) : '미퇴근'}
+• 근무 시간: ${record.total_hours > 0 ? formatWorkTime(record.total_hours) : '0시간'}
+• 휴식 시간: ${record.total_break_minutes && record.total_break_minutes > 0 ? `${Math.floor(record.total_break_minutes / 60)}h ${record.total_break_minutes % 60}m` : '0시간'}
+• 상태: ${getStatusText(getActualStatus(record))}
+
+📍 위치 정보:
+• 위치: ${record.location ? (record.location.address || record.location.note || '위치 추적됨') : '위치 없음'}
     `;
     alert(details);
-  };
-
-  // 통계보기 함수
-  const viewStatistics = (record: AttendanceRecord) => {
-    const stats = `
-${record.employee_name} 통계 정보:
-
-오늘 근무 현황:
-- 출근 시간: ${formatTime(record.actual_start)}
-- 퇴근 시간: ${formatTime(record.actual_end)}
-- 총 근무시간: ${record.total_hours > 0 ? formatWorkTime(record.total_hours) : '-'}
-- 상태: ${getStatusText(getActualStatus(record))}
-
-참고: 상세한 월별/주별 통계는 추후 구현 예정입니다.
-    `;
-    alert(stats);
   };
 
   // 스케줄 삭제 함수
@@ -1412,16 +1399,9 @@ ${record.employee_name} 통계 정보:
                             <button 
                               onClick={() => viewDetails(record)}
                               className="text-indigo-600 hover:text-indigo-900" 
-                              title="상세보기"
+                              title="상세보기 (통계 포함)"
                             >
                               <Eye className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => viewStatistics(record)}
-                              className="text-green-600 hover:text-green-900" 
-                              title="통계보기"
-                            >
-                              <BarChart3 className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => editBreakTime(record)}
