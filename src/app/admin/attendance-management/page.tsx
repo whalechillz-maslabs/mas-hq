@@ -615,6 +615,95 @@ ${record.employee_name} 통계 정보:
     }
   };
 
+  // 휴식 시간 수정 함수
+  const editBreakTime = async (record: AttendanceRecord) => {
+    const currentBreakMinutes = record.total_break_minutes || 0;
+    const currentBreakHours = Math.floor(currentBreakMinutes / 60);
+    const currentBreakMins = currentBreakMinutes % 60;
+    
+    const breakTimeInput = prompt(
+      `${record.employee_name}의 휴식 시간을 입력하세요:\n\n` +
+      `현재: ${currentBreakHours}시간 ${currentBreakMins}분\n\n` +
+      `입력 형식: "1시간 30분" 또는 "90분" 또는 "1.5시간"`,
+      `${currentBreakHours}시간 ${currentBreakMins}분`
+    );
+
+    if (!breakTimeInput) return;
+
+    try {
+      // 입력된 시간을 분으로 변환
+      let totalMinutes = 0;
+      const input = breakTimeInput.trim();
+      
+      // "1시간 30분" 형식
+      if (input.includes('시간') && input.includes('분')) {
+        const hourMatch = input.match(/(\d+)시간/);
+        const minMatch = input.match(/(\d+)분/);
+        const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+        const minutes = minMatch ? parseInt(minMatch[1]) : 0;
+        totalMinutes = hours * 60 + minutes;
+      }
+      // "90분" 형식
+      else if (input.includes('분')) {
+        const minMatch = input.match(/(\d+)분/);
+        if (minMatch) {
+          totalMinutes = parseInt(minMatch[1]);
+        }
+      }
+      // "1.5시간" 형식
+      else if (input.includes('시간')) {
+        const hourMatch = input.match(/(\d+(?:\.\d+)?)시간/);
+        if (hourMatch) {
+          totalMinutes = Math.round(parseFloat(hourMatch[1]) * 60);
+        }
+      }
+      // 숫자만 입력된 경우 (분으로 간주)
+      else if (/^\d+$/.test(input)) {
+        totalMinutes = parseInt(input);
+      }
+      else {
+        alert('올바른 형식으로 입력해주세요. 예: "1시간 30분", "90분", "1.5시간"');
+        return;
+      }
+
+      if (totalMinutes < 0) {
+        alert('휴식 시간은 0분 이상이어야 합니다.');
+        return;
+      }
+
+      console.log('⏰ 휴식 시간 수정 시작:', {
+        employeeName: record.employee_name,
+        scheduleDate: record.schedule_date,
+        currentBreakMinutes,
+        newBreakMinutes: totalMinutes
+      });
+
+      // attendance 테이블에서 휴식 시간 업데이트
+      const { error: updateError } = await supabase
+        .from('attendance')
+        .update({
+          break_minutes: totalMinutes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', record.id);
+
+      if (updateError) {
+        console.error('❌ 휴식 시간 수정 실패:', updateError);
+        alert(`휴식 시간 수정에 실패했습니다: ${updateError.message}`);
+        return;
+      }
+
+      console.log('✅ 휴식 시간 수정 완료');
+      alert(`휴식 시간이 ${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분으로 수정되었습니다.`);
+      
+      // 데이터 다시 로드
+      loadData();
+    } catch (error: any) {
+      console.error('휴식 시간 수정 오류:', error);
+      alert(`휴식 시간 수정 중 오류가 발생했습니다: ${error.message}`);
+    }
+  };
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -1178,7 +1267,11 @@ ${record.employee_name} 통계 정보:
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div 
+                          className="text-sm text-gray-900 cursor-pointer hover:text-orange-600 hover:bg-orange-50 px-2 py-1 rounded transition-colors"
+                          onClick={() => editBreakTime(record)}
+                          title="클릭하여 휴식 시간 수정"
+                        >
                           {record.total_break_minutes && record.total_break_minutes > 0 
                             ? `${Math.floor(record.total_break_minutes / 60)}h ${record.total_break_minutes % 60}m`
                             : '-'
@@ -1268,6 +1361,13 @@ ${record.employee_name} 통계 정보:
                               title="통계보기"
                             >
                               <BarChart3 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => editBreakTime(record)}
+                              className="text-orange-600 hover:text-orange-900" 
+                              title="휴식 시간 수정"
+                            >
+                              <Coffee className="w-4 h-4" />
                             </button>
                             {record.scheduled_start && record.scheduled_end ? (
                               <button 
