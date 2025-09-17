@@ -537,6 +537,12 @@ ${record.employee_name} 통계 정보:
 
   // 스케줄 삭제 함수
   const deleteSchedule = async (record: AttendanceRecord) => {
+    // 스케줄이 없는 경우 삭제 불가
+    if (!record.scheduled_start || !record.scheduled_end) {
+      alert('삭제할 스케줄이 없습니다.');
+      return;
+    }
+
     if (!confirm(`${record.employee_name}의 ${record.schedule_date} 스케줄을 삭제하시겠습니까?`)) {
       return;
     }
@@ -545,7 +551,9 @@ ${record.employee_name} 통계 정보:
       console.log('🗑️ 스케줄 삭제 시작:', {
         scheduleId: record.id,
         employeeName: record.employee_name,
-        scheduleDate: record.schedule_date
+        scheduleDate: record.schedule_date,
+        scheduledStart: record.scheduled_start,
+        scheduledEnd: record.scheduled_end
       });
 
       // schedules 테이블에서 스케줄 삭제
@@ -556,7 +564,7 @@ ${record.employee_name} 통계 정보:
 
       if (deleteError) {
         console.error('❌ 스케줄 삭제 실패:', deleteError);
-        alert('스케줄 삭제에 실패했습니다.');
+        alert(`스케줄 삭제에 실패했습니다: ${deleteError.message}`);
         return;
       }
 
@@ -565,9 +573,9 @@ ${record.employee_name} 통계 정보:
       
       // 데이터 다시 로드
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('스케줄 삭제 오류:', error);
-      alert('스케줄 삭제 중 오류가 발생했습니다.');
+      alert(`스케줄 삭제 중 오류가 발생했습니다: ${error.message}`);
     }
   };
 
@@ -1038,7 +1046,7 @@ ${record.employee_name} 통계 정보:
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">출근 기록</h2>
-            <p className="text-sm text-gray-600">총 {filteredRecords.length}명의 기록</p>
+            <p className="text-sm text-gray-600">총 {uniqueRecords.length}명의 기록 ({filteredRecords.length}개 스케줄)</p>
           </div>
 
           <div className="overflow-x-auto">
@@ -1225,13 +1233,15 @@ ${record.employee_name} 통계 정보:
                             >
                               <BarChart3 className="w-4 h-4" />
                             </button>
-                            <button 
-                              onClick={() => deleteSchedule(record)}
-                              className="text-red-600 hover:text-red-900" 
-                              title="스케줄 삭제"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {record.scheduled_start && record.scheduled_end && (
+                              <button 
+                                onClick={() => deleteSchedule(record)}
+                                className="text-red-600 hover:text-red-900" 
+                                title="스케줄 삭제"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>
