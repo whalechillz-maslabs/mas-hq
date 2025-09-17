@@ -114,7 +114,8 @@ export default function TasksPage() {
     const displayNames: { [key: string]: string } = {
       'OP5': 'CS 응대 (제품안내, 시타보조)',
       'OP9': '상품 택배, 인트라넷',
-      'OP10': '내부전달, 택배, 환경개선'
+      'OP10': '내부전달, 택배, 환경개선',
+      'OP12': 'CS 응대 (제품안내, 견적)'
     };
     return displayNames[code] || originalName;
   };
@@ -962,9 +963,9 @@ export default function TasksPage() {
                         <Edit className="h-4 w-4" />
                       </button>
                       
-                      {/* 환불 버튼 - 완료 상태이고 OP1-4인 경우만 */}
+                      {/* 환불 버튼 - 완료 상태이고 OP1-4, OP11인 경우만 */}
                       {task.achievement_status === 'completed' && 
-                       ['OP1', 'OP2', 'OP3', 'OP4'].includes(task.operation_type?.code || '') && (
+                       ['OP1', 'OP2', 'OP3', 'OP4', 'OP11'].includes(task.operation_type?.code || '') && (
                         <button
                           onClick={() => handleRefundTask(task)}
                           className="text-orange-600 hover:text-orange-900"
