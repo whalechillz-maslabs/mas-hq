@@ -98,7 +98,26 @@ export default function AttendanceManagementPage() {
   // 관리자가 출근/퇴근 시간을 수정하는 함수
   const updateAttendanceTime = async (employeeId: string, date: string, checkInTime: string, checkOutTime: string) => {
     try {
-      console.log(`🔄 출근/퇴근 시간 수정: ${employeeId}, ${date}, ${checkInTime}, ${checkOutTime}`);
+      console.log(`🔄 출근/퇴근 시간 수정 시작:`, {
+        employeeId,
+        date,
+        checkInTime,
+        checkOutTime
+      });
+      
+      // 먼저 해당 직원의 실제 UUID를 찾기
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employees')
+        .select('id, employee_id, name')
+        .eq('employee_id', employeeId)
+        .single();
+      
+      if (employeeError) {
+        console.error('❌ 직원 정보 조회 실패:', employeeError);
+        throw new Error(`직원 정보를 찾을 수 없습니다: ${employeeId}`);
+      }
+      
+      console.log('👤 직원 정보 조회 성공:', employeeData);
       
       // 근무 시간 계산
       let totalHours = 0;
@@ -108,11 +127,13 @@ export default function AttendanceManagementPage() {
         totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
       }
       
-      // attendance 테이블 업데이트 또는 생성
+      console.log('📊 계산된 근무 시간:', totalHours);
+      
+      // attendance 테이블 업데이트 또는 생성 (실제 UUID 사용)
       const { error: updateError } = await supabase
         .from('attendance')
         .upsert({
-          employee_id: employeeId,
+          employee_id: employeeData.id, // 실제 UUID 사용
           date: date,
           check_in_time: checkInTime,
           check_out_time: checkOutTime,
