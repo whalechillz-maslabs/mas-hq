@@ -964,31 +964,39 @@ export default function AttendanceManagementPage() {
       });
     }
     
-    // 휴식 상태 확인 (schedules 테이블의 status가 'break'인 경우)
-    if (record.status === 'break') {
+    // 휴식 상태 확인 - 단, 이미 퇴근한 경우는 제외
+    // 1. schedules 테이블의 status가 'break'인 경우
+    if (record.status === 'break' && !record.actual_end) {
       console.log('✅ schedules 테이블에서 break 상태 감지:', record.employee_name);
       return 'break';
     }
     
-    // 휴식 메모 확인 (employee_note에 '휴식 시작'이 있는 경우)
+    // 2. employee_note에 '휴식 시작'이 있는 경우 (퇴근하지 않은 경우만)
     if (record.employee_note && 
         record.employee_note.includes('휴식 시작') && 
-        !record.employee_note.includes('휴식 후 복귀')) {
+        !record.employee_note.includes('휴식 후 복귀') &&
+        !record.actual_end) {
       console.log('✅ employee_note에서 휴식 상태 감지:', record.employee_name, record.employee_note);
       return 'break';
     }
     
-    // attendance 테이블의 notes 필드에서 휴식 상태 확인
+    // 3. attendance 테이블의 notes 필드에서 휴식 상태 확인 (퇴근하지 않은 경우만)
     if (record.notes && 
         record.notes.includes('휴식 시작') && 
-        !record.notes.includes('휴식 후 복귀')) {
+        !record.notes.includes('휴식 후 복귀') &&
+        !record.actual_end) {
       console.log('✅ attendance notes에서 휴식 상태 감지:', record.employee_name, record.notes);
       return 'break';
     }
     
-    // 출근한 경우
-    if (record.actual_start) {
-      if (!record.actual_end) return 'working';
+    // 휴식 상태가 아닌 경우, 실제 출근/퇴근 상태를 우선 확인
+    // 출근했지만 퇴근하지 않은 경우는 'working' 상태
+    if (record.actual_start && !record.actual_end) {
+      return 'working';
+    }
+    
+    // 출근하고 퇴근한 경우는 'completed' 상태
+    if (record.actual_start && record.actual_end) {
       return 'completed';
     }
     
