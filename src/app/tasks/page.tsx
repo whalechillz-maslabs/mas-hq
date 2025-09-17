@@ -130,7 +130,12 @@ export default function TasksPage() {
     setQuickTaskData(prev => ({
       ...prev,
       operation_type_id: opType.id,
-      title: opType.name
+      title: '', // 사용자가 직접 입력하도록 빈 문자열로 초기화
+      customer_name: '',
+      sales_amount: 0,
+      notes: '',
+      customer_type: 'new',
+      consultation_channel: 'phone'
     }));
     setShowQuickTaskForm(true);
   };
@@ -714,7 +719,7 @@ export default function TasksPage() {
                   value={quickTaskData.title}
                   onChange={(e) => setQuickTaskData(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="업무 제목을 입력하세요"
+                  placeholder="예: CS 응대(제품안내), 전화판매(신규고객) 등"
                   required
                 />
               </div>
