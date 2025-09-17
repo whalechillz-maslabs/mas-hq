@@ -813,8 +813,7 @@ export default function AttendancePage() {
           `)
           .eq('employee_id', user.id) // UUID 사용
           .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
-          .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
-          .not('actual_start', 'is', null);
+          .lte('schedule_date', format(endDate, 'yyyy-MM-dd'));
 
         if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
         
@@ -824,7 +823,40 @@ export default function AttendancePage() {
         } else {
           console.log('✅ 월간 기록 조회 성공:', monthlyData?.length || 0, '개');
           console.log('📊 월간 데이터:', monthlyData);
-          setMonthlyRecords(monthlyData || []);
+          
+          // 월간 데이터도 attendance 데이터와 병합
+          if (monthlyData && monthlyData.length > 0) {
+            console.log('🔄 월간 데이터를 attendance와 병합 중...');
+            
+            // 각 날짜별로 attendance 데이터 조회
+            const mergedMonthlyData = await Promise.all(
+              monthlyData.map(async (schedule) => {
+                const { data: dayAttendance } = await supabase
+                  .from('attendance')
+                  .select('*')
+                  .eq('employee_id', user.id)
+                  .eq('date', schedule.schedule_date)
+                  .single();
+                
+                if (dayAttendance) {
+                  return {
+                    ...schedule,
+                    actual_start: dayAttendance.check_in_time ? `${schedule.schedule_date}T${dayAttendance.check_in_time}` : schedule.actual_start,
+                    actual_end: dayAttendance.check_out_time ? `${schedule.schedule_date}T${dayAttendance.check_out_time}` : schedule.actual_end,
+                    status: dayAttendance.check_out_time ? 'completed' : 
+                           dayAttendance.check_in_time ? 'in-progress' : 
+                           schedule.status
+                  };
+                }
+                return schedule;
+              })
+            );
+            
+            console.log('✅ 병합된 월간 데이터:', mergedMonthlyData);
+            setMonthlyRecords(mergedMonthlyData);
+          } else {
+            setMonthlyRecords(monthlyData || []);
+          }
         }
         
         if (isMounted) {
@@ -1937,9 +1969,17 @@ export default function AttendancePage() {
                 </div>
               )}
               
-              {dailyAttendance.totalWorkTime && (
-                <div className="text-lg font-semibold text-blue-600 mt-2">
-                  총 근무: {dailyAttendance.totalWorkTime}
+              {dailyAttendance.checkOutTime && (
+                <div className="text-lg text-gray-600">
+                  퇴근: {(() => {
+                    try {
+                      const date = new Date(dailyAttendance.checkOutTime);
+                      return format(date, "MM/dd HH:mm", { locale: ko });
+                    } catch (error) {
+                      console.error('퇴근 시간 변환 오류:', error);
+                      return dailyAttendance.checkOutTime;
+                    }
+                  })()}
                 </div>
               )}
               
