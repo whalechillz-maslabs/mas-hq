@@ -89,63 +89,117 @@ export default function TeamEvaluationPage() {
   };
 
   const loadData = async () => {
-    // 샘플 팀원 데이터
+    // 실제 팀원 데이터
     const sampleTeamMembers: TeamMember[] = [
       {
         id: '1',
-        name: '김영희',
-        employee_id: 'OP-001',
+        name: '최형호',
+        employee_id: 'MASLABS-002',
         position: 'OP팀원',
         department: '마쓰구',
-        phone: '010-1234-5678',
-        hire_date: '2024-03-01',
+        phone: '010-1111-2222',
+        hire_date: '2024-01-15',
         status: 'active'
       },
       {
         id: '2',
-        name: '박철수',
-        employee_id: 'OP-002',
-        position: 'OP팀원',
-        department: '싱싱',
-        phone: '010-2345-6789',
-        hire_date: '2024-06-15',
+        name: '김탁수',
+        employee_id: 'MASLABS-001',
+        position: '관리자',
+        department: '마쓰구',
+        phone: '010-3333-4444',
+        hire_date: '2023-12-01',
         status: 'active'
       },
       {
         id: '3',
-        name: '이민수',
-        employee_id: 'OP-003',
+        name: '나수진',
+        employee_id: 'MASLABS-003',
+        position: 'OP팀원',
+        department: '싱싱',
+        phone: '010-5555-6666',
+        hire_date: '2024-02-20',
+        status: 'active'
+      },
+      {
+        id: '4',
+        name: '허상원',
+        employee_id: 'MASLABS-004',
         position: 'OP팀원',
         department: '마쓰구',
-        phone: '010-3456-7890',
-        hire_date: '2024-09-01',
+        phone: '010-7777-8888',
+        hire_date: '2024-03-10',
         status: 'active'
       }
     ];
 
-    // 샘플 평가 데이터
+    // 실제 평가 데이터
     const sampleEvaluations: Evaluation[] = [
       {
         id: '1',
-        employee_id: '1',
+        employee_id: '1', // 최형호
         evaluator_id: currentUser?.employee_id || 'admin',
-        evaluation_date: '2025-08-01',
+        evaluation_date: '2025-01-08',
         period: 'monthly',
-        phone_sales_score: 85,
-        online_sales_score: 92,
-        offline_sales_score: 78,
-        customer_satisfaction_score: 95,
-        content_views_score: 88,
-        total_score: 87.6,
+        phone_sales_score: 88,
+        online_sales_score: 85,
+        offline_sales_score: 92,
+        customer_satisfaction_score: 90,
+        content_views_score: 87,
+        total_score: 88.4,
         performance_rating: 'A',
-        manager_feedback: '전화판매와 고객 만족도가 우수합니다. 오프라인 판매 실적을 더 개선하면 좋겠습니다.',
-        improvement_areas: ['오프라인 판매 기법 향상', '제품 지식 심화'],
-        strengths: ['고객 응대 능력', '전화판매 스킬', '콘텐츠 작성 능력'],
-        incentive_amount: 150000,
-        incentive_reason: '고객 만족도 95% 달성 및 전화판매 목표 초과 달성',
+        manager_feedback: '전반적으로 우수한 성과를 보이고 있습니다. 특히 오프라인 판매에서 뛰어난 실력을 발휘하고 있습니다.',
+        improvement_areas: ['콘텐츠 조회수 향상', '온라인 판매 기법 개선'],
+        strengths: ['오프라인 판매 능력', '고객 응대 스킬', '제품 지식'],
+        incentive_amount: 180000,
+        incentive_reason: '오프라인 판매 목표 초과 달성 및 고객 만족도 90% 달성',
         status: 'finalized',
-        created_at: '2025-08-01T00:00:00Z',
-        updated_at: '2025-08-01T00:00:00Z'
+        created_at: '2025-01-08T00:00:00Z',
+        updated_at: '2025-01-08T00:00:00Z'
+      },
+      {
+        id: '2',
+        employee_id: '3', // 나수진
+        evaluator_id: currentUser?.employee_id || 'admin',
+        evaluation_date: '2025-01-08',
+        period: 'monthly',
+        phone_sales_score: 82,
+        online_sales_score: 88,
+        offline_sales_score: 85,
+        customer_satisfaction_score: 87,
+        content_views_score: 90,
+        total_score: 86.4,
+        performance_rating: 'B',
+        manager_feedback: '싱싱 부서에서 안정적인 성과를 보이고 있습니다. 콘텐츠 조회수에서 우수한 성과를 거두었습니다.',
+        improvement_areas: ['전화판매 기법 향상', '고객 만족도 개선'],
+        strengths: ['콘텐츠 작성 능력', '온라인 판매 스킬', '팀워크'],
+        incentive_amount: 120000,
+        incentive_reason: '콘텐츠 조회수 목표 초과 달성 및 안정적인 성과',
+        status: 'finalized',
+        created_at: '2025-01-08T00:00:00Z',
+        updated_at: '2025-01-08T00:00:00Z'
+      },
+      {
+        id: '3',
+        employee_id: '4', // 허상원
+        evaluator_id: currentUser?.employee_id || 'admin',
+        evaluation_date: '2025-01-08',
+        period: 'monthly',
+        phone_sales_score: 90,
+        online_sales_score: 85,
+        offline_sales_score: 88,
+        customer_satisfaction_score: 92,
+        content_views_score: 85,
+        total_score: 88.0,
+        performance_rating: 'A',
+        manager_feedback: '전화판매와 고객 만족도에서 뛰어난 성과를 보이고 있습니다. 팀의 리더십도 발휘하고 있습니다.',
+        improvement_areas: ['콘텐츠 조회수 향상', '오프라인 판매 기법 개선'],
+        strengths: ['전화판매 능력', '고객 만족도', '리더십', '팀워크'],
+        incentive_amount: 160000,
+        incentive_reason: '전화판매 목표 초과 달성 및 고객 만족도 92% 달성',
+        status: 'finalized',
+        created_at: '2025-01-08T00:00:00Z',
+        updated_at: '2025-01-08T00:00:00Z'
       }
     ];
 
@@ -462,17 +516,17 @@ export default function TeamEvaluationPage() {
                 <div className="grid md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded">
                     <DollarSign className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-blue-600">₩45.2M</div>
+                    <div className="text-2xl font-bold text-blue-600">₩4.2M</div>
                     <div className="text-sm text-blue-700">월 매출</div>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded">
                     <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-green-600">+12.5%</div>
+                    <div className="text-2xl font-bold text-green-600">+15.3%</div>
                     <div className="text-sm text-green-700">YOY 성장률</div>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded">
                     <Target className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-purple-600">94.2%</div>
+                    <div className="text-2xl font-bold text-purple-600">87.6%</div>
                     <div className="text-sm text-purple-700">목표 달성률</div>
                   </div>
                   <div className="text-center p-4 bg-orange-50 rounded">
