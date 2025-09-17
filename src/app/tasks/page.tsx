@@ -76,7 +76,16 @@ export default function TasksPage() {
     todaySales: 0,
     pendingTasks: 0,
     completedTasks: 0,
-    refundedTasks: 0
+    refundedTasks: 0,
+    // 환불 통계 분리
+    salesTasks: 0,
+    salesPoints: 0,
+    salesAmount: 0,
+    refundTasks: 0,
+    refundPoints: 0,
+    refundAmount: 0,
+    netPoints: 0,
+    netSales: 0
   });
 
   useEffect(() => {
@@ -207,18 +216,31 @@ export default function TasksPage() {
 
       setTasks(tasksData || []);
 
-      // 통계 계산
+      // 통계 계산 - 판매와 환불 분리
+      const salesTasks = tasksData?.filter(t => !t.title?.includes('[환불]')) || [];
+      const refundTasks = tasksData?.filter(t => t.title?.includes('[환불]')) || [];
+      
       const totalTasks = tasksData?.length || 0;
-      const totalPoints = tasksData?.reduce((sum, t) => {
+      
+      // 판매 통계
+      const salesPoints = salesTasks.reduce((sum, t) => {
         const opType = sortedOperationTypes.find(op => op.id === t.operation_type_id);
-        const points = opType?.points || 0;
-        
-        // 환불 업무는 제목에 [환불]이 포함되어 있음
-        if (t.title && t.title.includes('[환불]')) {
-          return sum - points;
-        }
-        return sum + points;
-      }, 0) || 0;
+        return sum + (opType?.points || 0);
+      }, 0);
+      
+      const salesAmount = salesTasks.reduce((sum, t) => sum + (t.sales_amount || 0), 0);
+      
+      // 환불 통계
+      const refundPoints = refundTasks.reduce((sum, t) => {
+        const opType = sortedOperationTypes.find(op => op.id === t.operation_type_id);
+        return sum + (opType?.points || 0);
+      }, 0);
+      
+      const refundAmount = refundTasks.reduce((sum, t) => sum + Math.abs(t.sales_amount || 0), 0);
+      
+      // 순 통계
+      const netPoints = salesPoints + refundPoints; // 환불은 음수이므로 자동 차감
+      const netSales = salesAmount + refundTasks.reduce((sum, t) => sum + (t.sales_amount || 0), 0); // 환불은 음수이므로 자동 차감
 
       // 오늘 매출 계산 (오늘 날짜의 업무만)
       // 한국 시간 기준으로 오늘 날짜 계산
@@ -234,20 +256,23 @@ export default function TasksPage() {
 
       setStats({
         totalTasks,
-        totalPoints,
-        totalSales: tasksData?.reduce((sum, t) => {
-          // 환불 업무는 음수로 계산
-          if (t.title && t.title.includes('[환불]')) {
-            return sum - Math.abs(t.sales_amount || 0);
-          }
-          return sum + (t.sales_amount || 0);
-        }, 0) || 0,
-        todaySales, // 오늘 매출 추가
+        totalPoints: netPoints, // 순 포인트
+        totalSales: netSales, // 순 매출
+        todaySales,
         pendingTasks: tasksData?.filter(t => t.achievement_status === 'pending').length || 0,
         completedTasks: tasksData?.filter(t => t.achievement_status === 'completed').length || 0,
-        refundedTasks: tasksData?.filter(t => t.title && t.title.includes('[환불]')).length || 0
+        refundedTasks: refundTasks.length,
+        // 환불 통계 분리
+        salesTasks: salesTasks.length,
+        salesPoints,
+        salesAmount,
+        refundTasks: refundTasks.length,
+        refundPoints,
+        refundAmount,
+        netPoints,
+        netSales
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('데이터 로드 실패:', error);
     } finally {
       setLoading(false);
@@ -303,7 +328,7 @@ export default function TasksPage() {
       alert('업무가 성공적으로 추가되었습니다!');
       setShowAddModal(false);
       loadTasksData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 업무 추가 실패:', error);
       alert(`업무 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
@@ -384,7 +409,7 @@ export default function TasksPage() {
       console.log('✅ 업무 상태 업데이트 성공');
       alert('업무가 완료되었습니다!');
       loadTasksData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 업무 상태 업데이트 실패:', error);
       alert(`업무 완료 처리에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
@@ -434,17 +459,28 @@ export default function TasksPage() {
         return;
       }
 
-      // 새로운 환불 업무 로우 생성
+      // OP8 업무 유형 찾기
+      const op8Type = operationTypes.find(op => op.code === 'OP8');
+      if (!op8Type) {
+        console.error('OP8 업무 유형을 찾을 수 없습니다.');
+        return;
+      }
+
+      // 원본 업무의 포인트 계산
+      const originalPoints = refundTargetTask.operation_type?.points || 0;
+      const refundAmount = refundData.refund_amount || refundTargetTask.sales_amount || 0;
+
+      // 새로운 환불 업무 로우 생성 (OP8 전용)
       const { data, error } = await supabase
         .from('employee_tasks')
         .insert({
           employee_id: user.id,
-          operation_type_id: refundTargetTask.operation_type_id, // 원본과 같은 업무 유형
+          operation_type_id: op8Type.id, // OP8 전용 ID 사용
           title: `[환불] ${refundTargetTask.title}`,
-          notes: `원본 업무: ${refundTargetTask.title}\n환불 사유: ${refundData.notes || ''}`,
+          notes: `원본 업무: ${refundTargetTask.title}\n원본 포인트: ${originalPoints}점\n환불 사유: ${refundData.notes || ''}`,
           task_time: refundData.task_time,
           customer_name: refundTargetTask.customer_name,
-          sales_amount: -(refundData.refund_amount || refundTargetTask.sales_amount || 0), // 환불 금액을 음수로 설정
+          sales_amount: -refundAmount, // 환불 금액을 음수로 설정
           task_priority: refundData.task_priority || 'high',
           achievement_status: 'completed', // 환불 업무는 바로 완료 상태
           task_date: refundData.task_date,
@@ -457,6 +493,7 @@ export default function TasksPage() {
       if (error) throw error;
       
       console.log('환불 업무 생성 성공:', data);
+      console.log(`원본 포인트 ${originalPoints}점 차감 처리됨`);
       setShowRefundModal(false);
       setRefundTargetTask(null);
       loadTasksData();
@@ -550,6 +587,45 @@ export default function TasksPage() {
                   {stats.totalTasks}건
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 개인 KPI 표시 */}
+        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 개인 KPI</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Phone className="h-6 w-6 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-800">전화 판매 건수</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-600">
+                {tasks.filter(t => ['OP1', 'OP2'].includes(t.operation_type?.code || '') && !t.title?.includes('[환불]')).length}건
+              </p>
+              <p className="text-xs text-blue-500 mt-1">OP1, OP2 합계</p>
+            </div>
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Store className="h-6 w-6 text-green-600 mr-2" />
+                <span className="text-sm font-medium text-green-800">매장 판매 건수</span>
+              </div>
+              <p className="text-2xl font-bold text-green-600">
+                {tasks.filter(t => ['OP3', 'OP4'].includes(t.operation_type?.code || '') && !t.title?.includes('[환불]')).length}건
+              </p>
+              <p className="text-xs text-green-500 mt-1">OP3, OP4 합계</p>
+            </div>
+            
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Headphones className="h-6 w-6 text-purple-600 mr-2" />
+                <span className="text-sm font-medium text-purple-800">CS 응대</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-600">
+                {tasks.filter(t => t.operation_type?.code === 'OP5' && !t.title?.includes('[환불]')).length}건
+              </p>
+              <p className="text-xs text-purple-500 mt-1">OP5</p>
             </div>
           </div>
         </div>
