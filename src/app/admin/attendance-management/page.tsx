@@ -30,6 +30,8 @@ interface AttendanceRecord {
   notes: string | null;
   schedule_count: number;
   first_schedule_start: string;
+  location?: any; // 위치 정보
+  total_break_minutes?: number; // 총 휴식 시간 (분)
   last_schedule_end: string;
 }
 
@@ -43,6 +45,85 @@ export default function AttendanceManagementPage() {
     checkInTime: '',
     checkOutTime: ''
   });
+
+  // 위치 정보 가져오기 함수
+  const getCurrentLocation = (): Promise<GeolocationPosition> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('위치 서비스가 지원되지 않습니다.'));
+      }
+
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      });
+    });
+  };
+
+  // 휴식 시간 계산 함수
+  const calculateTotalBreakMinutes = (notes: string | null): number => {
+    if (!notes) return 0;
+    
+    let totalMinutes = 0;
+    
+    // 휴식 시작과 종료 시간을 찾아서 총 휴식 시간 계산
+    const breakStartMatches = notes.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
+    const breakEndMatches = notes.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
+    
+    if (breakStartMatches && breakEndMatches) {
+      const breakPeriods: { start: string; end: string }[] = [];
+      
+      // 휴식 시작 시간들 파싱
+      breakStartMatches.forEach(match => {
+        const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
+        if (timeMatch) {
+          const period = timeMatch[1];
+          const time = timeMatch[2];
+          const [hours, minutes] = time.split(':').map(Number);
+          let hour24 = hours;
+          if (period === '오후' && hours !== 12) hour24 += 12;
+          if (period === '오전' && hours === 12) hour24 = 0;
+          breakPeriods.push({ start: `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`, end: '' });
+        }
+      });
+      
+      // 휴식 종료 시간들 파싱
+      breakEndMatches.forEach(match => {
+        const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
+        if (timeMatch) {
+          const period = timeMatch[1];
+          const time = timeMatch[2];
+          const [hours, minutes] = time.split(':').map(Number);
+          let hour24 = hours;
+          if (period === '오후' && hours !== 12) hour24 += 12;
+          if (period === '오전' && hours === 12) hour24 = 0;
+          const endTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          
+          // 가장 가까운 시작 시간과 매칭
+          for (let i = breakPeriods.length - 1; i >= 0; i--) {
+            if (!breakPeriods[i].end) {
+              breakPeriods[i].end = endTime;
+              break;
+            }
+          }
+        }
+      });
+      
+      // 각 휴식 시간 계산
+      breakPeriods.forEach(period => {
+        if (period.start && period.end) {
+          const [startHour, startMin] = period.start.split(':').map(Number);
+          const [endHour, endMin] = period.end.split(':').map(Number);
+          const startMinutes = startHour * 60 + startMin;
+          const endMinutes = endHour * 60 + endMin;
+          totalMinutes += endMinutes - startMinutes;
+        }
+      });
+    }
+    
+    return totalMinutes;
+  };
 
   // 한국 시간 기준으로 오늘 날짜 설정
   const getKoreaToday = () => {
@@ -119,6 +200,29 @@ export default function AttendanceManagementPage() {
       
       console.log('👤 직원 정보 조회 성공:', employeeData);
       
+      // 위치 정보 가져오기
+      let location = null;
+      try {
+        const position = await getCurrentLocation();
+        location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+        console.log('📍 위치 정보 가져오기 성공:', location);
+      } catch (locationError) {
+        console.warn('⚠️ 위치 정보를 가져올 수 없습니다:', locationError);
+        // 위치 정보 없이도 수정 가능
+        location = {
+          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714828,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
+        };
+      }
+      
       // 근무 시간 계산 (정리된 시간 사용)
       let totalHours = 0;
       const cleanCheckInTime = checkInTime && checkInTime.trim() !== '' ? checkInTime.trim() : null;
@@ -150,6 +254,7 @@ export default function AttendanceManagementPage() {
           total_hours: totalHours,
           overtime_hours: 0,
           status: cleanCheckOutTime ? 'completed' : 'present',
+          location: location, // 위치 정보 추가
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'employee_id,date'
@@ -202,7 +307,7 @@ export default function AttendanceManagementPage() {
       setEditingRecord(null);
       setEditForm({ checkInTime: '', checkOutTime: '' });
       alert('출근/퇴근 시간이 성공적으로 수정되었습니다.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 편집 저장 실패:', error);
       alert(`출근/퇴근 시간 수정에 실패했습니다.\n오류: ${error.message || error}`);
     }
@@ -372,6 +477,8 @@ ${record.employee_name} 통계 정보:
               record.overtime_hours = attendance.overtime_hours || 0;
               record.status = attendance.status || record.status;
               record.notes = attendance.notes || null;
+              record.location = attendance.location || null;
+              record.total_break_minutes = calculateTotalBreakMinutes(attendance.notes);
             }
           }
           
@@ -743,7 +850,7 @@ ${record.employee_name} 통계 정보:
                     실제 출근
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    점심 휴식
+                    휴식 시간
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     실제 퇴근
@@ -822,7 +929,12 @@ ${record.employee_name} 통계 정보:
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">-</div>
+                        <div className="text-sm text-gray-900">
+                          {record.total_break_minutes && record.total_break_minutes > 0 
+                            ? `${Math.floor(record.total_break_minutes / 60)}h ${record.total_break_minutes % 60}m`
+                            : '-'
+                          }
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {editingRecord === record.employee_id_code ? (
@@ -850,7 +962,12 @@ ${record.employee_name} 통계 정보:
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-xs text-gray-500">위치 없음</span>
+                        <span className="text-xs text-gray-500">
+                          {record.location 
+                            ? record.location.note || '위치 추적됨'
+                            : '위치 없음'
+                          }
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(actualStatus)}`}>
