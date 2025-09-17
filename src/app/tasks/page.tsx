@@ -34,6 +34,9 @@ interface Task {
   achievement_status?: string;
   task_priority?: string;
   task_date?: string;
+  // 신규 상담 구분을 위한 필드 추가
+  customer_type?: 'new' | 'existing'; // 신규/기존 고객
+  consultation_channel?: 'phone' | 'kakao' | 'smartstore' | 'official_website'; // 상담 채널
   created_at: string;
   updated_at: string;
   operation_type?: {
@@ -67,7 +70,9 @@ export default function TasksPage() {
     title: '',
     customer_name: '',
     sales_amount: 0,
-    notes: ''
+    notes: '',
+    customer_type: 'new' as 'new' | 'existing',
+    consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website'
   });
   const [stats, setStats] = useState({
     totalTasks: 0,
@@ -144,6 +149,8 @@ export default function TasksPage() {
           customer_name: quickTaskData.customer_name,
           sales_amount: quickTaskData.sales_amount,
           notes: quickTaskData.notes,
+          customer_type: quickTaskData.customer_type,
+          consultation_channel: quickTaskData.consultation_channel,
           // 한국 시간 기준으로 오늘 날짜 계산
           task_date: (() => {
             const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
@@ -161,7 +168,9 @@ export default function TasksPage() {
         title: '',
         customer_name: '',
         sales_amount: 0,
-        notes: ''
+        notes: '',
+        customer_type: 'new',
+        consultation_channel: 'phone'
       });
       loadTasksData();
     } catch (error) {
@@ -729,6 +738,43 @@ export default function TasksPage() {
                   min="0"
                 />
               </div>
+
+              {/* OP5 CS 응대 시 추가 필드 */}
+              {operationTypes.find(op => op.id === quickTaskData.operation_type_id)?.code === 'OP5' && (
+                <>
+                  {/* 고객 유형 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      고객 유형
+                    </label>
+                    <select
+                      value={quickTaskData.customer_type}
+                      onChange={(e) => setQuickTaskData(prev => ({ ...prev, customer_type: e.target.value as 'new' | 'existing' }))}
+                      className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="new">신규 고객</option>
+                      <option value="existing">기존 고객</option>
+                    </select>
+                  </div>
+
+                  {/* 상담 채널 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      상담 채널
+                    </label>
+                    <select
+                      value={quickTaskData.consultation_channel}
+                      onChange={(e) => setQuickTaskData(prev => ({ ...prev, consultation_channel: e.target.value as 'phone' | 'kakao' | 'smartstore' | 'official_website' }))}
+                      className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="phone">전화</option>
+                      <option value="kakao">카카오채널</option>
+                      <option value="smartstore">스마트스토어</option>
+                      <option value="official_website">공홈</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* 업무 내용 */}
               <div>

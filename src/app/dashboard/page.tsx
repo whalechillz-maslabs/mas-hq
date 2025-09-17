@@ -40,17 +40,20 @@ interface DashboardData {
       points: number;
       tasks: number;
       participants: number;
+      newConsultations: number; // 신규 상담 건수 추가
     };
     singsingolf: {
       sales: number;
       points: number;
       tasks: number;
       participants: number;
+      newConsultations: number; // 신규 상담 건수 추가
     };
     total: {
       sales: number;
       points: number;
       tasks: number;
+      newConsultations: number; // 신규 상담 건수 추가
     };
   };
   todayMission: {
@@ -237,6 +240,12 @@ export default function DashboardPage() {
       const masgolfPoints = masgolfTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
       const masgolfTaskCount = masgolfTasks.length;
       const masgolfParticipants = new Set(masgolfTasks.map(task => task.employee_id)).size;
+      
+      // 마스골프 신규 상담 건수 (OP5에서 customer_type이 'new'인 경우)
+      const masgolfNewConsultations = masgolfTasks.filter(task => 
+        task.operation_type?.code === 'OP5' && 
+        task.customer_type === 'new'
+      ).length;
 
       // 싱싱골프 성과 계산 (OP11-OP12)
       const singsingolfTasks = allTeamTasks?.filter(task => {
@@ -248,11 +257,18 @@ export default function DashboardPage() {
       const singsingolfPoints = singsingolfTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
       const singsingolfTaskCount = singsingolfTasks.length;
       const singsingolfParticipants = new Set(singsingolfTasks.map(task => task.employee_id)).size;
+      
+      // 싱싱골프 신규 상담 건수 (OP12에서 customer_type이 'new'인 경우)
+      const singsingolfNewConsultations = singsingolfTasks.filter(task => 
+        task.operation_type?.code === 'OP12' && 
+        task.customer_type === 'new'
+      ).length;
 
       // 전체 성과 계산
       const totalSales = masgolfSales + singsingolfSales;
       const totalPoints = masgolfPoints + singsingolfPoints;
       const totalTasks = masgolfTaskCount + singsingolfTaskCount;
+      const totalNewConsultations = masgolfNewConsultations + singsingolfNewConsultations;
 
       // 협업 성과 데이터
       const collaborationStats = {
@@ -260,18 +276,21 @@ export default function DashboardPage() {
           sales: masgolfSales,
           points: masgolfPoints,
           tasks: masgolfTaskCount,
-          participants: masgolfParticipants
+          participants: masgolfParticipants,
+          newConsultations: masgolfNewConsultations
         },
         singsingolf: {
           sales: singsingolfSales,
           points: singsingolfPoints,
           tasks: singsingolfTaskCount,
-          participants: singsingolfParticipants
+          participants: singsingolfParticipants,
+          newConsultations: singsingolfNewConsultations
         },
         total: {
           sales: totalSales,
           points: totalPoints,
-          tasks: totalTasks
+          tasks: totalTasks,
+          newConsultations: totalNewConsultations
         }
       };
 
@@ -329,18 +348,21 @@ export default function DashboardPage() {
             sales: 25000000,
             points: 1250,
             tasks: 85,
-            participants: 5
+            participants: 5,
+            newConsultations: 25
           },
           singsingolf: {
             sales: 10000000,
             points: 420,
             tasks: 35,
-            participants: 3
+            participants: 3,
+            newConsultations: 15
           },
           total: {
             sales: 35000000,
             points: 1670,
-            tasks: 120
+            tasks: 120,
+            newConsultations: 40
           }
         },
         todayMission: {
@@ -641,7 +663,7 @@ export default function DashboardPage() {
               <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
               마스골프 성과
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -680,6 +702,19 @@ export default function DashboardPage() {
                   OP1-10 업무 건수
                 </div>
               </div>
+
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">신규 상담</p>
+                    <p className="text-3xl font-bold text-green-900">{data?.collaborationStats?.masgolf?.newConsultations || 0}건</p>
+                  </div>
+                  <Phone className="h-10 w-10 text-green-600" />
+                </div>
+                <div className="text-xs text-green-500">
+                  전화, 카카오채널, 스마트스토어, 공홈
+                </div>
+              </div>
             </div>
           </div>
 
@@ -689,7 +724,7 @@ export default function DashboardPage() {
               <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
               싱싱골프 성과
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="p-6 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl border border-pink-200">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -726,6 +761,19 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-xs text-pink-500">
                   OP11-12 업무 건수
+                </div>
+              </div>
+
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl border border-purple-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-purple-600 font-medium">신규 상담</p>
+                    <p className="text-3xl font-bold text-purple-900">{data?.collaborationStats?.singsingolf?.newConsultations || 0}건</p>
+                  </div>
+                  <Phone className="h-10 w-10 text-purple-600" />
+                </div>
+                <div className="text-xs text-purple-500">
+                  전화, 카카오채널, 스마트스토어, 공홈
                 </div>
               </div>
             </div>
@@ -774,6 +822,19 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-xs text-green-500">
                   마스골프 + 싱싱골프
+                </div>
+              </div>
+
+              <div className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl border border-indigo-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-indigo-600 font-medium">전체 신규 상담</p>
+                    <p className="text-3xl font-bold text-indigo-900">{data?.collaborationStats?.total?.newConsultations || 0}건</p>
+                  </div>
+                  <Phone className="h-10 w-10 text-indigo-600" />
+                </div>
+                <div className="text-xs text-indigo-500">
+                  전화, 카카오채널, 스마트스토어, 공홈
                 </div>
               </div>
               
