@@ -132,6 +132,30 @@ export default function AttendanceManagementPage() {
     return koreaTime.toISOString().split('T')[0];
   };
 
+  // 위치 데이터 초기화 함수
+  const clearLocationData = async () => {
+    if (!confirm('모든 직원의 위치 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .update({ location: null })
+        .eq('date', selectedDate);
+
+      if (error) {
+        throw error;
+      }
+
+      alert('위치 데이터가 성공적으로 초기화되었습니다.');
+      loadData();
+    } catch (error: any) {
+      console.error('위치 데이터 초기화 오류:', error);
+      alert(`위치 데이터 초기화에 실패했습니다: ${error.message}`);
+    }
+  };
+
   const [selectedDate, setSelectedDate] = useState(getKoreaToday());
   const [selectedDepartment, setSelectedDepartment] = useState('전체 부서');
   const [searchTerm, setSearchTerm] = useState('');
@@ -208,7 +232,8 @@ export default function AttendanceManagementPage() {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          note: `위치 추적됨 (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`
         };
         console.log('📍 위치 정보 가져오기 성공:', location);
       } catch (locationError) {
@@ -678,12 +703,20 @@ ${record.employee_name} 통계 정보:
     return matchesSearch;
   });
 
-  // 통계 계산 - 휴식 상태도 실제로 계산
-  const completedCount = filteredRecords.filter(r => getActualStatus(r) === 'completed').length;
-  const workingCount = filteredRecords.filter(r => getActualStatus(r) === 'working').length;
-  const breakCount = filteredRecords.filter(r => getActualStatus(r) === 'break').length;
-  const notCheckedInCount = filteredRecords.filter(r => getActualStatus(r) === 'not_checked_in').length;
-  const pendingCount = filteredRecords.filter(r => getActualStatus(r) === 'pending').length;
+  // 통계 계산 - 직원별로 중복 제거하여 계산
+  const uniqueEmployees = new Map();
+  filteredRecords.forEach(record => {
+    if (!uniqueEmployees.has(record.employee_id)) {
+      uniqueEmployees.set(record.employee_id, record);
+    }
+  });
+  
+  const uniqueRecords = Array.from(uniqueEmployees.values());
+  const completedCount = uniqueRecords.filter(r => getActualStatus(r) === 'completed').length;
+  const workingCount = uniqueRecords.filter(r => getActualStatus(r) === 'working').length;
+  const breakCount = uniqueRecords.filter(r => getActualStatus(r) === 'break').length;
+  const notCheckedInCount = uniqueRecords.filter(r => getActualStatus(r) === 'not_checked_in').length;
+  const pendingCount = uniqueRecords.filter(r => getActualStatus(r) === 'pending').length;
   
   const avgHours = filteredRecords.length > 0 
     ? filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / filteredRecords.length 
@@ -711,6 +744,12 @@ ${record.employee_name} 통계 정보:
               <p className="mt-2 text-gray-600">직원들의 출근체크 위치/시간 확인 및 관리</p>
             </div>
             <div className="flex space-x-3">
+              <button 
+                onClick={clearLocationData}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                위치 데이터 초기화
+              </button>
               <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
                 디버그 보기
               </button>
@@ -964,7 +1003,10 @@ ${record.employee_name} 통계 정보:
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-xs text-gray-500">
                           {record.location 
-                            ? record.location.note || '위치 추적됨'
+                            ? (record.location.note || 
+                               (record.location.latitude && record.location.longitude 
+                                 ? `위치 추적됨 (${record.location.latitude.toFixed(4)}, ${record.location.longitude.toFixed(4)})`
+                                 : '위치 추적됨'))
                             : '위치 없음'
                           }
                         </span>
