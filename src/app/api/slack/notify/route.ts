@@ -13,51 +13,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Slack 설정이 필요합니다.' }, { status: 500 });
     }
 
-    // Slack 메시지 포맷 (Incoming Webhooks용 - channel 필드 제거)
+    // Slack 메시지 포맷 (간단한 텍스트 메시지로 테스트)
     const message = {
-      username: 'MASLABS 업무봇',
-      icon_emoji: ':memo:',
-      attachments: [
-        {
-          color: task.operation_type?.code === 'OP10' ? '#36a64f' : '#2196F3',
-          title: `📋 새로운 업무 등록`,
-          title_link: `${process.env.NEXT_PUBLIC_APP_URL}/shared-tasks`,
-          fields: [
-            {
-              title: '업무 유형',
-              value: `${task.operation_type?.code} - ${task.operation_type?.name}`,
-              short: true
-            },
-            {
-              title: '작성자',
-              value: `${employee.name} (${employee.employee_id})`,
-              short: true
-            },
-            {
-              title: '업무명',
-              value: task.title || '-',
-              short: false
-            },
-            {
-              title: '업무 내용',
-              value: task.notes ? (task.notes.length > 200 ? task.notes.substring(0, 200) + '...' : task.notes) : '-',
-              short: false
-            },
-            {
-              title: '고객명',
-              value: task.customer_name || '-',
-              short: true
-            },
-            {
-              title: '포인트',
-              value: `${task.operation_type?.points || 0}점`,
-              short: true
-            }
-          ],
-          footer: 'MASLABS 업무 관리 시스템',
-          ts: Math.floor(Date.now() / 1000)
-        }
-      ]
+      text: `📋 새로운 OP10 업무 등록
+      
+**업무 유형:** ${task.operation_type?.code} - ${task.operation_type?.name}
+**작성자:** ${employee.name} (${employee.employee_id})
+**업무명:** ${task.title || '-'}
+**업무 내용:** ${task.notes ? (task.notes.length > 200 ? task.notes.substring(0, 200) + '...' : task.notes) : '-'}
+**고객명:** ${task.customer_name || '-'}
+**포인트:** ${task.operation_type?.points || 0}점
+
+MASLABS 업무 관리 시스템`
     };
 
     // Slack으로 메시지 전송
