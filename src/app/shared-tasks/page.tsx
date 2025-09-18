@@ -245,7 +245,7 @@ export default function SharedTasksPage() {
                         {task.customer_name && task.customer_name.trim() && (
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-1" />
-                            고객: {task.customer_name.trim()}
+                            고객: {task.customer_name.trim().replace(/0+$/, '')}
                           </div>
                         )}
                         {task.sales_amount && task.sales_amount > 0 && (
