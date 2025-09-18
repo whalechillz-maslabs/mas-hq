@@ -182,6 +182,38 @@ export default function TasksPage() {
 
       if (error) throw error;
 
+      // OP10 업무인 경우 Slack 알림 전송
+      const selectedOpType = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
+      if (selectedOpType?.code === 'OP10') {
+        try {
+          await fetch('/api/slack/notify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              task: {
+                title: quickTaskData.title,
+                notes: quickTaskData.notes,
+                customer_name: quickTaskData.customer_name,
+                operation_type: {
+                  code: selectedOpType.code,
+                  name: getOperationDisplayName(selectedOpType.code, selectedOpType.name),
+                  points: selectedOpType.points
+                }
+              },
+              employee: {
+                name: currentUser.name,
+                employee_id: currentUser.employee_id
+              }
+            }),
+          });
+        } catch (slackError) {
+          console.error('Slack 알림 전송 실패:', slackError);
+          // Slack 알림 실패는 업무 등록을 막지 않음
+        }
+      }
+
       // 성공 후 폼 초기화 및 데이터 새로고침
       setShowQuickTaskForm(false);
       setSelectedOperationTypeForAdd('');
@@ -592,13 +624,22 @@ export default function TasksPage() {
               <h1 className="text-xl font-semibold">업무 기록</h1>
             </div>
             
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              업무 추가
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => router.push('/shared-tasks')}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                공유 업무
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                업무 추가
+              </button>
+            </div>
           </div>
         </div>
       </header>
