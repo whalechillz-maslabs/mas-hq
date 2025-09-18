@@ -78,6 +78,7 @@ interface DashboardData {
     };
   };
   recentSharedTasks: SharedTask[]; // 최근 공유 업무 추가
+  myTasks: SharedTask[]; // 내 업무 추가
   teamRankings?: {
     sales: { name: string; sales: number; points: number; tasks: number }[];
     points: { name: string; sales: number; points: number; tasks: number }[];
@@ -99,12 +100,13 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showAllSharedTasks, setShowAllSharedTasks] = useState(false);
-  const [activePriorityTab, setActivePriorityTab] = useState<'urgent' | 'high' | 'medium' | 'low'>('urgent');
+  const [activePriorityTab, setActivePriorityTab] = useState<'urgent' | 'high' | 'medium' | 'low' | 'my'>('urgent');
   const [expandedTabs, setExpandedTabs] = useState<{[key: string]: boolean}>({
     urgent: false,
     high: false,
     medium: false,
-    low: false
+    low: false,
+    my: false
   });
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
@@ -442,11 +444,11 @@ export default function DashboardPage() {
         dedication: Math.random() > 0.2
       };
 
-      // 최근 공유 업무 (OP5, OP10) 가져오기 - 긴급/높음 우선순위만
+      // 최근 공유 업무 (모든 업무 유형) 가져오기
       const { data: operationTypesData } = await supabase
         .from('operation_types')
-        .select('id')
-        .in('code', ['OP5', 'OP10']);
+        .select('id, code')
+        .in('code', ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10', 'OP11', 'OP12']);
 
       let recentSharedTasks: SharedTask[] = [];
       if (operationTypesData && operationTypesData.length > 0) {
@@ -475,6 +477,34 @@ export default function DashboardPage() {
         recentSharedTasks = sharedTasksData || [];
       }
 
+      // 내 업무 가져오기 (모든 업무 유형)
+      let myTasks: SharedTask[] = [];
+      if (operationTypesData && operationTypesData.length > 0) {
+        const operationTypeIds = operationTypesData.map(op => op.id);
+        
+        const { data: myTasksData } = await supabase
+          .from('employee_tasks')
+          .select(`
+            id,
+            title,
+            notes,
+            customer_name,
+            task_date,
+            created_at,
+            task_priority,
+            achievement_status,
+            operation_type:operation_types(code, name, points),
+            employee:employees(name, employee_id)
+          `)
+          .in('operation_type_id', operationTypeIds)
+          .eq('employee_id', currentUser.id)
+          .eq('achievement_status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        myTasks = myTasksData || [];
+      }
+
       // 팀원 순위 계산
       const teamRankings = await calculateTeamRankings(startOfMonthStr, endOfMonthStr);
 
@@ -486,6 +516,7 @@ export default function DashboardPage() {
         teamKPI,
         collaborationStats,
         recentSharedTasks,
+        myTasks,
         teamRankings,
         todayMission,
         todaySales: todaySales
@@ -537,6 +568,7 @@ export default function DashboardPage() {
           }
         },
         recentSharedTasks: [],
+        myTasks: [],
         todayMission: {
           positiveThinking: true,
           creativePassion: true,
@@ -567,7 +599,8 @@ export default function DashboardPage() {
       urgent: tasks.filter(task => task.task_priority === 'urgent'),
       high: tasks.filter(task => task.task_priority === 'high'),
       medium: tasks.filter(task => task.task_priority === 'medium'),
-      low: tasks.filter(task => task.task_priority === 'low')
+      low: tasks.filter(task => task.task_priority === 'low'),
+      my: data?.myTasks || []
     };
   };
 
@@ -806,23 +839,23 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 긴급 업무 섹션 */}
-        {(() => {
-          const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], medium: [], low: [] };
-          const urgentTasks = tasksByPriority.urgent;
-          const hasUrgentTasks = urgentTasks.length > 0;
+        {/* 우선순위별 공유 업무 */}
+        {data?.recentSharedTasks && data.recentSharedTasks.length > 0 && (() => {
+          const tasksByPriority = getTasksByPriority(data.recentSharedTasks);
+          const priorityTabs = [
+            { key: 'urgent', label: '긴급', color: 'bg-red-100 text-red-800', count: tasksByPriority.urgent.length },
+            { key: 'high', label: '높음', color: 'bg-orange-100 text-orange-800', count: tasksByPriority.high.length },
+            { key: 'medium', label: '보통', color: 'bg-yellow-100 text-yellow-800', count: tasksByPriority.medium.length },
+            { key: 'low', label: '낮음', color: 'bg-gray-100 text-gray-800', count: tasksByPriority.low.length },
+            { key: 'my', label: '내 업무', color: 'bg-blue-100 text-blue-800', count: tasksByPriority.my.length }
+          ];
 
           return (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                  <Package className="h-6 w-6 mr-3 text-red-600" />
-                  긴급 업무
-                  {hasUrgentTasks && (
-                    <span className="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                      {urgentTasks.length}
-                    </span>
-                  )}
+                  <Package className="h-6 w-6 mr-3 text-blue-600" />
+                  공유 업무
                 </h2>
                 <button
                   onClick={() => router.push('/shared-tasks-admin')}
@@ -833,46 +866,57 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* 긴급 업무 토글 버튼 */}
-              <div className="mb-4">
-                <button
-                  onClick={toggleUrgentTasks}
-                  className="flex items-center justify-center w-full py-3 px-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                >
-                  {showUrgentTasks ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-2 text-red-600" />
-                      <span className="text-red-600 font-medium">긴급 업무 숨기기</span>
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-2 text-red-600" />
-                      <span className="text-red-600 font-medium">
-                        긴급 업무 보기 {hasUrgentTasks && `(${urgentTasks.length}건)`}
+              {/* 탭 헤더 */}
+              <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
+                {priorityTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActivePriorityTab(tab.key as any)}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activePriorityTab === tab.key
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.count > 0 && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${tab.color}`}>
+                        {tab.count}
                       </span>
-                    </>
-                  )}
-                </button>
+                    )}
+                  </button>
+                ))}
               </div>
 
-              {/* 긴급 업무 목록 */}
-              {showUrgentTasks && (
-                <div className="space-y-3">
-                  {urgentTasks.length === 0 ? (
+              {/* 선택된 탭의 업무 목록 */}
+              {(() => {
+                const currentTasks = tasksByPriority[activePriorityTab];
+                const displayTasks = expandedTabs[activePriorityTab] ? currentTasks : currentTasks.slice(0, 3);
+                
+                if (currentTasks.length === 0) {
+                  return (
                     <div className="text-center py-8 text-gray-500">
                       <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                      <p>긴급 업무가 없습니다.</p>
+                      <p>해당 우선순위의 업무가 없습니다.</p>
                     </div>
-                  ) : (
-                    urgentTasks.map((task) => {
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {displayTasks.map((task) => {
                       const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
                       const isRead = readTasks.has(task.id);
+                      const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 
+                                          task.task_priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                          task.task_priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-gray-100 text-gray-800';
                       
                       return (
                         <div 
                           key={task.id} 
                           className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                            isRead ? 'border-gray-200 bg-gray-50' : 'border-red-200 bg-red-50'
+                            isRead ? 'border-gray-200 bg-gray-50' : 'border-blue-200 bg-blue-50'
                           }`}
                           onClick={() => handleReadUrgentTask(task.id)}
                         >
@@ -882,8 +926,8 @@ export default function DashboardPage() {
                                 <h3 className={`font-semibold ${isRead ? 'text-gray-600' : 'text-gray-900'}`}>
                                   {task.title}
                                 </h3>
-                                {!isRead && (
-                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                {!isRead && activePriorityTab !== 'my' && (
+                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                                     새 업무
                                   </span>
                                 )}
@@ -911,8 +955,10 @@ export default function DashboardPage() {
                             </div>
                             <div className="ml-4 flex flex-col items-end space-y-2">
                               <div className="flex items-center space-x-2">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                  긴급
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
+                                  {task.task_priority === 'urgent' ? '긴급' : 
+                                   task.task_priority === 'high' ? '높음' :
+                                   task.task_priority === 'medium' ? '보통' : '낮음'}
                                 </span>
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                   {task.operation_type?.code} - {task.operation_type?.points}점
@@ -946,10 +992,32 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       );
-                    })
-                  )}
-                </div>
-              )}
+                    })}
+                    
+                    {/* 더보기/접기 버튼 */}
+                    {currentTasks.length > 3 && (
+                      <div className="text-center pt-2">
+                        <button
+                          onClick={() => toggleTabExpansion(activePriorityTab)}
+                          className="flex items-center justify-center mx-auto text-gray-600 hover:text-gray-800 text-sm font-medium"
+                        >
+                          {expandedTabs[activePriorityTab] ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-1" />
+                              접기
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-1" />
+                              더보기 ({currentTasks.length - 3}개 더)
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
