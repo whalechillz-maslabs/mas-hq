@@ -525,10 +525,10 @@ export default function TasksPage() {
         updateData.consultation_channel = taskData.consultation_channel || 'phone';
       }
       
-      // OP10인 경우 op10Category 추가
-      if (selectedOpType?.code === 'OP10') {
-        updateData.op10Category = taskData.op10Category || 'common';
-      }
+      // OP10인 경우 op10Category 추가 (스키마 캐시 문제로 임시 비활성화)
+      // if (selectedOpType?.code === 'OP10') {
+      //   updateData.op10Category = taskData.op10Category || 'common';
+      // }
 
       console.log('업데이트 데이터:', updateData); // 디버깅용 로그
 
@@ -545,13 +545,13 @@ export default function TasksPage() {
 
       console.log('업무 수정 성공'); // 디버깅용 로그
 
-      // OP10 업무 수정 시에도 Slack 알림 전송
-      if (selectedOpType?.code === 'OP10') {
-        await sendSlackNotification({
-          ...taskData,
-          op10Category: taskData.op10Category || 'common'
-        }, selectedOpType, true);
-      }
+      // OP10 업무 수정 시에도 Slack 알림 전송 (스키마 캐시 문제로 임시 비활성화)
+      // if (selectedOpType?.code === 'OP10') {
+      //   await sendSlackNotification({
+      //     ...taskData,
+      //     op10Category: taskData.op10Category || 'common'
+      //   }, selectedOpType, true);
+      // }
       
       setShowEditModal(false);
       setEditingTask(null);
@@ -1542,7 +1542,7 @@ export default function TasksPage() {
                   task_priority: formData.get('task_priority') || 'normal',
                   customer_type: formData.get('customer_type') || 'existing',
                   consultation_channel: formData.get('consultation_channel') || 'phone',
-                  op10Category: formData.get('op10Category') || 'common'
+                  // op10Category: formData.get('op10Category') || 'common'
                 });
               }}
             >
