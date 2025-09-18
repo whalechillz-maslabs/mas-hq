@@ -8,7 +8,7 @@ import { getStatusLabel, getStatusColor, getPriorityLabel, getPriorityColor } fr
 import { 
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
   Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2, DollarSign, RotateCcw,
-  Phone, ShoppingCart, Store, Headphones, Shield, Truck, Package, Coffee
+  Phone, ShoppingCart, Store, Headphones, Shield, Truck, Package, Coffee, Users
 } from 'lucide-react';
 
 interface OperationType {
