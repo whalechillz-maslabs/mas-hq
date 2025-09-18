@@ -597,7 +597,7 @@ export default function DashboardPage() {
                       )}
                       {task.customer_name && (
                         <p className="text-sm text-gray-500 mt-1">
-                          <span className="font-medium">고객:</span> {task.customer_name.replace(/0+$/, '')}
+                          <span className="font-medium">고객:</span> {task.customer_name?.replace(/0+$/, '').replace(/0/g, '') || ''}
                         </p>
                       )}
                     </div>
