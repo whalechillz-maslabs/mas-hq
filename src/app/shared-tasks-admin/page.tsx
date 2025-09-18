@@ -8,7 +8,7 @@ import { formatDateKR } from '@/utils/dateUtils';
 import { 
   Users, Eye, Calendar, User, MessageSquare, 
   Phone, ShoppingCart, Headphones, Shield, Truck, Package,
-  ArrowLeft, RefreshCw, Filter, Search, Edit, Trash2, X
+  ArrowLeft, RefreshCw, Filter, Search, Edit, Trash2, X, Siren, CheckSquare, CheckCircle
 } from 'lucide-react';
 
 interface SharedTask {
@@ -20,6 +20,8 @@ interface SharedTask {
   sales_amount?: number;
   task_date: string;
   created_at: string;
+  task_priority?: string;
+  achievement_status?: string;
   operation_type?: {
     code: string;
     name: string;
@@ -131,6 +133,33 @@ export default function SharedTasksAdminPage() {
     }
   };
 
+  // 업무 완료 처리 함수
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('employee_tasks')
+        .update({ 
+          achievement_status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // 목록에서 해당 업무의 상태 업데이트
+      setSharedTasks(prev => prev.map(task => 
+        task.id === taskId 
+          ? { ...task, achievement_status: 'completed' }
+          : task
+      ));
+
+      alert('업무가 완료 처리되었습니다.');
+    } catch (error) {
+      console.error('업무 완료 처리 실패:', error);
+      alert('업무 완료 처리에 실패했습니다.');
+    }
+  };
+
   const loadSharedTasks = async () => {
     try {
       // 먼저 OP10의 ID를 가져옵니다
@@ -147,7 +176,7 @@ export default function SharedTasksAdminPage() {
         return;
       }
 
-      // OP10 업무만 가져옵니다
+      // OP10 업무만 가져옵니다 - 긴급/높음 우선순위만
       const { data, error } = await supabase
         .from('employee_tasks')
         .select(`
@@ -159,10 +188,13 @@ export default function SharedTasksAdminPage() {
           sales_amount,
           task_date,
           created_at,
+          task_priority,
+          achievement_status,
           operation_type:operation_types(code, name, points),
           employee:employees(name, employee_id)
         `)
         .eq('operation_type_id', op10Data.id)
+        .in('task_priority', ['urgent', 'high'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -273,12 +305,20 @@ export default function SharedTasksAdminPage() {
           ) : (
             filteredTasks.map((task) => {
               const IconComponent = getOperationIcon(task.operation_type?.code || '');
+              const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
+              const isCompleted = task.achievement_status === 'completed';
+              const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800';
               
               return (
                 <div key={task.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1 text-lg">{task.title}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900 text-lg">{task.title}</h3>
+                        {isOverdue && !isCompleted && (
+                          <Siren className="h-4 w-4 text-red-500 animate-pulse" title="24시간 경과" />
+                        )}
+                      </div>
                       <div className="flex items-center text-sm text-gray-500 mb-2">
                         <User className="h-4 w-4 mr-1" />
                         {task.employee?.name}
@@ -296,32 +336,54 @@ export default function SharedTasksAdminPage() {
                       )}
                     </div>
                     <div className="ml-4 flex flex-col items-end space-y-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {task.operation_type?.code} - {task.operation_type?.points}점
-                      </span>
-                      {isAdmin() && (
-                        <div className="flex space-x-2">
+                      <div className="flex items-center space-x-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
+                          {task.task_priority === 'urgent' ? '긴급' : '높음'}
+                        </span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {task.operation_type?.code} - {task.operation_type?.points}점
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {!isCompleted && (
                           <button
-                            onClick={() => handleEditTask(task)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="수정"
+                            onClick={() => handleCompleteTask(task.id)}
+                            className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                           >
-                            <Edit className="h-4 w-4" />
+                            <CheckSquare className="h-3 w-3 mr-1" />
+                            완료
                           </button>
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            disabled={isDeleting === task.id}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                            title="삭제"
-                          >
-                            {isDeleting === task.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      )}
+                        )}
+                        {isCompleted && (
+                          <span className="flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            완료됨
+                          </span>
+                        )}
+                        {isAdmin() && (
+                          <>
+                            <button
+                              onClick={() => handleEditTask(task)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="수정"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              disabled={isDeleting === task.id}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="삭제"
+                            >
+                              {isDeleting === task.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

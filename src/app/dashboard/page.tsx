@@ -12,7 +12,7 @@ import {
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
   Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu, FileText, Calculator,
-  Package, Eye
+  Package, Eye, Siren, CheckSquare
 } from 'lucide-react';
 
 interface SharedTask {
@@ -22,6 +22,8 @@ interface SharedTask {
   customer_name?: string;
   task_date: string;
   created_at: string;
+  task_priority?: string;
+  achievement_status?: string;
   operation_type?: {
     code: string;
     name: string;
@@ -329,7 +331,7 @@ export default function DashboardPage() {
         dedication: Math.random() > 0.2
       };
 
-      // 최근 공유 업무 (OP10) 가져오기
+      // 최근 공유 업무 (OP10) 가져오기 - 긴급/높음 우선순위만
       const { data: op10Data } = await supabase
         .from('operation_types')
         .select('id')
@@ -347,12 +349,15 @@ export default function DashboardPage() {
             customer_name,
             task_date,
             created_at,
+            task_priority,
+            achievement_status,
             operation_type:operation_types(code, name, points),
             employee:employees(name, employee_id)
           `)
           .eq('operation_type_id', op10Data.id)
+          .in('task_priority', ['urgent', 'high'])
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(10);
 
         recentSharedTasks = sharedTasksData || [];
       }
@@ -436,6 +441,38 @@ export default function DashboardPage() {
       router.push('/login');
     } catch (error) {
       console.error('로그아웃 오류:', error);
+    }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('employee_tasks')
+        .update({ 
+          achievement_status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // 목록에서 해당 업무의 상태 업데이트
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          recentSharedTasks: prev.recentSharedTasks.map(task => 
+            task.id === taskId 
+              ? { ...task, achievement_status: 'completed' }
+              : task
+          )
+        };
+      });
+
+      alert('업무가 완료 처리되었습니다.');
+    } catch (error) {
+      console.error('업무 완료 처리 실패:', error);
+      alert('업무 완료 처리에 실패했습니다.');
     }
   };
 
@@ -580,35 +617,66 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="space-y-3">
-              {data.recentSharedTasks.slice(0, 3).map((task) => (
-                <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
-                        <User className="h-4 w-4 mr-1" />
-                        {task.employee?.name}
-                        <span className="mx-2">•</span>
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {formatDateKR(new Date(task.task_date))}
+              {data.recentSharedTasks.slice(0, 3).map((task) => {
+                const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
+                const isCompleted = task.achievement_status === 'completed';
+                const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800';
+                
+                return (
+                  <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900">{task.title}</h3>
+                          {isOverdue && !isCompleted && (
+                            <Siren className="h-4 w-4 text-red-500 animate-pulse" title="24시간 경과" />
+                          )}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <User className="h-4 w-4 mr-1" />
+                          {task.employee?.name}
+                          <span className="mx-2">•</span>
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDateKR(new Date(task.task_date))}
+                        </div>
+                        {task.notes && (
+                          <p className="text-sm text-gray-600 line-clamp-2">{task.notes}</p>
+                        )}
+                        {task.customer_name && task.customer_name.trim() && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            <span className="font-medium">고객:</span> {task.customer_name.trim().replace(/0/g, '')}
+                          </p>
+                        )}
                       </div>
-                      {task.notes && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{task.notes}</p>
-                      )}
-                      {task.customer_name && task.customer_name.trim() && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          <span className="font-medium">고객:</span> {task.customer_name.trim().replace(/0/g, '')}
-                        </p>
-                      )}
-                    </div>
-                    <div className="ml-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {task.operation_type?.code} - {task.operation_type?.points}점
-                      </span>
+                      <div className="ml-4 flex flex-col items-end space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
+                            {task.task_priority === 'urgent' ? '긴급' : '높음'}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {task.operation_type?.code} - {task.operation_type?.points}점
+                          </span>
+                        </div>
+                        {!isCompleted && (
+                          <button
+                            onClick={() => handleCompleteTask(task.id)}
+                            className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                          >
+                            <CheckSquare className="h-3 w-3 mr-1" />
+                            완료
+                          </button>
+                        )}
+                        {isCompleted && (
+                          <span className="flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            완료됨
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
