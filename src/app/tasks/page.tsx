@@ -1348,7 +1348,9 @@ export default function TasksPage() {
                   task_time: formData.get('task_time') || null,
                   customer_name: formData.get('customer_name') || '',
                   sales_amount: parseFloat((formData.get('sales_amount') as string).replace(/,/g, '')) || 0,
-                  task_priority: formData.get('task_priority') || 'normal'
+                  task_priority: formData.get('task_priority') || 'normal',
+                  customer_type: formData.get('customer_type') || 'existing',
+                  consultation_channel: formData.get('consultation_channel') || 'phone'
                 });
               }}
             >
@@ -1494,6 +1496,44 @@ export default function TasksPage() {
                     }}
                   />
                 </div>
+
+                {/* OP5, OP12인 경우 추가 필드 */}
+                {(() => {
+                  const selectedOpType = operationTypes.find(op => op.id === selectedOperationTypeForAdd);
+                  return (selectedOpType?.code === 'OP5' || selectedOpType?.code === 'OP12') && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          고객 유형
+                        </label>
+                        <select
+                          name="customer_type"
+                          defaultValue="existing"
+                          className="w-full border border-gray-300 rounded-md px-3 py-2"
+                        >
+                          <option value="new">신규 고객</option>
+                          <option value="existing">기존 고객</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          상담 채널
+                        </label>
+                        <select
+                          name="consultation_channel"
+                          defaultValue="phone"
+                          className="w-full border border-gray-300 rounded-md px-3 py-2"
+                        >
+                          <option value="phone">전화</option>
+                          <option value="kakao">카카오채널</option>
+                          <option value="smartstore">스마트스토어</option>
+                          <option value="official_website">공홈</option>
+                        </select>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
