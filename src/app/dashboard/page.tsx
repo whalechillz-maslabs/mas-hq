@@ -587,7 +587,7 @@ export default function DashboardPage() {
                       <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
                       <div className="flex items-center text-sm text-gray-500 mb-2">
                         <User className="h-4 w-4 mr-1" />
-                        {task.employee?.name} ({task.employee?.employee_id})
+                        {task.employee?.name}
                         <span className="mx-2">•</span>
                         <Calendar className="h-4 w-4 mr-1" />
                         {formatDateKR(new Date(task.task_date))}
@@ -597,7 +597,7 @@ export default function DashboardPage() {
                       )}
                       {task.customer_name && (
                         <p className="text-sm text-gray-500 mt-1">
-                          <span className="font-medium">고객:</span> {task.customer_name}
+                          <span className="font-medium">고객:</span> {task.customer_name.replace(/0+$/, '')}
                         </p>
                       )}
                     </div>

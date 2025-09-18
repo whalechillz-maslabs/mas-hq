@@ -208,7 +208,7 @@ export default function SharedTasksPage() {
                           <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
                           <div className="flex items-center text-sm text-gray-500 mt-1">
                             <User className="h-4 w-4 mr-1" />
-                            {task.employee?.name} ({task.employee?.employee_id})
+                            {task.employee?.name}
                             <span className="mx-2">•</span>
                             <Calendar className="h-4 w-4 mr-1" />
                             {formatDateKR(new Date(task.task_date))}
@@ -245,7 +245,7 @@ export default function SharedTasksPage() {
                         {task.customer_name && (
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-1" />
-                            고객: {task.customer_name}
+                            고객: {task.customer_name.replace(/0+$/, '')}
                           </div>
                         )}
                         {task.sales_amount && task.sales_amount > 0 && (
