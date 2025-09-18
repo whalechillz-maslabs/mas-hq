@@ -84,6 +84,8 @@ export default function TasksPage() {
     totalPoints: 0,
     totalSales: 0,
     todaySales: 0,
+    todayPoints: 0,
+    todayTaskCount: 0,
     pendingTasks: 0,
     completedTasks: 0,
     refundedTasks: 0,
@@ -335,19 +337,34 @@ export default function TasksPage() {
       // 한국 시간 기준으로 오늘 날짜 계산
       const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
       const today = koreaDate.toISOString().split('T')[0];
-      const todaySales = tasksData?.filter(t => t.task_date === today).reduce((sum, t) => {
+      
+      // 오늘 업무만 필터링
+      const todayTasks = tasksData?.filter(t => t.task_date === today) || [];
+      
+      const todaySales = todayTasks.reduce((sum, t) => {
         // 환불 업무는 음수로 계산
         if (t.title && t.title.includes('[환불]')) {
           return sum - Math.abs(t.sales_amount || 0);
         }
         return sum + (t.sales_amount || 0);
-      }, 0) || 0;
+      }, 0);
+      
+      // 오늘 포인트 계산
+      const todayPoints = todayTasks.reduce((sum, t) => {
+        const opType = sortedOperationTypes.find(op => op.id === t.operation_type_id);
+        return sum + (opType?.points || 0);
+      }, 0);
+      
+      // 오늘 업무 건수
+      const todayTaskCount = todayTasks.length;
 
       setStats({
         totalTasks,
         totalPoints: netPoints, // 순 포인트
         totalSales: netSales, // 순 매출
         todaySales,
+        todayPoints, // 오늘 포인트
+        todayTaskCount, // 오늘 업무 건수
         pendingTasks: tasksData?.filter(t => t.achievement_status === 'pending').length || 0,
         completedTasks: tasksData?.filter(t => t.achievement_status === 'completed').length || 0,
         refundedTasks: refundTasks.length,
@@ -741,7 +758,7 @@ export default function TasksPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100 text-sm">오늘 포인트</p>
-                  <p className="text-2xl font-bold">{stats.totalPoints}점</p>
+                  <p className="text-2xl font-bold">{stats.todayPoints}점</p>
                 </div>
                 <Target className="h-8 w-8 text-purple-200" />
               </div>
@@ -749,8 +766,8 @@ export default function TasksPage() {
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 text-sm">업무 건수</p>
-                  <p className="text-2xl font-bold">{stats.totalTasks}건</p>
+                  <p className="text-orange-100 text-sm">오늘 업무 건수</p>
+                  <p className="text-2xl font-bold">{stats.todayTaskCount}건</p>
                 </div>
                 <Phone className="h-8 w-8 text-orange-200" />
               </div>
@@ -1097,7 +1114,8 @@ export default function TasksPage() {
 
         {/* 업무 목록 */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* 데스크톱용 테이블 */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -1250,6 +1268,43 @@ export default function TasksPage() {
             </tbody>
           </table>
             </div>
+          
+          {/* 모바일용 카드 뷰 */}
+          <div className="lg:hidden">
+            {tasks.map((task) => {
+              const opType = operationTypes.find(op => op.id === task.operation_type_id);
+              return (
+                <div key={task.id} className="border-b border-gray-200 p-4 last:border-b-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-gray-500">
+                          {formatDateKR(task.task_date)}
+                        </span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(task.achievement_status)}`}>
+                          {getStatusLabel(task.achievement_status)}
+                        </span>
+                      </div>
+                      <h3 className="font-medium text-gray-900 mb-1">{task.title}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{task.customer_name}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-gray-900">
+                        {task.sales_amount ? `₩${task.sales_amount.toLocaleString()}` : '-'}
+                      </div>
+                      <div className="text-xs text-gray-500">{opType?.points || 0}점</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>{opType?.name || '알 수 없음'}</span>
+                    <span className={`px-2 py-1 rounded-full ${getPriorityColor(task.task_priority)}`}>
+                      {getPriorityLabel(task.task_priority)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* 업무 유형별 통계 */}
