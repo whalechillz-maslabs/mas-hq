@@ -64,6 +64,7 @@ export default function SharedTasksNewPage() {
     const adminCheck = currentUser?.role === 'admin' || currentUser?.position === '관리자';
     console.log('관리자 여부:', adminCheck);
     // 임시로 모든 사용자에게 권한 부여 (테스트용)
+    console.log('임시로 true 반환');
     return true;
   }, [currentUser]);
 
