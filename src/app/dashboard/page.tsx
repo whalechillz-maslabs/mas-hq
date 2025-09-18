@@ -457,6 +457,7 @@ export default function DashboardPage() {
           `)
           .in('operation_type_id', operationTypeIds)
           .in('task_priority', ['urgent', 'high'])
+          .eq('achievement_status', 'pending') // 완료된 업무 제외
           .order('created_at', { ascending: false })
           .limit(10);
 
@@ -561,16 +562,12 @@ export default function DashboardPage() {
 
       if (error) throw error;
 
-      // 목록에서 해당 업무의 상태 업데이트
+      // 목록에서 해당 업무 제거 (완료된 업무는 대시보드에서 숨김)
       setData(prev => {
         if (!prev) return prev;
         return {
           ...prev,
-          recentSharedTasks: prev.recentSharedTasks.map(task => 
-            task.id === taskId 
-              ? { ...task, achievement_status: 'completed' }
-              : task
-          )
+          recentSharedTasks: prev.recentSharedTasks.filter(task => task.id !== taskId)
         };
       });
 
