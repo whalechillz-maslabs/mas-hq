@@ -37,6 +37,7 @@ interface Task {
   // 신규 상담 구분을 위한 필드 추가
   customer_type?: 'new' | 'existing'; // 신규/기존 고객
   consultation_channel?: 'phone' | 'kakao' | 'smartstore' | 'official_website'; // 상담 채널
+  op10Category?: 'masgolf' | 'singsingolf' | 'common'; // OP10 업무 분류
   created_at: string;
   updated_at: string;
   operation_type?: {
@@ -749,10 +750,7 @@ export default function TasksPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">📊 개인 KPI</h3>
             <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              {selectedPeriod === 'today' ? '오늘' : 
-               selectedPeriod === 'week' ? '이번 주' : 
-               selectedPeriod === 'month' ? '이번 달' : 
-               `${selectedYear}년 ${selectedMonth}월`}
+              {selectedMonth.getFullYear()}년 {selectedMonth.getMonth() + 1}월
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
