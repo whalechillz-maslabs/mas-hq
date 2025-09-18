@@ -1,143 +1,84 @@
 const { chromium } = require('playwright');
 
 async function testSlackNotification() {
-  const browser = await chromium.launch({ 
-    headless: false,
-    channel: 'chrome'
-  });
-  
+  const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
   
   try {
-    console.log('🔍 OP10 업무 등록 및 Slack 알림 테스트 시작...');
+    console.log('🔍 슬랙 알림 테스트 시작...');
     
-    // 네트워크 요청 모니터링
-    const requests = [];
-    page.on('request', request => {
-      if (request.url().includes('/api/slack/notify')) {
-        requests.push({
-          url: request.url(),
-          method: request.method(),
-          headers: request.headers(),
-          postData: request.postData()
-        });
-      }
-    });
+    // /tasks 페이지로 이동
+    await page.goto('https://www.maslabs.kr/tasks');
+    await page.waitForLoadState('networkidle');
     
-    // 응답 모니터링
-    const responses = [];
-    page.on('response', response => {
-      if (response.url().includes('/api/slack/notify')) {
-        responses.push({
-          url: response.url(),
-          status: response.status(),
-          statusText: response.statusText()
-        });
-      }
-    });
+    // 로그인 확인
+    const title = await page.title();
+    console.log('📄 페이지 제목:', title);
     
-    // 콘솔 메시지 수집
-    const consoleMessages = [];
-    page.on('console', msg => {
-      consoleMessages.push({
-        type: msg.type(),
-        text: msg.text()
-      });
-    });
-    
-    // 페이지 로드
-    console.log('📱 https://maslabs.kr/tasks 로드 중...');
-    await page.goto('https://maslabs.kr/tasks', { 
-      waitUntil: 'networkidle',
-      timeout: 30000 
-    });
-    
-    // 로그인 필요시 대기
-    console.log('⏳ 로그인 필요시 로그인해주세요...');
-    await page.waitForTimeout(10000);
-    
-    // OP10 업무 카드 찾기
-    console.log('🔍 OP10 업무 카드 찾는 중...');
-    const op10Card = page.locator('text=OP10').first();
-    
-    if (await op10Card.isVisible()) {
-      console.log('✅ OP10 업무 카드 발견');
-      await op10Card.click();
-      
-      // 빠른 업무 입력 폼 대기
-      await page.waitForTimeout(2000);
-      
-      // 업무명 입력
-      const titleInput = page.locator('input[placeholder*="업무명"]').first();
-      if (await titleInput.isVisible()) {
-        await titleInput.fill('테스트 OP10 업무 - Slack 알림 확인');
-        console.log('📝 업무명 입력 완료');
-      }
-      
-      // 업무 내용 입력
-      const notesInput = page.locator('textarea[placeholder*="업무 내용"]').first();
-      if (await notesInput.isVisible()) {
-        await notesInput.fill('이것은 Slack 알림 테스트를 위한 OP10 업무입니다. 투어 관련 내용을 포함합니다.');
-        console.log('📝 업무 내용 입력 완료');
-      }
-      
-      // 고객명 입력
-      const customerInput = page.locator('input[placeholder*="고객명"]').first();
-      if (await customerInput.isVisible()) {
-        await customerInput.fill('테스트 고객');
-        console.log('📝 고객명 입력 완료');
-      }
-      
-      // 업무 추가 버튼 클릭
-      const submitButton = page.locator('button:has-text("업무 추가")').first();
-      if (await submitButton.isVisible()) {
-        console.log('🚀 업무 추가 버튼 클릭...');
-        await submitButton.click();
-        
-        // Slack API 호출 대기
-        await page.waitForTimeout(5000);
-        
-        console.log('\n=== Slack API 요청 분석 ===');
-        requests.forEach((req, index) => {
-          console.log(`${index + 1}. ${req.method} ${req.url}`);
-          if (req.postData) {
-            try {
-              const data = JSON.parse(req.postData);
-              console.log('   요청 데이터:', JSON.stringify(data, null, 2));
-            } catch (e) {
-              console.log('   요청 데이터 (파싱 실패):', req.postData);
-            }
-          }
-        });
-        
-        console.log('\n=== Slack API 응답 분석 ===');
-        responses.forEach((res, index) => {
-          console.log(`${index + 1}. ${res.status} ${res.statusText} - ${res.url}`);
-        });
-        
-        console.log('\n=== 콘솔 메시지 ===');
-        consoleMessages.forEach((msg, index) => {
-          if (msg.type === 'error' || msg.text.includes('Slack') || msg.text.includes('알림')) {
-            console.log(`${index + 1}. [${msg.type.toUpperCase()}] ${msg.text}`);
-          }
-        });
-        
-      } else {
-        console.log('❌ 업무 추가 버튼을 찾을 수 없습니다');
-      }
-    } else {
-      console.log('❌ OP10 업무 카드를 찾을 수 없습니다');
+    if (title.includes('Login')) {
+      console.log('❌ 로그인이 필요합니다. 수동으로 로그인해주세요.');
+      console.log('⏳ 30초 대기 중... (로그인 시간)');
+      await page.waitForTimeout(30000);
     }
     
-    // 스크린샷 저장
-    await page.screenshot({ path: 'slack-test-result.png' });
-    console.log('\n📸 스크린샷 저장: slack-test-result.png');
+    // OP5 카드 찾기 및 클릭
+    console.log('🔍 OP5 카드 찾는 중...');
+    const op5Card = await page.locator('text=CS 응대 (제품안내, 시타보조)').first();
     
-    console.log('\n⏳ 10초 대기 후 브라우저 종료...');
-    await page.waitForTimeout(10000);
+    if (await op5Card.isVisible()) {
+      console.log('✅ OP5 카드 발견, 클릭 중...');
+      await op5Card.click();
+      await page.waitForTimeout(2000);
+      
+      // 빠른 업무 입력 폼이 나타났는지 확인
+      const quickForm = await page.locator('text=빠른 업무 입력');
+      if (await quickForm.isVisible()) {
+        console.log('✅ 빠른 업무 입력 폼이 나타났습니다.');
+        
+        // 업무명 입력
+        await page.fill('input[placeholder*="업무명"]', '테스트 CS 응대');
+        
+        // 고객명 입력
+        await page.fill('input[placeholder*="고객명"]', '테스트고객');
+        
+        // 매출 금액 입력
+        await page.fill('input[type="number"]', '100000');
+        
+        // 고객 유형 선택 (신규 고객이 기본값)
+        console.log('📝 폼 데이터 입력 완료');
+        
+        // 제출 버튼 클릭
+        const submitButton = await page.locator('button[type="submit"]');
+        if (await submitButton.isVisible()) {
+          console.log('🚀 업무 등록 버튼 클릭 중...');
+          await submitButton.click();
+          
+          // 성공 메시지 대기
+          await page.waitForTimeout(3000);
+          
+          // 성공 알림 확인
+          const successMessage = await page.locator('text=성공적으로').first();
+          if (await successMessage.isVisible()) {
+            console.log('✅ 업무 등록 성공!');
+            console.log('📨 슬랙 알림이 전송되었는지 확인해주세요.');
+          } else {
+            console.log('❓ 성공 메시지를 찾을 수 없습니다.');
+          }
+        } else {
+          console.log('❌ 제출 버튼을 찾을 수 없습니다.');
+        }
+      } else {
+        console.log('❌ 빠른 업무 입력 폼이 나타나지 않았습니다.');
+      }
+    } else {
+      console.log('❌ OP5 카드를 찾을 수 없습니다.');
+    }
+    
+    // 5초 대기
+    await page.waitForTimeout(5000);
     
   } catch (error) {
-    console.error('❌ 테스트 중 오류 발생:', error);
+    console.error('❌ 테스트 중 오류 발생:', error.message);
   } finally {
     await browser.close();
   }
