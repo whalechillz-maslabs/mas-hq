@@ -235,10 +235,34 @@ export default function DashboardPage() {
         !task.title?.includes('[환불]')
       ).length || 0;
 
+      // 마스골프 개인 성과 계산 (OP1-OP10 중 마스골프 관련)
+      const masgolfPersonalTasks = monthlyTasks?.filter(task => {
+        const code = task.operation_type?.code;
+        return code && ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10'].includes(code) &&
+               task.op10Category === 'masgolf';
+      }) || [];
+      
+      const masgolfPersonalPoints = masgolfPersonalTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
+      const masgolfPersonalCount = masgolfPersonalTasks.length;
+
+      // 싱싱골프 개인 성과 계산 (OP1-OP10 중 싱싱골프 관련)
+      const singsingolfPersonalTasks = monthlyTasks?.filter(task => {
+        const code = task.operation_type?.code;
+        return code && ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10'].includes(code) &&
+               task.op10Category === 'singsingolf';
+      }) || [];
+      
+      const singsingolfPersonalPoints = singsingolfPersonalTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
+      const singsingolfPersonalCount = singsingolfPersonalTasks.length;
+
       const personalKPI = {
         phoneSales: phoneSales,
         storeSales: storeSales,
-        csResponse: csResponse
+        csResponse: csResponse,
+        masgolfPoints: masgolfPersonalPoints,
+        masgolfCount: masgolfPersonalCount,
+        singsingolfPoints: singsingolfPersonalPoints,
+        singsingolfCount: singsingolfPersonalCount
       };
 
       // 전체 팀의 이번 달 업무 데이터 가져오기 (협업 성과 계산용)
@@ -783,7 +807,7 @@ export default function DashboardPage() {
             <User className="h-6 w-6 mr-3 text-indigo-600" />
               개인 KPI
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
                 <Phone className="h-6 w-6 text-blue-600 mr-2" />
@@ -815,6 +839,28 @@ export default function DashboardPage() {
                 {data?.personalKPI?.csResponse || 0}건
               </p>
               <p className="text-xs text-purple-500 mt-1">OP5</p>
+            </div>
+
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Award className="h-6 w-6 text-orange-600 mr-2" />
+                <span className="text-sm font-medium text-orange-800">마스골프</span>
+              </div>
+              <p className="text-lg font-bold text-orange-600">
+                {data?.personalKPI?.masgolfPoints || 0}점
+              </p>
+              <p className="text-xs text-orange-500 mt-1">{data?.personalKPI?.masgolfCount || 0}건</p>
+            </div>
+
+            <div className="text-center p-4 bg-pink-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Trophy className="h-6 w-6 text-pink-600 mr-2" />
+                <span className="text-sm font-medium text-pink-800">싱싱골프</span>
+              </div>
+              <p className="text-lg font-bold text-pink-600">
+                {data?.personalKPI?.singsingolfPoints || 0}점
+              </p>
+              <p className="text-xs text-pink-500 mt-1">{data?.personalKPI?.singsingolfCount || 0}건</p>
             </div>
           </div>
           </div>

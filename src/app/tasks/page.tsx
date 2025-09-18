@@ -519,7 +519,8 @@ export default function TasksPage() {
       const updateData: any = {
         ...taskData,
         updated_at: new Date().toISOString(),
-        sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0
+        sales_amount: parseFloat((taskData.sales_amount as string).replace(/,/g, '')) || 0,
+        achievement_status: taskData.achievement_status || 'pending'
       };
 
       // OP5, OP12인 경우에만 customer_type과 consultation_channel 추가
@@ -1612,6 +1613,7 @@ export default function TasksPage() {
                   customer_name: formData.get('customer_name') || '',
                   sales_amount: formData.get('sales_amount') as string,
                   task_priority: formData.get('task_priority') || 'normal',
+                  achievement_status: formData.get('achievement_status') || 'pending',
                   customer_type: formData.get('customer_type') || 'existing',
                   consultation_channel: formData.get('consultation_channel') || 'phone',
                   // op10Category: formData.get('op10Category') || 'common'
@@ -1696,6 +1698,21 @@ export default function TasksPage() {
                       <option value="urgent">긴급</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      상태
+                    </label>
+                    <select
+                      name="achievement_status"
+                      defaultValue={editingTask.achievement_status || 'pending'}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      <option value="pending">대기</option>
+                      <option value="completed">완료</option>
+                    </select>
+                  </div>
+                </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
