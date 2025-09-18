@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
-async function addOp10CategoryColumn() {
-  console.log('🔧 op10Category 컬럼 추가 시작...');
+async function addOp10CategoryBack() {
+  console.log('🔧 op10Category 컬럼 다시 추가 시작...');
   
   const browser = await chromium.launch({ 
     headless: false,
@@ -83,4 +83,4 @@ WHERE op10Category IS NOT NULL;`;
   }
 }
 
-addOp10CategoryColumn().catch(console.error);
+addOp10CategoryBack().catch(console.error);
