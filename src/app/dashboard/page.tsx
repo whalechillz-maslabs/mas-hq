@@ -11,8 +11,27 @@ import {
   TrendingUp, DollarSign, Users, Clock, Calendar, Target,
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
-  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu, FileText, Calculator
+  Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu, FileText, Calculator,
+  Package, Eye
 } from 'lucide-react';
+
+interface SharedTask {
+  id: string;
+  title: string;
+  notes?: string;
+  customer_name?: string;
+  task_date: string;
+  created_at: string;
+  operation_type?: {
+    code: string;
+    name: string;
+    points: number;
+  };
+  employee?: {
+    name: string;
+    employee_id: string;
+  };
+}
 
 interface DashboardData {
   employee: any;
@@ -56,6 +75,7 @@ interface DashboardData {
       newConsultations: number; // 신규 상담 건수 추가
     };
   };
+  recentSharedTasks: SharedTask[]; // 최근 공유 업무 추가
   todayMission: {
     positiveThinking: boolean;
     creativePassion: boolean;
@@ -309,6 +329,34 @@ export default function DashboardPage() {
         dedication: Math.random() > 0.2
       };
 
+      // 최근 공유 업무 (OP10) 가져오기
+      const { data: op10Data } = await supabase
+        .from('operation_types')
+        .select('id')
+        .eq('code', 'OP10')
+        .single();
+
+      let recentSharedTasks: SharedTask[] = [];
+      if (op10Data) {
+        const { data: sharedTasksData } = await supabase
+          .from('employee_tasks')
+          .select(`
+            id,
+            title,
+            notes,
+            customer_name,
+            task_date,
+            created_at,
+            operation_type:operation_types(code, name, points),
+            employee:employees(name, employee_id)
+          `)
+          .eq('operation_type_id', op10Data.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        recentSharedTasks = sharedTasksData || [];
+      }
+
       setData({
         employee: employeeData || currentUser,
         todaySchedule: scheduleData,
@@ -316,6 +364,7 @@ export default function DashboardPage() {
         personalKPI,
         teamKPI,
         collaborationStats,
+        recentSharedTasks,
         todayMission,
         todaySales: todaySales
       });
@@ -365,6 +414,7 @@ export default function DashboardPage() {
             newConsultations: 40
           }
         },
+        recentSharedTasks: [],
         todayMission: {
           positiveThinking: true,
           creativePassion: true,
@@ -512,6 +562,56 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* 최근 공유 업무 */}
+        {data?.recentSharedTasks && data.recentSharedTasks.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                <Package className="h-6 w-6 mr-3 text-blue-600" />
+                최근 공유 업무
+              </h2>
+              <button
+                onClick={() => router.push('/shared-tasks')}
+                className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                전체 보기
+              </button>
+            </div>
+            <div className="space-y-3">
+              {data.recentSharedTasks.slice(0, 3).map((task) => (
+                <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <User className="h-4 w-4 mr-1" />
+                        {task.employee?.name} ({task.employee?.employee_id})
+                        <span className="mx-2">•</span>
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {formatDateKR(new Date(task.task_date))}
+                      </div>
+                      {task.notes && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{task.notes}</p>
+                      )}
+                      {task.customer_name && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          <span className="font-medium">고객:</span> {task.customer_name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {task.operation_type?.code} - {task.operation_type?.points}점
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 오늘의 미션 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
