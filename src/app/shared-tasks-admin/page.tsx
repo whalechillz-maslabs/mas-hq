@@ -162,7 +162,6 @@ export default function SharedTasksAdminPage() {
         notes: formData.get('notes') as string,
         customer_name: formData.get('customer_name') as string,
         task_priority: formData.get('task_priority') as string,
-        achievement_status: formData.get('achievement_status') as string,
         updated_at: new Date().toISOString()
       };
 
@@ -189,13 +188,15 @@ export default function SharedTasksAdminPage() {
     }
   };
 
-  // 업무 완료 처리 함수
-  const handleCompleteTask = async (taskId: string) => {
+  // 업무 완료 상태 토글 함수
+  const handleToggleTaskStatus = async (taskId: string, currentStatus: string) => {
     try {
+      const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+      
       const { error } = await supabase
         .from('employee_tasks')
         .update({ 
-          achievement_status: 'completed',
+          achievement_status: newStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', taskId);
@@ -205,33 +206,20 @@ export default function SharedTasksAdminPage() {
       // 목록에서 해당 업무의 상태 업데이트
       setSharedTasks(prev => prev.map(task => 
         task.id === taskId 
-          ? { ...task, achievement_status: 'completed' }
+          ? { ...task, achievement_status: newStatus }
           : task
       ));
 
-      alert('업무가 완료 처리되었습니다.');
+      const statusText = newStatus === 'completed' ? '완료' : '미완료';
+      alert(`업무가 ${statusText} 상태로 변경되었습니다.`);
     } catch (error) {
-      console.error('업무 완료 처리 실패:', error);
-      alert('업무 완료 처리에 실패했습니다.');
+      console.error('업무 상태 변경 실패:', error);
+      alert('업무 상태 변경에 실패했습니다.');
     }
   };
 
   const loadSharedTasks = async () => {
     try {
-      // 먼저 OP10의 ID를 가져옵니다
-      const { data: op10Data, error: op10Error } = await supabase
-        .from('operation_types')
-        .select('id')
-        .eq('code', 'OP10')
-        .single();
-
-      if (op10Error || !op10Data) {
-        console.error('OP10 업무 유형을 찾을 수 없습니다:', op10Error);
-        setSharedTasks([]);
-        setIsLoading(false);
-        return;
-      }
-
       // 모든 업무 유형 가져오기 - OP1~OP12
       const { data: operationTypesData } = await supabase
         .from('operation_types')
@@ -449,21 +437,26 @@ export default function SharedTasksAdminPage() {
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {!isCompleted && (
-                          <button
-                            onClick={() => handleCompleteTask(task.id)}
-                            className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                          >
-                            <CheckSquare className="h-3 w-3 mr-1" />
-                            완료
-                          </button>
-                        )}
-                        {isCompleted && (
-                          <span className="flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            완료됨
-                          </span>
-                        )}
+                        <button
+                          onClick={() => handleToggleTaskStatus(task.id, task.achievement_status || 'pending')}
+                          className={`flex items-center px-2 py-1 text-xs rounded transition-colors ${
+                            isCompleted 
+                              ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
+                              : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              완료됨
+                            </>
+                          ) : (
+                            <>
+                              <CheckSquare className="h-3 w-3 mr-1" />
+                              완료
+                            </>
+                          )}
+                        </button>
                         {isAdmin() && (
                           <>
                             <button
@@ -598,19 +591,6 @@ export default function SharedTasksAdminPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    완료 상태
-                  </label>
-                  <select
-                    name="achievement_status"
-                    defaultValue={editingTask.achievement_status || 'pending'}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  >
-                    <option value="pending">미완료</option>
-                    <option value="completed">완료됨</option>
-                  </select>
-                </div>
 
                 <div className="text-sm text-gray-500">
                   <p><strong>작성자:</strong> {editingTask.employee?.name}</p>
