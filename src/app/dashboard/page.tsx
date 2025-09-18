@@ -99,6 +99,13 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showAllSharedTasks, setShowAllSharedTasks] = useState(false);
+  const [activePriorityTab, setActivePriorityTab] = useState<'urgent' | 'high' | 'medium' | 'low'>('urgent');
+  const [expandedTabs, setExpandedTabs] = useState<{[key: string]: boolean}>({
+    urgent: false,
+    high: false,
+    medium: false,
+    low: false
+  });
 
   useEffect(() => {
     loadDashboardData();
@@ -456,10 +463,10 @@ export default function DashboardPage() {
             employee:employees(name, employee_id)
           `)
           .in('operation_type_id', operationTypeIds)
-          .in('task_priority', ['urgent', 'high'])
+          .in('task_priority', ['urgent', 'high', 'medium', 'low'])
           .eq('achievement_status', 'pending') // 완료된 업무 제외
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(20);
 
         recentSharedTasks = sharedTasksData || [];
       }
@@ -548,6 +555,24 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('로그아웃 오류:', error);
     }
+  };
+
+  // 우선순위별 업무 분류 함수
+  const getTasksByPriority = (tasks: SharedTask[]) => {
+    return {
+      urgent: tasks.filter(task => task.task_priority === 'urgent'),
+      high: tasks.filter(task => task.task_priority === 'high'),
+      medium: tasks.filter(task => task.task_priority === 'medium'),
+      low: tasks.filter(task => task.task_priority === 'low')
+    };
+  };
+
+  // 탭 토글 함수
+  const toggleTabExpansion = (priority: string) => {
+    setExpandedTabs(prev => ({
+      ...prev,
+      [priority]: !prev[priority]
+    }));
   };
 
   const handleCompleteTask = async (taskId: string) => {
@@ -702,33 +727,23 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 최근 공유 업무 */}
-        {data?.recentSharedTasks && data.recentSharedTasks.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <Package className="h-6 w-6 mr-3 text-blue-600" />
-                우선순위 높음/긴급 업무
-              </h2>
-              <div className="flex items-center gap-2">
-                {data.recentSharedTasks.length > 3 && (
-                  <button
-                    onClick={() => setShowAllSharedTasks(!showAllSharedTasks)}
-                    className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium"
-                  >
-                    {showAllSharedTasks ? (
-                      <>
-                        <ChevronUp className="h-4 w-4 mr-1" />
-                        접기
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4 mr-1" />
-                        더보기 ({data.recentSharedTasks.length - 3}개 더)
-                      </>
-                    )}
-                  </button>
-                )}
+        {/* 우선순위별 공유 업무 */}
+        {data?.recentSharedTasks && data.recentSharedTasks.length > 0 && (() => {
+          const tasksByPriority = getTasksByPriority(data.recentSharedTasks);
+          const priorityTabs = [
+            { key: 'urgent', label: '긴급', color: 'bg-red-100 text-red-800', count: tasksByPriority.urgent.length },
+            { key: 'high', label: '높음', color: 'bg-orange-100 text-orange-800', count: tasksByPriority.high.length },
+            { key: 'medium', label: '보통', color: 'bg-yellow-100 text-yellow-800', count: tasksByPriority.medium.length },
+            { key: 'low', label: '낮음', color: 'bg-gray-100 text-gray-800', count: tasksByPriority.low.length }
+          ];
+
+          return (
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <Package className="h-6 w-6 mr-3 text-blue-600" />
+                  공유 업무
+                </h2>
                 <button
                   onClick={() => router.push('/shared-tasks-admin')}
                   className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -737,71 +752,129 @@ export default function DashboardPage() {
                   전체 보기
                 </button>
               </div>
-            </div>
-            <div className="space-y-3">
-              {(showAllSharedTasks ? data.recentSharedTasks : data.recentSharedTasks.slice(0, 3)).map((task) => {
-                const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
-                const isCompleted = task.achievement_status === 'completed';
-                const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800';
+
+              {/* 탭 헤더 */}
+              <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
+                {priorityTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActivePriorityTab(tab.key as any)}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activePriorityTab === tab.key
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.count > 0 && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${tab.color}`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* 선택된 탭의 업무 목록 */}
+              {(() => {
+                const currentTasks = tasksByPriority[activePriorityTab];
+                const displayTasks = expandedTabs[activePriorityTab] ? currentTasks : currentTasks.slice(0, 3);
                 
-                return (
-                  <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900">{task.title}</h3>
-                          {isOverdue && !isCompleted && (
-                            <Siren className="h-4 w-4 text-red-500 animate-pulse" title="24시간 경과" />
-                          )}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 mb-2">
-                          <User className="h-4 w-4 mr-1" />
-                          {task.employee?.name}
-                          <span className="mx-2">•</span>
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {formatDateKR(new Date(task.task_date))}
-                        </div>
-                        {task.notes && (
-                          <p className="text-sm text-gray-600 line-clamp-2">{task.notes}</p>
-                        )}
-                        {task.customer_name && task.customer_name.trim() && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            <span className="font-medium">고객:</span> {task.customer_name.trim().replace(/0/g, '')}
-                          </p>
-                        )}
-                      </div>
-                      <div className="ml-4 flex flex-col items-end space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
-                            {task.task_priority === 'urgent' ? '긴급' : '높음'}
-                          </span>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {task.operation_type?.code} - {task.operation_type?.points}점
-                          </span>
-                        </div>
-                        {!isCompleted && (
-                          <button
-                            onClick={() => handleCompleteTask(task.id)}
-                            className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                          >
-                            <CheckSquare className="h-3 w-3 mr-1" />
-                            완료
-                          </button>
-                        )}
-                        {isCompleted && (
-                          <span className="flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            완료됨
-                          </span>
-                        )}
-                      </div>
+                if (currentTasks.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                      <p>해당 우선순위의 업무가 없습니다.</p>
                     </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {displayTasks.map((task) => {
+                      const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
+                      const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 
+                                          task.task_priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                          task.task_priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-gray-100 text-gray-800';
+                      
+                      return (
+                        <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-gray-900">{task.title}</h3>
+                                {isOverdue && (
+                                  <Siren className="h-4 w-4 text-red-500 animate-pulse" title="24시간 경과" />
+                                )}
+                              </div>
+                              <div className="flex items-center text-sm text-gray-500 mb-2">
+                                <User className="h-4 w-4 mr-1" />
+                                {task.employee?.name}
+                                <span className="mx-2">•</span>
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {formatDateKR(new Date(task.task_date))}
+                              </div>
+                              {task.notes && (
+                                <p className="text-sm text-gray-600 line-clamp-2">{task.notes}</p>
+                              )}
+                              {task.customer_name && task.customer_name.trim() && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                  <span className="font-medium">고객:</span> {task.customer_name.trim().replace(/0/g, '')}
+                                </p>
+                              )}
+                            </div>
+                            <div className="ml-4 flex flex-col items-end space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
+                                  {task.task_priority === 'urgent' ? '긴급' : 
+                                   task.task_priority === 'high' ? '높음' :
+                                   task.task_priority === 'medium' ? '보통' : '낮음'}
+                                </span>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {task.operation_type?.code} - {task.operation_type?.points}점
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleCompleteTask(task.id)}
+                                className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              >
+                                <CheckSquare className="h-3 w-3 mr-1" />
+                                완료
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* 더보기/접기 버튼 */}
+                    {currentTasks.length > 3 && (
+                      <div className="text-center pt-2">
+                        <button
+                          onClick={() => toggleTabExpansion(activePriorityTab)}
+                          className="flex items-center justify-center mx-auto text-gray-600 hover:text-gray-800 text-sm font-medium"
+                        >
+                          {expandedTabs[activePriorityTab] ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-1" />
+                              접기
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-1" />
+                              더보기 ({currentTasks.length - 3}개 더)
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
-              })}
+              })()}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 오늘의 미션 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
