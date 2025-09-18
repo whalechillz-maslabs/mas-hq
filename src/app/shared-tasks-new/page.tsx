@@ -8,7 +8,7 @@ import { formatDateKR } from '@/utils/dateUtils';
 import { 
   Users, Eye, Calendar, User, MessageSquare, 
   Phone, ShoppingCart, Headphones, Shield, Truck, Package,
-  ArrowLeft, RefreshCw, Filter, Search
+  ArrowLeft, RefreshCw, Filter, Search, Edit, Trash2, X
 } from 'lucide-react';
 
 interface SharedTask {
@@ -38,6 +38,9 @@ export default function SharedTasksNewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -51,6 +54,80 @@ export default function SharedTasksNewPage() {
       return;
     }
     setCurrentUser(user);
+  };
+
+  // 관리자 권한 확인
+  const isAdmin = () => {
+    return currentUser?.role === 'admin' || currentUser?.position === '관리자';
+  };
+
+  // 업무 수정 함수
+  const handleEditTask = (task: SharedTask) => {
+    setEditingTask(task);
+    setShowEditModal(true);
+  };
+
+  // 업무 삭제 함수
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('정말로 이 업무를 삭제하시겠습니까?')) {
+      return;
+    }
+
+    setIsDeleting(taskId);
+    try {
+      const { error } = await supabase
+        .from('employee_tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // 목록에서 제거
+      setSharedTasks(prev => prev.filter(task => task.id !== taskId));
+      alert('업무가 성공적으로 삭제되었습니다.');
+    } catch (error) {
+      console.error('업무 삭제 실패:', error);
+      alert('업무 삭제에 실패했습니다.');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  // 업무 수정 저장 함수
+  const handleSaveEdit = async (formData: FormData) => {
+    if (!editingTask) return;
+
+    try {
+      const { error } = await supabase
+        .from('employee_tasks')
+        .update({
+          title: formData.get('title') as string,
+          notes: formData.get('notes') as string,
+          customer_name: formData.get('customer_name') as string,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingTask.id);
+
+      if (error) throw error;
+
+      // 목록 업데이트
+      setSharedTasks(prev => prev.map(task => 
+        task.id === editingTask.id 
+          ? { ...task, 
+              title: formData.get('title') as string,
+              notes: formData.get('notes') as string,
+              customer_name: formData.get('customer_name') as string
+            }
+          : task
+      ));
+
+      setShowEditModal(false);
+      setEditingTask(null);
+      alert('업무가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      console.error('업무 수정 실패:', error);
+      alert('업무 수정에 실패했습니다.');
+    }
   };
 
   const loadSharedTasks = async () => {
@@ -217,10 +294,33 @@ export default function SharedTasksNewPage() {
                         </p>
                       )}
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col items-end space-y-2">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {task.operation_type?.code} - {task.operation_type?.points}점
                       </span>
+                      {isAdmin() && (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="수정"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            disabled={isDeleting === task.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="삭제"
+                          >
+                            {isDeleting === task.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -229,6 +329,96 @@ export default function SharedTasksNewPage() {
           )}
         </div>
       </div>
+
+      {/* 수정 모달 */}
+      {showEditModal && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">업무 수정</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingTask(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleSaveEdit(formData);
+              }}
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무명
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    defaultValue={editingTask.title}
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    업무 내용
+                  </label>
+                  <textarea
+                    name="notes"
+                    rows={3}
+                    defaultValue={editingTask.notes || ''}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    고객명
+                  </label>
+                  <input
+                    type="text"
+                    name="customer_name"
+                    defaultValue={editingTask.customer_name || ''}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  <p><strong>작성자:</strong> {editingTask.employee?.name}</p>
+                  <p><strong>작성일:</strong> {formatDateKR(new Date(editingTask.created_at))}</p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingTask(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  저장
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
