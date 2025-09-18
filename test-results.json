@@ -10,9 +10,7 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "reporter": [
       [
@@ -44,9 +42,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium-nightly",
         "name": "chromium-nightly",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -60,9 +56,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium-stable",
         "name": "chromium-stable",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -76,9 +70,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "firefox",
         "name": "firefox",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -92,9 +84,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "webkit",
         "name": "webkit",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -112,150 +102,133 @@
     "workers": 4,
     "webServer": null
   },
-  "suites": [
+  "suites": [],
+  "errors": [
     {
-      "title": "manual-slack-setup.spec.ts",
-      "file": "manual-slack-setup.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "수동 Slack 설정",
-          "file": "manual-slack-setup.spec.ts",
-          "line": 3,
-          "column": 6,
-          "specs": [
-            {
-              "title": "Slack API 페이지 접속 및 수동 설정",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-stable",
-                  "projectName": "chromium-stable",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 60618,
-                      "error": {
-                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
-                        },
-                        {
-                          "location": {
-                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/manual-slack-setup.spec.ts",
-                            "column": 16,
-                            "line": 28
-                          },
-                          "message": "Error: page.waitForTimeout: Test timeout of 60000ms exceeded.\n\n  26 |     \n  27 |     // 5분 대기 (수동 설정 시간)\n> 28 |     await page.waitForTimeout(300000);\n     |                ^\n  29 |     \n  30 |     // 최종 스크린샷\n  31 |     await page.screenshot({ path: 'manual-slack-final.png' });\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/manual-slack-setup.spec.ts:28:16"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "=== Slack 설정 가이드 ===\n"
-                        },
-                        {
-                          "text": "1. 브라우저에서 Slack에 로그인해주세요\n"
-                        },
-                        {
-                          "text": "2. \"Create New App\" 버튼을 클릭하세요\n"
-                        },
-                        {
-                          "text": "3. \"From scratch\"를 선택하세요\n"
-                        },
-                        {
-                          "text": "4. 앱 이름: \"MASLABS 업무봇\"\n"
-                        },
-                        {
-                          "text": "5. Workspace를 선택하세요\n"
-                        },
-                        {
-                          "text": "6. \"Create App\" 버튼을 클릭하세요\n"
-                        },
-                        {
-                          "text": "7. 왼쪽 메뉴에서 \"Incoming Webhooks\"를 클릭하세요\n"
-                        },
-                        {
-                          "text": "8. \"Activate Incoming Webhooks\"를 ON으로 설정하세요\n"
-                        },
-                        {
-                          "text": "9. \"Add New Webhook to Workspace\"를 클릭하세요\n"
-                        },
-                        {
-                          "text": "10. 채널 \"#31-gg-업무전달-매장관리-환경개선\"을 선택하세요\n"
-                        },
-                        {
-                          "text": "11. \"Allow\" 버튼을 클릭하세요\n"
-                        },
-                        {
-                          "text": "12. 생성된 Webhook URL을 복사하세요\n"
-                        },
-                        {
-                          "text": "========================\n"
-                        }
-                      ],
-                      "stderr": [
-                        {
-                          "text": "(node:74033) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
-                        }
-                      ],
-                      "retry": 0,
-                      "startTime": "2025-09-18T01:10:48.067Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video-1.webm"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/error-context.md"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "f0c6e3cd26b83dbb9a6c-5c4ce83b5eea0ebfdc0b",
-              "file": "manual-slack-setup.spec.ts",
-              "line": 4,
-              "column": 7
-            }
-          ]
-        }
-      ]
+      "message": "Error: duplicate test title \"완전한 정산 시스템 테스트\", first declared in complete-settlement-system-test.spec.ts:3",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/complete-settlement-system-test.spec.ts",
+        "line": 130,
+        "column": 5
+      },
+      "snippet": "   at complete-settlement-system-test.spec.ts:130\n\n  128 | });\n  129 |\n> 130 | test('완전한 정산 시스템 테스트', async ({ page }) => {\n      |     ^\n  131 |   console.log('🧪 완전한 정산 시스템 테스트 시작');\n  132 |   \n  133 |   // 1. 허상원으로 로그인"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 시급관리 페이지 접근 및 기본 기능 확인\", first declared in hourly-wages-management-test.spec.ts:14",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 292,
+        "column": 7
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:292\n\n  290 |   });\n  291 |\n> 292 |   test('시급관리 페이지 접근 및 기본 기능 확인', async ({ page }) => {\n      |       ^\n  293 |     console.log('🚀 시급관리 페이지 테스트 시작');\n  294 |     \n  295 |     // 시급관리 페이지로 이동"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 허상원 시급 수정 테스트\", first declared in hourly-wages-management-test.spec.ts:46",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 324,
+        "column": 7
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:324\n\n  322 |   });\n  323 |\n> 324 |   test('허상원 시급 수정 테스트', async ({ page }) => {\n      |       ^\n  325 |     console.log('🔧 허상원 시급 수정 테스트 시작');\n  326 |     \n  327 |     await page.goto('https://www.maslabs.kr/admin/hourly-wages');"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 콘솔 오류 확인\", first declared in hourly-wages-management-test.spec.ts:152",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 430,
+        "column": 7
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:430\n\n  428 |   });\n  429 |\n> 430 |   test('콘솔 오류 확인', async ({ page }) => {\n      |       ^\n  431 |     console.log('🔍 콘솔 오류 확인 테스트 시작');\n  432 |     \n  433 |     // 콘솔 로그 수집"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 네트워크 요청 확인\", first declared in hourly-wages-management-test.spec.ts:213",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 491,
+        "column": 7
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:491\n\n  489 |   });\n  490 |\n> 491 |   test('네트워크 요청 확인', async ({ page }) => {\n      |       ^\n  492 |     console.log('🌐 네트워크 요청 확인 테스트 시작');\n  493 |     \n  494 |     const networkRequests: any[] = [];"
+    },
+    {
+      "message": "Error: duplicate test title \"파트타임 알바 급여명세서 및 정산서 시스템 테스트 › 파트타임 정산 페이지 접근 및 직원 선택 테스트\", first declared in parttime-settlement-system-test.spec.ts:14",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/parttime-settlement-system-test.spec.ts",
+        "line": 282,
+        "column": 7
+      },
+      "snippet": "   at parttime-settlement-system-test.spec.ts:282\n\n  280 |   });\n  281 |\n> 282 |   test('파트타임 정산 페이지 접근 및 직원 선택 테스트', async ({ page }) => {\n      |       ^\n  283 |     console.log('🚀 파트타임 정산 페이지 테스트 시작');\n  284 |     \n  285 |     // 대시보드에서 파트타임 정산 페이지로 이동"
+    },
+    {
+      "message": "Error: duplicate test title \"파트타임 알바 급여명세서 및 정산서 시스템 테스트 › 달력 입력 정산서 생성 테스트\", first declared in parttime-settlement-system-test.spec.ts:47",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/parttime-settlement-system-test.spec.ts",
+        "line": 315,
+        "column": 7
+      },
+      "snippet": "   at parttime-settlement-system-test.spec.ts:315\n\n  313 |   });\n  314 |\n> 315 |   test('달력 입력 정산서 생성 테스트', async ({ page }) => {\n      |       ^\n  316 |     console.log('📅 달력 입력 정산서 생성 테스트 시작');\n  317 |     \n  318 |     await page.goto('https://www.maslabs.kr/admin/part-time-settlement');"
+    },
+    {
+      "message": "Error: duplicate test title \"파트타임 알바 급여명세서 및 정산서 시스템 테스트 › 급여명세서 생성기 페이지 테스트\", first declared in parttime-settlement-system-test.spec.ts:88",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/parttime-settlement-system-test.spec.ts",
+        "line": 356,
+        "column": 7
+      },
+      "snippet": "   at parttime-settlement-system-test.spec.ts:356\n\n  354 |   });\n  355 |\n> 356 |   test('급여명세서 생성기 페이지 테스트', async ({ page }) => {\n      |       ^\n  357 |     console.log('📋 급여명세서 생성기 페이지 테스트 시작');\n  358 |     \n  359 |     await page.goto('https://www.maslabs.kr/admin/payslip-generator');"
+    },
+    {
+      "message": "Error: duplicate test title \"파트타임 알바 급여명세서 및 정산서 시스템 테스트 › 정산서 문서 저장 및 프린터 기능 테스트\", first declared in parttime-settlement-system-test.spec.ts:135",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/parttime-settlement-system-test.spec.ts",
+        "line": 403,
+        "column": 7
+      },
+      "snippet": "   at parttime-settlement-system-test.spec.ts:403\n\n  401 |   });\n  402 |\n> 403 |   test('정산서 문서 저장 및 프린터 기능 테스트', async ({ page }) => {\n      |       ^\n  404 |     console.log('💾 정산서 문서 저장 및 프린터 기능 테스트 시작');\n  405 |     \n  406 |     await page.goto('https://www.maslabs.kr/admin/payslip-generator');"
+    },
+    {
+      "message": "Error: duplicate test title \"파트타임 알바 급여명세서 및 정산서 시스템 테스트 › 간단한 정산 테스트 페이지 확인\", first declared in parttime-settlement-system-test.spec.ts:177",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/parttime-settlement-system-test.spec.ts",
+        "line": 445,
+        "column": 7
+      },
+      "snippet": "   at parttime-settlement-system-test.spec.ts:445\n\n  443 |   });\n  444 |\n> 445 |   test('간단한 정산 테스트 페이지 확인', async ({ page }) => {\n      |       ^\n  446 |     console.log('🧪 간단한 정산 테스트 페이지 확인 시작');\n  447 |     \n  448 |     await page.goto('https://www.maslabs.kr/admin/simple-settlement');"
+    },
+    {
+      "message": "Error: duplicate test title \"파트타임 알바 급여명세서 및 정산서 시스템 테스트 › 파트타임 알바 월별 급여명세서 생성 테스트\", first declared in parttime-settlement-system-test.spec.ts:213",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/parttime-settlement-system-test.spec.ts",
+        "line": 481,
+        "column": 7
+      },
+      "snippet": "   at parttime-settlement-system-test.spec.ts:481\n\n  479 |   });\n  480 |\n> 481 |   test('파트타임 알바 월별 급여명세서 생성 테스트', async ({ page }) => {\n      |       ^\n  482 |     console.log('📊 파트타임 알바 월별 급여명세서 생성 테스트 시작');\n  483 |     \n  484 |     await page.goto('https://www.maslabs.kr/admin/payslip-generator');"
+    },
+    {
+      "message": "Error: duplicate test title \"정산서 상세보기 및 인쇄 기능 테스트\", first declared in payslip-detail-test.spec.ts:3",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/payslip-detail-test.spec.ts",
+        "line": 159,
+        "column": 5
+      },
+      "snippet": "   at payslip-detail-test.spec.ts:159\n\n  157 | });\n  158 |\n> 159 | test('정산서 상세보기 및 인쇄 기능 테스트', async ({ page }) => {\n      |     ^\n  160 |   console.log('🧪 정산서 상세보기 및 인쇄 기능 테스트 시작');\n  161 |   \n  162 |   // 1. 정산서 페이지로 이동"
+    },
+    {
+      "message": "SyntaxError: /Users/m2/MASLABS/www.maslabs.kr/tests/wait-for-manual-login.spec.ts: Missing semicolon. (27:1)\n\n  25 |     \n  26 |     // 사용자가 로그인을 완료할 때까지 대기 (5분)\n> 27 | z    await page.waitForTimeout(600000); // 10분 대기\n     |  ^\n  28 |     \n  29 |     console.log('✅ 로그인 대기 완료');\n  30 |     ",
+      "stack": "SyntaxError: /Users/m2/MASLABS/www.maslabs.kr/tests/wait-for-manual-login.spec.ts: Missing semicolon. (27:1)\n\n  25 |     \n  26 |     // 사용자가 로그인을 완료할 때까지 대기 (5분)\n> 27 | z    await page.waitForTimeout(600000); // 10분 대기\n     |  ^\n  28 |     \n  29 |     console.log('✅ 로그인 대기 완료');\n  30 |     ",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/wait-for-manual-login.spec.ts",
+        "line": 27,
+        "column": 1
+      },
+      "snippet": "   at wait-for-manual-login.spec.ts:27\n\n  25 |     \n  26 |     // 사용자가 로그인을 완료할 때까지 대기 (5분)\n> 27 | z    await page.waitForTimeout(600000); // 10분 대기\n     | ^\n  28 |     \n  29 |     console.log('✅ 로그인 대기 완료');\n  30 |     "
     }
   ],
-  "errors": [],
   "stats": {
-    "startTime": "2025-09-18T01:10:47.762Z",
-    "duration": 62241.436,
+    "startTime": "2025-09-18T06:54:24.247Z",
+    "duration": 1979.754,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }
