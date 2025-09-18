@@ -100,11 +100,11 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showAllSharedTasks, setShowAllSharedTasks] = useState(false);
-  const [activePriorityTab, setActivePriorityTab] = useState<'urgent' | 'high' | 'medium' | 'low' | 'my'>('urgent');
+  const [activePriorityTab, setActivePriorityTab] = useState<'urgent' | 'high' | 'normal' | 'low' | 'my'>('urgent');
   const [expandedTabs, setExpandedTabs] = useState<{[key: string]: boolean}>({
     urgent: false,
     high: false,
-    medium: false,
+    normal: false,
     low: false,
     my: false
   });
@@ -485,7 +485,7 @@ export default function DashboardPage() {
             employee:employees(name, employee_id)
           `)
           .in('operation_type_id', operationTypeIds)
-          .in('task_priority', ['urgent', 'high', 'medium', 'low'])
+          .in('task_priority', ['urgent', 'high', 'normal', 'low'])
           .eq('achievement_status', 'pending') // 완료된 업무 제외
           .order('created_at', { ascending: false })
           .limit(20);
@@ -614,7 +614,7 @@ export default function DashboardPage() {
     return {
       urgent: tasks.filter(task => task.task_priority === 'urgent'),
       high: tasks.filter(task => task.task_priority === 'high'),
-      medium: tasks.filter(task => task.task_priority === 'medium'),
+      normal: tasks.filter(task => task.task_priority === 'normal'),
       low: tasks.filter(task => task.task_priority === 'low'),
       my: data?.myTasks || []
     };
@@ -857,7 +857,7 @@ export default function DashboardPage() {
 
         {/* 긴급 업무 섹션 (메인 화면) */}
         {(() => {
-          const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], medium: [], low: [], my: [] };
+          const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
           const urgentTasks = tasksByPriority.urgent;
           const hasUrgentTasks = urgentTasks.length > 0;
 

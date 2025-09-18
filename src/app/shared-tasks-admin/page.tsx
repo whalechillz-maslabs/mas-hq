@@ -46,11 +46,11 @@ export default function SharedTasksAdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'urgent' | 'high' | 'medium' | 'low' | 'my' | 'pending' | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<'urgent' | 'high' | 'normal' | 'low' | 'my' | 'pending' | 'all'>('all');
   const [expandedTabs, setExpandedTabs] = useState<{[key: string]: boolean}>({
     urgent: false,
     high: false,
-    medium: false,
+    normal: false,
     low: false,
     my: false,
     pending: false,
@@ -85,7 +85,7 @@ export default function SharedTasksAdminPage() {
     return {
       urgent: sharedTasks.filter(task => task.task_priority === 'urgent'),
       high: sharedTasks.filter(task => task.task_priority === 'high'),
-      medium: sharedTasks.filter(task => task.task_priority === 'medium'),
+      normal: sharedTasks.filter(task => task.task_priority === 'normal'),
       low: sharedTasks.filter(task => task.task_priority === 'low'),
       my: myTasks,
       pending: pendingTasks,
@@ -328,7 +328,7 @@ export default function SharedTasksAdminPage() {
             const tabs = [
               { key: 'urgent', label: '긴급', color: 'bg-red-100 text-red-800', count: tasksByTab.urgent.length },
               { key: 'high', label: '높음', color: 'bg-orange-100 text-orange-800', count: tasksByTab.high.length },
-              { key: 'medium', label: '보통', color: 'bg-yellow-100 text-yellow-800', count: tasksByTab.medium.length },
+              { key: 'normal', label: '보통', color: 'bg-yellow-100 text-yellow-800', count: tasksByTab.normal.length },
               { key: 'low', label: '낮음', color: 'bg-gray-100 text-gray-800', count: tasksByTab.low.length },
               { key: 'my', label: '내 업무', color: 'bg-blue-100 text-blue-800', count: tasksByTab.my.length },
               { key: 'pending', label: '미완료', color: 'bg-green-100 text-green-800', count: tasksByTab.pending.length },
@@ -396,7 +396,7 @@ export default function SharedTasksAdminPage() {
               const isCompleted = task.achievement_status === 'completed';
               const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 
                                    task.task_priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                   task.task_priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                   task.task_priority === 'normal' ? 'bg-yellow-100 text-yellow-800' :
                                    'bg-gray-100 text-gray-800';
               
               return (
@@ -430,7 +430,7 @@ export default function SharedTasksAdminPage() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
                           {task.task_priority === 'urgent' ? '긴급' : 
                            task.task_priority === 'high' ? '높음' :
-                           task.task_priority === 'medium' ? '보통' : '낮음'}
+                           task.task_priority === 'normal' ? '보통' : '낮음'}
                         </span>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {task.operation_type?.code} - {task.operation_type?.points}점
@@ -581,12 +581,12 @@ export default function SharedTasksAdminPage() {
                   </label>
                   <select
                     name="task_priority"
-                    defaultValue={editingTask.task_priority || 'medium'}
+                    defaultValue={editingTask.task_priority || 'normal'}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   >
                     <option value="urgent">긴급</option>
                     <option value="high">높음</option>
-                    <option value="medium">보통</option>
+                    <option value="normal">보통</option>
                     <option value="low">낮음</option>
                   </select>
                 </div>
