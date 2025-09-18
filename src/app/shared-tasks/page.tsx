@@ -55,6 +55,21 @@ export default function SharedTasksPage() {
 
   const loadSharedTasks = async () => {
     try {
+      // 먼저 OP10의 ID를 가져옵니다
+      const { data: op10Data, error: op10Error } = await supabase
+        .from('operation_types')
+        .select('id')
+        .eq('code', 'OP10')
+        .single();
+
+      if (op10Error || !op10Data) {
+        console.error('OP10 업무 유형을 찾을 수 없습니다:', op10Error);
+        setSharedTasks([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // OP10 업무만 가져옵니다
       const { data, error } = await supabase
         .from('employee_tasks')
         .select(`
@@ -69,16 +84,14 @@ export default function SharedTasksPage() {
           operation_type:operation_types(code, name, points),
           employee:employees(name, employee_id)
         `)
-        .in('operation_type_id', [
-          // OP10 (내부전달, 택배, 환경개선)만 공유
-          (await supabase.from('operation_types').select('id').eq('code', 'OP10').single()).data?.id
-        ])
+        .eq('operation_type_id', op10Data.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setSharedTasks(data || []);
     } catch (error) {
       console.error('공유 업무 로드 실패:', error);
+      setSharedTasks([]);
     } finally {
       setIsLoading(false);
     }

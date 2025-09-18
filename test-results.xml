@@ -1,17 +1,67 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="17.593414">
-<testsuite name="final_improvements_test.spec.ts" timestamp="2025-09-16T01:14:08.668Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="15.664" errors="0">
-<testcase name="Final Improvements Test › 주요 개선사항 최종 확인" classname="final_improvements_test.spec.ts" time="15.664">
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="62.241436">
+<testsuite name="manual-slack-setup.spec.ts" timestamp="2025-09-18T01:10:47.817Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="60.618" errors="0">
+<testcase name="수동 Slack 설정 › Slack API 페이지 접속 및 수동 설정" classname="manual-slack-setup.spec.ts" time="60.618">
+<failure message="manual-slack-setup.spec.ts:4:7 Slack API 페이지 접속 및 수동 설정" type="FAILURE">
+<![CDATA[  [chromium-stable] › manual-slack-setup.spec.ts:4:7 › 수동 Slack 설정 › Slack API 페이지 접속 및 수동 설정 ──────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForTimeout: Test timeout of 60000ms exceeded.
+
+      26 |     
+      27 |     // 5분 대기 (수동 설정 시간)
+    > 28 |     await page.waitForTimeout(300000);
+         |                ^
+      29 |     
+      30 |     // 최종 스크린샷
+      31 |     await page.screenshot({ path: 'manual-slack-final.png' });
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/manual-slack-setup.spec.ts:28:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video-1.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/error-context.md
+]]>
+</failure>
 <system-out>
-<![CDATA[✅ 로그인 성공
-실제 출근 셀: 실제 출근08:17
-✅ 위치 정보 중복 표시 제거 확인
-✅ 시간 수정 기능 정상 작동
-직원 페이지 출근 시간: 출근: 09/16 08:17
-✅ 직원 페이지 시간 표시 정상
-✅ 휴식 기능 버튼 확인
-🎉 주요 개선사항 모두 확인 완료!
+<![CDATA[=== Slack 설정 가이드 ===
+1. 브라우저에서 Slack에 로그인해주세요
+2. "Create New App" 버튼을 클릭하세요
+3. "From scratch"를 선택하세요
+4. 앱 이름: "MASLABS 업무봇"
+5. Workspace를 선택하세요
+6. "Create App" 버튼을 클릭하세요
+7. 왼쪽 메뉴에서 "Incoming Webhooks"를 클릭하세요
+8. "Activate Incoming Webhooks"를 ON으로 설정하세요
+9. "Add New Webhook to Workspace"를 클릭하세요
+10. 채널 "#31-gg-업무전달-매장관리-환경개선"을 선택하세요
+11. "Allow" 버튼을 클릭하세요
+12. 생성된 Webhook URL을 복사하세요
+========================
+
+[[ATTACHMENT|test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video-1.webm]]
+
+[[ATTACHMENT|test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/error-context.md]]
 ]]>
 </system-out>
+<system-err>
+<![CDATA[(node:74033) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+]]>
+</system-err>
 </testcase>
 </testsuite>
 </testsuites>

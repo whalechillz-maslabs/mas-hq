@@ -114,21 +114,21 @@
   },
   "suites": [
     {
-      "title": "final_improvements_test.spec.ts",
-      "file": "final_improvements_test.spec.ts",
+      "title": "manual-slack-setup.spec.ts",
+      "file": "manual-slack-setup.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Final Improvements Test",
-          "file": "final_improvements_test.spec.ts",
+          "title": "수동 Slack 설정",
+          "file": "manual-slack-setup.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "주요 개선사항 최종 확인",
-              "ok": true,
+              "title": "Slack API 페이지 접속 및 수동 설정",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -141,47 +141,106 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 15664,
-                      "errors": [],
-                      "stdout": [
+                      "status": "timedOut",
+                      "duration": 60618,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
                         {
-                          "text": "✅ 로그인 성공\n"
+                          "message": "\u001b[31mTest timeout of 60000ms exceeded.\u001b[39m"
                         },
                         {
-                          "text": "실제 출근 셀: 실제 출근08:17\n"
-                        },
-                        {
-                          "text": "✅ 위치 정보 중복 표시 제거 확인\n"
-                        },
-                        {
-                          "text": "✅ 시간 수정 기능 정상 작동\n"
-                        },
-                        {
-                          "text": "직원 페이지 출근 시간: 출근: 09/16 08:17\n"
-                        },
-                        {
-                          "text": "✅ 직원 페이지 시간 표시 정상\n"
-                        },
-                        {
-                          "text": "✅ 휴식 기능 버튼 확인\n"
-                        },
-                        {
-                          "text": "🎉 주요 개선사항 모두 확인 완료!\n"
+                          "location": {
+                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/manual-slack-setup.spec.ts",
+                            "column": 16,
+                            "line": 28
+                          },
+                          "message": "Error: page.waitForTimeout: Test timeout of 60000ms exceeded.\n\n  26 |     \n  27 |     // 5분 대기 (수동 설정 시간)\n> 28 |     await page.waitForTimeout(300000);\n     |                ^\n  29 |     \n  30 |     // 최종 스크린샷\n  31 |     await page.screenshot({ path: 'manual-slack-final.png' });\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/manual-slack-setup.spec.ts:28:16"
                         }
                       ],
-                      "stderr": [],
+                      "stdout": [
+                        {
+                          "text": "=== Slack 설정 가이드 ===\n"
+                        },
+                        {
+                          "text": "1. 브라우저에서 Slack에 로그인해주세요\n"
+                        },
+                        {
+                          "text": "2. \"Create New App\" 버튼을 클릭하세요\n"
+                        },
+                        {
+                          "text": "3. \"From scratch\"를 선택하세요\n"
+                        },
+                        {
+                          "text": "4. 앱 이름: \"MASLABS 업무봇\"\n"
+                        },
+                        {
+                          "text": "5. Workspace를 선택하세요\n"
+                        },
+                        {
+                          "text": "6. \"Create App\" 버튼을 클릭하세요\n"
+                        },
+                        {
+                          "text": "7. 왼쪽 메뉴에서 \"Incoming Webhooks\"를 클릭하세요\n"
+                        },
+                        {
+                          "text": "8. \"Activate Incoming Webhooks\"를 ON으로 설정하세요\n"
+                        },
+                        {
+                          "text": "9. \"Add New Webhook to Workspace\"를 클릭하세요\n"
+                        },
+                        {
+                          "text": "10. 채널 \"#31-gg-업무전달-매장관리-환경개선\"을 선택하세요\n"
+                        },
+                        {
+                          "text": "11. \"Allow\" 버튼을 클릭하세요\n"
+                        },
+                        {
+                          "text": "12. 생성된 Webhook URL을 복사하세요\n"
+                        },
+                        {
+                          "text": "========================\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:74033) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2025-09-16T01:14:08.959Z",
+                      "startTime": "2025-09-18T01:10:48.067Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video-1.webm"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/manual-slack-setup-수동-Slack-설정-Slack-API-페이지-접속-및-수동-설정-chromium-stable/error-context.md"
+                        }
+                      ]
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "2b3419c72e5daba145fc-8f57264b6c6f9c9425c4",
-              "file": "final_improvements_test.spec.ts",
+              "id": "f0c6e3cd26b83dbb9a6c-5c4ce83b5eea0ebfdc0b",
+              "file": "manual-slack-setup.spec.ts",
               "line": 4,
               "column": 7
             }
@@ -192,11 +251,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-16T01:14:08.589Z",
-    "duration": 17593.414,
-    "expected": 1,
+    "startTime": "2025-09-18T01:10:47.762Z",
+    "duration": 62241.436,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }
