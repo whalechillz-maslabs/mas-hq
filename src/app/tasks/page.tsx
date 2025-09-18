@@ -76,7 +76,7 @@ export default function TasksPage() {
     customer_type: 'new' as 'new' | 'existing',
     consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website',
     op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common',
-    task_priority: 'medium' as 'urgent' | 'high' | 'medium' | 'low'
+    task_priority: 'normal' as 'urgent' | 'high' | 'normal' | 'low'
   });
   const [slackNotificationEnabled, setSlackNotificationEnabled] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -245,7 +245,7 @@ export default function TasksPage() {
           customer_type: 'new',
           consultation_channel: 'phone',
           op10Category: 'common',
-          task_priority: 'medium'
+          task_priority: 'normal'
         });
       loadTasksData();
     } catch (error) {
