@@ -8,7 +8,8 @@ import { getStatusLabel, getStatusColor, getPriorityLabel, getPriorityColor } fr
 import { 
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
   Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2, DollarSign, RotateCcw,
-  Phone, ShoppingCart, Store, Headphones, Shield, Truck, Package, Coffee, Users
+  Phone, ShoppingCart, Store, Headphones, Shield, Truck, Package, Coffee, Users,
+  ToggleLeft, ToggleRight
 } from 'lucide-react';
 
 interface OperationType {
@@ -498,11 +499,18 @@ export default function TasksPage() {
       }
       
       console.log('✅ 업무 상태 업데이트 성공');
-      alert('업무가 완료되었습니다!');
+      
+      // 상태에 따른 메시지 표시
+      if (newStatus === 'completed') {
+        alert('업무가 완료되었습니다!');
+      } else if (newStatus === 'pending') {
+        alert('업무가 대기 상태로 변경되었습니다!');
+      }
+      
       loadTasksData();
     } catch (error: any) {
       console.error('❌ 업무 상태 업데이트 실패:', error);
-      alert(`업무 완료 처리에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      alert(`업무 상태 변경에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     }
   };
 
@@ -1149,16 +1157,31 @@ export default function TasksPage() {
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      {/* 완료 버튼 - 대기 상태일 때만 */}
-                      {task.achievement_status === 'pending' && (
-                        <button
-                          onClick={() => handleUpdateStatus(task.id, 'completed')}
-                          className="text-green-600 hover:text-green-900"
-                          title="완료"
-                        >
-                          완료
-                        </button>
-                      )}
+                      {/* 상태 전환 토글 */}
+                      <button
+                        onClick={() => handleUpdateStatus(
+                          task.id, 
+                          task.achievement_status === 'pending' ? 'completed' : 'pending'
+                        )}
+                        className={`flex items-center space-x-1 px-2 py-1 rounded-md transition-colors ${
+                          task.achievement_status === 'pending' 
+                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                        title={task.achievement_status === 'pending' ? '완료 처리' : '대기로 변경'}
+                      >
+                        {task.achievement_status === 'pending' ? (
+                          <>
+                            <ToggleLeft className="h-4 w-4" />
+                            <span className="text-xs">완료</span>
+                          </>
+                        ) : (
+                          <>
+                            <ToggleRight className="h-4 w-4" />
+                            <span className="text-xs">대기</span>
+                          </>
+                        )}
+                      </button>
                       
                       {/* 수정 버튼 - 모든 업무에 표시 */}
                       <button
