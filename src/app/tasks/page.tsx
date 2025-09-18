@@ -746,7 +746,15 @@ export default function TasksPage() {
 
         {/* 개인 KPI 표시 */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 개인 KPI</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">📊 개인 KPI</h3>
+            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+              {selectedPeriod === 'today' ? '오늘' : 
+               selectedPeriod === 'week' ? '이번 주' : 
+               selectedPeriod === 'month' ? '이번 달' : 
+               `${selectedYear}년 ${selectedMonth}월`}
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
