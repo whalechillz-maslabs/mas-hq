@@ -98,6 +98,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showAllSharedTasks, setShowAllSharedTasks] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -712,16 +713,36 @@ export default function DashboardPage() {
                 <Package className="h-6 w-6 mr-3 text-blue-600" />
                 우선순위 높음/긴급 업무
               </h2>
-              <button
-                onClick={() => router.push('/shared-tasks-admin')}
-                className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                전체 보기
-              </button>
+              <div className="flex items-center gap-2">
+                {data.recentSharedTasks.length > 3 && (
+                  <button
+                    onClick={() => setShowAllSharedTasks(!showAllSharedTasks)}
+                    className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium"
+                  >
+                    {showAllSharedTasks ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-1" />
+                        접기
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-1" />
+                        더보기 ({data.recentSharedTasks.length - 3}개 더)
+                      </>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => router.push('/shared-tasks-admin')}
+                  className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  전체 보기
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
-              {data.recentSharedTasks.slice(0, 3).map((task) => {
+              {(showAllSharedTasks ? data.recentSharedTasks : data.recentSharedTasks.slice(0, 3)).map((task) => {
                 const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
                 const isCompleted = task.achievement_status === 'completed';
                 const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800';
