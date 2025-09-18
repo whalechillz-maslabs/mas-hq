@@ -395,6 +395,9 @@ export default function TasksPage() {
         task_priority: taskData.task_priority || 'normal',
         achievement_status: 'pending',
         task_date: taskData.task_date,
+        customer_type: taskData.customer_type,
+        consultation_channel: taskData.consultation_channel,
+        op10Category: taskData.op10Category,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -1350,7 +1353,8 @@ export default function TasksPage() {
                   sales_amount: parseFloat((formData.get('sales_amount') as string).replace(/,/g, '')) || 0,
                   task_priority: formData.get('task_priority') || 'normal',
                   customer_type: formData.get('customer_type') || 'existing',
-                  consultation_channel: formData.get('consultation_channel') || 'phone'
+                  consultation_channel: formData.get('consultation_channel') || 'phone',
+                  op10Category: formData.get('op10Category') || 'common'
                 });
               }}
             >
@@ -1532,6 +1536,27 @@ export default function TasksPage() {
                         </select>
                       </div>
                     </>
+                  );
+                })()}
+
+                {/* OP10인 경우 업무 분류 필드 */}
+                {(() => {
+                  const selectedOpType = operationTypes.find(op => op.id === selectedOperationTypeForAdd);
+                  return selectedOpType?.code === 'OP10' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        업무 분류
+                      </label>
+                      <select
+                        name="op10Category"
+                        defaultValue="common"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      >
+                        <option value="masgolf">마스골프</option>
+                        <option value="singsingolf">싱싱골프</option>
+                        <option value="common">공통</option>
+                      </select>
+                    </div>
                   );
                 })()}
 
