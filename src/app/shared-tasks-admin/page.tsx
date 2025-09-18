@@ -46,13 +46,14 @@ export default function SharedTasksAdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'urgent' | 'high' | 'medium' | 'low' | 'my' | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<'urgent' | 'high' | 'medium' | 'low' | 'my' | 'pending' | 'all'>('all');
   const [expandedTabs, setExpandedTabs] = useState<{[key: string]: boolean}>({
     urgent: false,
     high: false,
     medium: false,
     low: false,
     my: false,
+    pending: false,
     all: false
   });
 
@@ -79,6 +80,7 @@ export default function SharedTasksAdminPage() {
   // 탭별 업무 분류 함수
   const getTasksByTab = () => {
     const myTasks = sharedTasks.filter(task => task.employee?.employee_id === currentUser?.employee_id);
+    const pendingTasks = sharedTasks.filter(task => task.achievement_status !== 'completed');
     
     return {
       urgent: sharedTasks.filter(task => task.task_priority === 'urgent'),
@@ -86,6 +88,7 @@ export default function SharedTasksAdminPage() {
       medium: sharedTasks.filter(task => task.task_priority === 'medium'),
       low: sharedTasks.filter(task => task.task_priority === 'low'),
       my: myTasks,
+      pending: pendingTasks,
       all: sharedTasks
     };
   };
@@ -154,14 +157,18 @@ export default function SharedTasksAdminPage() {
     if (!editingTask) return;
 
     try {
+      const updateData = {
+        title: formData.get('title') as string,
+        notes: formData.get('notes') as string,
+        customer_name: formData.get('customer_name') as string,
+        task_priority: formData.get('task_priority') as string,
+        achievement_status: formData.get('achievement_status') as string,
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('employee_tasks')
-        .update({
-          title: formData.get('title') as string,
-          notes: formData.get('notes') as string,
-          customer_name: formData.get('customer_name') as string,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', editingTask.id);
 
       if (error) throw error;
@@ -169,11 +176,7 @@ export default function SharedTasksAdminPage() {
       // 목록 업데이트
       setSharedTasks(prev => prev.map(task => 
         task.id === editingTask.id 
-          ? { ...task, 
-              title: formData.get('title') as string,
-              notes: formData.get('notes') as string,
-              customer_name: formData.get('customer_name') as string
-            }
+          ? { ...task, ...updateData }
           : task
       ));
 
@@ -340,6 +343,7 @@ export default function SharedTasksAdminPage() {
               { key: 'medium', label: '보통', color: 'bg-yellow-100 text-yellow-800', count: tasksByTab.medium.length },
               { key: 'low', label: '낮음', color: 'bg-gray-100 text-gray-800', count: tasksByTab.low.length },
               { key: 'my', label: '내 업무', color: 'bg-blue-100 text-blue-800', count: tasksByTab.my.length },
+              { key: 'pending', label: '미완료', color: 'bg-green-100 text-green-800', count: tasksByTab.pending.length },
               { key: 'all', label: '전체', color: 'bg-indigo-100 text-indigo-800', count: tasksByTab.all.length }
             ];
 
@@ -402,7 +406,10 @@ export default function SharedTasksAdminPage() {
               const IconComponent = getOperationIcon(task.operation_type?.code || '');
               const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
               const isCompleted = task.achievement_status === 'completed';
-              const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800';
+              const priorityColor = task.task_priority === 'urgent' ? 'bg-red-100 text-red-800' : 
+                                   task.task_priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                   task.task_priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                   'bg-gray-100 text-gray-800';
               
               return (
                 <div key={task.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -433,7 +440,9 @@ export default function SharedTasksAdminPage() {
                     <div className="ml-4 flex flex-col items-end space-y-2">
                       <div className="flex items-center space-x-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}>
-                          {task.task_priority === 'urgent' ? '긴급' : '높음'}
+                          {task.task_priority === 'urgent' ? '긴급' : 
+                           task.task_priority === 'high' ? '높음' :
+                           task.task_priority === 'medium' ? '보통' : '낮음'}
                         </span>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {task.operation_type?.code} - {task.operation_type?.points}점
@@ -571,6 +580,36 @@ export default function SharedTasksAdminPage() {
                     defaultValue={editingTask.customer_name || ''}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    우선순위
+                  </label>
+                  <select
+                    name="task_priority"
+                    defaultValue={editingTask.task_priority || 'medium'}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="urgent">긴급</option>
+                    <option value="high">높음</option>
+                    <option value="medium">보통</option>
+                    <option value="low">낮음</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    완료 상태
+                  </label>
+                  <select
+                    name="achievement_status"
+                    defaultValue={editingTask.achievement_status || 'pending'}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="pending">미완료</option>
+                    <option value="completed">완료됨</option>
+                  </select>
                 </div>
 
                 <div className="text-sm text-gray-500">
