@@ -1,15 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const SLACK_WEBHOOK_URL_MASGOLF = process.env.SLACK_WEBHOOK_URL_MASGOLF;
+const SLACK_WEBHOOK_URL_SINGSINGOLF = process.env.SLACK_WEBHOOK_URL_SINGSINGOLF;
+const SLACK_WEBHOOK_URL_COMMON = process.env.SLACK_WEBHOOK_URL_COMMON;
 const SLACK_CHANNEL_ID = 'C04DEABHEM8'; // 지정된 채널 ID
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { task, employee } = body;
+    const { task, employee, op10Category } = body;
 
-    if (!SLACK_WEBHOOK_URL) {
-      console.error('SLACK_WEBHOOK_URL이 설정되지 않았습니다.');
+    // OP10 업무의 경우 카테고리에 따라 다른 Webhook URL 사용
+    let targetWebhookUrl: string | undefined;
+
+    if (task.operation_type?.code === 'OP10') {
+      switch (op10Category) {
+        case 'masgolf':
+          targetWebhookUrl = SLACK_WEBHOOK_URL_MASGOLF;
+          break;
+        case 'singsingolf':
+          targetWebhookUrl = SLACK_WEBHOOK_URL_SINGSINGOLF;
+          break;
+        case 'common':
+        default:
+          targetWebhookUrl = SLACK_WEBHOOK_URL_COMMON;
+          break;
+      }
+    } else {
+      // OP10이 아닌 경우 공통 Webhook URL 사용
+      targetWebhookUrl = SLACK_WEBHOOK_URL_COMMON;
+    }
+
+    if (!targetWebhookUrl) {
+      console.error('Slack Webhook URL이 설정되지 않았습니다.');
       return NextResponse.json({ error: 'Slack 설정이 필요합니다.' }, { status: 500 });
     }
 
@@ -57,7 +80,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Slack으로 메시지 전송
-    const response = await fetch(SLACK_WEBHOOK_URL, {
+    const response = await fetch(targetWebhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

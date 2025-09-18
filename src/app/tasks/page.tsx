@@ -72,7 +72,8 @@ export default function TasksPage() {
     sales_amount: 0,
     notes: '',
     customer_type: 'new' as 'new' | 'existing',
-    consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website'
+    consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website',
+    op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common'
   });
   const [stats, setStats] = useState({
     totalTasks: 0,
@@ -152,7 +153,8 @@ export default function TasksPage() {
       sales_amount: 0,
       notes: '',
       customer_type: 'new',
-      consultation_channel: 'phone'
+      consultation_channel: 'phone',
+      op10Category: 'common'
     }));
     setShowQuickTaskForm(true);
   };
@@ -205,7 +207,8 @@ export default function TasksPage() {
               employee: {
                 name: currentUser.name,
                 employee_id: currentUser.employee_id
-              }
+              },
+              op10Category: quickTaskData.op10Category
             }),
           });
         } catch (slackError) {
@@ -217,15 +220,16 @@ export default function TasksPage() {
       // 성공 후 폼 초기화 및 데이터 새로고침
       setShowQuickTaskForm(false);
       setSelectedOperationTypeForAdd('');
-      setQuickTaskData({
-        operation_type_id: '',
-        title: '',
-        customer_name: '',
-        sales_amount: 0,
-        notes: '',
-        customer_type: 'new',
-        consultation_channel: 'phone'
-      });
+        setQuickTaskData({
+          operation_type_id: '',
+          title: '',
+          customer_name: '',
+          sales_amount: 0,
+          notes: '',
+          customer_type: 'new',
+          consultation_channel: 'phone',
+          op10Category: 'common'
+        });
       loadTasksData();
     } catch (error) {
       console.error('퀵 테스크 등록 실패:', error);
@@ -846,6 +850,24 @@ export default function TasksPage() {
                     </select>
                   </div>
                 </>
+              )}
+
+              {/* OP10 업무 시 카테고리 선택 */}
+              {operationTypes.find(op => op.id === quickTaskData.operation_type_id)?.code === 'OP10' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    업무 분류
+                  </label>
+                  <select
+                    value={quickTaskData.op10Category}
+                    onChange={(e) => setQuickTaskData(prev => ({ ...prev, op10Category: e.target.value as 'masgolf' | 'singsingolf' | 'common' }))}
+                    className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="masgolf">마스골프</option>
+                    <option value="singsingolf">싱싱골프</option>
+                    <option value="common">공통</option>
+                  </select>
+                </div>
               )}
 
               {/* 업무 내용 */}
