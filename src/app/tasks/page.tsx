@@ -879,8 +879,9 @@ export default function TasksPage() {
                 />
               </div>
 
-              {/* OP5 CS 응대 시 추가 필드 */}
-              {operationTypes.find(op => op.id === quickTaskData.operation_type_id)?.code === 'OP5' && (
+              {/* OP5, OP12 CS 응대 시 추가 필드 */}
+              {(operationTypes.find(op => op.id === quickTaskData.operation_type_id)?.code === 'OP5' || 
+                operationTypes.find(op => op.id === quickTaskData.operation_type_id)?.code === 'OP12') && (
                 <>
                   {/* 고객 유형 */}
                   <div>
