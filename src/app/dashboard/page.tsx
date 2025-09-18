@@ -595,9 +595,9 @@ export default function DashboardPage() {
                       {task.notes && (
                         <p className="text-sm text-gray-600 line-clamp-2">{task.notes}</p>
                       )}
-                      {task.customer_name && (
+                      {task.customer_name && task.customer_name.trim() && (
                         <p className="text-sm text-gray-500 mt-1">
-                          <span className="font-medium">고객:</span> {task.customer_name?.replace(/0/g, '') || ''}
+                          <span className="font-medium">고객:</span> {task.customer_name.trim()}
                         </p>
                       )}
                     </div>
