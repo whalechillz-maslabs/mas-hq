@@ -76,6 +76,7 @@ export default function TasksPage() {
     op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common'
   });
   const [slackNotificationEnabled, setSlackNotificationEnabled] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [stats, setStats] = useState({
     totalTasks: 0,
     totalPoints: 0,
@@ -508,6 +509,9 @@ export default function TasksPage() {
 
   const handleUpdateTask = async (taskData: any) => {
     try {
+      setIsUpdating(true);
+      console.log('업무 수정 시작:', taskData); // 디버깅용 로그
+      
       const updateData: any = {
         ...taskData,
         updated_at: new Date().toISOString(),
@@ -526,12 +530,20 @@ export default function TasksPage() {
         updateData.op10Category = taskData.op10Category || 'common';
       }
 
+      console.log('업데이트 데이터:', updateData); // 디버깅용 로그
+
       const { error } = await supabase
         .from('employee_tasks')
         .update(updateData)
         .eq('id', editingTask?.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase 업데이트 오류:', error);
+        alert('업무 수정에 실패했습니다: ' + error.message);
+        return;
+      }
+
+      console.log('업무 수정 성공'); // 디버깅용 로그
 
       // OP10 업무 수정 시에도 Slack 알림 전송
       if (selectedOpType?.code === 'OP10') {
@@ -544,8 +556,15 @@ export default function TasksPage() {
       setShowEditModal(false);
       setEditingTask(null);
       loadTasksData();
+      
+      // 성공 메시지
+      alert('업무가 성공적으로 수정되었습니다.');
+      
     } catch (error) {
       console.error('업무 수정 실패:', error);
+      alert('업무 수정 중 오류가 발생했습니다: ' + (error as Error).message);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -1517,7 +1536,8 @@ export default function TasksPage() {
                   sales_amount: formData.get('sales_amount') as string,
                   task_priority: formData.get('task_priority') || 'normal',
                   customer_type: formData.get('customer_type') || 'existing',
-                  consultation_channel: formData.get('consultation_channel') || 'phone'
+                  consultation_channel: formData.get('consultation_channel') || 'phone',
+                  op10Category: formData.get('op10Category') || 'common'
                 });
               }}
             >
@@ -1741,9 +1761,14 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  disabled={isUpdating}
+                  className={`px-4 py-2 rounded-md ${
+                    isUpdating 
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
                 >
-                  수정
+                  {isUpdating ? '수정 중...' : '수정'}
                 </button>
               </div>
             </form>
