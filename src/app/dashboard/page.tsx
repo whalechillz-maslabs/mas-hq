@@ -609,6 +609,7 @@ export default function DashboardPage() {
         title: formData.get('title') as string,
         notes: formData.get('notes') as string,
         customer_name: formData.get('customer_name') as string,
+        task_priority: formData.get('task_priority') as string,
         updated_at: new Date().toISOString()
       };
 
@@ -1712,6 +1713,22 @@ export default function DashboardPage() {
                   defaultValue={editingTask.customer_name || ''}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  우선순위
+                </label>
+                <select
+                  name="task_priority"
+                  defaultValue={editingTask.task_priority || 'normal'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="urgent">긴급</option>
+                  <option value="high">높음</option>
+                  <option value="medium">보통</option>
+                  <option value="low">낮음</option>
+                </select>
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">
