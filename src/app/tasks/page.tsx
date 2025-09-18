@@ -806,9 +806,9 @@ export default function TasksPage() {
                 <span className="text-sm font-medium text-orange-800">마스골프</span>
               </div>
               <p className="text-lg font-bold text-orange-600">
-                {tasks.filter(t => ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP9', 'OP10'].includes(t.operation_type?.code || '') && t.op10Category === 'masgolf').reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
+                {tasks.filter(t => ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP9', 'OP10'].includes(t.operation_type?.code || '') && (t.op10Category === 'masgolf' || !t.op10Category)).reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
               </p>
-              <p className="text-xs text-orange-500 mt-1">{tasks.filter(t => ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP9', 'OP10'].includes(t.operation_type?.code || '') && t.op10Category === 'masgolf').length}건</p>
+              <p className="text-xs text-orange-500 mt-1">{tasks.filter(t => ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP9', 'OP10'].includes(t.operation_type?.code || '') && (t.op10Category === 'masgolf' || !t.op10Category)).length}건</p>
             </div>
 
             <div className="text-center p-4 bg-pink-50 rounded-lg">
