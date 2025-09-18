@@ -8,7 +8,8 @@ import { formatDateKR } from '@/utils/dateUtils';
 import { 
   Users, Eye, Calendar, User, MessageSquare, 
   Phone, ShoppingCart, Headphones, Shield, Truck, Package,
-  ArrowLeft, RefreshCw, Filter, Search, Edit, Trash2, X, Siren, CheckSquare, CheckCircle
+  ArrowLeft, RefreshCw, Filter, Search, Edit, Trash2, X, Siren, CheckSquare, CheckCircle,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 
 interface SharedTask {
@@ -45,6 +46,15 @@ export default function SharedTasksAdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'urgent' | 'high' | 'medium' | 'low' | 'my' | 'all'>('all');
+  const [expandedTabs, setExpandedTabs] = useState<{[key: string]: boolean}>({
+    urgent: false,
+    high: false,
+    medium: false,
+    low: false,
+    my: false,
+    all: false
+  });
 
   useEffect(() => {
     checkAuth();
@@ -66,19 +76,32 @@ export default function SharedTasksAdminPage() {
     return true;
   };
 
+  // 탭별 업무 분류 함수
+  const getTasksByTab = () => {
+    const myTasks = sharedTasks.filter(task => task.employee?.employee_id === currentUser?.employee_id);
+    
+    return {
+      urgent: sharedTasks.filter(task => task.task_priority === 'urgent'),
+      high: sharedTasks.filter(task => task.task_priority === 'high'),
+      medium: sharedTasks.filter(task => task.task_priority === 'medium'),
+      low: sharedTasks.filter(task => task.task_priority === 'low'),
+      my: myTasks,
+      all: sharedTasks
+    };
+  };
+
+  // 탭 토글 함수
+  const toggleTabExpansion = (tab: string) => {
+    setExpandedTabs(prev => ({
+      ...prev,
+      [tab]: !prev[tab]
+    }));
+  };
+
   // 필터링된 업무 목록 계산
   const getFilteredTasks = () => {
-    let filtered = sharedTasks;
-
-    // 우선순위 필터
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(task => task.task_priority === priorityFilter);
-    }
-
-    // 작성자 필터
-    if (authorFilter === 'my') {
-      filtered = filtered.filter(task => task.employee?.employee_id === currentUser?.employee_id);
-    }
+    const tasksByTab = getTasksByTab();
+    let filtered = tasksByTab[activeTab];
 
     // 검색어 필터
     if (searchTerm) {
@@ -206,11 +229,11 @@ export default function SharedTasksAdminPage() {
         return;
       }
 
-      // OP5, OP10 업무 가져오기 - 모든 우선순위
+      // 모든 업무 유형 가져오기 - OP1~OP12
       const { data: operationTypesData } = await supabase
         .from('operation_types')
-        .select('id')
-        .in('code', ['OP5', 'OP10']);
+        .select('id, code')
+        .in('code', ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10', 'OP11', 'OP12']);
 
       if (operationTypesData && operationTypesData.length > 0) {
         const operationTypeIds = operationTypesData.map(op => op.id);
@@ -291,7 +314,7 @@ export default function SharedTasksAdminPage() {
               </button>
               <div>
             <h1 className="text-2xl font-bold text-gray-900">공유 업무 관리</h1>
-            <p className="text-gray-600">OP5(CS 응대), OP10(내부전달) 공유 업무 관리 - 모든 우선순위 포함</p>
+            <p className="text-gray-600">모든 업무 유형(OP1~OP12) 공유 업무 관리 - 우선순위별 탭 구조</p>
               </div>
             </div>
             <button
@@ -305,56 +328,77 @@ export default function SharedTasksAdminPage() {
         </div>
       </div>
 
-      {/* 필터 및 검색 */}
+      {/* 탭 및 검색 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="업무명, 내용, 작성자로 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+          {/* 탭 헤더 */}
+          {(() => {
+            const tasksByTab = getTasksByTab();
+            const tabs = [
+              { key: 'urgent', label: '긴급', color: 'bg-red-100 text-red-800', count: tasksByTab.urgent.length },
+              { key: 'high', label: '높음', color: 'bg-orange-100 text-orange-800', count: tasksByTab.high.length },
+              { key: 'medium', label: '보통', color: 'bg-yellow-100 text-yellow-800', count: tasksByTab.medium.length },
+              { key: 'low', label: '낮음', color: 'bg-gray-100 text-gray-800', count: tasksByTab.low.length },
+              { key: 'my', label: '내 업무', color: 'bg-blue-100 text-blue-800', count: tasksByTab.my.length },
+              { key: 'all', label: '전체', color: 'bg-indigo-100 text-indigo-800', count: tasksByTab.all.length }
+            ];
+
+            return (
+              <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === tab.key
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.count > 0 && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${tab.color}`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">전체 우선순위</option>
-                <option value="urgent">긴급</option>
-                <option value="high">높음</option>
-                <option value="medium">보통</option>
-                <option value="low">낮음</option>
-              </select>
-              <select
-                value={authorFilter}
-                onChange={(e) => setAuthorFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">전체 작성자</option>
-                <option value="my">내 업무만</option>
-              </select>
-            </div>
+            );
+          })()}
+
+          {/* 검색 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="업무명, 내용, 작성자로 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
         </div>
 
         {/* 업무 목록 */}
         <div className="space-y-4">
-          {getFilteredTasks().length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">공유된 업무가 없습니다</h3>
-              <p className="text-gray-500">팀원들이 OP10 업무를 등록하면 여기에 표시됩니다.</p>
-            </div>
-          ) : (
-            getFilteredTasks().map((task) => {
+          {(() => {
+            const filteredTasks = getFilteredTasks();
+            const displayTasks = expandedTabs[activeTab] ? filteredTasks : filteredTasks.slice(0, 5);
+            
+            if (filteredTasks.length === 0) {
+              return (
+                <div className="bg-white rounded-lg shadow p-8 text-center">
+                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">해당 탭의 업무가 없습니다</h3>
+                  <p className="text-gray-500">다른 탭을 확인해보세요.</p>
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {displayTasks.map((task) => {
               const IconComponent = getOperationIcon(task.operation_type?.code || '');
               const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
               const isCompleted = task.achievement_status === 'completed';
@@ -439,8 +483,32 @@ export default function SharedTasksAdminPage() {
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
+            
+            {/* 더보기/접기 버튼 */}
+            {filteredTasks.length > 5 && (
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => toggleTabExpansion(activeTab)}
+                  className="flex items-center justify-center mx-auto text-gray-600 hover:text-gray-800 text-sm font-medium"
+                >
+                  {expandedTabs[activeTab] ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      접기
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      더보기 ({filteredTasks.length - 5}개 더)
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+              </>
+            );
+          })()}
         </div>
       </div>
 
