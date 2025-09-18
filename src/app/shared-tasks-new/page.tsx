@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { auth } from '@/lib/supabase';
@@ -57,16 +57,10 @@ export default function SharedTasksNewPage() {
   };
 
   // 관리자 권한 확인
-  const isAdmin = useMemo(() => {
-    console.log('현재 사용자 정보:', currentUser);
-    console.log('role:', currentUser?.role);
-    console.log('position:', currentUser?.position);
-    const adminCheck = currentUser?.role === 'admin' || currentUser?.position === '관리자';
-    console.log('관리자 여부:', adminCheck);
+  const isAdmin = () => {
     // 임시로 모든 사용자에게 권한 부여 (테스트용)
-    console.log('임시로 true 반환');
     return true;
-  }, [currentUser]);
+  };
 
   // 업무 수정 함수
   const handleEditTask = (task: SharedTask) => {
