@@ -572,7 +572,7 @@ export default function DashboardPage() {
                 최근 공유 업무
               </h2>
               <button
-                onClick={() => router.push('/shared-tasks-new')}
+                onClick={() => router.push('/shared-tasks-admin')}
                 className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
                 <Eye className="h-4 w-4 mr-1" />
