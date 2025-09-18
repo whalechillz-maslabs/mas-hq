@@ -75,7 +75,8 @@ export default function TasksPage() {
     notes: '',
     customer_type: 'new' as 'new' | 'existing',
     consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website',
-    op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common'
+    op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common',
+    task_priority: 'medium' as 'urgent' | 'high' | 'medium' | 'low'
   });
   const [slackNotificationEnabled, setSlackNotificationEnabled] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -216,6 +217,7 @@ export default function TasksPage() {
           notes: quickTaskData.notes,
           customer_type: quickTaskData.customer_type,
           consultation_channel: quickTaskData.consultation_channel,
+          task_priority: quickTaskData.task_priority,
           // 한국 시간 기준으로 오늘 날짜 계산
           task_date: (() => {
             const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
@@ -225,9 +227,9 @@ export default function TasksPage() {
 
       if (error) throw error;
 
-      // OP10 업무인 경우 Slack 알림 전송
+      // OP5, OP10 업무인 경우 Slack 알림 전송
       const selectedOpType = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
-      if (selectedOpType?.code === 'OP10') {
+      if (selectedOpType?.code === 'OP5' || selectedOpType?.code === 'OP10') {
         await sendSlackNotification(quickTaskData, selectedOpType, false);
       }
 
@@ -242,7 +244,8 @@ export default function TasksPage() {
           notes: '',
           customer_type: 'new',
           consultation_channel: 'phone',
-          op10Category: 'common'
+          op10Category: 'common',
+          task_priority: 'medium'
         });
       loadTasksData();
     } catch (error) {

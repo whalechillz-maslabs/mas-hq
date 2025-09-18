@@ -120,7 +120,23 @@ export default function DashboardPage() {
       setCurrentTime(new Date());
     }, 1000);
 
-    return () => clearInterval(timer);
+    // 30초마다 데이터 새로고침 (실시간 업데이트)
+    const dataRefreshTimer = setInterval(() => {
+      loadDashboardData();
+    }, 30000);
+
+    // 페이지 포커스 시 데이터 새로고침
+    const handleFocus = () => {
+      loadDashboardData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(dataRefreshTimer);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // 팀원 순위 계산 함수

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const SLACK_WEBHOOK_URL_MASGOLF = process.env.SLACK_WEBHOOK_URL_MASGOLF;
 const SLACK_WEBHOOK_URL_SINGSINGOLF = process.env.SLACK_WEBHOOK_URL_SINGSINGOLF;
 const SLACK_WEBHOOK_URL_COMMON = process.env.SLACK_WEBHOOK_URL_COMMON;
+const SLACK_WEBHOOK_URL_01_MA_OP = process.env.SLACK_WEBHOOK_URL_01_MA_OP; // OP5용 01-ma-op 채널
 const SLACK_CHANNEL_ID = 'C04DEABHEM8'; // 지정된 채널 ID
 
 export async function POST(request: NextRequest) {
@@ -10,10 +11,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { task, employee, op10Category, isUpdate } = body;
 
-    // OP10 업무의 경우 카테고리에 따라 다른 Webhook URL 사용
+    // 업무 유형에 따라 다른 Webhook URL 사용
     let targetWebhookUrl: string | undefined;
 
-    if (task.operation_type?.code === 'OP10') {
+    if (task.operation_type?.code === 'OP5') {
+      // OP5는 01-ma-op 채널로 전송
+      targetWebhookUrl = SLACK_WEBHOOK_URL_01_MA_OP;
+    } else if (task.operation_type?.code === 'OP10') {
+      // OP10은 카테고리에 따라 다른 Webhook URL 사용
       switch (op10Category) {
         case 'masgolf':
           targetWebhookUrl = SLACK_WEBHOOK_URL_MASGOLF;
@@ -27,7 +32,7 @@ export async function POST(request: NextRequest) {
           break;
       }
     } else {
-      // OP10이 아닌 경우 공통 Webhook URL 사용
+      // 기타 업무는 공통 Webhook URL 사용
       targetWebhookUrl = SLACK_WEBHOOK_URL_COMMON;
     }
 
@@ -37,10 +42,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Slack 메시지 포맷 (다듬어진 양식)
+    const operationType = task.operation_type?.code || 'OP';
     const message = {
       username: 'MASLABS 업무봇',
       icon_emoji: ':memo:',
-      text: `📋 ${isUpdate ? 'OP10 업무 수정' : '새로운 OP10 업무 등록'} - ${employee.name}`,
+      text: `📋 ${isUpdate ? `${operationType} 업무 수정` : `새로운 ${operationType} 업무 등록`} - ${employee.name}`,
       attachments: [
         {
           color: '#36a64f',
