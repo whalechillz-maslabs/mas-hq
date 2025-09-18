@@ -806,9 +806,9 @@ export default function TasksPage() {
                 <span className="text-sm font-medium text-orange-800">마스골프</span>
               </div>
               <p className="text-lg font-bold text-orange-600">
-                {tasks.filter(t => t.op10Category === 'masgolf').reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
+                {tasks.filter(t => ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP9', 'OP10'].includes(t.operation_type?.code || '') && t.op10Category === 'masgolf').reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
               </p>
-              <p className="text-xs text-orange-500 mt-1">{tasks.filter(t => t.op10Category === 'masgolf').length}건</p>
+              <p className="text-xs text-orange-500 mt-1">{tasks.filter(t => ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP9', 'OP10'].includes(t.operation_type?.code || '') && t.op10Category === 'masgolf').length}건</p>
             </div>
 
             <div className="text-center p-4 bg-pink-50 rounded-lg">
@@ -817,9 +817,9 @@ export default function TasksPage() {
                 <span className="text-sm font-medium text-pink-800">싱싱골프</span>
               </div>
               <p className="text-lg font-bold text-pink-600">
-                {tasks.filter(t => t.op10Category === 'singsingolf').reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
+                {tasks.filter(t => ['OP11', 'OP12'].includes(t.operation_type?.code || '') || (t.operation_type?.code === 'OP10' && t.op10Category === 'singsingolf')).reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
               </p>
-              <p className="text-xs text-pink-500 mt-1">{tasks.filter(t => t.op10Category === 'singsingolf').length}건</p>
+              <p className="text-xs text-pink-500 mt-1">{tasks.filter(t => ['OP11', 'OP12'].includes(t.operation_type?.code || '') || (t.operation_type?.code === 'OP10' && t.op10Category === 'singsingolf')).length}건</p>
             </div>
           </div>
         </div>

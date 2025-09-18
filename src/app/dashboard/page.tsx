@@ -328,17 +328,17 @@ export default function DashboardPage() {
       const masgolfPersonalTasks = monthlyTasks?.filter(task => {
         const code = task.operation_type?.code;
         return code && ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10'].includes(code) &&
-               task.op10Category === 'masgolf';
+               (task.op10Category === 'masgolf' || !task.op10Category); // op10Category가 없으면 마스골프로 간주
       }) || [];
       
       const masgolfPersonalPoints = masgolfPersonalTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
       const masgolfPersonalCount = masgolfPersonalTasks.length;
 
-      // 싱싱골프 개인 성과 계산 (OP1-OP10 중 싱싱골프 관련)
+      // 싱싱골프 개인 성과 계산 (OP11-OP12 + OP10 중 싱싱골프 관련)
       const singsingolfPersonalTasks = monthlyTasks?.filter(task => {
         const code = task.operation_type?.code;
-        return code && ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10'].includes(code) &&
-               task.op10Category === 'singsingolf';
+        return (code && ['OP11', 'OP12'].includes(code)) || 
+               (code === 'OP10' && task.op10Category === 'singsingolf');
       }) || [];
       
       const singsingolfPersonalPoints = singsingolfPersonalTasks.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0);
