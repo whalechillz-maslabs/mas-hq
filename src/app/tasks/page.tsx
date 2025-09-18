@@ -692,13 +692,6 @@ export default function TasksPage() {
               </div>
               
               <button
-                onClick={() => router.push('/shared-tasks')}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                공유 업무
-              </button>
-              <button
                 onClick={() => setShowAddModal(true)}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
               >

@@ -39,6 +39,8 @@ export default function SharedTasksAdminPage() {
   const [sharedTasks, setSharedTasks] = useState<SharedTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [authorFilter, setAuthorFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
@@ -62,6 +64,34 @@ export default function SharedTasksAdminPage() {
   const isAdmin = () => {
     // 임시로 모든 사용자에게 권한 부여 (테스트용)
     return true;
+  };
+
+  // 필터링된 업무 목록 계산
+  const getFilteredTasks = () => {
+    let filtered = sharedTasks;
+
+    // 우선순위 필터
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(task => task.task_priority === priorityFilter);
+    }
+
+    // 작성자 필터
+    if (authorFilter === 'my') {
+      filtered = filtered.filter(task => task.employee?.employee_id === currentUser?.employee_id);
+    }
+
+    // 검색어 필터
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(task => 
+        task.title?.toLowerCase().includes(term) ||
+        task.notes?.toLowerCase().includes(term) ||
+        task.employee?.name?.toLowerCase().includes(term) ||
+        task.customer_name?.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
   };
 
   // 업무 수정 함수
@@ -176,7 +206,7 @@ export default function SharedTasksAdminPage() {
         return;
       }
 
-      // OP5, OP10 업무 가져오기 - 긴급/높음 우선순위만
+      // OP5, OP10 업무 가져오기 - 모든 우선순위
       const { data: operationTypesData } = await supabase
         .from('operation_types')
         .select('id')
@@ -202,7 +232,6 @@ export default function SharedTasksAdminPage() {
             employee:employees(name, employee_id)
           `)
           .in('operation_type_id', operationTypeIds)
-          .in('task_priority', ['urgent', 'high'])
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -261,8 +290,8 @@ export default function SharedTasksAdminPage() {
                 뒤로가기
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">우선순위 높음/긴급 업무 관리</h1>
-                <p className="text-gray-600">관리자 전용 - OP5(CS 응대), OP10(내부전달) 우선순위 높음/긴급 업무 관리</p>
+            <h1 className="text-2xl font-bold text-gray-900">공유 업무 관리</h1>
+            <p className="text-gray-600">OP5(CS 응대), OP10(내부전달) 공유 업무 관리 - 모든 우선순위 포함</p>
               </div>
             </div>
             <button
@@ -294,12 +323,23 @@ export default function SharedTasksAdminPage() {
             </div>
             <div className="flex gap-2">
               <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="all">전체</option>
-                <option value="OP10">OP10 - 내부전달, 택배, 환경개선</option>
+                <option value="all">전체 우선순위</option>
+                <option value="urgent">긴급</option>
+                <option value="high">높음</option>
+                <option value="medium">보통</option>
+                <option value="low">낮음</option>
+              </select>
+              <select
+                value={authorFilter}
+                onChange={(e) => setAuthorFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="all">전체 작성자</option>
+                <option value="my">내 업무만</option>
               </select>
             </div>
           </div>
@@ -307,14 +347,14 @@ export default function SharedTasksAdminPage() {
 
         {/* 업무 목록 */}
         <div className="space-y-4">
-          {filteredTasks.length === 0 ? (
+          {getFilteredTasks().length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">공유된 업무가 없습니다</h3>
               <p className="text-gray-500">팀원들이 OP10 업무를 등록하면 여기에 표시됩니다.</p>
             </div>
           ) : (
-            filteredTasks.map((task) => {
+            getFilteredTasks().map((task) => {
               const IconComponent = getOperationIcon(task.operation_type?.code || '');
               const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
               const isCompleted = task.achievement_status === 'completed';
