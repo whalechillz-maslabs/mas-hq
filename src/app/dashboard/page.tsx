@@ -78,6 +78,11 @@ interface DashboardData {
     };
   };
   recentSharedTasks: SharedTask[]; // 최근 공유 업무 추가
+  teamRankings?: {
+    sales: { name: string; sales: number; points: number; tasks: number }[];
+    points: { name: string; sales: number; points: number; tasks: number }[];
+    tasks: { name: string; sales: number; points: number; tasks: number }[];
+  } | null;
   todayMission: {
     positiveThinking: boolean;
     creativePassion: boolean;
@@ -103,6 +108,76 @@ export default function DashboardPage() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // 팀원 순위 계산 함수
+  const calculateTeamRankings = async (startDate: string, endDate: string) => {
+    try {
+      // 모든 팀원의 이번 달 업무 데이터 가져오기
+      const { data: allTeamTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points),
+          employee:employees(name, employee_id)
+        `)
+        .gte('created_at', startDate + 'T00:00:00')
+        .lte('created_at', endDate + 'T23:59:59');
+
+      if (!allTeamTasks) return null;
+
+      // 직원별로 데이터 그룹화
+      const employeeStats: { [key: string]: { name: string, sales: number, points: number, tasks: number } } = {};
+
+      allTeamTasks.forEach(task => {
+        const employeeId = task.employee_id;
+        const employeeName = task.employee?.name || '알 수 없음';
+        
+        if (!employeeStats[employeeId]) {
+          employeeStats[employeeId] = {
+            name: employeeName,
+            sales: 0,
+            points: 0,
+            tasks: 0
+          };
+        }
+
+        // 매출 합계
+        if (task.sales_amount) {
+          employeeStats[employeeId].sales += task.sales_amount;
+        }
+
+        // 포인트 합계
+        if (task.operation_type?.points) {
+          employeeStats[employeeId].points += task.operation_type.points;
+        }
+
+        // 업무 건수
+        employeeStats[employeeId].tasks += 1;
+      });
+
+      // 배열로 변환하고 정렬
+      const salesRanking = Object.values(employeeStats)
+        .sort((a, b) => b.sales - a.sales)
+        .slice(0, 3);
+
+      const pointsRanking = Object.values(employeeStats)
+        .sort((a, b) => b.points - a.points)
+        .slice(0, 3);
+
+      const tasksRanking = Object.values(employeeStats)
+        .sort((a, b) => b.tasks - a.tasks)
+        .slice(0, 3);
+
+      return {
+        sales: salesRanking,
+        points: pointsRanking,
+        tasks: tasksRanking
+      };
+    } catch (error) {
+      console.error('팀원 순위 계산 오류:', error);
+      return null;
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -387,6 +462,9 @@ export default function DashboardPage() {
         recentSharedTasks = sharedTasksData || [];
       }
 
+      // 팀원 순위 계산
+      const teamRankings = await calculateTeamRankings(startOfMonthStr, endOfMonthStr);
+
       setData({
         employee: employeeData || currentUser,
         todaySchedule: scheduleData,
@@ -395,6 +473,7 @@ export default function DashboardPage() {
         teamKPI,
         collaborationStats,
         recentSharedTasks,
+        teamRankings,
         todayMission,
         todaySales: todaySales
       });
@@ -864,6 +943,101 @@ export default function DashboardPage() {
             </div>
           </div>
           </div>
+
+          {/* 🏆 실시간 순위 */}
+          {data?.teamRankings && (
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <Trophy className="h-6 w-6 mr-3 text-yellow-600" />
+                🏆 실시간 순위
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* 매출 순위 */}
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4">
+                  <div className="flex items-center mb-3">
+                    <DollarSign className="h-5 w-5 text-yellow-600 mr-2" />
+                    <h3 className="font-semibold text-yellow-800">매출 1위</h3>
+                  </div>
+                  {data.teamRankings.sales.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-yellow-700">
+                          🥇 {data.teamRankings.sales[0].name}
+                        </span>
+                        <span className="text-sm text-yellow-600">
+                          {formatCurrency(data.teamRankings.sales[0].sales)}
+                        </span>
+                      </div>
+                      {data.teamRankings.sales[1] && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">🥈 {data.teamRankings.sales[1].name}</span>
+                          <span className="text-gray-500">{formatCurrency(data.teamRankings.sales[1].sales)}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">데이터 없음</p>
+                  )}
+                </div>
+
+                {/* 포인트 순위 */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
+                  <div className="flex items-center mb-3">
+                    <Award className="h-5 w-5 text-blue-600 mr-2" />
+                    <h3 className="font-semibold text-blue-800">포인트 1위</h3>
+                  </div>
+                  {data.teamRankings.points.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-blue-700">
+                          🥇 {data.teamRankings.points[0].name}
+                        </span>
+                        <span className="text-sm text-blue-600">
+                          {data.teamRankings.points[0].points}점
+                        </span>
+                      </div>
+                      {data.teamRankings.points[1] && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">🥈 {data.teamRankings.points[1].name}</span>
+                          <span className="text-gray-500">{data.teamRankings.points[1].points}점</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">데이터 없음</p>
+                  )}
+                </div>
+
+                {/* 업무 건수 순위 */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
+                  <div className="flex items-center mb-3">
+                    <Target className="h-5 w-5 text-green-600 mr-2" />
+                    <h3 className="font-semibold text-green-800">업무 건수 1위</h3>
+                  </div>
+                  {data.teamRankings.tasks.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-green-700">
+                          🥇 {data.teamRankings.tasks[0].name}
+                        </span>
+                        <span className="text-sm text-green-600">
+                          {data.teamRankings.tasks[0].tasks}건
+                        </span>
+                      </div>
+                      {data.teamRankings.tasks[1] && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">🥈 {data.teamRankings.tasks[1].name}</span>
+                          <span className="text-gray-500">{data.teamRankings.tasks[1].tasks}건</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">데이터 없음</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 협업 성과 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
