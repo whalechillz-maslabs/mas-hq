@@ -9,7 +9,7 @@ import {
   BarChart3, Plus, ChevronLeft, Filter, Award, Target,
   Clock, CheckCircle, AlertCircle, TrendingUp, Edit, Trash2, DollarSign, RotateCcw,
   Phone, ShoppingCart, Store, Headphones, Shield, Truck, Package, Coffee, Users,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, Trophy
 } from 'lucide-react';
 
 interface OperationType {
