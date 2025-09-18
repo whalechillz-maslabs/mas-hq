@@ -13,9 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Slack 설정이 필요합니다.' }, { status: 500 });
     }
 
-    // Slack 메시지 포맷
+    // Slack 메시지 포맷 (Incoming Webhooks용 - channel 필드 제거)
     const message = {
-      channel: SLACK_CHANNEL_ID,
       username: 'MASLABS 업무봇',
       icon_emoji: ':memo:',
       attachments: [
