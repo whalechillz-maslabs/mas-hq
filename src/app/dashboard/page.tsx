@@ -331,15 +331,16 @@ export default function DashboardPage() {
         dedication: Math.random() > 0.2
       };
 
-      // 최근 공유 업무 (OP10) 가져오기 - 긴급/높음 우선순위만
-      const { data: op10Data } = await supabase
+      // 최근 공유 업무 (OP5, OP10) 가져오기 - 긴급/높음 우선순위만
+      const { data: operationTypesData } = await supabase
         .from('operation_types')
         .select('id')
-        .eq('code', 'OP10')
-        .single();
+        .in('code', ['OP5', 'OP10']);
 
       let recentSharedTasks: SharedTask[] = [];
-      if (op10Data) {
+      if (operationTypesData && operationTypesData.length > 0) {
+        const operationTypeIds = operationTypesData.map(op => op.id);
+        
         const { data: sharedTasksData } = await supabase
           .from('employee_tasks')
           .select(`
@@ -354,7 +355,7 @@ export default function DashboardPage() {
             operation_type:operation_types(code, name, points),
             employee:employees(name, employee_id)
           `)
-          .eq('operation_type_id', op10Data.id)
+          .in('operation_type_id', operationTypeIds)
           .in('task_priority', ['urgent', 'high'])
           .order('created_at', { ascending: false })
           .limit(10);
@@ -606,7 +607,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
                 <Package className="h-6 w-6 mr-3 text-blue-600" />
-                최근 공유 업무
+                우선순위 높음/긴급 업무
               </h2>
               <button
                 onClick={() => router.push('/shared-tasks-admin')}

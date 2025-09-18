@@ -176,29 +176,40 @@ export default function SharedTasksAdminPage() {
         return;
       }
 
-      // OP10 업무만 가져옵니다 - 긴급/높음 우선순위만
-      const { data, error } = await supabase
-        .from('employee_tasks')
-        .select(`
-          id,
-          title,
-          notes,
-          memo,
-          customer_name,
-          sales_amount,
-          task_date,
-          created_at,
-          task_priority,
-          achievement_status,
-          operation_type:operation_types(code, name, points),
-          employee:employees(name, employee_id)
-        `)
-        .eq('operation_type_id', op10Data.id)
-        .in('task_priority', ['urgent', 'high'])
-        .order('created_at', { ascending: false });
+      // OP5, OP10 업무 가져오기 - 긴급/높음 우선순위만
+      const { data: operationTypesData } = await supabase
+        .from('operation_types')
+        .select('id')
+        .in('code', ['OP5', 'OP10']);
 
-      if (error) throw error;
-      setSharedTasks(data || []);
+      if (operationTypesData && operationTypesData.length > 0) {
+        const operationTypeIds = operationTypesData.map(op => op.id);
+        
+        const { data, error } = await supabase
+          .from('employee_tasks')
+          .select(`
+            id,
+            title,
+            notes,
+            memo,
+            customer_name,
+            sales_amount,
+            task_date,
+            created_at,
+            task_priority,
+            achievement_status,
+            operation_type:operation_types(code, name, points),
+            employee:employees(name, employee_id)
+          `)
+          .in('operation_type_id', operationTypeIds)
+          .in('task_priority', ['urgent', 'high'])
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setSharedTasks(data || []);
+      } else {
+        setSharedTasks([]);
+      }
     } catch (error) {
       console.error('공유 업무 로드 실패:', error);
       setSharedTasks([]);
@@ -250,8 +261,8 @@ export default function SharedTasksAdminPage() {
                 뒤로가기
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">공유 업무 관리</h1>
-                <p className="text-gray-600">관리자 전용 - 팀원들의 내부전달, 택배, 환경개선 업무 관리</p>
+                <h1 className="text-2xl font-bold text-gray-900">우선순위 높음/긴급 업무 관리</h1>
+                <p className="text-gray-600">관리자 전용 - OP5(CS 응대), OP10(내부전달) 우선순위 높음/긴급 업무 관리</p>
               </div>
             </div>
             <button
