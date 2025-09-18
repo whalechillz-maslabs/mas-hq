@@ -1086,7 +1086,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <User className="h-6 w-6 mr-3 text-indigo-600" />
-              개인 KPI ({selectedMonth.getFullYear()}년 {selectedMonth.getMonth() + 1}월)
+              개인 KPI ({new Date().getFullYear()}년 {new Date().getMonth() + 1}월)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
