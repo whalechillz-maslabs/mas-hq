@@ -1059,25 +1059,25 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{formatCurrency(data?.monthlyStats?.totalSales || 0)}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-200" />
-          </div>
+              </div>
             </div>
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-sm">신규 상담</p>
-                  <p className="text-2xl font-bold">{data?.monthlyStats?.newConsultations || 0}건</p>
+                  <p className="text-purple-100 text-sm">오늘 포인트</p>
+                  <p className="text-2xl font-bold">{data?.personalKPI?.totalPoints || 0}점</p>
                 </div>
-                <Phone className="h-8 w-8 text-purple-200" />
-          </div>
+                <Target className="h-8 w-8 text-purple-200" />
+              </div>
             </div>
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 text-sm">목표 달성률</p>
-                  <p className="text-2xl font-bold">{data?.monthlyStats?.targetAchievement || 0}%</p>
-          </div>
-                <Target className="h-8 w-8 text-orange-200" />
-            </div>
+                  <p className="text-orange-100 text-sm">업무 건수</p>
+                  <p className="text-2xl font-bold">{data?.personalKPI?.totalTasks || 0}건</p>
+                </div>
+                <Phone className="h-8 w-8 text-orange-200" />
+              </div>
             </div>
           </div>
         </div>
@@ -1086,7 +1086,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <User className="h-6 w-6 mr-3 text-indigo-600" />
-              개인 KPI
+              개인 KPI ({selectedMonth.getFullYear()}년 {selectedMonth.getMonth() + 1}월)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">

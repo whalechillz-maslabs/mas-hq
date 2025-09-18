@@ -712,38 +712,47 @@ export default function TasksPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 오늘 성과 요약 - 퀵 테스크 스타일 적용 */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center">
-              <DollarSign className="h-5 w-5 text-green-600 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">오늘 매출</p>
-                <p className="text-lg font-bold text-green-600">
-                  {(stats.todaySales || 0).toLocaleString()}원
-                </p>
+        {/* KPI 하이라이트 */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <BarChart3 className="h-6 w-6 mr-3 text-blue-600" />
+            KPI 하이라이트
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm">오늘의 매출</p>
+                  <p className="text-2xl font-bold">₩{(stats.todaySales || 0).toLocaleString()}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-blue-200" />
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center">
-              <Award className="h-5 w-5 text-purple-600 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">오늘 포인트</p>
-                <p className="text-lg font-bold text-purple-600">
-                  {stats.totalPoints}점
-                </p>
+            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm">월 누적 매출</p>
+                  <p className="text-2xl font-bold">₩{(stats.monthlySales || 0).toLocaleString()}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-200" />
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="flex items-center">
-              <Target className="h-5 w-5 text-blue-600 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">업무 건수</p>
-                <p className="text-lg font-bold text-blue-600">
-                  {stats.totalTasks}건
-                </p>
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm">오늘 포인트</p>
+                  <p className="text-2xl font-bold">{stats.totalPoints}점</p>
+                </div>
+                <Target className="h-8 w-8 text-purple-200" />
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm">업무 건수</p>
+                  <p className="text-2xl font-bold">{stats.totalTasks}건</p>
+                </div>
+                <Phone className="h-8 w-8 text-orange-200" />
               </div>
             </div>
           </div>
@@ -757,7 +766,7 @@ export default function TasksPage() {
               {selectedMonth.getFullYear()}년 {selectedMonth.getMonth() + 1}월
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
                 <Phone className="h-6 w-6 text-blue-600 mr-2" />
@@ -789,6 +798,28 @@ export default function TasksPage() {
                 {tasks.filter(t => t.operation_type?.code === 'OP5' && !t.title?.includes('[환불]')).length}건
               </p>
               <p className="text-xs text-purple-500 mt-1">OP5</p>
+            </div>
+
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Award className="h-6 w-6 text-orange-600 mr-2" />
+                <span className="text-sm font-medium text-orange-800">마스골프</span>
+              </div>
+              <p className="text-lg font-bold text-orange-600">
+                {tasks.filter(t => t.op10Category === 'masgolf').reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
+              </p>
+              <p className="text-xs text-orange-500 mt-1">{tasks.filter(t => t.op10Category === 'masgolf').length}건</p>
+            </div>
+
+            <div className="text-center p-4 bg-pink-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Trophy className="h-6 w-6 text-pink-600 mr-2" />
+                <span className="text-sm font-medium text-pink-800">싱싱골프</span>
+              </div>
+              <p className="text-lg font-bold text-pink-600">
+                {tasks.filter(t => t.op10Category === 'singsingolf').reduce((sum, t) => sum + (t.operation_type?.points || 0), 0)}점
+              </p>
+              <p className="text-xs text-pink-500 mt-1">{tasks.filter(t => t.op10Category === 'singsingolf').length}건</p>
             </div>
           </div>
         </div>
