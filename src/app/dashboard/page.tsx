@@ -12,7 +12,7 @@ import {
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
   Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu, FileText, Calculator,
-  Package, Eye, Siren, CheckSquare
+  Package, Eye, Siren, CheckSquare, Edit, X
 } from 'lucide-react';
 
 interface SharedTask {
@@ -106,6 +106,8 @@ export default function DashboardPage() {
     medium: false,
     low: false
   });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -575,6 +577,70 @@ export default function DashboardPage() {
     }));
   };
 
+  // 관리자 권한 확인 함수
+  const isAdmin = () => {
+    // 임시로 모든 사용자에게 관리자 권한 부여 (테스트용)
+    return true;
+  };
+
+  // 업무 수정 권한 확인 함수
+  const canEditTask = (task: SharedTask) => {
+    if (!data?.employee) return false;
+    
+    // 관리자는 모든 업무 수정 가능
+    if (isAdmin()) return true;
+    
+    // 본인이 작성한 업무만 수정 가능
+    return task.employee?.employee_id === data.employee.id;
+  };
+
+  // 업무 수정 함수
+  const handleEditTask = (task: SharedTask) => {
+    setEditingTask(task);
+    setShowEditModal(true);
+  };
+
+  // 업무 수정 저장 함수
+  const handleSaveEdit = async (formData: FormData) => {
+    if (!editingTask) return;
+
+    try {
+      const updateData: any = {
+        title: formData.get('title') as string,
+        notes: formData.get('notes') as string,
+        customer_name: formData.get('customer_name') as string,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('employee_tasks')
+        .update(updateData)
+        .eq('id', editingTask.id);
+
+      if (error) throw error;
+
+      // 목록에서 해당 업무 업데이트
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          recentSharedTasks: prev.recentSharedTasks.map(task => 
+            task.id === editingTask.id 
+              ? { ...task, ...updateData }
+              : task
+          )
+        };
+      });
+
+      setShowEditModal(false);
+      setEditingTask(null);
+      alert('업무가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      console.error('업무 수정 실패:', error);
+      alert('업무 수정에 실패했습니다.');
+    }
+  };
+
   const handleCompleteTask = async (taskId: string) => {
     try {
       const { error } = await supabase
@@ -835,13 +901,24 @@ export default function DashboardPage() {
                                   {task.operation_type?.code} - {task.operation_type?.points}점
                                 </span>
                               </div>
-                              <button
-                                onClick={() => handleCompleteTask(task.id)}
-                                className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                              >
-                                <CheckSquare className="h-3 w-3 mr-1" />
-                                완료
-                              </button>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleCompleteTask(task.id)}
+                                  className="flex items-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                >
+                                  <CheckSquare className="h-3 w-3 mr-1" />
+                                  완료
+                                </button>
+                                {canEditTask(task) && (
+                                  <button
+                                    onClick={() => handleEditTask(task)}
+                                    className="flex items-center px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                    title="업무 수정"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1584,6 +1661,78 @@ export default function DashboardPage() {
         )}
         </div>
       </div>
+
+      {/* 업무 수정 모달 */}
+      {showEditModal && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">업무 수정</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <form action={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  업무명
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  defaultValue={editingTask.title}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  내용
+                </label>
+                <textarea
+                  name="notes"
+                  defaultValue={editingTask.notes || ''}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  고객명
+                </label>
+                <input
+                  type="text"
+                  name="customer_name"
+                  defaultValue={editingTask.customer_name || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  수정
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
