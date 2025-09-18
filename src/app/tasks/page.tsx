@@ -911,7 +911,12 @@ export default function TasksPage() {
               )}
 
               {/* OP10 업무 시 카테고리 선택 */}
-              {operationTypes.find(op => op.id === quickTaskData.operation_type_id)?.code === 'OP10' && (
+              {(() => {
+                const selectedOp = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
+                console.log('빠른 업무 입력 - 선택된 업무 유형:', selectedOp);
+                console.log('빠른 업무 입력 - operation_type_id:', quickTaskData.operation_type_id);
+                return selectedOp?.code === 'OP10';
+              })() && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     업무 분류
@@ -1730,7 +1735,10 @@ export default function TasksPage() {
                 ) : null}
 
                 {/* OP10인 경우 카테고리 선택 */}
-                {editingTask.operation_type?.code === 'OP10' && (
+                {(() => {
+                  console.log('업무 수정 - editingTask.operation_type:', editingTask.operation_type);
+                  return editingTask.operation_type?.code === 'OP10';
+                })() && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       업무 분류
