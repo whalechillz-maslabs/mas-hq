@@ -8,7 +8,7 @@ const SLACK_CHANNEL_ID = 'C04DEABHEM8'; // 지정된 채널 ID
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { task, employee, op10Category } = body;
+    const { task, employee, op10Category, isUpdate } = body;
 
     // OP10 업무의 경우 카테고리에 따라 다른 Webhook URL 사용
     let targetWebhookUrl: string | undefined;
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const message = {
       username: 'MASLABS 업무봇',
       icon_emoji: ':memo:',
-      text: `📋 새로운 OP10 업무 등록 - ${employee.name}`,
+      text: `📋 ${isUpdate ? 'OP10 업무 수정' : '새로운 OP10 업무 등록'} - ${employee.name}`,
       attachments: [
         {
           color: '#36a64f',

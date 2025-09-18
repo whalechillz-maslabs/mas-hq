@@ -75,6 +75,7 @@ export default function TasksPage() {
     consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website',
     op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common'
   });
+  const [slackNotificationEnabled, setSlackNotificationEnabled] = useState(true);
   const [stats, setStats] = useState({
     totalTasks: 0,
     totalPoints: 0,
@@ -159,6 +160,41 @@ export default function TasksPage() {
     setShowQuickTaskForm(true);
   };
 
+  // Slack 알림 전송 함수
+  const sendSlackNotification = async (taskData: any, operationType: any, isUpdate: boolean = false) => {
+    if (!slackNotificationEnabled) return;
+
+    try {
+      await fetch('/api/slack/notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          task: {
+            title: taskData.title,
+            notes: taskData.notes,
+            customer_name: taskData.customer_name,
+            operation_type: {
+              code: operationType.code,
+              name: getOperationDisplayName(operationType.code, operationType.name),
+              points: operationType.points
+            }
+          },
+          employee: {
+            name: currentUser.name,
+            employee_id: currentUser.employee_id
+          },
+          op10Category: taskData.op10Category || 'common',
+          isUpdate: isUpdate
+        }),
+      });
+    } catch (slackError) {
+      console.error('Slack 알림 전송 실패:', slackError);
+      // Slack 알림 실패는 업무 등록/수정을 막지 않음
+    }
+  };
+
   const handleQuickTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -187,34 +223,7 @@ export default function TasksPage() {
       // OP10 업무인 경우 Slack 알림 전송
       const selectedOpType = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
       if (selectedOpType?.code === 'OP10') {
-        try {
-          await fetch('/api/slack/notify', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              task: {
-                title: quickTaskData.title,
-                notes: quickTaskData.notes,
-                customer_name: quickTaskData.customer_name,
-                operation_type: {
-                  code: selectedOpType.code,
-                  name: getOperationDisplayName(selectedOpType.code, selectedOpType.name),
-                  points: selectedOpType.points
-                }
-              },
-              employee: {
-                name: currentUser.name,
-                employee_id: currentUser.employee_id
-              },
-              op10Category: quickTaskData.op10Category
-            }),
-          });
-        } catch (slackError) {
-          console.error('Slack 알림 전송 실패:', slackError);
-          // Slack 알림 실패는 업무 등록을 막지 않음
-        }
+        await sendSlackNotification(quickTaskData, selectedOpType, false);
       }
 
       // 성공 후 폼 초기화 및 데이터 새로고침
@@ -511,6 +520,11 @@ export default function TasksPage() {
         updateData.customer_type = taskData.customer_type || 'existing';
         updateData.consultation_channel = taskData.consultation_channel || 'phone';
       }
+      
+      // OP10인 경우 op10Category 추가
+      if (selectedOpType?.code === 'OP10') {
+        updateData.op10Category = taskData.op10Category || 'common';
+      }
 
       const { error } = await supabase
         .from('employee_tasks')
@@ -518,6 +532,14 @@ export default function TasksPage() {
         .eq('id', editingTask?.id);
 
       if (error) throw error;
+
+      // OP10 업무 수정 시에도 Slack 알림 전송
+      if (selectedOpType?.code === 'OP10') {
+        await sendSlackNotification({
+          ...taskData,
+          op10Category: taskData.op10Category || 'common'
+        }, selectedOpType, true);
+      }
       
       setShowEditModal(false);
       setEditingTask(null);
@@ -629,6 +651,23 @@ export default function TasksPage() {
             </div>
             
             <div className="flex items-center space-x-3">
+              {/* Slack 알림 토글 스위치 */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">Slack 알림</label>
+                <button
+                  onClick={() => setSlackNotificationEnabled(!slackNotificationEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    slackNotificationEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      slackNotificationEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
               <button
                 onClick={() => router.push('/shared-tasks')}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
@@ -1669,6 +1708,24 @@ export default function TasksPage() {
                     </div>
                   </>
                 ) : null}
+
+                {/* OP10인 경우 카테고리 선택 */}
+                {editingTask.operation_type?.code === 'OP10' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      업무 분류
+                    </label>
+                    <select
+                      name="op10Category"
+                      defaultValue={editingTask.op10Category || 'common'}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    >
+                      <option value="masgolf">마스골프</option>
+                      <option value="singsingolf">싱싱골프</option>
+                      <option value="common">공통</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex justify-end space-x-2">
