@@ -1731,22 +1731,22 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.total || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">📞</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.new?.phone || 0}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">📞</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.phone || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">💬</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.new?.kakao || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">💬</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.kakao || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🛒</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.new?.smartstore || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🛒</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.smartstore || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🌐</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.new?.official_website || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🌐</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.official_website || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -1760,22 +1760,22 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.total || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">📞</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.existing?.phone || 0}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">📞</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.phone || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">💬</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.existing?.kakao || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">💬</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.kakao || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🛒</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.existing?.smartstore || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🛒</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.smartstore || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🌐</span>
-                        <span className="font-medium">{data?.marketingInflow?.masgolf?.existing?.official_website || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🌐</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.official_website || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -1807,22 +1807,22 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.total || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">📞</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.new?.phone || 0}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">📞</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.phone || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">💬</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.new?.kakao || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">💬</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.kakao || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🛒</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.new?.smartstore || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🛒</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.smartstore || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🌐</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.new?.official_website || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🌐</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.official_website || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -1836,22 +1836,22 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.total || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">📞</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.existing?.phone || 0}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">📞</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.phone || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">💬</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.existing?.kakao || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">💬</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.kakao || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🛒</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.existing?.smartstore || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🛒</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.smartstore || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🌐</span>
-                        <span className="font-medium">{data?.marketingInflow?.singsingolf?.existing?.official_website || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🌐</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.official_website || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -1883,22 +1883,22 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.total || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">📞</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.new?.phone || 0}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">📞</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.phone || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">💬</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.new?.kakao || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">💬</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.kakao || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🛒</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.new?.smartstore || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🛒</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.smartstore || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🌐</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.new?.official_website || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🌐</span>
+                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.official_website || 0}</span>
                       </div>
                     </div>
                   </div>
@@ -1912,22 +1912,22 @@ export default function DashboardPage() {
                       </span>
                       <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.total || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">📞</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.existing?.phone || 0}</span>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">📞</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.phone || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">💬</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.existing?.kakao || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">💬</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.kakao || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🛒</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.existing?.smartstore || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🛒</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.smartstore || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">🌐</span>
-                        <span className="font-medium">{data?.marketingInflow?.total?.existing?.official_website || 0}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl">🌐</span>
+                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.official_website || 0}</span>
                       </div>
                     </div>
                   </div>
