@@ -87,6 +87,56 @@ interface DashboardData {
       sitaBookings: number; // 시타 예약 건수 추가
     };
   };
+  marketingInflow: {
+    masgolf: {
+      new: {
+        phone: number;
+        kakao: number;
+        smartstore: number;
+        official_website: number;
+        total: number;
+      };
+      existing: {
+        phone: number;
+        kakao: number;
+        smartstore: number;
+        official_website: number;
+        total: number;
+      };
+    };
+    singsingolf: {
+      new: {
+        phone: number;
+        kakao: number;
+        smartstore: number;
+        official_website: number;
+        total: number;
+      };
+      existing: {
+        phone: number;
+        kakao: number;
+        smartstore: number;
+        official_website: number;
+        total: number;
+      };
+    };
+    total: {
+      new: {
+        phone: number;
+        kakao: number;
+        smartstore: number;
+        official_website: number;
+        total: number;
+      };
+      existing: {
+        phone: number;
+        kakao: number;
+        smartstore: number;
+        official_website: number;
+        total: number;
+      };
+    };
+  };
   recentSharedTasks: SharedTask[]; // 최근 공유 업무 추가
   myTasks: SharedTask[]; // 내 업무 추가
   teamRankings?: {
@@ -423,6 +473,28 @@ export default function DashboardPage() {
         task.sita_booking === true
       ).length;
 
+      // 마스골프 마케팅 유입 분석 (OP5 기준)
+      const masgolfMarketingTasks = masgolfTasks.filter(task => 
+        task.operation_type?.code === 'OP5'
+      );
+      
+      const masgolfMarketingInflow = {
+        new: {
+          phone: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'phone').length,
+          kakao: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'kakao').length,
+          smartstore: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'smartstore').length,
+          official_website: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'official_website').length,
+          total: masgolfMarketingTasks.filter(task => task.customer_type === 'new').length
+        },
+        existing: {
+          phone: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'phone').length,
+          kakao: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'kakao').length,
+          smartstore: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'smartstore').length,
+          official_website: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'official_website').length,
+          total: masgolfMarketingTasks.filter(task => task.customer_type === 'existing').length
+        }
+      };
+
       // 싱싱골프 성과 계산 (OP11-OP12)
       const singsingolfTasks = allTeamTasks?.filter(task => {
         const code = task.operation_type?.code;
@@ -443,12 +515,52 @@ export default function DashboardPage() {
       // 싱싱골프는 방문 예약이 없음 (OP12는 시타 예약 없음)
       const singsingolfSitaBookings = 0;
 
+      // 싱싱골프 마케팅 유입 분석 (OP12 기준)
+      const singsingolfMarketingTasks = singsingolfTasks.filter(task => 
+        task.operation_type?.code === 'OP12'
+      );
+      
+      const singsingolfMarketingInflow = {
+        new: {
+          phone: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'phone').length,
+          kakao: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'kakao').length,
+          smartstore: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'smartstore').length,
+          official_website: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'official_website').length,
+          total: singsingolfMarketingTasks.filter(task => task.customer_type === 'new').length
+        },
+        existing: {
+          phone: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'phone').length,
+          kakao: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'kakao').length,
+          smartstore: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'smartstore').length,
+          official_website: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'official_website').length,
+          total: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing').length
+        }
+      };
+
       // 전체 성과 계산
       const totalSales = masgolfSales + singsingolfSales;
       const totalPoints = masgolfPoints + singsingolfPoints;
       const totalTasks = masgolfTaskCount + singsingolfTaskCount;
       const totalNewConsultations = masgolfNewConsultations + singsingolfNewConsultations;
       const totalSitaBookings = masgolfSitaBookings + singsingolfSitaBookings;
+
+      // 전체 마케팅 유입 계산
+      const totalMarketingInflow = {
+        new: {
+          phone: masgolfMarketingInflow.new.phone + singsingolfMarketingInflow.new.phone,
+          kakao: masgolfMarketingInflow.new.kakao + singsingolfMarketingInflow.new.kakao,
+          smartstore: masgolfMarketingInflow.new.smartstore + singsingolfMarketingInflow.new.smartstore,
+          official_website: masgolfMarketingInflow.new.official_website + singsingolfMarketingInflow.new.official_website,
+          total: masgolfMarketingInflow.new.total + singsingolfMarketingInflow.new.total
+        },
+        existing: {
+          phone: masgolfMarketingInflow.existing.phone + singsingolfMarketingInflow.existing.phone,
+          kakao: masgolfMarketingInflow.existing.kakao + singsingolfMarketingInflow.existing.kakao,
+          smartstore: masgolfMarketingInflow.existing.smartstore + singsingolfMarketingInflow.existing.smartstore,
+          official_website: masgolfMarketingInflow.existing.official_website + singsingolfMarketingInflow.existing.official_website,
+          total: masgolfMarketingInflow.existing.total + singsingolfMarketingInflow.existing.total
+        }
+      };
 
       // 협업 성과 데이터
       const collaborationStats = {
@@ -563,6 +675,11 @@ export default function DashboardPage() {
         personalKPI,
         teamKPI,
         collaborationStats,
+        marketingInflow: {
+          masgolf: masgolfMarketingInflow,
+          singsingolf: singsingolfMarketingInflow,
+          total: totalMarketingInflow
+        },
         recentSharedTasks,
         myTasks,
         teamRankings,
@@ -623,6 +740,20 @@ export default function DashboardPage() {
             tasks: 120,
             newConsultations: 40,
             sitaBookings: 0
+          }
+        },
+        marketingInflow: {
+          masgolf: {
+            new: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 },
+            existing: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 }
+          },
+          singsingolf: {
+            new: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 },
+            existing: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 }
+          },
+          total: {
+            new: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 },
+            existing: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 }
           }
         },
         recentSharedTasks: [],
@@ -1570,6 +1701,215 @@ export default function DashboardPage() {
                   <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
                     <span className="text-pink-600 font-bold">SS</span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 마케팅 유입 분석 */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <TrendingUp className="h-6 w-6 mr-3 text-purple-600" />
+            마케팅 유입 분석
+          </h2>
+          
+          {/* 마스골프 마케팅 유입 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+              마스골프 마케팅 유입
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 신규 고객 */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                <h4 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  신규 고객
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.phone || 0}</p>
+                    <p className="text-xs text-green-500">전화</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.kakao || 0}</p>
+                    <p className="text-xs text-green-500">카카오채널</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.smartstore || 0}</p>
+                    <p className="text-xs text-green-500">스마트스토어</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.official_website || 0}</p>
+                    <p className="text-xs text-green-500">공홈</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-green-200 text-center">
+                  <p className="text-lg font-bold text-green-700">총 {data?.marketingInflow?.masgolf?.new?.total || 0}건</p>
+                </div>
+              </div>
+
+              {/* 기존 고객 */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                <h4 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  기존 고객
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.phone || 0}</p>
+                    <p className="text-xs text-blue-500">전화</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.kakao || 0}</p>
+                    <p className="text-xs text-blue-500">카카오채널</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.smartstore || 0}</p>
+                    <p className="text-xs text-blue-500">스마트스토어</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.official_website || 0}</p>
+                    <p className="text-xs text-blue-500">공홈</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-blue-200 text-center">
+                  <p className="text-lg font-bold text-blue-700">총 {data?.marketingInflow?.masgolf?.existing?.total || 0}건</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 싱싱골프 마케팅 유입 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
+              싱싱골프 마케팅 유입
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 신규 고객 */}
+              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-6 border border-pink-200">
+                <h4 className="text-lg font-semibold text-pink-800 mb-4 flex items-center">
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  신규 고객
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-pink-600">{data?.marketingInflow?.singsingolf?.new?.phone || 0}</p>
+                    <p className="text-xs text-pink-500">전화</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-pink-600">{data?.marketingInflow?.singsingolf?.new?.kakao || 0}</p>
+                    <p className="text-xs text-pink-500">카카오채널</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-pink-600">{data?.marketingInflow?.singsingolf?.new?.smartstore || 0}</p>
+                    <p className="text-xs text-pink-500">스마트스토어</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-pink-600">{data?.marketingInflow?.singsingolf?.new?.official_website || 0}</p>
+                    <p className="text-xs text-pink-500">공홈</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-pink-200 text-center">
+                  <p className="text-lg font-bold text-pink-700">총 {data?.marketingInflow?.singsingolf?.new?.total || 0}건</p>
+                </div>
+              </div>
+
+              {/* 기존 고객 */}
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-200">
+                <h4 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  기존 고객
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-purple-600">{data?.marketingInflow?.singsingolf?.existing?.phone || 0}</p>
+                    <p className="text-xs text-purple-500">전화</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-purple-600">{data?.marketingInflow?.singsingolf?.existing?.kakao || 0}</p>
+                    <p className="text-xs text-purple-500">카카오채널</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-purple-600">{data?.marketingInflow?.singsingolf?.existing?.smartstore || 0}</p>
+                    <p className="text-xs text-purple-500">스마트스토어</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-purple-600">{data?.marketingInflow?.singsingolf?.existing?.official_website || 0}</p>
+                    <p className="text-xs text-purple-500">공홈</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-purple-200 text-center">
+                  <p className="text-lg font-bold text-purple-700">총 {data?.marketingInflow?.singsingolf?.existing?.total || 0}건</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 전체 마케팅 유입 요약 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+              전체 마케팅 유입 요약
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 신규 고객 */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200">
+                <h4 className="text-lg font-semibold text-emerald-800 mb-4 flex items-center">
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  신규 고객
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-emerald-600">{data?.marketingInflow?.total?.new?.phone || 0}</p>
+                    <p className="text-xs text-emerald-500">전화</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-emerald-600">{data?.marketingInflow?.total?.new?.kakao || 0}</p>
+                    <p className="text-xs text-emerald-500">카카오채널</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-emerald-600">{data?.marketingInflow?.total?.new?.smartstore || 0}</p>
+                    <p className="text-xs text-emerald-500">스마트스토어</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-emerald-600">{data?.marketingInflow?.total?.new?.official_website || 0}</p>
+                    <p className="text-xs text-emerald-500">공홈</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-emerald-200 text-center">
+                  <p className="text-lg font-bold text-emerald-700">총 {data?.marketingInflow?.total?.new?.total || 0}건</p>
+                </div>
+              </div>
+
+              {/* 기존 고객 */}
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-6 border border-indigo-200">
+                <h4 className="text-lg font-semibold text-indigo-800 mb-4 flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  기존 고객
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-indigo-600">{data?.marketingInflow?.total?.existing?.phone || 0}</p>
+                    <p className="text-xs text-indigo-500">전화</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-indigo-600">{data?.marketingInflow?.total?.existing?.kakao || 0}</p>
+                    <p className="text-xs text-indigo-500">카카오채널</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-indigo-600">{data?.marketingInflow?.total?.existing?.smartstore || 0}</p>
+                    <p className="text-xs text-indigo-500">스마트스토어</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-indigo-600">{data?.marketingInflow?.total?.existing?.official_website || 0}</p>
+                    <p className="text-xs text-indigo-500">공홈</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-indigo-200 text-center">
+                  <p className="text-lg font-bold text-indigo-700">총 {data?.marketingInflow?.total?.existing?.total || 0}건</p>
                 </div>
               </div>
             </div>
