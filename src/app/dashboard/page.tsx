@@ -1699,233 +1699,143 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* 통합 마케팅 유입 테이블 */}
-          <div className="overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 간소화된 마케팅 유입 분석 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* 마스골프 유입 분석 */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-blue-800 flex items-center">
+                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                  마스골프 유입
+                </h3>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {(data?.marketingInflow?.masgolf?.new?.total || 0) + (data?.marketingInflow?.masgolf?.existing?.total || 0)}
+                  </p>
+                  <p className="text-xs text-blue-500">총 유입</p>
+                </div>
+              </div>
               
-              {/* 마스골프 */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-blue-800 flex items-center">
-                    <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                    마스골프
-                  </h3>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-blue-600">
-                      {(data?.marketingInflow?.masgolf?.new?.total || 0) + (data?.marketingInflow?.masgolf?.existing?.total || 0)}
-                    </p>
-                    <p className="text-xs text-blue-500">총 유입</p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* 신규 고객 */}
+                <div className="bg-white/70 rounded-lg p-4">
+                  <div className="text-center mb-3">
+                    <span className="text-sm font-medium text-green-700">신규 고객</span>
+                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.total || 0}</p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>📞 전화</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.phone || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>💬 카카오</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.kakao || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🛒 스마트스토어</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.smartstore || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🌐 공홈</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.official_website || 0}</span>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  {/* 신규 고객 */}
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-green-700 flex items-center">
-                        <span className="text-green-500 mr-1">●</span>
-                        신규
-                      </span>
-                      <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.total || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">📞</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.phone || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">💬</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.kakao || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🛒</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.smartstore || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🌐</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.official_website || 0}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* 기존 고객 */}
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-blue-700 flex items-center">
-                        <span className="text-blue-500 mr-1">●</span>
-                        기존
-                      </span>
-                      <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.total || 0}</span>
+                {/* 기존 고객 */}
+                <div className="bg-white/70 rounded-lg p-4">
+                  <div className="text-center mb-3">
+                    <span className="text-sm font-medium text-blue-700">기존 고객</span>
+                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.total || 0}</p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>📞 전화</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.phone || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">📞</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.phone || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">💬</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.kakao || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🛒</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.smartstore || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🌐</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.official_website || 0}</span>
-                      </div>
+                    <div className="flex justify-between">
+                      <span>💬 카카오</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.kakao || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🛒 스마트스토어</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.smartstore || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🌐 공홈</span>
+                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.official_website || 0}</span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* 싱싱골프 */}
-              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-6 border border-pink-200">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-pink-800 flex items-center">
-                    <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
-                    싱싱골프
-                  </h3>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-pink-600">
-                      {(data?.marketingInflow?.singsingolf?.new?.total || 0) + (data?.marketingInflow?.singsingolf?.existing?.total || 0)}
-                    </p>
-                    <p className="text-xs text-pink-500">총 유입</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* 신규 고객 */}
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-green-700 flex items-center">
-                        <span className="text-green-500 mr-1">●</span>
-                        신규
-                      </span>
-                      <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.total || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">📞</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.phone || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">💬</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.kakao || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🛒</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.smartstore || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🌐</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.official_website || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 기존 고객 */}
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-blue-700 flex items-center">
-                        <span className="text-blue-500 mr-1">●</span>
-                        기존
-                      </span>
-                      <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.total || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">📞</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.phone || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">💬</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.kakao || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🛒</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.smartstore || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🌐</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.official_website || 0}</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* 싱싱골프 유입 분석 */}
+            <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-6 border border-pink-200">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-pink-800 flex items-center">
+                  <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
+                  싱싱골프 유입
+                </h3>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-pink-600">
+                    {(data?.marketingInflow?.singsingolf?.new?.total || 0) + (data?.marketingInflow?.singsingolf?.existing?.total || 0)}
+                  </p>
+                  <p className="text-xs text-pink-500">총 유입</p>
                 </div>
               </div>
-
-              {/* 전체 요약 */}
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-emerald-800 flex items-center">
-                    <span className="w-3 h-3 bg-emerald-500 rounded-full mr-2"></span>
-                    전체 요약
-                  </h3>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-emerald-600">
-                      {(data?.marketingInflow?.total?.new?.total || 0) + (data?.marketingInflow?.total?.existing?.total || 0)}
-                    </p>
-                    <p className="text-xs text-emerald-500">총 유입</p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* 신규 고객 */}
+                <div className="bg-white/70 rounded-lg p-4">
+                  <div className="text-center mb-3">
+                    <span className="text-sm font-medium text-green-700">신규 고객</span>
+                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.total || 0}</p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>📞 전화</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.phone || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>💬 카카오</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.kakao || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🛒 스마트스토어</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.smartstore || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🌐 공홈</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.official_website || 0}</span>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  {/* 신규 고객 */}
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-green-700 flex items-center">
-                        <span className="text-green-500 mr-1">●</span>
-                        신규
-                      </span>
-                      <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.total || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">📞</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.phone || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">💬</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.kakao || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🛒</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.smartstore || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🌐</span>
-                        <span className="text-lg font-bold text-green-600">{data?.marketingInflow?.total?.new?.official_website || 0}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* 기존 고객 */}
-                  <div className="bg-white/60 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-blue-700 flex items-center">
-                        <span className="text-blue-500 mr-1">●</span>
-                        기존
-                      </span>
-                      <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.total || 0}</span>
+                {/* 기존 고객 */}
+                <div className="bg-white/70 rounded-lg p-4">
+                  <div className="text-center mb-3">
+                    <span className="text-sm font-medium text-blue-700">기존 고객</span>
+                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.total || 0}</p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>📞 전화</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.phone || 0}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">📞</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.phone || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">💬</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.kakao || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🛒</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.smartstore || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-2xl">🌐</span>
-                        <span className="text-lg font-bold text-blue-600">{data?.marketingInflow?.total?.existing?.official_website || 0}</span>
-                      </div>
+                    <div className="flex justify-between">
+                      <span>💬 카카오</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.kakao || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🛒 스마트스토어</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.smartstore || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🌐 공홈</span>
+                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.official_website || 0}</span>
                     </div>
                   </div>
                 </div>
