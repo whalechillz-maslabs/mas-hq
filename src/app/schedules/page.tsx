@@ -407,6 +407,67 @@ export default function SchedulesPage() {
     }
   };
 
+  // 스케줄 수정 함수
+  const handleEditSchedule = (schedule: Schedule) => {
+    const scheduleDate = new Date(schedule.schedule_date);
+    const isPassed = isTimePassed(scheduleDate, { time: schedule.scheduled_start, label: '', isLunch: false });
+    const userRole = currentUser?.role?.name;
+    
+    // 권한 체크
+    if (userRole === 'admin') {
+      // 관리자는 모든 스케줄 수정 가능
+    } else if (userRole === 'manager') {
+      // 매니저는 본인 스케줄만 수정 가능
+    } else {
+      // 일반 직원은 미래 스케줄만 수정 가능
+      if (isPassed) {
+        alert('과거 스케줄은 수정할 수 없습니다.');
+        return;
+      }
+    }
+    
+    // 수정 모달 또는 페이지로 이동
+    const editData = {
+      id: schedule.id,
+      date: schedule.schedule_date,
+      startTime: schedule.scheduled_start,
+      endTime: schedule.scheduled_end,
+      note: schedule.employee_note || '',
+      status: schedule.status
+    };
+    
+    // URL 파라미터로 수정 데이터 전달
+    const params = new URLSearchParams(editData);
+    router.push(`/schedules/edit?${params.toString()}`);
+  };
+
+  // 스케줄 삭제 함수
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!confirm('정말로 이 스케줄을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', scheduleId);
+      
+      if (error) {
+        console.error('스케줄 삭제 실패:', error);
+        alert('스케줄 삭제에 실패했습니다.');
+        return;
+      }
+      
+      // 스케줄 목록 새로고침
+      await fetchSchedules();
+      alert('스케줄이 삭제되었습니다.');
+    } catch (error) {
+      console.error('스케줄 삭제 오류:', error);
+      alert('스케줄 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   // 스케줄 토글 (클릭 시)
   const toggleSchedule = async (date: Date, timeSlot: TimeSlot) => {
     // 중복 클릭 방지
@@ -1129,18 +1190,24 @@ export default function SchedulesPage() {
                                   {schedule.status === 'approved' ? '승인' : 
                                    schedule.status === 'pending' ? '대기' : '취소'}
                                 </div>
-                                {/* 수정 버튼 (본인 스케줄만) */}
+                                {/* 수정/삭제 버튼 (본인 스케줄만) */}
                                 {schedule.employee_id === currentUser?.id && (
-                                  <button
-                                    onClick={() => {
-                                      // 스케줄 수정 로직 (추후 구현)
-                                      console.log('스케줄 수정:', schedule.id);
-                                    }}
-                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-                                    title="스케줄 수정"
-                                  >
-                                    수정
-                                  </button>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleEditSchedule(schedule)}
+                                      className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+                                      title="스케줄 수정"
+                                    >
+                                      수정
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteSchedule(schedule.id)}
+                                      className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
+                                      title="스케줄 삭제"
+                                    >
+                                      삭제
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             </div>
