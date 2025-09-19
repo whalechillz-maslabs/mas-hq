@@ -47,6 +47,7 @@ export default function SchedulesPage() {
   const [autoApprove, setAutoApprove] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [showOnlyMySchedules, setShowOnlyMySchedules] = useState(false);
 
   // 리스트 보기에서 연도/월 변경 시 currentDate 업데이트
   const handleYearMonthChange = (year: number, month: number) => {
@@ -939,8 +940,12 @@ export default function SchedulesPage() {
                                 {isCurrentUser && <div className="text-blue-300">나 포함</div>}
                                 {daySchedules.length > 0 && (
                                   <div className="text-gray-300">
-                                    {daySchedules.slice(0, 3).map(s => s.employee?.name || s.employee?.employee_id || 'Unknown').join(', ')}
-                                    {daySchedules.length > 3 && ` +${daySchedules.length - 3}명`}
+                                    {daySchedules.slice(0, 2).map(s => 
+                                      s.employee_id === currentUser?.id 
+                                        ? `${s.employee?.name || '나'} (나)`
+                                        : s.employee?.name || s.employee?.employee_id || 'Unknown'
+                                    ).join(', ')}
+                                    {daySchedules.length > 2 && ` +${daySchedules.length - 2}명`}
                                   </div>
                                 )}
                               </div>
@@ -1045,10 +1050,24 @@ export default function SchedulesPage() {
                           ))}
                         </select>
                       </div>
+                      {/* 개인 스케줄 필터 */}
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="showOnlyMySchedules"
+                          checked={showOnlyMySchedules}
+                          onChange={(e) => setShowOnlyMySchedules(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="showOnlyMySchedules" className="text-sm font-medium text-gray-700">
+                          내 스케줄만 보기
+                        </label>
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-blue-800">
                         {selectedYear}년 {selectedMonth}월
+                        {showOnlyMySchedules && <span className="text-sm text-blue-600 ml-2">(내 스케줄만)</span>}
                       </div>
                       <div className="text-sm text-blue-600">
                         총 근무예정시간: {schedules.reduce((total, schedule) => {
@@ -1070,6 +1089,7 @@ export default function SchedulesPage() {
                   </div>
                 ) : (
                   schedules
+                    .filter(schedule => !showOnlyMySchedules || schedule.employee_id === currentUser?.id)
                     .sort((a, b) => new Date(a.schedule_date).getTime() - new Date(b.schedule_date).getTime())
                     .map((schedule, index) => (
                       <div
@@ -1080,6 +1100,15 @@ export default function SchedulesPage() {
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <div className="text-sm font-medium text-gray-900">
+                                {/* 직원 이름 표시 */}
+                                <span className={`inline-block px-2 py-1 text-xs rounded-full mr-2 ${
+                                  schedule.employee_id === currentUser?.id 
+                                    ? 'bg-blue-100 text-blue-800 font-semibold' 
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {schedule.employee?.name || schedule.employee?.employee_id || '알 수 없음'}
+                                  {schedule.employee_id === currentUser?.id && ' (나)'}
+                                </span>
                                 {format(new Date(schedule.schedule_date), 'MM월 dd일 (EEE)', { locale: ko })} {schedule.scheduled_start} - {schedule.scheduled_end}
                                 {schedule.employee_note && (
                                   <span className="ml-2 text-gray-500">• {schedule.employee_note}</span>
@@ -1089,15 +1118,30 @@ export default function SchedulesPage() {
                                   <span className="ml-2 text-xs text-gray-400">ID: {schedule.id.substring(0, 8)}</span>
                                 )}
                             </div>
-                              <div className={`px-2 py-1 text-xs rounded-full ${
-                              schedule.status === 'approved' 
-                                ? 'bg-green-100 text-green-800' 
-                                  : schedule.status === 'pending'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {schedule.status === 'approved' ? '승인' : 
-                                 schedule.status === 'pending' ? '대기' : '취소'}
+                              <div className="flex items-center gap-2">
+                                <div className={`px-2 py-1 text-xs rounded-full ${
+                                schedule.status === 'approved' 
+                                  ? 'bg-green-100 text-green-800' 
+                                    : schedule.status === 'pending'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {schedule.status === 'approved' ? '승인' : 
+                                   schedule.status === 'pending' ? '대기' : '취소'}
+                                </div>
+                                {/* 수정 버튼 (본인 스케줄만) */}
+                                {schedule.employee_id === currentUser?.id && (
+                                  <button
+                                    onClick={() => {
+                                      // 스케줄 수정 로직 (추후 구현)
+                                      console.log('스케줄 수정:', schedule.id);
+                                    }}
+                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
+                                    title="스케줄 수정"
+                                  >
+                                    수정
+                                  </button>
+                                )}
                               </div>
                             </div>
                   </div>
