@@ -155,7 +155,6 @@ export default function TasksPage() {
   };
 
   const handleQuickTaskSelect = (opType: OperationType) => {
-    setSelectedOperationTypeForAdd(opType.id);
     setQuickTaskData(prev => ({
       ...prev,
       operation_type_id: opType.id,
@@ -245,7 +244,6 @@ export default function TasksPage() {
 
       // 성공 후 폼 초기화 및 데이터 새로고침
       setShowQuickTaskForm(false);
-      setSelectedOperationTypeForAdd('');
         setQuickTaskData({
           operation_type_id: '',
           title: '',
@@ -451,7 +449,6 @@ export default function TasksPage() {
       
       console.log('✅ 업무 추가 성공:', data);
       alert('업무가 성공적으로 추가되었습니다!');
-      setShowAddModal(false);
       loadTasksData();
     } catch (error: any) {
       console.error('❌ 업무 추가 실패:', error);
@@ -467,10 +464,9 @@ export default function TasksPage() {
       console.log('📋 OP8 상세 정보 모달 표시');
       setSelectedOperationType(opType);
     } else {
-      // 다른 OP는 업무 추가 모달을 열고 해당 업무 유형 선택
-      console.log('➕ 업무 추가 모달 열기:', opType.id);
-      setSelectedOperationTypeForAdd(opType.id);
-      setShowAddModal(true);
+      // 다른 OP는 빠른 업무 입력 폼을 열고 해당 업무 유형 선택
+      console.log('➕ 빠른 업무 입력 폼 열기:', opType.id);
+      handleQuickTaskSelect(opType);
     }
   };
 
@@ -765,7 +761,7 @@ export default function TasksPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-sm">월 누적 매출</p>
-                  <p className="text-2xl font-bold">₩{(stats.monthlySales || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold">₩{(stats.totalSales || 0).toLocaleString()}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-200" />
               </div>
@@ -865,7 +861,7 @@ export default function TasksPage() {
               .filter(opType => opType.code !== 'OP8')
               .map((opType) => {
               const Icon = getOperationIcon(opType.code);
-              const isSelected = selectedOperationTypeForAdd === opType.id;
+              const isSelected = quickTaskData.operation_type_id === opType.id;
               
               return (
                 <button
@@ -1343,10 +1339,10 @@ export default function TasksPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-medium text-gray-500">
-                          {formatDateKR(task.task_date)}
+                          {formatDateKR(task.task_date || new Date())}
                         </span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(task.achievement_status)}`}>
-                          {getStatusLabel(task.achievement_status)}
+                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(task.achievement_status || 'pending')}`}>
+                          {getStatusLabel(task.achievement_status || 'pending')}
                         </span>
                       </div>
                       <h3 className="font-medium text-gray-900 mb-1">{task.title}</h3>
@@ -1361,8 +1357,8 @@ export default function TasksPage() {
                   </div>
                   <div className="flex justify-between items-center text-xs text-gray-500">
                     <span>{opType?.name || '알 수 없음'}</span>
-                    <span className={`px-2 py-1 rounded-full ${getPriorityColor(task.task_priority)}`}>
-                      {getPriorityLabel(task.task_priority)}
+                    <span className={`px-2 py-1 rounded-full ${getPriorityColor(task.task_priority || 'normal')}`}>
+                      {getPriorityLabel(task.task_priority || 'normal')}
                     </span>
                   </div>
                 </div>
@@ -1472,7 +1468,7 @@ export default function TasksPage() {
                       <button
                         onClick={() => {
                           setSelectedOperationType(null);
-                          setShowAddModal(true);
+                          setShowQuickTaskForm(true);
                         }}
                         className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                       >
@@ -1537,7 +1533,7 @@ export default function TasksPage() {
                     type="date"
                     name="task_date"
                     required
-                    defaultValue={editingTask.task_date || formatDateISO(new Date(editingTask.created_at))}
+                    defaultValue={editingTask.task_date || formatDateISO(new Date())}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>
