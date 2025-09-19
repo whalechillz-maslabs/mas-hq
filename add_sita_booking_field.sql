@@ -1,10 +1,10 @@
 -- ================================================
--- 시타 예약 여부 필드 추가
+-- 방문 예약 여부 필드 추가 (OP5만 해당)
 -- Version: 1.0.0
 -- Created: 2025-01-19
 -- ================================================
 
--- employee_tasks 테이블에 시타 예약 여부 필드 추가
+-- employee_tasks 테이블에 방문 예약 여부 필드 추가
 ALTER TABLE employee_tasks 
 ADD COLUMN IF NOT EXISTS sita_booking BOOLEAN DEFAULT FALSE;
 
@@ -19,7 +19,7 @@ WHERE operation_type_id IN (
   SELECT id FROM operation_types WHERE code = 'OP5'
 ) AND sita_booking IS NULL;
 
--- 뷰 생성: 시타 예약 통계
+-- 뷰 생성: 방문 예약 통계 (OP5만)
 CREATE OR REPLACE VIEW sita_booking_stats AS
 SELECT 
   DATE_TRUNC('month', task_date) as month,
@@ -45,7 +45,7 @@ GROUP BY
   sita_booking
 ORDER BY month DESC, operation_code, consultation_channel, sita_booking;
 
--- 함수 생성: 월별 시타 예약 건수 조회
+-- 함수 생성: 월별 방문 예약 건수 조회 (OP5만)
 CREATE OR REPLACE FUNCTION get_monthly_sita_bookings(
   target_month DATE DEFAULT DATE_TRUNC('month', CURRENT_DATE)
 )
@@ -74,7 +74,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 테스트 쿼리
-SELECT '시타 예약 필드 추가 완료' as status;
+SELECT '방문 예약 필드 추가 완료' as status;
 
 -- 샘플 데이터 확인
 SELECT 

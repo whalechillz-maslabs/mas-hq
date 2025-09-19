@@ -424,11 +424,8 @@ export default function DashboardPage() {
         task.customer_type === 'new'
       ).length;
 
-      // 싱싱골프 시타 예약 건수 (OP12에서 sita_booking이 true인 경우)
-      const singsingolfSitaBookings = singsingolfTasks.filter(task => 
-        task.operation_type?.code === 'OP12' && 
-        task.sita_booking === true
-      ).length;
+      // 싱싱골프는 방문 예약이 없음 (OP12는 시타 예약 없음)
+      const singsingolfSitaBookings = 0;
 
       // 전체 성과 계산
       const totalSales = masgolfSales + singsingolfSales;
@@ -1345,13 +1342,13 @@ export default function DashboardPage() {
               <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-orange-200">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-sm text-orange-600 font-medium">시타 예약</p>
+                    <p className="text-sm text-orange-600 font-medium">방문 예약</p>
                     <p className="text-3xl font-bold text-orange-900">{data?.collaborationStats?.masgolf?.sitaBookings || 0}건</p>
                   </div>
                   <Calendar className="h-10 w-10 text-orange-600" />
                 </div>
                 <div className="text-xs text-orange-500">
-                  OP5 시타 예약 건수
+                  OP5 방문 예약 건수
                 </div>
               </div>
             </div>
@@ -1416,18 +1413,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border border-amber-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-amber-600 font-medium">시타 예약</p>
-                    <p className="text-3xl font-bold text-amber-900">{data?.collaborationStats?.singsingolf?.sitaBookings || 0}건</p>
-                  </div>
-                  <Calendar className="h-10 w-10 text-amber-600" />
-                </div>
-                <div className="text-xs text-amber-500">
-                  OP12 시타 예약 건수
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1493,13 +1478,13 @@ export default function DashboardPage() {
               <div className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-200">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-sm text-teal-600 font-medium">전체 시타 예약</p>
+                    <p className="text-sm text-teal-600 font-medium">전체 방문 예약</p>
                     <p className="text-3xl font-bold text-teal-900">{data?.collaborationStats?.total?.sitaBookings || 0}건</p>
                   </div>
                   <Calendar className="h-10 w-10 text-teal-600" />
                 </div>
                 <div className="text-xs text-teal-500">
-                  OP5 + OP12 시타 예약 건수
+                  OP5 방문 예약 건수
                 </div>
               </div>
               

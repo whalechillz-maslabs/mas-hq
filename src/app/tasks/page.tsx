@@ -39,7 +39,7 @@ interface Task {
   customer_type?: 'new' | 'existing'; // 신규/기존 고객
   consultation_channel?: 'phone' | 'kakao' | 'smartstore' | 'official_website'; // 상담 채널
   op10Category?: 'masgolf' | 'singsingolf' | 'common'; // OP10 업무 분류
-  sita_booking?: boolean; // 시타 예약 여부
+  sita_booking?: boolean; // 방문 예약 여부
   created_at: string;
   updated_at: string;
   operation_type?: {
@@ -975,7 +975,7 @@ export default function TasksPage() {
                     </select>
                   </div>
 
-                  {/* 시타 예약 여부 (OP5만) */}
+                  {/* 방문 예약 여부 (OP5만) */}
                   {(() => {
                     const selectedOp = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
                     return selectedOp?.code === 'OP5';
@@ -988,7 +988,7 @@ export default function TasksPage() {
                           onChange={(e) => setQuickTaskData(prev => ({ ...prev, sita_booking: e.target.checked }))}
                           className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                         />
-                        <span className="text-sm font-medium text-gray-700">시타 예약</span>
+                        <span className="text-sm font-medium text-gray-700">방문 예약</span>
                       </label>
                     </div>
                   )}
