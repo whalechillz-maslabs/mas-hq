@@ -39,6 +39,7 @@ interface Task {
   customer_type?: 'new' | 'existing'; // 신규/기존 고객
   consultation_channel?: 'phone' | 'kakao' | 'smartstore' | 'official_website'; // 상담 채널
   op10Category?: 'masgolf' | 'singsingolf' | 'common'; // OP10 업무 분류
+  sita_booking?: boolean; // 시타 예약 여부
   created_at: string;
   updated_at: string;
   operation_type?: {
@@ -76,7 +77,8 @@ export default function TasksPage() {
     customer_type: 'new' as 'new' | 'existing',
     consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website',
     op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common',
-    task_priority: 'normal' as 'urgent' | 'high' | 'normal' | 'low'
+    task_priority: 'normal' as 'urgent' | 'high' | 'normal' | 'low',
+    sita_booking: false
   });
   const [slackNotificationEnabled, setSlackNotificationEnabled] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -161,7 +163,8 @@ export default function TasksPage() {
       notes: '',
       customer_type: 'new',
       consultation_channel: 'phone',
-      op10Category: 'common'
+      op10Category: 'common',
+      sita_booking: false
     }));
     setShowQuickTaskForm(true);
   };
@@ -218,6 +221,7 @@ export default function TasksPage() {
           customer_type: quickTaskData.customer_type,
           consultation_channel: quickTaskData.consultation_channel,
           task_priority: quickTaskData.task_priority,
+          sita_booking: quickTaskData.sita_booking,
           // 한국 시간 기준으로 오늘 날짜 계산
           task_date: (() => {
             const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
@@ -245,7 +249,8 @@ export default function TasksPage() {
           customer_type: 'new',
           consultation_channel: 'phone',
           op10Category: 'common',
-          task_priority: 'normal'
+          task_priority: 'normal',
+          sita_booking: false
         });
       loadTasksData();
     } catch (error) {
@@ -969,6 +974,24 @@ export default function TasksPage() {
                       <option value="official_website">공홈</option>
                     </select>
                   </div>
+
+                  {/* 시타 예약 여부 (OP5만) */}
+                  {(() => {
+                    const selectedOp = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
+                    return selectedOp?.code === 'OP5';
+                  })() && (
+                    <div>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={quickTaskData.sita_booking}
+                          onChange={(e) => setQuickTaskData(prev => ({ ...prev, sita_booking: e.target.checked }))}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">시타 예약</span>
+                      </label>
+                    </div>
+                  )}
                 </>
               )}
 
