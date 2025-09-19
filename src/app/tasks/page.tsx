@@ -795,7 +795,7 @@ export default function TasksPage() {
               {selectedMonth.getFullYear()}년 {selectedMonth.getMonth() + 1}월
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
                 <Phone className="h-6 w-6 text-blue-600 mr-2" />
@@ -827,6 +827,17 @@ export default function TasksPage() {
                 {tasks.filter(t => t.operation_type?.code === 'OP5' && !t.title?.includes('[환불]')).length}건
               </p>
               <p className="text-xs text-purple-500 mt-1">OP5</p>
+            </div>
+
+            <div className="text-center p-4 bg-teal-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="h-6 w-6 text-teal-600 mr-2" />
+                <span className="text-sm font-medium text-teal-800">방문 예약 건수</span>
+              </div>
+              <p className="text-2xl font-bold text-teal-600">
+                {tasks.filter(t => t.operation_type?.code === 'OP5' && t.sita_booking === true && !t.title?.includes('[환불]')).length}건
+              </p>
+              <p className="text-xs text-teal-500 mt-1">OP5</p>
             </div>
 
             <div className="text-center p-4 bg-orange-50 rounded-lg">
