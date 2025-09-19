@@ -12,7 +12,7 @@ ADD COLUMN IF NOT EXISTS visit_booking_time TIME;
 
 -- 인덱스 추가 (성능 최적화)
 CREATE INDEX IF NOT EXISTS idx_employee_tasks_sita_booking ON employee_tasks(sita_booking);
-CREATE INDEX IF NOT EXISTS idx_employee_tasks_op5_sita_booking ON employee_tasks(operation_type_id, sita_booking) WHERE operation_type_id IN (SELECT id FROM operation_types WHERE code = 'OP5');
+CREATE INDEX IF NOT EXISTS idx_employee_tasks_operation_sita_booking ON employee_tasks(operation_type_id, sita_booking);
 
 -- 기존 데이터 업데이트 (OP5의 경우 기본값 설정)
 UPDATE employee_tasks 

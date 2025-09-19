@@ -48,6 +48,13 @@ interface DashboardData {
     phoneSales: number;
     storeSales: number;
     csResponse: number;
+    visitBookings: number;
+    masgolfPoints: number;
+    masgolfCount: number;
+    singsingolfPoints: number;
+    singsingolfCount: number;
+    totalPoints: number;
+    totalTasks: number;
   };
   teamKPI: {
     totalSales: number;
@@ -343,6 +350,12 @@ export default function DashboardPage() {
         !task.title?.includes('[환불]')
       ).length || 0;
 
+      const visitBookings = monthlyTasks?.filter(task => 
+        task.operation_type?.code === 'OP5' && 
+        task.sita_booking === true &&
+        !task.title?.includes('[환불]')
+      ).length || 0;
+
       // 마스골프 개인 성과 계산 (OP1-OP10 중 마스골프 관련)
       const masgolfPersonalTasks = monthlyTasks?.filter(task => {
         const code = task.operation_type?.code;
@@ -367,10 +380,13 @@ export default function DashboardPage() {
         phoneSales: phoneSales,
         storeSales: storeSales,
         csResponse: csResponse,
+        visitBookings: visitBookings,
         masgolfPoints: masgolfPersonalPoints,
         masgolfCount: masgolfPersonalCount,
         singsingolfPoints: singsingolfPersonalPoints,
-        singsingolfCount: singsingolfPersonalCount
+        singsingolfCount: singsingolfPersonalCount,
+        totalPoints: masgolfPersonalPoints + singsingolfPersonalPoints,
+        totalTasks: masgolfPersonalCount + singsingolfPersonalCount
       };
 
       // 전체 팀의 이번 달 업무 데이터 가져오기 (협업 성과 계산용)
@@ -569,7 +585,14 @@ export default function DashboardPage() {
         personalKPI: {
           phoneSales: 7,
           storeSales: 3,
-          csResponse: 2
+          csResponse: 2,
+          visitBookings: 0,
+          masgolfPoints: 0,
+          masgolfCount: 0,
+          singsingolfPoints: 0,
+          singsingolfCount: 0,
+          totalPoints: 0,
+          totalTasks: 0
         },
         teamKPI: {
           totalSales: 35000000,
@@ -583,20 +606,23 @@ export default function DashboardPage() {
             points: 1250,
             tasks: 85,
             participants: 5,
-            newConsultations: 25
+            newConsultations: 25,
+            sitaBookings: 0
           },
           singsingolf: {
             sales: 10000000,
             points: 420,
             tasks: 35,
             participants: 3,
-            newConsultations: 15
+            newConsultations: 15,
+            sitaBookings: 0
           },
           total: {
             sales: 35000000,
             points: 1670,
             tasks: 120,
-            newConsultations: 40
+            newConsultations: 40,
+            sitaBookings: 0
           }
         },
         recentSharedTasks: [],
@@ -953,7 +979,7 @@ export default function DashboardPage() {
                                   </span>
                                 )}
                                 {isOverdue && (
-                                  <Siren className="h-4 w-4 text-red-500 animate-pulse" title="24시간 경과" />
+                                  <Siren className="h-4 w-4 text-red-500 animate-pulse" />
                                 )}
                               </div>
                               <div className="flex items-center text-sm text-gray-500 mb-2">
@@ -1120,7 +1146,7 @@ export default function DashboardPage() {
             <User className="h-6 w-6 mr-3 text-indigo-600" />
               개인 KPI ({new Date().getFullYear()}년 {new Date().getMonth() + 1}월)
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
                 <Phone className="h-6 w-6 text-blue-600 mr-2" />
@@ -1152,6 +1178,17 @@ export default function DashboardPage() {
                 {data?.personalKPI?.csResponse || 0}건
               </p>
               <p className="text-xs text-purple-500 mt-1">OP5</p>
+            </div>
+
+            <div className="text-center p-4 bg-teal-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <Calendar className="h-6 w-6 text-teal-600 mr-2" />
+                <span className="text-sm font-medium text-teal-800">방문 예약 건수</span>
+              </div>
+              <p className="text-2xl font-bold text-teal-600">
+                {data?.personalKPI?.visitBookings || 0}건
+              </p>
+              <p className="text-xs text-teal-500 mt-1">OP5</p>
             </div>
 
             <div className="text-center p-4 bg-orange-50 rounded-lg">
