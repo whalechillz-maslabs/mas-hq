@@ -1482,18 +1482,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">신규 상담</p>
-                    <p className="text-3xl font-bold text-green-900">{data?.collaborationStats?.masgolf?.newConsultations || 0}건</p>
-                  </div>
-                  <Phone className="h-10 w-10 text-green-600" />
-                </div>
-                <div className="text-xs text-green-500">
-                  전화, 카카오채널, 스마트스토어, 공홈
-                </div>
-              </div>
 
             </div>
           </div>
@@ -1544,18 +1532,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl border border-purple-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-purple-600 font-medium">신규 상담</p>
-                    <p className="text-3xl font-bold text-purple-900">{data?.collaborationStats?.singsingolf?.newConsultations || 0}건</p>
-                  </div>
-                  <Phone className="h-10 w-10 text-purple-600" />
-                </div>
-                <div className="text-xs text-purple-500">
-                  전화, 카카오채널, 스마트스토어, 공홈
-                </div>
-              </div>
 
             </div>
           </div>
@@ -1606,18 +1582,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl border border-indigo-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-indigo-600 font-medium">전체 신규 상담</p>
-                    <p className="text-3xl font-bold text-indigo-900">{data?.collaborationStats?.total?.newConsultations || 0}건</p>
-                  </div>
-                  <Phone className="h-10 w-10 text-indigo-600" />
-                </div>
-                <div className="text-xs text-indigo-500">
-                  전화, 카카오채널, 스마트스토어, 공홈
-                </div>
-              </div>
 
               <div className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-200">
                 <div className="flex items-center justify-between mb-4">
@@ -1689,6 +1653,51 @@ export default function DashboardPage() {
             <TrendingUp className="h-6 w-6 mr-3 text-purple-600" />
             마케팅 유입 분석
           </h2>
+          
+          {/* 신규상담 요약 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* 마스골프 신규상담 */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">마스골프 신규상담</p>
+                  <p className="text-3xl font-bold text-blue-900">{data?.collaborationStats?.masgolf?.newConsultations || 0}건</p>
+                </div>
+                <Phone className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="text-xs text-blue-500">
+                OP5 신규 고객 상담
+              </div>
+            </div>
+
+            {/* 싱싱골프 신규상담 */}
+            <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-pink-600 font-medium">싱싱골프 신규상담</p>
+                  <p className="text-3xl font-bold text-pink-900">{data?.collaborationStats?.singsingolf?.newConsultations || 0}건</p>
+                </div>
+                <Phone className="h-10 w-10 text-pink-600" />
+              </div>
+              <div className="text-xs text-pink-500">
+                OP12 신규 고객 상담
+              </div>
+            </div>
+
+            {/* 전체 신규상담 */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-emerald-600 font-medium">전체 신규상담</p>
+                  <p className="text-3xl font-bold text-emerald-900">{data?.collaborationStats?.total?.newConsultations || 0}건</p>
+                </div>
+                <Phone className="h-10 w-10 text-emerald-600" />
+              </div>
+              <div className="text-xs text-emerald-500">
+                마스골프 + 싱싱골프
+              </div>
+            </div>
+          </div>
           
           {/* 통합 마케팅 유입 테이블 */}
           <div className="overflow-hidden">
