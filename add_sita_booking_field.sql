@@ -4,9 +4,11 @@
 -- Created: 2025-01-19
 -- ================================================
 
--- employee_tasks 테이블에 방문 예약 여부 필드 추가
+-- employee_tasks 테이블에 방문 예약 관련 필드 추가
 ALTER TABLE employee_tasks 
-ADD COLUMN IF NOT EXISTS sita_booking BOOLEAN DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS sita_booking BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS visit_booking_date DATE,
+ADD COLUMN IF NOT EXISTS visit_booking_time TIME;
 
 -- 인덱스 추가 (성능 최적화)
 CREATE INDEX IF NOT EXISTS idx_employee_tasks_sita_booking ON employee_tasks(sita_booking);

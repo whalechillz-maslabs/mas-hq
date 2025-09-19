@@ -40,6 +40,8 @@ interface Task {
   consultation_channel?: 'phone' | 'kakao' | 'smartstore' | 'official_website'; // 상담 채널
   op10Category?: 'masgolf' | 'singsingolf' | 'common'; // OP10 업무 분류
   sita_booking?: boolean; // 방문 예약 여부
+  visit_booking_date?: string; // 방문 예약 날짜
+  visit_booking_time?: string; // 방문 예약 시간
   created_at: string;
   updated_at: string;
   operation_type?: {
@@ -78,7 +80,9 @@ export default function TasksPage() {
     consultation_channel: 'phone' as 'phone' | 'kakao' | 'smartstore' | 'official_website',
     op10Category: 'common' as 'masgolf' | 'singsingolf' | 'common',
     task_priority: 'normal' as 'urgent' | 'high' | 'normal' | 'low',
-    sita_booking: false
+    sita_booking: false,
+    visit_booking_date: '',
+    visit_booking_time: ''
   });
   const [slackNotificationEnabled, setSlackNotificationEnabled] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -164,7 +168,9 @@ export default function TasksPage() {
       customer_type: 'new',
       consultation_channel: 'phone',
       op10Category: 'common',
-      sita_booking: false
+      sita_booking: false,
+      visit_booking_date: '',
+      visit_booking_time: ''
     }));
     setShowQuickTaskForm(true);
   };
@@ -222,6 +228,8 @@ export default function TasksPage() {
           consultation_channel: quickTaskData.consultation_channel,
           task_priority: quickTaskData.task_priority,
           sita_booking: quickTaskData.sita_booking,
+          visit_booking_date: quickTaskData.visit_booking_date || null,
+          visit_booking_time: quickTaskData.visit_booking_time || null,
           // 한국 시간 기준으로 오늘 날짜 계산
           task_date: (() => {
             const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
@@ -250,7 +258,9 @@ export default function TasksPage() {
           consultation_channel: 'phone',
           op10Category: 'common',
           task_priority: 'normal',
-          sita_booking: false
+          sita_booking: false,
+          visit_booking_date: '',
+          visit_booking_time: ''
         });
       loadTasksData();
     } catch (error) {
@@ -980,16 +990,46 @@ export default function TasksPage() {
                     const selectedOp = operationTypes.find(op => op.id === quickTaskData.operation_type_id);
                     return selectedOp?.code === 'OP5';
                   })() && (
-                    <div>
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={quickTaskData.sita_booking}
-                          onChange={(e) => setQuickTaskData(prev => ({ ...prev, sita_booking: e.target.checked }))}
-                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">방문 예약</span>
-                      </label>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={quickTaskData.sita_booking}
+                            onChange={(e) => setQuickTaskData(prev => ({ ...prev, sita_booking: e.target.checked }))}
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700">방문 예약</span>
+                        </label>
+                      </div>
+                      
+                      {/* 방문 예약이 체크되었을 때만 날짜/시간 입력 표시 */}
+                      {quickTaskData.sita_booking && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              방문 예약 날짜
+                            </label>
+                            <input
+                              type="date"
+                              value={quickTaskData.visit_booking_date}
+                              onChange={(e) => setQuickTaskData(prev => ({ ...prev, visit_booking_date: e.target.value }))}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              방문 예약 시간
+                            </label>
+                            <input
+                              type="time"
+                              value={quickTaskData.visit_booking_time}
+                              onChange={(e) => setQuickTaskData(prev => ({ ...prev, visit_booking_time: e.target.value }))}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
