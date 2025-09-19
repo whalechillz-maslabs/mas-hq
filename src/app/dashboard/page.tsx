@@ -463,23 +463,23 @@ export default function DashboardPage() {
 
       // 마스골프 마케팅 유입 분석 (OP5 기준)
       const masgolfMarketingTasks = masgolfTasks.filter(task => 
-        task.operation_type?.code === 'OP5'
+        task?.operation_type?.code === 'OP5'
       );
       
       const masgolfMarketingInflow = {
         new: {
-          phone: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'phone').length,
-          kakao: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'kakao').length,
-          smartstore: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'smartstore').length,
-          official_website: masgolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'official_website').length,
-          total: masgolfMarketingTasks.filter(task => task.customer_type === 'new').length
+          phone: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'phone').length,
+          kakao: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'kakao').length,
+          smartstore: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'smartstore').length,
+          official_website: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'official_website').length,
+          total: masgolfMarketingTasks.filter(task => task?.customer_type === 'new').length
         },
         existing: {
-          phone: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'phone').length,
-          kakao: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'kakao').length,
-          smartstore: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'smartstore').length,
-          official_website: masgolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'official_website').length,
-          total: masgolfMarketingTasks.filter(task => task.customer_type === 'existing').length
+          phone: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'phone').length,
+          kakao: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'kakao').length,
+          smartstore: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'smartstore').length,
+          official_website: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'official_website').length,
+          total: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing').length
         }
       };
 
@@ -505,23 +505,23 @@ export default function DashboardPage() {
 
       // 싱싱골프 마케팅 유입 분석 (OP12 기준)
       const singsingolfMarketingTasks = singsingolfTasks.filter(task => 
-        task.operation_type?.code === 'OP12'
+        task?.operation_type?.code === 'OP12'
       );
       
       const singsingolfMarketingInflow = {
         new: {
-          phone: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'phone').length,
-          kakao: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'kakao').length,
-          smartstore: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'smartstore').length,
-          official_website: singsingolfMarketingTasks.filter(task => task.customer_type === 'new' && task.consultation_channel === 'official_website').length,
-          total: singsingolfMarketingTasks.filter(task => task.customer_type === 'new').length
+          phone: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'phone').length,
+          kakao: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'kakao').length,
+          smartstore: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'smartstore').length,
+          official_website: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'official_website').length,
+          total: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new').length
         },
         existing: {
-          phone: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'phone').length,
-          kakao: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'kakao').length,
-          smartstore: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'smartstore').length,
-          official_website: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing' && task.consultation_channel === 'official_website').length,
-          total: singsingolfMarketingTasks.filter(task => task.customer_type === 'existing').length
+          phone: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'phone').length,
+          kakao: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'kakao').length,
+          smartstore: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'smartstore').length,
+          official_website: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'official_website').length,
+          total: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing').length
         }
       };
 
@@ -535,18 +535,18 @@ export default function DashboardPage() {
       // 전체 마케팅 유입 계산
       const totalMarketingInflow = {
         new: {
-          phone: masgolfMarketingInflow.new.phone + singsingolfMarketingInflow.new.phone,
-          kakao: masgolfMarketingInflow.new.kakao + singsingolfMarketingInflow.new.kakao,
-          smartstore: masgolfMarketingInflow.new.smartstore + singsingolfMarketingInflow.new.smartstore,
-          official_website: masgolfMarketingInflow.new.official_website + singsingolfMarketingInflow.new.official_website,
-          total: masgolfMarketingInflow.new.total + singsingolfMarketingInflow.new.total
+          phone: (masgolfMarketingInflow?.new?.phone || 0) + (singsingolfMarketingInflow?.new?.phone || 0),
+          kakao: (masgolfMarketingInflow?.new?.kakao || 0) + (singsingolfMarketingInflow?.new?.kakao || 0),
+          smartstore: (masgolfMarketingInflow?.new?.smartstore || 0) + (singsingolfMarketingInflow?.new?.smartstore || 0),
+          official_website: (masgolfMarketingInflow?.new?.official_website || 0) + (singsingolfMarketingInflow?.new?.official_website || 0),
+          total: (masgolfMarketingInflow?.new?.total || 0) + (singsingolfMarketingInflow?.new?.total || 0)
         },
         existing: {
-          phone: masgolfMarketingInflow.existing.phone + singsingolfMarketingInflow.existing.phone,
-          kakao: masgolfMarketingInflow.existing.kakao + singsingolfMarketingInflow.existing.kakao,
-          smartstore: masgolfMarketingInflow.existing.smartstore + singsingolfMarketingInflow.existing.smartstore,
-          official_website: masgolfMarketingInflow.existing.official_website + singsingolfMarketingInflow.existing.official_website,
-          total: masgolfMarketingInflow.existing.total + singsingolfMarketingInflow.existing.total
+          phone: (masgolfMarketingInflow?.existing?.phone || 0) + (singsingolfMarketingInflow?.existing?.phone || 0),
+          kakao: (masgolfMarketingInflow?.existing?.kakao || 0) + (singsingolfMarketingInflow?.existing?.kakao || 0),
+          smartstore: (masgolfMarketingInflow?.existing?.smartstore || 0) + (singsingolfMarketingInflow?.existing?.smartstore || 0),
+          official_website: (masgolfMarketingInflow?.existing?.official_website || 0) + (singsingolfMarketingInflow?.existing?.official_website || 0),
+          total: (masgolfMarketingInflow?.existing?.total || 0) + (singsingolfMarketingInflow?.existing?.total || 0)
         }
       };
 
