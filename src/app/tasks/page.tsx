@@ -59,7 +59,6 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -68,7 +67,6 @@ export default function TasksPage() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundTargetTask, setRefundTargetTask] = useState<Task | null>(null);
 
-  const [selectedOperationTypeForAdd, setSelectedOperationTypeForAdd] = useState<string>('');
   const [showQuickTaskForm, setShowQuickTaskForm] = useState(false);
   const [quickTaskData, setQuickTaskData] = useState({
     operation_type_id: '',
@@ -735,7 +733,7 @@ export default function TasksPage() {
               </div>
               
               <button
-                onClick={() => setShowAddModal(true)}
+                onClick={() => setShowQuickTaskForm(true)}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -1396,7 +1394,7 @@ export default function TasksPage() {
                   key={opType.id} 
                   className="text-center p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50"
                   title={`${opType.name} - ${points}점`}
-                  onClick={() => showOperationTypeDetails(opType)}
+                  onClick={() => handleQuickTaskSelect(opType)}
                 >
                   <div className="flex items-center justify-center mb-2">
                     <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full font-medium">
@@ -1501,265 +1499,6 @@ export default function TasksPage() {
         </div>
       </main>
 
-      {/* 업무 추가 모달 */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">업무 추가</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleAddTask({
-                  task_date: formData.get('task_date') as string,
-                  operation_type_id: formData.get('operation_type_id'),
-                  title: formData.get('title') || '',
-                  notes: formData.get('notes') || '',
-                  memo: formData.get('memo') || '',
-                  task_time: formData.get('task_time') || null,
-                  customer_name: formData.get('customer_name') || '',
-                  sales_amount: parseFloat((formData.get('sales_amount') as string).replace(/,/g, '')) || 0,
-                  task_priority: formData.get('task_priority') || 'normal',
-                  customer_type: formData.get('customer_type') || 'existing',
-                  consultation_channel: formData.get('consultation_channel') || 'phone',
-                  op10Category: formData.get('op10Category') || 'common'
-                });
-              }}
-            >
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    업무 날짜
-                  </label>
-                  <input
-                    type="date"
-                    name="task_date"
-                    required
-                    defaultValue={formatDateISO(new Date())}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    업무 유형
-                  </label>
-                  <select
-                    name="operation_type_id"
-                    required
-                    value={selectedOperationTypeForAdd}
-                    onChange={(e) => setSelectedOperationTypeForAdd(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  >
-                    <option value="">선택하세요</option>
-                    {operationTypes
-                      .filter(opType => opType.code !== 'OP8') // OP8 제외
-                      .map((opType) => (
-                      <option key={opType.id} value={opType.id}>
-                        {opType.code} - {getOperationDisplayName(opType.code, opType.name)} ({opType.points}점)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    업무명
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    required
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="업무 제목을 입력하세요"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    설명
-                  </label>
-                  <textarea
-                    name="notes"
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="업무 내용 설명 (선택)"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      우선순위
-                    </label>
-                    <select
-                      name="task_priority"
-                      defaultValue="normal"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    >
-                      <option value="low">낮음</option>
-                      <option value="normal">보통</option>
-                      <option value="high">높음</option>
-                      <option value="urgent">긴급</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      업무 수행 시각
-                    </label>
-                    <input
-                      type="time"
-                      name="task_time"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="09:00"
-                      step="600"
-                      defaultValue={(() => {
-                        const now = new Date();
-                        const minutes = Math.floor(now.getMinutes() / 10) * 10;
-                        now.setMinutes(minutes, 0, 0);
-                        return now.toTimeString().slice(0, 5);
-                      })()}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      고객명
-                    </label>
-                    <input
-                      type="text"
-                      name="customer_name"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      placeholder="VIP0000 (선택)"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    매출 금액
-                  </label>
-                  <input
-                    type="text"
-                    name="sales_amount"
-                    defaultValue="0"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="판매 시에만 입력 (원)"
-                    onChange={(e) => {
-                      // 숫자와 쉼표만 허용
-                      const value = e.target.value.replace(/[^\d,]/g, '');
-                      // 쉼표 제거 후 숫자로 변환
-                      const numValue = value.replace(/,/g, '');
-                      if (numValue === '' || !isNaN(Number(numValue))) {
-                        // 천단위 쉼표 추가
-                        const formattedValue = numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                        e.target.value = formattedValue;
-                      }
-                    }}
-                    onBlur={(e) => {
-                      // 포커스 아웃 시 숫자만 남기고 쉼표 제거
-                      const numValue = e.target.value.replace(/,/g, '');
-                      if (numValue === '') {
-                        e.target.value = '0';
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* OP5, OP12인 경우 추가 필드 */}
-                {(() => {
-                  const selectedOpType = operationTypes.find(op => op.id === selectedOperationTypeForAdd);
-                  return (selectedOpType?.code === 'OP5' || selectedOpType?.code === 'OP12') && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          고객 유형
-                        </label>
-                        <select
-                          name="customer_type"
-                          defaultValue="existing"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2"
-                        >
-                          <option value="new">신규 고객</option>
-                          <option value="existing">기존 고객</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          상담 채널
-                        </label>
-                        <select
-                          name="consultation_channel"
-                          defaultValue="phone"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2"
-                        >
-                          <option value="phone">전화</option>
-                          <option value="kakao">카카오채널</option>
-                          <option value="smartstore">스마트스토어</option>
-                          <option value="official_website">공홈</option>
-                        </select>
-                      </div>
-                    </>
-                  );
-                })()}
-
-                {/* OP10인 경우 업무 분류 필드 */}
-                {(() => {
-                  const selectedOpType = operationTypes.find(op => op.id === selectedOperationTypeForAdd);
-                  return selectedOpType?.code === 'OP10' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        업무 분류
-                      </label>
-                      <select
-                        name="op10Category"
-                        defaultValue="common"
-                        className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      >
-                        <option value="masgolf">마스골프</option>
-                        <option value="singsingolf">싱싱골프</option>
-                        <option value="common">공통</option>
-                      </select>
-                    </div>
-                  );
-                })()}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    메모
-                  </label>
-                  <textarea
-                    name="memo"
-                    rows={2}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="추가 메모 (선택)"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                  추가
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* 업무 수정 모달 */}
       {showEditModal && editingTask && (
@@ -1782,6 +1521,9 @@ export default function TasksPage() {
                   task_priority: formData.get('task_priority') || 'normal',
                   customer_type: formData.get('customer_type') || 'existing',
                   consultation_channel: formData.get('consultation_channel') || 'phone',
+                  sita_booking: formData.get('sita_booking') === 'on',
+                  visit_booking_date: formData.get('visit_booking_date') || null,
+                  visit_booking_time: formData.get('visit_booking_time') || null,
                   // op10Category: formData.get('op10Category') || 'common'
                 });
               }}
@@ -1971,6 +1713,50 @@ export default function TasksPage() {
                         <option value="official_website">공홈</option>
                       </select>
                     </div>
+
+                    {/* OP5인 경우 방문 예약 필드 */}
+                    {editingTask.operation_type?.code === 'OP5' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              name="sita_booking"
+                              defaultChecked={editingTask.sita_booking || false}
+                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">방문 예약</span>
+                          </label>
+                        </div>
+                        
+                        {editingTask.sita_booking && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                방문 예약 날짜
+                              </label>
+                              <input
+                                type="date"
+                                name="visit_booking_date"
+                                defaultValue={editingTask.visit_booking_date || ''}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                방문 예약 시간
+                              </label>
+                              <input
+                                type="time"
+                                name="visit_booking_time"
+                                defaultValue={editingTask.visit_booking_time || ''}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : null}
 
