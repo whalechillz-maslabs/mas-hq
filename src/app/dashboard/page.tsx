@@ -1495,18 +1495,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-orange-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-orange-600 font-medium">방문 예약</p>
-                    <p className="text-3xl font-bold text-orange-900">{data?.collaborationStats?.masgolf?.sitaBookings || 0}건</p>
-                  </div>
-                  <Calendar className="h-10 w-10 text-orange-600" />
-                </div>
-                <div className="text-xs text-orange-500">
-                  OP5 방문 예약 건수
-                </div>
-              </div>
             </div>
           </div>
 
