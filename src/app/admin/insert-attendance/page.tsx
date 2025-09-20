@@ -676,28 +676,57 @@ export default function InsertAttendanceEnhancedPage() {
     setProcessing(true);
     try {
       const today = selectedDate;
-      const attendanceUpdates = [];
+      
+      // 기존 attendance 레코드 삭제 (중복 방지)
+      const { error: deleteError } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('employee_id', employeeId)
+        .eq('date', today);
 
+      if (deleteError) {
+        console.warn('기존 attendance 삭제 실패:', deleteError);
+      }
+
+      // 스케줄별로 attendance 레코드 생성
       for (const schedule of employeeSchedules) {
         const attendanceData = {
           employee_id: employeeId,
           date: today,
           check_in_time: schedule.scheduled_start, // 이미 HH:mm:ss 형식
           check_out_time: schedule.scheduled_end,   // 이미 HH:mm:ss 형식
+          break_start_time: '12:00:00',
+          break_end_time: '13:00:00',
           notes: `정시 체크 (관리자 일괄 처리) - ${schedule.scheduled_start}~${schedule.scheduled_end}`
         };
-        attendanceUpdates.push(attendanceData);
+
+        const { error: insertError } = await supabase
+          .from('attendance')
+          .insert(attendanceData);
+
+        if (insertError) {
+          console.error('attendance 삽입 실패:', insertError);
+          throw insertError;
+        }
       }
 
-      // attendance 테이블에 upsert
-      const { error: attendanceError } = await supabase
-        .from('attendance')
-        .upsert(attendanceUpdates, { 
-          onConflict: 'employee_id,date',
-          ignoreDuplicates: false 
-        });
+      // schedules 테이블도 업데이트
+      for (const schedule of employeeSchedules) {
+        const { error: scheduleError } = await supabase
+          .from('schedules')
+          .update({
+            actual_start: `${today}T${schedule.scheduled_start}Z`,
+            actual_end: `${today}T${schedule.scheduled_end}Z`,
+            status: 'completed',
+            employee_note: '정시 체크 (관리자 일괄 처리)',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', schedule.id);
 
-      if (attendanceError) throw attendanceError;
+        if (scheduleError) {
+          console.error('schedule 업데이트 실패:', scheduleError);
+        }
+      }
 
       alert(`✅ ${employee.name}님의 모든 스케줄이 정시 체크되었습니다!`);
       await loadSchedules();
