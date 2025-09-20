@@ -601,6 +601,131 @@ export default function InsertAttendanceEnhancedPage() {
     return grouped;
   };
 
+  // 직원별 일괄 정시 체크
+  const handleEmployeeBulkCheck = async (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employee) return;
+
+    const employeeSchedules = schedules.filter(s => s.employee_id === employeeId);
+    if (employeeSchedules.length === 0) return;
+
+    if (!confirm(`${employee.name}님의 모든 스케줄(${employeeSchedules.length}개)을 정시 체크하시겠습니까?`)) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const today = selectedDate;
+      const attendanceUpdates = [];
+
+      for (const schedule of employeeSchedules) {
+        const attendanceData = {
+          employee_id: employeeId,
+          date: today,
+          check_in_time: schedule.scheduled_start,
+          check_out_time: schedule.scheduled_end,
+          notes: `정시 체크 (관리자 일괄 처리) - ${schedule.scheduled_start}~${schedule.scheduled_end}`
+        };
+        attendanceUpdates.push(attendanceData);
+      }
+
+      // attendance 테이블에 upsert
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert(attendanceUpdates, { 
+          onConflict: 'employee_id,date',
+          ignoreDuplicates: false 
+        });
+
+      if (attendanceError) throw attendanceError;
+
+      alert(`✅ ${employee.name}님의 모든 스케줄이 정시 체크되었습니다!`);
+      await loadSchedules();
+      await loadAttendanceRecords();
+    } catch (error: any) {
+      console.error('직원별 일괄 체크 오류:', error);
+      alert(`직원별 일괄 체크 실패: ${error.message}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // 시간대별 일괄 처리
+  const handleTimeRangeBulkCheck = async (timeRange: string) => {
+    let startTime = '';
+    let endTime = '';
+    let description = '';
+
+    switch (timeRange) {
+      case 'morning':
+        startTime = '09:00';
+        endTime = '12:00';
+        description = '오전 (09:00-12:00)';
+        break;
+      case 'afternoon':
+        startTime = '13:00';
+        endTime = '18:00';
+        description = '오후 (13:00-18:00)';
+        break;
+      case 'full':
+        startTime = '09:00';
+        endTime = '18:00';
+        description = '전일 (09:00-18:00)';
+        break;
+      default:
+        return;
+    }
+
+    const timeRangeSchedules = schedules.filter(s => 
+      s.scheduled_start >= startTime && s.scheduled_end <= endTime
+    );
+
+    if (timeRangeSchedules.length === 0) {
+      alert(`해당 시간대(${description})에 스케줄이 없습니다.`);
+      return;
+    }
+
+    if (!confirm(`${description} 시간대의 모든 스케줄(${timeRangeSchedules.length}개)을 정시 체크하시겠습니까?`)) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const today = selectedDate;
+      const attendanceUpdates = [];
+
+      for (const schedule of timeRangeSchedules) {
+        const attendanceData = {
+          employee_id: schedule.employee_id,
+          date: today,
+          check_in_time: schedule.scheduled_start,
+          check_out_time: schedule.scheduled_end,
+          notes: `정시 체크 (관리자 시간대별 처리) - ${description}`
+        };
+        attendanceUpdates.push(attendanceData);
+      }
+
+      // attendance 테이블에 upsert
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert(attendanceUpdates, { 
+          onConflict: 'employee_id,date',
+          ignoreDuplicates: false 
+        });
+
+      if (attendanceError) throw attendanceError;
+
+      alert(`✅ ${description} 시간대의 모든 스케줄이 정시 체크되었습니다!`);
+      await loadSchedules();
+      await loadAttendanceRecords();
+    } catch (error: any) {
+      console.error('시간대별 일괄 체크 오류:', error);
+      alert(`시간대별 일괄 체크 실패: ${error.message}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -715,6 +840,46 @@ export default function InsertAttendanceEnhancedPage() {
             </div>
             <p className="text-xs text-orange-600 mt-2">
               모든 직원의 점심 휴식시간(12:00-13:00)을 한번에 설정합니다.
+            </p>
+          </div>
+        )}
+
+        {/* 시간대별 일괄 처리 버튼 */}
+        {schedules.length > 0 && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-5 w-5 text-purple-600" />
+                <span className="text-sm font-medium text-purple-800">
+                  시간대별 일괄 처리
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleTimeRangeBulkCheck('morning')}
+                  disabled={processing}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 text-sm"
+                >
+                  오전 체크
+                </button>
+                <button
+                  onClick={() => handleTimeRangeBulkCheck('afternoon')}
+                  disabled={processing}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 text-sm"
+                >
+                  오후 체크
+                </button>
+                <button
+                  onClick={() => handleTimeRangeBulkCheck('full')}
+                  disabled={processing}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 text-sm"
+                >
+                  전일 체크
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-purple-600 mt-2">
+              특정 시간대의 모든 스케줄을 정시 체크합니다. (오전: 09:00-12:00, 오후: 13:00-18:00, 전일: 09:00-18:00)
             </p>
           </div>
         )}
@@ -934,6 +1099,14 @@ export default function InsertAttendanceEnhancedPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleEmployeeBulkCheck(employeeId)}
+                                disabled={processing}
+                                className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50"
+                                title="해당 직원의 모든 스케줄 정시 체크"
+                              >
+                                일괄체크
+                              </button>
                               <button
                                 onClick={() => handleIndividualLunchBreak(employeeId)}
                                 className="text-orange-600 hover:text-orange-800 text-sm font-medium"
