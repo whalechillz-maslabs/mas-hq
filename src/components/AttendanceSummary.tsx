@@ -38,8 +38,9 @@ export default function AttendanceSummary({ employeeId, currentDate }: Attendanc
       let startDate, endDate;
       
       if (summaryPeriod === 'week') {
-        startDate = startOfWeek(new Date(currentDate), { locale: ko, weekStartsOn: 0 });
-        endDate = endOfWeek(new Date(currentDate), { locale: ko });
+        // 과거 7일만 표시 (미래 날짜 제외)
+        endDate = new Date(currentDate);
+        startDate = subDays(endDate, 6);
       } else {
         startDate = startOfMonth(new Date(currentDate));
         endDate = endOfMonth(new Date(currentDate));
@@ -90,7 +91,8 @@ export default function AttendanceSummary({ employeeId, currentDate }: Attendanc
           let scheduledHours = (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
           
           // 스케줄 시간에서 점심시간(1시간) 제외 (순수 근무시간만 계산)
-          if (scheduledHours > 4) { // 4시간 이상 근무시 점심시간 제외
+          // 6시간 이상 근무시 점심시간 제외 (09:00-17:00 = 8시간 → 7시간)
+          if (scheduledHours >= 6) {
             scheduledHours -= 1;
           }
 
