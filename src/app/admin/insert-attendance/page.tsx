@@ -293,16 +293,16 @@ export default function InsertAttendanceEnhancedPage() {
           })
           .eq('id', schedule.id);
 
-        // attendance 테이블 업데이트
+        // attendance 테이블 업데이트 (TIME 타입 필드에는 시간 부분만 전송)
         await supabase
           .from('attendance')
           .upsert({
             employee_id: schedule.employee_id,
             date: selectedDate,
-            check_in_time: checkInTime,
-            check_out_time: checkOutTime,
-            break_start_time: breakStart,
-            break_end_time: breakEnd,
+            check_in_time: normalizedStart,  // HH:mm:ss 형식
+            check_out_time: normalizedEnd,   // HH:mm:ss 형식
+            break_start_time: '12:00:00',    // HH:mm:ss 형식
+            break_end_time: '13:00:00',      // HH:mm:ss 형식
             updated_at: new Date().toISOString()
           }, { 
             onConflict: 'employee_id,date',
@@ -389,13 +389,14 @@ export default function InsertAttendanceEnhancedPage() {
       }
 
       // attendance 테이블 업데이트 또는 생성 (휴식 시간 포함)
+      // TIME 타입 필드에는 시간 부분만 전송 (HH:mm:ss 형식)
       const attendanceData = {
         employee_id: editingSchedule.employee_id,
         date: selectedDate,
-        check_in_time: checkInDateTime,
-        check_out_time: checkOutDateTime,
-        break_start_time: breakStartDateTime,
-        break_end_time: breakEndDateTime,
+        check_in_time: checkInDateTime ? checkInDateTime.split('T')[1].substring(0, 8) : null,
+        check_out_time: checkOutDateTime ? checkOutDateTime.split('T')[1].substring(0, 8) : null,
+        break_start_time: breakStartDateTime ? breakStartDateTime.split('T')[1].substring(0, 8) : null,
+        break_end_time: breakEndDateTime ? breakEndDateTime.split('T')[1].substring(0, 8) : null,
         updated_at: new Date().toISOString()
       };
 
@@ -506,8 +507,8 @@ export default function InsertAttendanceEnhancedPage() {
       const attendanceUpdates = uniqueEmployees.map(employeeId => ({
         employee_id: employeeId,
         date: today,
-        break_start_time: lunchStart,
-        break_end_time: lunchEnd,
+        break_start_time: lunchStart, // 이미 HH:mm:ss 형식
+        break_end_time: lunchEnd,     // 이미 HH:mm:ss 형식
         notes: '점심 휴식 (관리자 일괄 설정)'
       }));
 
@@ -546,8 +547,8 @@ export default function InsertAttendanceEnhancedPage() {
       const attendanceData = {
         employee_id: employeeId,
         date: today,
-        break_start_time: lunchStart,
-        break_end_time: lunchEnd,
+        break_start_time: lunchStart, // 이미 HH:mm:ss 형식
+        break_end_time: lunchEnd,     // 이미 HH:mm:ss 형식
         notes: '점심 휴식 (관리자 설정)'
       };
 
@@ -622,8 +623,8 @@ export default function InsertAttendanceEnhancedPage() {
         const attendanceData = {
           employee_id: employeeId,
           date: today,
-          check_in_time: schedule.scheduled_start,
-          check_out_time: schedule.scheduled_end,
+          check_in_time: schedule.scheduled_start, // 이미 HH:mm:ss 형식
+          check_out_time: schedule.scheduled_end,   // 이미 HH:mm:ss 형식
           notes: `정시 체크 (관리자 일괄 처리) - ${schedule.scheduled_start}~${schedule.scheduled_end}`
         };
         attendanceUpdates.push(attendanceData);
@@ -698,8 +699,8 @@ export default function InsertAttendanceEnhancedPage() {
         const attendanceData = {
           employee_id: schedule.employee_id,
           date: today,
-          check_in_time: schedule.scheduled_start,
-          check_out_time: schedule.scheduled_end,
+          check_in_time: schedule.scheduled_start, // 이미 HH:mm:ss 형식
+          check_out_time: schedule.scheduled_end,   // 이미 HH:mm:ss 형식
           notes: `정시 체크 (관리자 시간대별 처리) - ${description}`
         };
         attendanceUpdates.push(attendanceData);
