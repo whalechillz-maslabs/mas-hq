@@ -120,6 +120,13 @@ export default function SchedulesPage() {
     }
   }, [selectedYear, selectedMonth, viewMode, currentUser]);
 
+  // 주간/월간 뷰에서 날짜가 변경될 때 스케줄 다시 가져오기
+  useEffect(() => {
+    if (currentUser?.employee_id && (viewMode === 'week' || viewMode === 'month')) {
+      fetchSchedules();
+    }
+  }, [currentDate, viewMode, currentUser]);
+
   const getCurrentUser = async () => {
     try {
       // localStorage 기반 인증 사용
