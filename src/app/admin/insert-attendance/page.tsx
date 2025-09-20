@@ -688,26 +688,31 @@ export default function InsertAttendanceEnhancedPage() {
         console.warn('기존 attendance 삭제 실패:', deleteError);
       }
 
-      // 스케줄별로 attendance 레코드 생성
-      for (const schedule of employeeSchedules) {
-        const attendanceData = {
-          employee_id: employeeId,
-          date: today,
-          check_in_time: schedule.scheduled_start, // 이미 HH:mm:ss 형식
-          check_out_time: schedule.scheduled_end,   // 이미 HH:mm:ss 형식
-          break_start_time: '12:00:00',
-          break_end_time: '13:00:00',
-          notes: `정시 체크 (관리자 일괄 처리) - ${schedule.scheduled_start}~${schedule.scheduled_end}`
-        };
+      // 모든 스케줄의 시간을 통합하여 하나의 attendance 레코드 생성
+      const sortedSchedules = employeeSchedules.sort((a, b) =>
+        a.scheduled_start.localeCompare(b.scheduled_start)
+      );
 
-        const { error: insertError } = await supabase
-          .from('attendance')
-          .insert(attendanceData);
+      const earliestStart = sortedSchedules[0].scheduled_start;
+      const latestEnd = sortedSchedules[sortedSchedules.length - 1].scheduled_end;
 
-        if (insertError) {
-          console.error('attendance 삽입 실패:', insertError);
-          throw insertError;
-        }
+      const attendanceData = {
+        employee_id: employeeId,
+        date: today,
+        check_in_time: earliestStart, // 가장 이른 시작 시간
+        check_out_time: latestEnd,    // 가장 늦은 종료 시간
+        break_start_time: '12:00:00',
+        break_end_time: '13:00:00',
+        notes: `정시 체크 (관리자 일괄 처리) - ${employeeSchedules.length}개 스케줄 통합`,
+      };
+
+      const { error: insertError } = await supabase
+        .from('attendance')
+        .insert(attendanceData);
+
+      if (insertError) {
+        console.error('attendance 삽입 실패:', insertError);
+        throw insertError;
       }
 
       // schedules 테이블도 업데이트
