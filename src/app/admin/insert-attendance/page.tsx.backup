@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, CheckCircle, XCircle, Search, Filter, Download, Coffee, Play } from 'lucide-react';
+import { Calendar, Clock, Users, CheckCircle, XCircle, Search, Filter, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { format, startOfMonth, endOfMonth, addDays, subDays } from 'date-fns';
@@ -31,23 +31,10 @@ interface Schedule {
   };
 }
 
-interface AttendanceRecord {
-  id?: string;
-  employee_id: string;
-  date: string;
-  check_in_time: string | null;
-  check_out_time: string | null;
-  break_start_time: string | null;
-  break_end_time: string | null;
-  check_in_location: any;
-  check_out_location: any;
-}
-
-export default function InsertAttendanceEnhancedPage() {
+export default function BulkAttendancePage() {
   const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
@@ -59,15 +46,12 @@ export default function InsertAttendanceEnhancedPage() {
   const [editForm, setEditForm] = useState({
     checkInTime: '',
     checkOutTime: '',
-    breakStartTime: '',
-    breakEndTime: '',
     note: ''
   });
 
   useEffect(() => {
     loadEmployees();
     loadSchedules();
-    loadAttendanceRecords();
   }, [selectedDate, selectedEmployee, filterStatus]);
 
   const loadEmployees = async () => {
@@ -94,7 +78,7 @@ export default function InsertAttendanceEnhancedPage() {
           employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
         .eq('schedule_date', selectedDate)
-        .in('status', ['approved', 'pending', 'completed', 'in_progress']);
+        .in('status', ['approved', 'pending', 'completed']);
 
       if (selectedEmployee !== 'all') {
         query = query.eq('employee_id', selectedEmployee);
@@ -128,21 +112,6 @@ export default function InsertAttendanceEnhancedPage() {
     }
   };
 
-  const loadAttendanceRecords = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('date', selectedDate);
-
-      if (error) throw error;
-      setAttendanceRecords(data || []);
-    } catch (error) {
-      console.error('출근 기록 로드 오류:', error);
-      setAttendanceRecords([]);
-    }
-  };
-
   const handleSelectAll = () => {
     if (selectedSchedules.length === schedules.length) {
       setSelectedSchedules([]);
@@ -159,146 +128,165 @@ export default function InsertAttendanceEnhancedPage() {
     );
   };
 
-  // 스케줄 기반 정시 출퇴근/휴식 자동 체크
-  const handleAutoCheckIn = async (schedule: Schedule) => {
-    if (!confirm(`${schedule.employee?.name}의 정시 출퇴근/휴식을 자동으로 체크하시겠습니까?`)) {
+  const handleBulkCheckIn = async () => {
+    if (selectedSchedules.length === 0) {
+      alert('선택된 스케줄이 없습니다.');
       return;
     }
 
-    try {
-      const scheduledStart = schedule.scheduled_start;
-      const scheduledEnd = schedule.scheduled_end;
-      
-      // 정시 출근 (스케줄 시작 시간)
-      const checkInTime = new Date(`${selectedDate}T${scheduledStart}:00`).toISOString();
-      
-      // 정시 퇴근 (스케줄 종료 시간)
-      const checkOutTime = new Date(`${selectedDate}T${scheduledEnd}:00`).toISOString();
-      
-      // 휴식 시간 계산 (12:00-13:00 기본값, 스케줄에 따라 조정)
-      const breakStart = new Date(`${selectedDate}T12:00:00`).toISOString();
-      const breakEnd = new Date(`${selectedDate}T13:00:00`).toISOString();
+    if (!confirm(`선택된 ${selectedSchedules.length}개 스케줄에 출근 체크를 적용하시겠습니까?`)) {
+      return;
+    }
 
-      // 1. schedules 테이블 업데이트
+    setProcessing(true);
+    try {
+      const now = new Date().toISOString();
+      
+      // 선택된 스케줄들에 출근 시간 설정
       const { error: scheduleError } = await supabase
         .from('schedules')
-        .update({
-          actual_start: checkInTime,
-          actual_end: checkOutTime,
-          status: 'completed',
-          employee_note: '정시 출퇴근/휴식 자동 체크',
-          updated_at: new Date().toISOString()
+        .update({ 
+          actual_start: now,
+          status: 'in_progress',
+          updated_at: now
         })
-        .eq('id', schedule.id);
+        .in('id', selectedSchedules);
 
       if (scheduleError) throw scheduleError;
 
-      // 2. attendance 테이블 업데이트 또는 생성
-      const attendanceData = {
+      // attendance 테이블에도 기록
+      const scheduleData = schedules.filter(s => selectedSchedules.includes(s.id));
+      const attendanceRecords = scheduleData.map(schedule => ({
         employee_id: schedule.employee_id,
-        date: selectedDate,
-        check_in_time: checkInTime,
-        check_out_time: checkOutTime,
-        break_start_time: breakStart,
-        break_end_time: breakEnd,
-        updated_at: new Date().toISOString()
-      };
+        date: schedule.schedule_date,
+        check_in_time: now,
+        check_in_location: null,
+        created_at: now,
+        updated_at: now
+      }));
 
       const { error: attendanceError } = await supabase
         .from('attendance')
-        .upsert(attendanceData, { 
+        .upsert(attendanceRecords, { 
           onConflict: 'employee_id,date',
           ignoreDuplicates: false 
         });
 
       if (attendanceError) throw attendanceError;
 
-      alert(`✅ ${schedule.employee?.name}의 정시 출퇴근/휴식이 자동 체크되었습니다!`);
-      await loadSchedules();
-      await loadAttendanceRecords();
-    } catch (error: any) {
-      console.error('자동 체크 오류:', error);
-      alert(`자동 체크 실패: ${error.message}`);
-    }
-  };
-
-  // 일괄 정시 출퇴근/휴식 자동 체크
-  const handleBulkAutoCheck = async () => {
-    if (selectedSchedules.length === 0) {
-      alert('선택된 스케줄이 없습니다.');
-      return;
-    }
-
-    if (!confirm(`선택된 ${selectedSchedules.length}개 스케줄에 정시 출퇴근/휴식을 자동 체크하시겠습니까?`)) {
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const selectedScheduleData = schedules.filter(s => selectedSchedules.includes(s.id));
-      
-      for (const schedule of selectedScheduleData) {
-        const scheduledStart = schedule.scheduled_start;
-        const scheduledEnd = schedule.scheduled_end;
-        
-        const checkInTime = new Date(`${selectedDate}T${scheduledStart}:00`).toISOString();
-        const checkOutTime = new Date(`${selectedDate}T${scheduledEnd}:00`).toISOString();
-        const breakStart = new Date(`${selectedDate}T12:00:00`).toISOString();
-        const breakEnd = new Date(`${selectedDate}T13:00:00`).toISOString();
-
-        // schedules 테이블 업데이트
-        await supabase
-          .from('schedules')
-          .update({
-            actual_start: checkInTime,
-            actual_end: checkOutTime,
-            status: 'completed',
-            employee_note: '일괄 정시 출퇴근/휴식 자동 체크',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', schedule.id);
-
-        // attendance 테이블 업데이트
-        await supabase
-          .from('attendance')
-          .upsert({
-            employee_id: schedule.employee_id,
-            date: selectedDate,
-            check_in_time: checkInTime,
-            check_out_time: checkOutTime,
-            break_start_time: breakStart,
-            break_end_time: breakEnd,
-            updated_at: new Date().toISOString()
-          }, { 
-            onConflict: 'employee_id,date',
-            ignoreDuplicates: false 
-          });
-      }
-
-      alert(`✅ ${selectedSchedules.length}개 스케줄에 정시 출퇴근/휴식이 자동 체크되었습니다!`);
+      alert(`✅ ${selectedSchedules.length}개 스케줄에 출근 체크가 완료되었습니다!`);
       setSelectedSchedules([]);
       await loadSchedules();
-      await loadAttendanceRecords();
     } catch (error: any) {
-      console.error('일괄 자동 체크 오류:', error);
-      alert(`일괄 자동 체크 실패: ${error.message}`);
+      console.error('일괄 출근 체크 오류:', error);
+      alert(`일괄 출근 체크 실패: ${error.message}`);
     } finally {
       setProcessing(false);
     }
   };
 
-  // 개인 출근시간 수정 기능 (휴식 시간 포함)
-  const handleEditAttendance = (schedule: Schedule) => {
-    const attendance = attendanceRecords.find(record => 
-      record.employee_id === schedule.employee_id && record.date === selectedDate
-    );
+  const handleBulkCheckOut = async () => {
+    if (selectedSchedules.length === 0) {
+      alert('선택된 스케줄이 없습니다.');
+      return;
+    }
 
+    if (!confirm(`선택된 ${selectedSchedules.length}개 스케줄에 퇴근 체크를 적용하시겠습니까?`)) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const now = new Date().toISOString();
+      
+      // 선택된 스케줄들에 퇴근 시간 설정
+      const { error: scheduleError } = await supabase
+        .from('schedules')
+        .update({ 
+          actual_end: now,
+          status: 'completed',
+          updated_at: now
+        })
+        .in('id', selectedSchedules);
+
+      if (scheduleError) throw scheduleError;
+
+      // attendance 테이블에도 기록
+      const scheduleData = schedules.filter(s => selectedSchedules.includes(s.id));
+      const attendanceUpdates = scheduleData.map(schedule => ({
+        employee_id: schedule.employee_id,
+        date: schedule.schedule_date,
+        check_out_time: now,
+        updated_at: now
+      }));
+
+      for (const update of attendanceUpdates) {
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .update({ 
+            check_out_time: update.check_out_time,
+            updated_at: update.updated_at
+          })
+          .eq('employee_id', update.employee_id)
+          .eq('date', update.date);
+
+        if (attendanceError) throw attendanceError;
+      }
+
+      alert(`✅ ${selectedSchedules.length}개 스케줄에 퇴근 체크가 완료되었습니다!`);
+      setSelectedSchedules([]);
+      await loadSchedules();
+    } catch (error: any) {
+      console.error('일괄 퇴근 체크 오류:', error);
+      alert(`일괄 퇴근 체크 실패: ${error.message}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleBulkComplete = async () => {
+    if (selectedSchedules.length === 0) {
+      alert('선택된 스케줄이 없습니다.');
+      return;
+    }
+
+    if (!confirm(`선택된 ${selectedSchedules.length}개 스케줄을 완료 처리하시겠습니까?`)) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const now = new Date().toISOString();
+      
+      // 선택된 스케줄들을 완료 처리
+      const { error } = await supabase
+        .from('schedules')
+        .update({ 
+          status: 'completed',
+          employee_note: '관리자 일괄 완료 처리',
+          updated_at: now
+        })
+        .in('id', selectedSchedules);
+
+      if (error) throw error;
+
+      alert(`✅ ${selectedSchedules.length}개 스케줄이 완료 처리되었습니다!`);
+      setSelectedSchedules([]);
+      await loadSchedules();
+    } catch (error: any) {
+      console.error('일괄 완료 처리 오류:', error);
+      alert(`일괄 완료 처리 실패: ${error.message}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // 개인 출근시간 수정 기능
+  const handleEditAttendance = (schedule: Schedule) => {
     setEditingSchedule(schedule);
     setEditForm({
       checkInTime: schedule.actual_start ? format(new Date(schedule.actual_start), 'HH:mm') : '',
       checkOutTime: schedule.actual_end ? format(new Date(schedule.actual_end), 'HH:mm') : '',
-      breakStartTime: attendance?.break_start_time ? format(new Date(attendance.break_start_time), 'HH:mm') : '',
-      breakEndTime: attendance?.break_end_time ? format(new Date(attendance.break_end_time), 'HH:mm') : '',
       note: schedule.employee_note || ''
     });
     setShowEditModal(true);
@@ -312,10 +300,6 @@ export default function InsertAttendanceEnhancedPage() {
         new Date(`${selectedDate}T${editForm.checkInTime}:00`).toISOString() : null;
       const checkOutDateTime = editForm.checkOutTime ? 
         new Date(`${selectedDate}T${editForm.checkOutTime}:00`).toISOString() : null;
-      const breakStartDateTime = editForm.breakStartTime ? 
-        new Date(`${selectedDate}T${editForm.breakStartTime}:00`).toISOString() : null;
-      const breakEndDateTime = editForm.breakEndTime ? 
-        new Date(`${selectedDate}T${editForm.breakEndTime}:00`).toISOString() : null;
 
       if (editingSchedule.id === 'new') {
         // 새로운 스케줄 생성 (스케줄이 없는 직원)
@@ -353,14 +337,12 @@ export default function InsertAttendanceEnhancedPage() {
         if (scheduleError) throw scheduleError;
       }
 
-      // attendance 테이블 업데이트 또는 생성 (휴식 시간 포함)
+      // attendance 테이블 업데이트 또는 생성
       const attendanceData = {
         employee_id: editingSchedule.employee_id,
         date: selectedDate,
         check_in_time: checkInDateTime,
         check_out_time: checkOutDateTime,
-        break_start_time: breakStartDateTime,
-        break_end_time: breakEndDateTime,
         updated_at: new Date().toISOString()
       };
 
@@ -377,7 +359,6 @@ export default function InsertAttendanceEnhancedPage() {
       setShowEditModal(false);
       setEditingSchedule(null);
       await loadSchedules();
-      await loadAttendanceRecords();
     } catch (error: any) {
       console.error('출근시간 저장 오류:', error);
       alert(`출근시간 저장 실패: ${error.message}`);
@@ -406,8 +387,6 @@ export default function InsertAttendanceEnhancedPage() {
     setEditForm({
       checkInTime: '',
       checkOutTime: '',
-      breakStartTime: '',
-      breakEndTime: '',
       note: '관리자가 추가한 출근 기록'
     });
     setShowEditModal(true);
@@ -423,18 +402,6 @@ export default function InsertAttendanceEnhancedPage() {
     }
   };
 
-  const getAttendanceInfo = (schedule: Schedule) => {
-    const attendance = attendanceRecords.find(record => 
-      record.employee_id === schedule.employee_id && record.date === selectedDate
-    );
-    
-    return {
-      hasBreak: attendance?.break_start_time && attendance?.break_end_time,
-      breakStart: attendance?.break_start_time ? format(new Date(attendance.break_start_time), 'HH:mm') : null,
-      breakEnd: attendance?.break_end_time ? format(new Date(attendance.break_end_time), 'HH:mm') : null
-    };
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -442,9 +409,9 @@ export default function InsertAttendanceEnhancedPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center">
             <Users className="h-6 w-6 mr-2 text-blue-600" />
-            출근 관리 (고급 기능)
+            일괄 출근 관리
           </h1>
-          <p className="text-gray-600 mt-1">휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.</p>
+          <p className="text-gray-600 mt-1">직원들의 출근/퇴근을 일괄로 처리할 수 있습니다.</p>
         </div>
 
         {/* 필터 섹션 */}
@@ -514,12 +481,28 @@ export default function InsertAttendanceEnhancedPage() {
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={handleBulkAutoCheck}
+                  onClick={handleBulkCheckIn}
                   disabled={processing}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
                 >
-                  <Play className="h-4 w-4 inline mr-2" />
-                  일괄 정시 체크
+                  <Clock className="h-4 w-4 inline mr-2" />
+                  일괄 출근
+                </button>
+                <button
+                  onClick={handleBulkCheckOut}
+                  disabled={processing}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  <Clock className="h-4 w-4 inline mr-2" />
+                  일괄 퇴근
+                </button>
+                <button
+                  onClick={handleBulkComplete}
+                  disabled={processing}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                >
+                  <CheckCircle className="h-4 w-4 inline mr-2" />
+                  일괄 완료
                 </button>
               </div>
             </div>
@@ -619,9 +602,6 @@ export default function InsertAttendanceEnhancedPage() {
                       실제 퇴근
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      휴식 시간
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       상태
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -630,91 +610,70 @@ export default function InsertAttendanceEnhancedPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {schedules.map((schedule) => {
-                    const attendanceInfo = getAttendanceInfo(schedule);
-                    return (
-                      <tr key={schedule.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedSchedules.includes(schedule.id)}
-                            onChange={() => handleSelectSchedule(schedule.id)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-8 w-8">
-                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-800">
-                                  {schedule.employee?.name?.charAt(0) || '?'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="ml-3">
-                              <div className="text-sm font-medium text-gray-900">
-                                {schedule.employee?.name || '알 수 없음'}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {schedule.employee?.employee_id || 'N/A'}
-                              </div>
+                  {schedules.map((schedule) => (
+                    <tr key={schedule.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedSchedules.includes(schedule.id)}
+                          onChange={() => handleSelectSchedule(schedule.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-800">
+                                {schedule.employee?.name?.charAt(0) || '?'}
+                              </span>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {schedule.scheduled_start} - {schedule.scheduled_end}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {schedule.actual_start ? 
-                            format(new Date(schedule.actual_start), 'HH:mm') : 
-                            <span className="text-gray-400">-</span>
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {schedule.actual_end ? 
-                            format(new Date(schedule.actual_end), 'HH:mm') : 
-                            <span className="text-gray-400">-</span>
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendanceInfo.hasBreak ? (
-                            <div className="flex items-center space-x-1">
-                              <Coffee className="h-4 w-4 text-orange-500" />
-                              <span>{attendanceInfo.breakStart} - {attendanceInfo.breakEnd}</span>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">
+                              {schedule.employee?.name || '알 수 없음'}
                             </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(schedule)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEditAttendance(schedule)}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              수정
-                            </button>
-                            <button
-                              onClick={() => handleAutoCheckIn(schedule)}
-                              className="text-green-600 hover:text-green-800 text-sm font-medium"
-                            >
-                              정시체크
-                            </button>
+                            <div className="text-sm text-gray-500">
+                              {schedule.employee?.employee_id || 'N/A'}
+                            </div>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {schedule.scheduled_start} - {schedule.scheduled_end}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {schedule.actual_start ? 
+                          format(new Date(schedule.actual_start), 'HH:mm') : 
+                          <span className="text-gray-400">-</span>
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {schedule.actual_end ? 
+                          format(new Date(schedule.actual_end), 'HH:mm') : 
+                          <span className="text-gray-400">-</span>
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(schedule)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleEditAttendance(schedule)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          수정
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
         </div>
 
-        {/* 출근시간 수정 모달 (휴식 시간 포함) */}
+        {/* 출근시간 수정 모달 */}
         {showEditModal && editingSchedule && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -744,30 +703,6 @@ export default function InsertAttendanceEnhancedPage() {
                       type="time"
                       value={editForm.checkOutTime}
                       onChange={(e) => setEditForm({...editForm, checkOutTime: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      휴식 시작 시간
-                    </label>
-                    <input
-                      type="time"
-                      value={editForm.breakStartTime}
-                      onChange={(e) => setEditForm({...editForm, breakStartTime: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      휴식 종료 시간
-                    </label>
-                    <input
-                      type="time"
-                      value={editForm.breakEndTime}
-                      onChange={(e) => setEditForm({...editForm, breakEndTime: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

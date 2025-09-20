@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { format, isToday, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { getHourlyWage, calculateSimpleWage, formatWageBreakdown } from '@/lib/wage-calculator';
+import AttendanceSummary from "@/components/AttendanceSummary";
 
 interface AttendanceRecord {
   id: string;
@@ -2397,6 +2398,14 @@ export default function AttendancePage() {
                               {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
+
+            {/* 근태 서머리 */}
+            {currentUser && (
+              <AttendanceSummary 
+                employeeId={currentUser.id} 
+                currentDate={format(new Date(), "yyyy-MM-dd")} 
+              />
+            )}
                               <span className="text-xs text-gray-500">스케줄: {formatHoursToHm(summary.scheduledHours)}</span>
                               <span className="text-xs text-gray-500">실제: {formatHoursToHm(summary.totalHours)}</span>
                             </div>

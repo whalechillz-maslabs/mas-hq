@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, MapPin, CheckCircle, XCircle, Calendar, User, Building } from 'lucide-react';
+import { Clock, MapPin, CheckCircle, XCircle, Calendar, User, Building, Coffee, DollarSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { format, isToday, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { getHourlyWage, calculateSimpleWage, formatWageBreakdown } from '@/lib/wage-calculator';
 
 interface AttendanceRecord {
   id: string;
@@ -35,8 +36,471 @@ export default function AttendancePage() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  const [dailyAttendance, setDailyAttendance] = useState<{
+    isCheckedIn: boolean;
+    checkInTime: string | null;
+    checkOutTime: string | null;
+    totalWorkTime: string | null;
+    hasBreak: boolean;
+    breakStartTime: string | null;
+    breakRecords: Array<{ type: 'start' | 'end'; time: string; timestamp: string }>;
+  }>({
+    isCheckedIn: false,
+    checkInTime: null,
+    checkOutTime: null,
+    totalWorkTime: null,
+    hasBreak: false,
+    breakStartTime: null,
+    breakRecords: []
+  });
+  
+  // 급여 계산 관련 상태
+  const [hourlyWage, setHourlyWage] = useState<number>(12000); // 기본 시급 12,000원 (hourly_wages 테이블에서 동적으로 로드)
+  const [wageType, setWageType] = useState<'hourly' | 'monthly'>('hourly'); // 급여 형태
+  const [monthlySalary, setMonthlySalary] = useState<number | null>(null); // 월급 정보
+  const [wageCalculation, setWageCalculation] = useState<{
+    scheduledPay: number;
+    actualPay: number;
+    difference: number;
+  } | null>(null);
+  const [pointBonus, setPointBonus] = useState<number>(0); // 포인트 수당
+  const [totalEarnings, setTotalEarnings] = useState<number>(0); // 총 수입 (급여 + 포인트)
+  // 실시간 근무 시간 계산을 위한 useEffect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime) {
+      // 출근했지만 퇴근하지 않은 경우, 1분마다 근무 시간 업데이트
+      interval = setInterval(() => {
+        if (dailyAttendance.checkInTime) {
+          const now = new Date();
+          
+          // checkInTime이 이미 한국 시간이므로 추가 변환 불필요
+          const start = new Date(dailyAttendance.checkInTime);
+          
+          // 디버깅 로그 추가
+          console.log('🕐 실시간 근무 시간 계산:', {
+            checkInTime: dailyAttendance.checkInTime,
+            start: start.toISOString(),
+            now: now.toISOString(),
+            startTime: start.getTime(),
+            nowTime: now.getTime()
+          });
+          
+          const diffMs = now.getTime() - start.getTime();
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          const totalHours = hours + (minutes / 60);
+          
+          console.log('⏱️ 계산된 근무 시간:', { hours, minutes, totalHours, diffMs });
+          
+          setDailyAttendance(prev => ({
+            ...prev,
+            totalWorkTime: `${hours}h ${minutes}m`
+          }));
+          
+          // 급여 계산도 업데이트
+          if (wageType === 'hourly') {
+            const currentPay = totalHours * hourlyWage;
+            setWageCalculation(prev => prev ? {
+              ...prev,
+              actualPay: currentPay,
+              difference: currentPay - prev.scheduledPay
+            } : null);
+          }
+        }
+      }, 60000); // 1분마다 업데이트
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [dailyAttendance.isCheckedIn, dailyAttendance.checkInTime, dailyAttendance.checkOutTime, hourlyWage, wageType]);
 
   // getCurrentUser 함수 정의
+  // 일일 근무 시간 계산 함수
+  const calculateDailyWorkHours = (schedules: AttendanceRecord[]) => {
+    if (schedules.length === 0) return { totalHours: 0, totalMinutes: 0 };
+    
+    let totalMinutes = 0;
+    
+    schedules.forEach(schedule => {
+      if (schedule.actual_start && schedule.actual_end) {
+        const start = new Date(schedule.actual_start);
+        const end = new Date(schedule.actual_end);
+        const diffMs = end.getTime() - start.getTime();
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        totalMinutes += diffMinutes;
+      }
+    });
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return { totalHours: hours, totalMinutes: minutes };
+  };
+
+  // 포인트 수당 계산 함수
+  const calculatePointBonus = async (employeeId: string, date: string) => {
+    try {
+      // 해당 날짜의 업무 기록 조회
+      const { data: tasks, error } = await supabase
+        .from('employee_tasks')
+        .select(`
+          id,
+          points,
+          operation_types!inner(
+            id,
+            name,
+            points
+          )
+        `)
+        .eq('employee_id', employeeId)
+        .eq('task_date', date);
+      
+      if (error) {
+        console.error('업무 기록 조회 오류:', error);
+        return 0;
+      }
+      
+      // 포인트 합계 계산
+      const totalPoints = (tasks || []).reduce((sum, task) => {
+        const points = Array.isArray(task.operation_types) 
+          ? (task.operation_types[0] as any)?.points || 0
+          : (task.operation_types as any)?.points || 0;
+        return sum + points;
+      }, 0);
+      
+      // 포인트를 원화로 환산 (1포인트 = 100원 가정)
+      const pointValue = totalPoints * 100;
+      
+      console.log(`포인트 수당: ${totalPoints}포인트 → ${pointValue.toLocaleString()}원`);
+      return pointValue;
+    } catch (error) {
+      console.error('포인트 수당 계산 오류:', error);
+      return 0;
+    }
+  };
+
+  // 급여 계산 함수
+  const calculateWage = async () => {
+    console.log('=== 급여 계산 함수 시작 ===');
+    console.log('currentUser:', currentUser);
+    console.log('todaySchedules.length:', todaySchedules.length);
+    
+    if (!currentUser) {
+      console.log('❌ currentUser가 없습니다.');
+      return;
+    }
+    
+    console.log('✅ 급여 계산 함수 실행 중...');
+    
+    if (todaySchedules.length === 0) {
+      console.log('❌ todaySchedules가 비어있습니다. 하지만 급여 정보는 표시합니다.');
+      // 스케줄이 없어도 급여 정보는 표시해야 함
+    }
+    
+    try {
+      // 직원 정보 조회 (월급제 vs 시급제 구분)
+      const { data: employee, error: employeeError } = await supabase
+        .from('employees')
+        .select('employment_type, monthly_salary, hourly_rate')
+        .eq('id', currentUser.id)
+        .single();
+      
+      if (employeeError) {
+        console.error('직원 정보 조회 오류:', employeeError);
+        return;
+      }
+      
+      console.log('직원 정보 조회 결과:', employee);
+      console.log('monthly_salary 값:', employee.monthly_salary, '타입:', typeof employee.monthly_salary);
+      console.log('hourly_rate 값:', employee.hourly_rate, '타입:', typeof employee.hourly_rate);
+      
+      let baseWage = 12000; // 기본값
+      let wageType = 'hourly'; // 기본값
+      
+      // 월급제 vs 시급제 구분 (월급제 우선)
+      if (employee.monthly_salary && employee.monthly_salary > 0) {
+        // 월급제: 월급을 일급으로 환산 (월 22일 기준)
+        baseWage = Math.round(employee.monthly_salary / 22);
+        wageType = 'monthly';
+        setMonthlySalary(employee.monthly_salary);
+        console.log(`월급제: ${employee.monthly_salary.toLocaleString()}원/월 → ${baseWage.toLocaleString()}원/일`);
+      } else if (employee.hourly_rate && employee.hourly_rate > 0) {
+        // 시급제: employees 테이블의 hourly_rate 사용
+        baseWage = employee.hourly_rate;
+        wageType = 'hourly';
+        setMonthlySalary(null);
+        console.log(`시급제 (employees): ${baseWage.toLocaleString()}원/시간`);
+      } else {
+        // hourly_wages 테이블에서 시급 조회 (fallback)
+        // 한국 시간 기준으로 오늘 날짜 계산
+        const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+        const todayStr = koreaDate.toISOString().split('T')[0];
+        const wageInfo = await getHourlyWage(currentUser.id, todayStr);
+        baseWage = wageInfo?.base_wage || 12000;
+        wageType = 'hourly';
+        setMonthlySalary(null);
+        console.log(`시급제 (hourly_wages): ${baseWage.toLocaleString()}원/시간`);
+      }
+      
+      // 급여 상태 업데이트
+      setHourlyWage(baseWage);
+      setWageType('hourly');
+      
+      // 스케줄된 시간과 실제 근무 시간 계산
+      const scheduledHours = todaySchedules.length > 0 ? todaySchedules.reduce((total, schedule) => {
+        if (schedule.scheduled_start && schedule.scheduled_end) {
+          const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+          const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+          const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+          return total + hours;
+        }
+        return total;
+      }, 0) : 0;
+      
+      const actualHours = todaySchedules.length > 0 ? todaySchedules
+        .filter(s => s.actual_start && s.actual_end)
+        .reduce((total, s) => {
+          const start = new Date(s.actual_start!);
+          const end = new Date(s.actual_end!);
+          return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        }, 0) : 0;
+      
+      // 급여 계산
+      const calculation = calculateSimpleWage(baseWage, actualHours, scheduledHours);
+      setWageCalculation(calculation);
+      
+      // 포인트 수당 계산
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate.toISOString().split('T')[0];
+      const pointBonusAmount = await calculatePointBonus(currentUser.id, today);
+      setPointBonus(pointBonusAmount);
+      
+      // 총 수입 계산 (급여 + 포인트 수당)
+      const totalEarningsAmount = calculation.actualPay + pointBonusAmount;
+      setTotalEarnings(totalEarningsAmount);
+    } catch (error) {
+      console.error('급여 계산 오류:', error);
+    }
+  };
+
+  // 스케줄을 시간대별로 그룹화하는 함수 (연속 스케줄 통합)
+  const groupSchedulesByTimeRange = (schedules: AttendanceRecord[]) => {
+    if (schedules.length === 0) return [];
+    
+    // 스케줄을 시작 시간순으로 정렬
+    const sortedSchedules = [...schedules].sort((a, b) => 
+      a.scheduled_start.localeCompare(b.scheduled_start)
+    );
+    
+    const groups: {
+      startTime: string;
+      endTime: string;
+      schedules: AttendanceRecord[];
+      status: 'completed' | 'in-progress' | 'pending';
+      actualStart?: string;
+      actualEnd?: string;
+      totalHours: number;
+      estimatedWage: number;
+      isContinuous: boolean;
+    }[] = [];
+    
+    let currentGroup: typeof groups[0] | null = null;
+    
+    sortedSchedules.forEach(schedule => {
+      const startTime = schedule.scheduled_start;
+      const endTime = schedule.scheduled_end;
+      
+      if (!currentGroup) {
+        // 첫 번째 그룹 시작
+        currentGroup = {
+          startTime,
+          endTime,
+          schedules: [schedule],
+          status: schedule.actual_start && schedule.actual_end ? 'completed' 
+                 : schedule.actual_start ? 'in-progress' 
+                 : 'pending',
+          actualStart: schedule.actual_start || undefined,
+          actualEnd: schedule.actual_end || undefined,
+          totalHours: 0,
+          estimatedWage: 0,
+          isContinuous: false
+        };
+      } else {
+        // 연속된 시간대인지 확인 (30분 단위)
+        const currentEnd = new Date(`2000-01-01T${currentGroup.endTime}`);
+        const nextStart = new Date(`2000-01-01T${startTime}`);
+        const timeDiff = nextStart.getTime() - currentEnd.getTime();
+        
+        if (timeDiff <= 30 * 60 * 1000) { // 30분 이내
+          // 같은 그룹에 추가
+          currentGroup.schedules.push(schedule);
+          currentGroup.endTime = endTime;
+          currentGroup.isContinuous = true;
+          
+          // 상태 업데이트
+          if (schedule.actual_start && schedule.actual_end) {
+            currentGroup.status = 'completed';
+          } else if (schedule.actual_start && currentGroup.status === 'pending') {
+            currentGroup.status = 'in-progress';
+          }
+          
+          // 실제 시간 업데이트
+          if (schedule.actual_start && !currentGroup.actualStart) {
+            currentGroup.actualStart = schedule.actual_start;
+          }
+          if (schedule.actual_end) {
+            currentGroup.actualEnd = schedule.actual_end;
+          }
+        } else {
+          // 새로운 그룹 시작
+          groups.push(currentGroup);
+          currentGroup = {
+            startTime,
+            endTime,
+            schedules: [schedule],
+            status: schedule.actual_start && schedule.actual_end ? 'completed' 
+                   : schedule.actual_start ? 'in-progress' 
+                   : 'pending',
+            actualStart: schedule.actual_start || undefined,
+            actualEnd: schedule.actual_end || undefined,
+            totalHours: 0,
+            estimatedWage: 0,
+            isContinuous: false
+          };
+        }
+      }
+    });
+    
+    // 마지막 그룹 추가
+    if (currentGroup) {
+      groups.push(currentGroup);
+    }
+    
+    // 각 그룹의 총 근무 시간과 예상 알바비 계산
+    return groups.map(group => {
+      const totalSlots = group.schedules.length;
+      const totalHours = totalSlots * 0.5; // 30분 = 0.5시간
+      const hourlyWage = 9860; // 2025년 최저시급
+      const estimatedWage = totalHours * hourlyWage;
+      
+      return {
+        ...group,
+        totalHours,
+        estimatedWage
+      };
+    });
+  };
+
+  // 시간을 h m 형식으로 변환하는 함수
+  const formatHoursToHm = (hours: number): string => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
+  // 월간 실제 근무시간 합계(중복 스케줄 제외, 날짜 기준으로 1회만 계산)
+  const computeMonthlyActualHours = (records: AttendanceRecord[]) => {
+    try {
+      const byDate = new Map<string, { start?: Date; end?: Date }>();
+      records.forEach((r) => {
+        if (!r.schedule_date) return;
+        const key = r.schedule_date;
+        const bucket = byDate.get(key) || {};
+
+        if (r.actual_start) {
+          const s = new Date(r.actual_start);
+          if (!bucket.start || s < bucket.start) bucket.start = s;
+        }
+        if (r.actual_end) {
+          const e = new Date(r.actual_end);
+          if (!bucket.end || e > bucket.end) bucket.end = e;
+        }
+        byDate.set(key, bucket);
+      });
+
+      let total = 0;
+      byDate.forEach(({ start, end }) => {
+        if (start && end) {
+          total += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        }
+      });
+      return total;
+    } catch (err) {
+      console.error('월간 실제 근무시간 계산 오류:', err);
+      return 0;
+    }
+  };
+
+  // 일별 실제 근무시간 계산 (중복 제거)
+  const computeDailyActualHours = (records: AttendanceRecord[], targetDate: string) => {
+    try {
+      const dayRecords = records.filter(r => r.schedule_date === targetDate);
+      if (dayRecords.length === 0) return 0;
+
+      let minStart: Date | null = null;
+      let maxEnd: Date | null = null;
+
+      dayRecords.forEach((r) => {
+        if (r.actual_start) {
+          const start = new Date(r.actual_start);
+          if (!minStart || start < minStart) minStart = start;
+        }
+        if (r.actual_end) {
+          const end = new Date(r.actual_end);
+          if (!maxEnd || end > maxEnd) maxEnd = end;
+        }
+      });
+
+      if (minStart && maxEnd) {
+        return ((maxEnd as Date).getTime() - (minStart as Date).getTime()) / (1000 * 60 * 60);
+      }
+      return 0;
+    } catch (err) {
+      console.error('일별 실제 근무시간 계산 오류:', err);
+      return 0;
+    }
+  };
+
+  // 일일 출근 상태 분석
+  const analyzeDailyAttendance = (schedules: AttendanceRecord[]) => {
+    const completedSchedules = schedules.filter(s => s.actual_start && s.actual_end);
+    const inProgressSchedules = schedules.filter(s => s.actual_start && !s.actual_end);
+    const pendingSchedules = schedules.filter(s => !s.actual_start);
+    
+    const hasCheckedIn = inProgressSchedules.length > 0 || completedSchedules.length > 0;
+    const hasCheckedOut = completedSchedules.length > 0 && inProgressSchedules.length === 0;
+    
+    let checkInTime = null;
+    let checkOutTime = null;
+    
+    if (schedules.length > 0) {
+      const firstSchedule = schedules[0];
+      if (firstSchedule.actual_start) {
+        checkInTime = firstSchedule.actual_start;
+      }
+      
+      const lastCompletedSchedule = completedSchedules[completedSchedules.length - 1];
+      if (lastCompletedSchedule?.actual_end) {
+        checkOutTime = lastCompletedSchedule.actual_end;
+      }
+    }
+    
+    return {
+      hasCheckedIn,
+      hasCheckedOut,
+      checkInTime,
+      checkOutTime,
+      completedCount: completedSchedules.length,
+      inProgressCount: inProgressSchedules.length,
+      pendingCount: pendingSchedules.length
+    };
+  };
   const getCurrentUser = async () => {
     try {
       if (typeof window !== 'undefined') {
@@ -76,18 +540,25 @@ export default function AttendancePage() {
           return;
         }
         
-        console.log('✅ 사용자 정보 설정 완료:', user.id);
+        console.log('✅ 사용자 정보 설정 완료:', user.employee_id);
         setCurrentUser(user);
         
         // 스케줄 데이터 로딩
         console.log('📅 오늘 스케줄 조회 시작...');
         const today = format(new Date(), 'yyyy-MM-dd');
-        console.log('📅 오늘 날짜:', today, '사용자 ID:', user.id);
+        console.log('📅 오늘 날짜:', today, '사용자 UUID:', user.id);
         
         const { data: todayData, error: todayError } = await supabase
           .from('schedules')
-          .select('*')
-          .eq('employee_id', user.id)
+          .select(`
+            *,
+            employee:employees!schedules_employee_id_fkey (
+              id,
+              employee_id,
+              name
+            )
+          `)
+          .eq('employee_id', user.id) // UUID 사용
           .eq('schedule_date', today);
 
         if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
@@ -99,6 +570,299 @@ export default function AttendancePage() {
           console.log('✅ 오늘 스케줄 조회 성공:', todayData?.length || 0, '개');
           console.log('📊 스케줄 데이터:', todayData);
           setTodaySchedules(todayData || []);
+          
+          // 일일 출근 상태 분석 및 설정
+          if (todayData && todayData.length > 0) {
+            const analysis = analyzeDailyAttendance(todayData);
+            const hasBreak = todayData.some(s => s.status === 'break');
+            
+            setDailyAttendance({
+              isCheckedIn: analysis.hasCheckedIn,
+              checkInTime: analysis.checkInTime,
+              checkOutTime: analysis.hasCheckedOut ? analysis.checkOutTime : null,
+              totalWorkTime: null,
+              hasBreak: hasBreak,
+              breakStartTime: null,
+              breakRecords: []
+            });
+            
+            // 스케줄 로드 후 급여 계산
+            setTimeout(() => calculateWage(), 100);
+          } else {
+            // 스케줄이 없어도 급여 계산
+            setTimeout(() => calculateWage(), 100);
+          }
+          
+          // 추가로 급여 계산 강제 실행
+          setTimeout(() => calculateWage(), 500);
+        }
+
+        // attendance 테이블에서 오늘 출근 상태 확인 (스케줄이 없어도 확인)
+        console.log('🔍 attendance 테이블에서 오늘 출근 상태 확인...');
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from('attendance')
+          .select('*')
+          .eq('employee_id', user.id)
+          .eq('date', today)
+          .single();
+
+        if (!isMounted) return;
+
+        if (attendanceError && attendanceError.code !== 'PGRST116') { // PGRST116은 데이터 없음 오류
+          console.error('❌ attendance 데이터 조회 오류:', attendanceError);
+        } else if (attendanceData) {
+          console.log('✅ attendance 데이터 조회 성공:', attendanceData);
+          console.log('🔍 attendance 데이터 상세 분석:', {
+            id: attendanceData.id,
+            employee_id: attendanceData.employee_id,
+            date: attendanceData.date,
+            check_in_time: attendanceData.check_in_time,
+            check_out_time: attendanceData.check_out_time,
+            notes: attendanceData.notes,
+            sonb: attendanceData.sonb,
+            allKeys: Object.keys(attendanceData)
+          });
+          
+          // attendance 데이터를 기반으로 출근 상태 설정 (스케줄 데이터보다 우선)
+          const hasCheckedIn = !!attendanceData.check_in_time;
+          const hasCheckedOut = !!attendanceData.check_out_time;
+          
+          let totalWorkTime = null;
+          if (attendanceData.total_hours) {
+            // 퇴근한 경우: 저장된 총 근무 시간 사용
+            totalWorkTime = `${Math.floor(attendanceData.total_hours)}h ${Math.round((attendanceData.total_hours % 1) * 60)}m`;
+          } else if (hasCheckedIn && !hasCheckedOut) {
+            // 출근했지만 퇴근하지 않은 경우: 실시간 계산
+            const now = new Date();
+            
+            // 출근 시간을 한국 시간으로 올바르게 파싱
+            const [hours, minutes, seconds] = attendanceData.check_in_time.split(':');
+            
+            // 한국 시간으로 출근 시간 생성 (로컬 시간대 사용)
+            const startKoreaTime = new Date();
+            startKoreaTime.setFullYear(parseInt(today.split('-')[0]));
+            startKoreaTime.setMonth(parseInt(today.split('-')[1]) - 1);
+            startKoreaTime.setDate(parseInt(today.split('-')[2]));
+            startKoreaTime.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds), 0);
+            
+            // 현재 시간도 한국 시간으로 설정
+            const nowKorea = new Date();
+            
+            // 디버깅 로그 추가
+            console.log('🕐 attendance 데이터 로드 시 근무 시간 계산:', {
+              today,
+              checkInTime: attendanceData.check_in_time,
+              startKoreaTime: startKoreaTime.toISOString(),
+              nowKorea: nowKorea.toISOString(),
+              timezoneOffset: nowKorea.getTimezoneOffset()
+            });
+            
+            const diffMs = nowKorea.getTime() - startKoreaTime.getTime();
+            
+            // 음수 시간 방지
+            if (diffMs < 0) {
+              console.log('⚠️ 음수 시간 감지 - 0시간으로 설정');
+              totalWorkTime = '0h 0m';
+            } else {
+              const grossWorkHours = diffMs / (1000 * 60 * 60);
+              
+              // 휴식시간 공제
+              let breakMinutes = 0;
+              if (attendanceData.notes) {
+                // 휴식시간 계산 함수 (관리자 페이지와 동일한 로직)
+                const adminBreakMatch = attendanceData.notes.match(/관리자 입력 휴식 시간: (\d+)분/);
+                if (adminBreakMatch) {
+                  breakMinutes = parseInt(adminBreakMatch[1]);
+                } else {
+                  // 직원 버튼 입력 휴식시간 계산
+                  const breakStartMatches = attendanceData.notes.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
+                  const breakEndMatches = attendanceData.notes.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
+                  
+                  if (breakStartMatches && breakEndMatches) {
+                    const breakPeriods: { start: string; end: string }[] = [];
+                    
+                    // 휴식 시작 시간들 파싱
+                    breakStartMatches.forEach((match: string) => {
+                      const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
+                      if (timeMatch) {
+                        const period = timeMatch[1];
+                        const time = timeMatch[2];
+                        const [hours, minutes] = time.split(':').map(Number);
+                        let hour24 = hours;
+                        if (period === '오후' && hours !== 12) hour24 += 12;
+                        if (period === '오전' && hours === 12) hour24 = 0;
+                        breakPeriods.push({ start: `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`, end: '' });
+                      }
+                    });
+                    
+                    // 휴식 종료 시간들 파싱
+                    breakEndMatches.forEach((match: string) => {
+                      const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
+                      if (timeMatch) {
+                        const period = timeMatch[1];
+                        const time = timeMatch[2];
+                        const [hours, minutes] = time.split(':').map(Number);
+                        let hour24 = hours;
+                        if (period === '오후' && hours !== 12) hour24 += 12;
+                        if (period === '오전' && hours === 12) hour24 = 0;
+                        const endTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        
+                        for (let i = breakPeriods.length - 1; i >= 0; i--) {
+                          if (!breakPeriods[i].end) {
+                            breakPeriods[i].end = endTime;
+                            break;
+                          }
+                        }
+                      }
+                    });
+                    
+                    // 각 휴식 시간 계산
+                    breakPeriods.forEach(period => {
+                      if (period.start && period.end) {
+                        const [startHour, startMin] = period.start.split(':').map(Number);
+                        const [endHour, endMin] = period.end.split(':').map(Number);
+                        const startMinutes = startHour * 60 + startMin;
+                        const endMinutes = endHour * 60 + endMin;
+                        breakMinutes += endMinutes - startMinutes;
+                      }
+                    });
+                  }
+                }
+              }
+              
+              const breakHours = breakMinutes / 60;
+              const netWorkHours = Math.max(0, grossWorkHours - breakHours);
+              
+              const workHours = Math.floor(netWorkHours);
+              const workMinutes = Math.floor((netWorkHours % 1) * 60);
+              totalWorkTime = `${workHours}h ${workMinutes}m`;
+              
+              console.log('⏱️ 휴식시간 공제된 근무시간:', {
+                grossWorkHours: grossWorkHours.toFixed(2),
+                breakHours: breakHours.toFixed(2),
+                netWorkHours: netWorkHours.toFixed(2),
+                totalWorkTime
+              });
+            }
+            
+            console.log('⏱️ attendance 로드 시 계산된 근무 시간:', { totalWorkTime, diffMs });
+          }
+          
+          // schedules 테이블에서 휴식 상태 확인
+          let hasBreakFromSchedules = false;
+          let breakStartTime = null;
+          if (todayData && todayData.length > 0) {
+            hasBreakFromSchedules = todayData.some(s => s.status === 'break');
+            // 휴식 중인 스케줄에서 휴식 시작 시간 찾기
+            const breakSchedule = todayData.find(s => s.status === 'break');
+            if (breakSchedule && breakSchedule.employee_note === '휴식 시작') {
+              // 휴식 시작 시간을 현재 시간으로 설정 (정확한 시간은 데이터베이스에 저장되지 않으므로)
+              breakStartTime = new Date().toISOString();
+            }
+          }
+          
+          // attendance 테이블에서 휴식 상태 확인 (스케줄이 없어도 확인)
+          let hasBreakFromAttendance = false;
+          let breakRecords: Array<{ type: 'start' | 'end'; time: string; timestamp: string }> = [];
+          
+          // 휴식 기록을 notes 컬럼에서 확인
+          const breakData = attendanceData.notes;
+          console.log('🔍 휴식 데이터 확인:', { notes: attendanceData.notes, breakData });
+          
+          if (breakData) {
+            // 관리자 입력 휴식시간 확인 (최우선)
+            const adminBreakMatch = breakData.match(/관리자 입력 휴식 시간: (\d+)분/);
+            if (adminBreakMatch) {
+              const totalMinutes = parseInt(adminBreakMatch[1]);
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+              
+              // 관리자 입력 휴식시간을 기록으로 추가
+              breakRecords.push({ 
+                type: 'start', 
+                time: `관리자 입력: ${hours}시간 ${minutes}분`, 
+                timestamp: attendanceData.updated_at 
+              });
+              
+              console.log('📝 관리자 입력 휴식시간 발견:', `${hours}시간 ${minutes}분`);
+            } else {
+              // 직원 버튼 입력 휴식시간 파싱 (기존 로직)
+              const breakStartMatch = breakData.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
+              if (breakStartMatch) {
+                breakStartMatch.forEach((match: string) => {
+                  const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
+                  if (timeMatch) {
+                    const period = timeMatch[1]; // 오전 또는 오후
+                    const time = timeMatch[2]; // 09:43
+                    const displayTime = `${period} ${time}`;
+                    breakRecords.push({ type: 'start', time: displayTime, timestamp: attendanceData.updated_at });
+                  }
+                });
+                
+                // 마지막 휴식 시작 후 복귀가 없으면 현재 휴식 중
+                const lastBreakStart = breakStartMatch[breakStartMatch.length - 1];
+                const breakStartIndex = breakData.lastIndexOf(lastBreakStart);
+                const afterLastBreak = breakData.substring(breakStartIndex);
+                if (!afterLastBreak.includes('휴식 후 복귀')) {
+                  hasBreakFromAttendance = true;
+                  breakStartTime = new Date().toISOString();
+                }
+              }
+              
+              // 휴식 종료 시각 추출 (한국어 형식: "오전 09:43" 또는 "오후 14:30")
+              const breakEndMatch = breakData.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
+              if (breakEndMatch) {
+                breakEndMatch.forEach((match: string) => {
+                  const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
+                  if (timeMatch) {
+                    const period = timeMatch[1]; // 오전 또는 오후
+                    const time = timeMatch[2]; // 09:43
+                    const displayTime = `${period} ${time}`;
+                    breakRecords.push({ type: 'end', time: displayTime, timestamp: attendanceData.updated_at });
+                  }
+                });
+              }
+            }
+            
+            console.log('📊 휴식 기록 파싱 결과:', { hasBreakFromAttendance, breakRecords });
+          }
+          
+          setDailyAttendance(prev => ({
+            ...prev,
+            isCheckedIn: hasCheckedIn,
+            checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : prev.checkInTime,
+            checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : prev.checkOutTime,
+            totalWorkTime: totalWorkTime,
+            hasBreak: hasBreakFromSchedules || hasBreakFromAttendance || prev.hasBreak,
+            breakStartTime: breakStartTime || prev.breakStartTime,
+            breakRecords: breakRecords.length > 0 ? breakRecords : prev.breakRecords
+          }));
+          
+          console.log('✅ attendance 기반 출근 상태 설정 완료:', {
+            hasCheckedIn,
+            hasCheckedOut,
+            checkInTime: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : null,
+            checkOutTime: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : null,
+            totalWorkTime: totalWorkTime
+          });
+        } else {
+          console.log('📝 오늘 attendance 데이터 없음');
+        }
+        
+        // attendance 데이터를 schedules 데이터와 병합
+        if (todayData && todayData.length > 0 && attendanceData) {
+          console.log('🔄 attendance 데이터를 schedules와 병합 중...');
+          const mergedSchedules = todayData.map(schedule => ({
+            ...schedule,
+            actual_start: attendanceData.check_in_time ? `${today}T${attendanceData.check_in_time}` : schedule.actual_start,
+            actual_end: attendanceData.check_out_time ? `${today}T${attendanceData.check_out_time}` : schedule.actual_end,
+            status: attendanceData.check_out_time ? 'completed' : 
+                   attendanceData.check_in_time ? 'in-progress' : 
+                   schedule.status
+          }));
+          
+          console.log('✅ 병합된 스케줄 데이터:', mergedSchedules);
+          setTodaySchedules(mergedSchedules);
         }
         
         // 월간 기록 조회 시작...
@@ -109,11 +873,17 @@ export default function AttendancePage() {
         
         const { data: monthlyData, error: monthlyError } = await supabase
           .from('schedules')
-          .select('*')
-          .eq('employee_id', user.id)
+          .select(`
+            *,
+            employee:employees!schedules_employee_id_fkey (
+              id,
+              employee_id,
+              name
+            )
+          `)
+          .eq('employee_id', user.id) // UUID 사용
           .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
-          .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
-          .not('actual_start', 'is', null);
+          .lte('schedule_date', format(endDate, 'yyyy-MM-dd'));
 
         if (!isMounted) return; // 컴포넌트가 언마운트된 경우 중단
         
@@ -123,7 +893,40 @@ export default function AttendancePage() {
         } else {
           console.log('✅ 월간 기록 조회 성공:', monthlyData?.length || 0, '개');
           console.log('📊 월간 데이터:', monthlyData);
-          setMonthlyRecords(monthlyData || []);
+          
+          // 월간 데이터도 attendance 데이터와 병합
+          if (monthlyData && monthlyData.length > 0) {
+            console.log('🔄 월간 데이터를 attendance와 병합 중...');
+            
+            // 각 날짜별로 attendance 데이터 조회
+            const mergedMonthlyData = await Promise.all(
+              monthlyData.map(async (schedule) => {
+                const { data: dayAttendance } = await supabase
+                  .from('attendance')
+                  .select('*')
+                  .eq('employee_id', user.id)
+                  .eq('date', schedule.schedule_date)
+                  .single();
+                
+                if (dayAttendance) {
+                  return {
+                    ...schedule,
+                    actual_start: dayAttendance.check_in_time ? `${schedule.schedule_date}T${dayAttendance.check_in_time}` : schedule.actual_start,
+                    actual_end: dayAttendance.check_out_time ? `${schedule.schedule_date}T${dayAttendance.check_out_time}` : schedule.actual_end,
+                    status: dayAttendance.check_out_time ? 'completed' : 
+                           dayAttendance.check_in_time ? 'in-progress' : 
+                           schedule.status
+                  };
+                }
+                return schedule;
+              })
+            );
+            
+            console.log('✅ 병합된 월간 데이터:', mergedMonthlyData);
+            setMonthlyRecords(mergedMonthlyData);
+          } else {
+            setMonthlyRecords(monthlyData || []);
+          }
         }
         
         if (isMounted) {
@@ -182,20 +985,20 @@ export default function AttendancePage() {
 
   const fetchTodaySchedules = async (user: any) => {
     if (!user?.id) {
-      console.log('❌ fetchTodaySchedules: 사용자 ID 없음');
+      console.log('❌ fetchTodaySchedules: 사용자 UUID 없음');
       setTodaySchedules([]);
       return;
     }
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      console.log('📅 오늘 날짜:', today, '사용자 ID:', user.id);
+      console.log('📅 오늘 날짜:', today, '사용자 UUID:', user.id);
       
       // 단순한 쿼리로 테스트
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', user.id) // UUID 사용
         .eq('schedule_date', today);
 
       if (error) {
@@ -214,7 +1017,7 @@ export default function AttendancePage() {
 
   const fetchMonthlyRecords = async (user: any) => {
     if (!user?.id) {
-      console.log('❌ fetchMonthlyRecords: 사용자 ID 없음');
+      console.log('❌ fetchMonthlyRecords: 사용자 UUID 없음');
       setMonthlyRecords([]);
       setLoading(false);
       return;
@@ -230,7 +1033,7 @@ export default function AttendancePage() {
       const { data, error } = await supabase
         .from('schedules')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', user.id) // UUID 사용
         .gte('schedule_date', format(startDate, 'yyyy-MM-dd'))
         .lte('schedule_date', format(endDate, 'yyyy-MM-dd'))
         .not('actual_start', 'is', null);
@@ -310,6 +1113,571 @@ export default function AttendancePage() {
     }
   };
 
+  // 간단한 출근 체크
+  const handleSimpleCheckIn = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
+    try {
+      setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
+      // 한국 시간으로 현재 시간 계산
+      const now = new Date();
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+      const nowISO = koreaTime.toISOString();
+      const today = koreaTime.toISOString().split('T')[0];
+      const checkInTime = koreaTime.toISOString().split('T')[1].split('.')[0]; // HH:MM:SS 형식
+      
+      // 1. schedules 테이블에 출근 시간 기록 (스케줄이 있는 경우에만)
+      if (todaySchedules && todaySchedules.length > 0) {
+        const updates = todaySchedules.map(schedule => ({
+          id: schedule.id,
+          actual_start: nowISO,
+          status: "in_progress"
+        }));
+        
+        // 일괄 업데이트
+        for (const update of updates) {
+          const { error } = await supabase
+            .from("schedules")
+            .update(update)
+            .eq("id", update.id);
+          
+          if (error) throw error;
+        }
+        console.log('✅ schedules 테이블에 출근 시간 기록 완료');
+      } else {
+        console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
+      }
+      
+      // 2. 위치 정보 가져오기
+      let location = null;
+      try {
+        const position = await getCurrentLocation();
+        location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+        console.log('✅ 위치 정보 가져오기 성공:', location);
+      } catch (locationError) {
+        console.warn('⚠️ 위치 정보를 가져올 수 없습니다:', locationError);
+        // 위치 정보 없이도 출근 체크 가능
+        location = {
+          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
+          longitude: 127.0714828,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
+        };
+      }
+
+      // 3. attendance 테이블에 출근 기록 저장 (항상 실행)
+      const attendanceData = {
+        employee_id: currentUser.id,
+        date: today,
+        check_in_time: checkInTime,
+        status: 'present',
+        location: location
+      };
+      
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert(attendanceData, { 
+          onConflict: 'employee_id,date' 
+        });
+      
+      if (attendanceError) {
+        console.error('attendance 테이블 저장 오류:', attendanceError);
+        throw attendanceError; // attendance 저장 실패 시 오류 발생
+      } else {
+        console.log('✅ attendance 테이블에 출근 기록 저장 완료');
+      }
+      
+      setDailyAttendance(prev => ({
+        ...prev,
+        isCheckedIn: true,
+        checkInTime: nowISO
+      }));
+      
+      alert("출근 체크가 완료되었습니다!");
+      await fetchTodaySchedules(currentUser);
+      
+    } catch (error: any) {
+      console.error("출근 체크 오류:", error);
+      alert(`출근 체크에 실패했습니다: ${error.message}`);
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  // 간단한 퇴근 체크
+  const handleSimpleCheckOut = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
+    try {
+      setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
+      // 한국 시간으로 현재 시간 계산
+      const now = new Date();
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+      const nowISO = koreaTime.toISOString();
+      const today = koreaTime.toISOString().split('T')[0];
+      const checkOutTime = koreaTime.toISOString().split('T')[1].split('.')[0]; // HH:MM:SS 형식
+      
+      // 1. schedules 테이블에 퇴근 시간 기록 (스케줄이 있는 경우에만)
+      if (todaySchedules && todaySchedules.length > 0) {
+        const updates = todaySchedules.map(schedule => ({
+          id: schedule.id,
+          actual_end: nowISO,
+          status: "completed"
+        }));
+        
+        // 일괄 업데이트
+        for (const update of updates) {
+          const { error } = await supabase
+            .from("schedules")
+            .update(update)
+            .eq("id", update.id);
+          
+          if (error) throw error;
+        }
+        console.log('✅ schedules 테이블에 퇴근 시간 기록 완료');
+      } else {
+        console.log('📝 오늘 스케줄이 없어서 schedules 테이블 업데이트 건너뜀');
+      }
+      
+      // 2. 퇴근 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
+
+      // 3. attendance 테이블에 퇴근 시간 업데이트 (항상 실행)
+      const checkInTime = dailyAttendance.checkInTime;
+      if (checkInTime) {
+        const start = new Date(checkInTime);
+        const end = new Date(now);
+        const diffMs = end.getTime() - start.getTime();
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const totalHours = hours + (minutes / 60); // 소수점으로 계산
+        const overtimeHours = totalHours > 8 ? totalHours - 8 : 0;
+        
+        const attendanceUpdate = {
+          check_out_time: checkOutTime,
+          total_hours: Math.round(totalHours * 100) / 100,
+          overtime_hours: Math.round(overtimeHours * 100) / 100,
+          status: 'completed'
+        };
+        
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .update(attendanceUpdate)
+          .eq('employee_id', currentUser.id)
+          .eq('date', today);
+        
+        if (attendanceError) {
+          console.error('attendance 테이블 업데이트 오류:', attendanceError);
+          throw attendanceError; // attendance 업데이트 실패 시 오류 발생
+        } else {
+          console.log('✅ attendance 테이블에 퇴근 기록 업데이트 완료');
+        }
+        
+        const totalTime = `${hours}h ${minutes}m`;
+        
+        setDailyAttendance(prev => ({
+          ...prev,
+          isCheckedIn: false,
+          checkOutTime: now.toISOString(),
+          totalWorkTime: totalTime
+        }));
+      } else {
+        // 출근 시간이 없는 경우에도 퇴근 시간만 기록
+        const attendanceUpdate = {
+          check_out_time: checkOutTime,
+          status: 'completed'
+        };
+        
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .update(attendanceUpdate)
+          .eq('employee_id', currentUser.id)
+          .eq('date', today);
+        
+        if (attendanceError) {
+          console.error('attendance 테이블 퇴근 시간 업데이트 오류:', attendanceError);
+        } else {
+          console.log('✅ attendance 테이블에 퇴근 시간만 기록 완료');
+        }
+      }
+      
+      alert("퇴근 체크가 완료되었습니다!");
+      await fetchTodaySchedules(currentUser);
+      
+    } catch (error: any) {
+      console.error("퇴근 체크 오류:", error);
+      alert(`퇴근 체크에 실패했습니다: ${error.message}`);
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  // 중간 휴식 후 복귀 체크
+  const handleBreakReturn = async () => {
+    if (checkingIn) return; // 이미 처리 중이면 중복 실행 방지
+    
+    try {
+      setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
+      const now = new Date().toISOString();
+      
+      // 휴식 후 복귀 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
+      
+      // 최신 스케줄 데이터 가져오기
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const todayStr = koreaDate.toISOString().split('T')[0];
+      const { data: currentSchedules, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('employee_id', currentUser.id)
+        .eq('schedule_date', todayStr)
+        .order('scheduled_start', { ascending: true });
+      
+      if (scheduleError) throw scheduleError;
+      
+      // 휴식 중인 스케줄들을 다시 in_progress로 변경
+      const breakSchedules = currentSchedules?.filter(s => 
+        s.status === 'break'
+      ) || [];
+      
+      console.log(`🔄 휴식 중인 스케줄 ${breakSchedules.length}개를 in_progress로 변경...`);
+      
+      for (const schedule of breakSchedules) {
+        const { error } = await supabase
+          .from("schedules")
+          .update({
+            status: "in_progress",
+            employee_note: "휴식 후 복귀"
+          })
+          .eq("id", schedule.id);
+        
+        if (error) throw error;
+      }
+      
+      // 새로운 근무 세션 시작 (아직 시작되지 않은 스케줄들)
+      const remainingSchedules = currentSchedules?.filter(s => 
+        !s.actual_start && s.status === 'pending'
+      ) || [];
+      
+      console.log(`🔄 새로운 근무 세션 시작할 스케줄 ${remainingSchedules.length}개...`);
+      
+      for (const schedule of remainingSchedules) {
+        const { error } = await supabase
+          .from("schedules")
+          .update({
+            actual_start: now,
+            status: "in_progress"
+          })
+          .eq("id", schedule.id);
+        
+        if (error) throw error;
+      }
+      
+      // attendance 테이블에서 휴식 정보 제거
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate2 = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate2.toISOString().split('T')[0];
+      
+      // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('check_in_time, notes')
+        .eq('employee_id', currentUser.id)
+        .eq('date', today)
+        .single();
+      
+      console.log('📊 기존 attendance 데이터 (복귀):', existingAttendance);
+      
+      // 휴식 종료 시각 생성
+      const breakEndTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      
+      // 기존 notes에 휴식 종료 정보 추가
+      let newNotes = `휴식 후 복귀: ${breakEndTime}`;
+      if (existingAttendance?.notes) {
+        // 기존 휴식 기록이 있으면 추가
+        newNotes = `${existingAttendance.notes}, 휴식 후 복귀: ${breakEndTime}`;
+      }
+      
+      console.log('📝 새로운 notes (복귀):', newNotes);
+      
+      // 먼저 기존 레코드가 있는지 확인
+      const { data: existingRecord } = await supabase
+        .from('attendance')
+        .select('id')
+        .eq('employee_id', currentUser.id)
+        .eq('date', today)
+        .single();
+      
+      let attendanceError;
+      if (existingRecord) {
+        // 기존 레코드가 있으면 업데이트
+        console.log('🔄 기존 레코드 업데이트 (복귀)...');
+        const { error } = await supabase
+          .from('attendance')
+          .update({
+            notes: newNotes, // notes 컬럼에 휴식 기록 저장
+            updated_at: now
+          })
+          .eq('id', existingRecord.id);
+        attendanceError = error;
+      } else {
+        // 기존 레코드가 없으면 새로 생성
+        console.log('🆕 새 레코드 생성 (복귀)...');
+        const { error } = await supabase
+          .from('attendance')
+          .insert({
+            employee_id: currentUser.id,
+            date: today,
+            check_in_time: null,
+            check_out_time: null,
+            total_hours: null,
+            overtime_hours: 0,
+            status: 'present',
+            notes: newNotes, // notes 컬럼에 휴식 기록 저장
+            created_at: now,
+            updated_at: now
+          });
+        attendanceError = error;
+      }
+      
+      if (attendanceError) {
+        console.error('❌ attendance 테이블 휴식 정보 저장 실패 (복귀):', attendanceError);
+        alert(`휴식 복귀 정보 저장 실패: ${attendanceError.message}`);
+        throw attendanceError; // 에러를 다시 던져서 함수 중단
+      } else {
+        console.log('✅ attendance 테이블 휴식 복귀 정보 저장 성공');
+        
+        // 저장 성공 후 실제 데이터 확인
+        const { data: verifyData } = await supabase
+          .from('attendance')
+          .select('notes')
+          .eq('employee_id', currentUser.id)
+          .eq('date', today)
+          .single();
+        
+        console.log('🔍 저장 후 확인 (복귀):', verifyData);
+      }
+      
+      setDailyAttendance(prev => ({
+        ...prev,
+        hasBreak: false,
+        isCheckedIn: true,
+        breakStartTime: null, // 휴식 시작 시간 초기화
+        breakRecords: [...prev.breakRecords, { type: 'end', time: breakEndTime, timestamp: now }]
+      }));
+      
+      await fetchTodaySchedules(currentUser);
+      
+    } catch (error: any) {
+      console.error("복귀 체크 오류:", error);
+      alert(`복귀 체크에 실패했습니다: ${error.message}`);
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  // 휴식 시작 함수 추가
+  const handleBreakStart = async () => {
+    console.log('🚀 handleBreakStart 함수 시작');
+    
+    if (checkingIn) {
+      console.log('⚠️ 이미 처리 중이므로 중복 실행 방지');
+      return; // 이미 처리 중이면 중복 실행 방지
+    }
+    
+    try {
+      console.log('✅ 휴식 시작 처리 시작');
+      setCheckingIn(true);
+      setError(null); // 에러 상태 초기화
+      
+      const now = new Date().toISOString();
+      console.log('⏰ 현재 시간:', now);
+      
+      // 휴식 시작 시에는 위치 정보 저장하지 않음 (출근 시 한 번만 저장)
+      
+      // 최신 스케줄 데이터 가져오기
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate3 = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const todayStr = koreaDate3.toISOString().split('T')[0];
+      const { data: currentSchedules, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('*')
+        .eq('employee_id', currentUser.id)
+        .eq('schedule_date', todayStr)
+        .order('scheduled_start', { ascending: true });
+      
+      if (scheduleError) throw scheduleError;
+      
+      // 현재 진행 중인 스케줄들을 휴식 상태로 변경
+      const inProgressSchedules = currentSchedules?.filter(s => 
+        s.status === 'in_progress'
+      ) || [];
+      
+      console.log(`🔄 진행 중인 스케줄 ${inProgressSchedules.length}개를 break로 변경...`);
+      
+      for (const schedule of inProgressSchedules) {
+        const { error } = await supabase
+          .from('schedules')
+          .update({
+            status: 'break',
+            employee_note: '휴식 시작'
+          })
+          .eq('id', schedule.id);
+        
+        if (error) throw error;
+      }
+      
+      // attendance 테이블에 휴식 정보 저장 (스케줄이 없어도 관리자 페이지에서 감지할 수 있도록)
+      // 한국 시간 기준으로 오늘 날짜 계산
+      const koreaDate4 = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaDate4.toISOString().split('T')[0];
+      
+      console.log('🔄 attendance 테이블에 휴식 정보 저장 시작...', {
+        employee_id: currentUser.id,
+        date: today,
+        now
+      });
+      
+      // 기존 출근 시간을 유지하기 위해 먼저 현재 attendance 데이터를 조회
+      console.log('🔍 기존 attendance 데이터 조회 중...', {
+        employee_id: currentUser.id,
+        date: today
+      });
+      
+      const { data: existingAttendance, error: existingError } = await supabase
+        .from('attendance')
+        .select('check_in_time, notes')
+        .eq('employee_id', currentUser.id)
+        .eq('date', today)
+        .single();
+      
+      if (existingError && existingError.code !== 'PGRST116') {
+        console.error('❌ 기존 attendance 데이터 조회 실패:', existingError);
+      }
+      
+      console.log('📊 기존 attendance 데이터:', existingAttendance);
+      console.log('📊 기존 attendance 조회 에러:', existingError);
+      
+      // 휴식 시작 시각 생성
+      const breakStartTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      
+      // 기존 notes에 휴식 시작 정보 추가 (기존 휴식 기록이 있으면 유지)
+      let newNotes = `휴식 시작: ${breakStartTime}`;
+      if (existingAttendance?.notes) {
+        // 기존 휴식 기록이 있으면 추가
+        newNotes = `${existingAttendance.notes}, 휴식 시작: ${breakStartTime}`;
+      }
+      
+      console.log('📝 새로운 notes:', newNotes);
+      
+      // 먼저 기존 레코드가 있는지 확인
+      console.log('🔍 기존 레코드 존재 여부 확인 중...');
+      const { data: existingRecord, error: recordCheckError } = await supabase
+        .from('attendance')
+        .select('id')
+        .eq('employee_id', currentUser.id)
+        .eq('date', today)
+        .single();
+      
+      console.log('📊 기존 레코드 확인 결과:', {
+        existingRecord,
+        recordCheckError
+      });
+      
+      let attendanceError;
+      if (existingRecord) {
+        // 기존 레코드가 있으면 업데이트
+        console.log('🔄 기존 레코드 업데이트 시작...', {
+          recordId: existingRecord.id,
+          newNotes
+        });
+        
+        const { error, data } = await supabase
+          .from('attendance')
+          .update({
+            notes: newNotes, // notes 컬럼에 휴식 기록 저장
+            updated_at: now
+          })
+          .eq('id', existingRecord.id)
+          .select();
+        
+        attendanceError = error;
+        console.log('📊 업데이트 결과:', { error, data });
+      } else {
+        // 기존 레코드가 없으면 새로 생성
+        console.log('🆕 새 레코드 생성 시작...', {
+          employee_id: currentUser.id,
+          date: today,
+          notes: newNotes
+        });
+        
+        const { error, data } = await supabase
+          .from('attendance')
+          .insert({
+            employee_id: currentUser.id,
+            date: today,
+            check_in_time: null,
+            check_out_time: null,
+            total_hours: null,
+            overtime_hours: 0,
+            status: 'present',
+            notes: newNotes, // notes 컬럼에 휴식 기록 저장
+            created_at: now,
+            updated_at: now
+          })
+          .select();
+        
+        attendanceError = error;
+        console.log('📊 생성 결과:', { error, data });
+      }
+      
+      if (attendanceError) {
+        console.error('❌ attendance 테이블 휴식 정보 저장 실패:', attendanceError);
+        alert(`휴식 정보 저장 실패: ${attendanceError.message}`);
+        throw attendanceError; // 에러를 다시 던져서 함수 중단
+      } else {
+        console.log('✅ attendance 테이블 휴식 정보 저장 성공');
+        
+        // 저장 성공 후 실제 데이터 확인
+        const { data: verifyData } = await supabase
+          .from('attendance')
+          .select('notes')
+          .eq('employee_id', currentUser.id)
+          .eq('date', today)
+          .single();
+        
+        console.log('🔍 저장 후 확인:', verifyData);
+      }
+      
+      setDailyAttendance(prev => ({
+        ...prev,
+        isCheckedIn: true, // 휴식 중이어도 출근한 상태 유지
+        hasBreak: true,
+        breakStartTime: now, // 휴식 시작 시간 저장
+        breakRecords: [...prev.breakRecords, { type: 'start', time: breakStartTime, timestamp: now }]
+      }));
+      
+      await fetchTodaySchedules(currentUser);
+      
+    } catch (error: any) {
+      console.error('휴식 시작 오류:', error);
+      alert(`휴식 시작에 실패했습니다: ${error.message}`);
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   const handleCheckOut = async (scheduleId: string) => {
     setCheckingIn(true);
 
@@ -370,21 +1738,57 @@ export default function AttendancePage() {
 
   const formatTime = (timeString: string) => {
     try {
-      if (!timeString) return '--:--';
-      return format(new Date(timeString), 'HH:mm', { locale: ko });
+      if (!timeString) {
+        console.warn('formatTime: timeString이 비어있음');
+        return '시간 없음';
+      }
+      
+      // ISO 문자열이 아닌 경우 처리
+      let date: Date;
+      if (timeString.includes('T') || timeString.includes('Z')) {
+        // ISO 형식 (예: "2025-09-03T09:00:00Z")
+        date = new Date(timeString);
+      } else if (timeString.includes(':')) {
+        // 시간 형식 (예: "09:00:00" 또는 "09:00")
+        const today = new Date();
+        const [hours, minutes, seconds] = timeString.split(':');
+        date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                       parseInt(hours), parseInt(minutes), seconds ? parseInt(seconds) : 0);
+      } else {
+        // 기타 형식
+        date = new Date(timeString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        console.error('formatTime: 유효하지 않은 날짜/시간:', timeString);
+        return '시간 오류';
+      }
+      
+      return format(date, 'HH:mm', { locale: ko });
     } catch (error) {
-      console.error('시간 포맷 오류:', error);
-      return '--:--';
+      console.error('formatTime 오류:', error, 'timeString:', timeString);
+      return '시간 오류';
     }
   };
 
   const formatDateTime = (dateTimeString: string) => {
     try {
-      if (!dateTimeString) return '--/-- --:--';
-      return format(new Date(dateTimeString), 'MM/dd HH:mm', { locale: ko });
+      if (!dateTimeString) {
+        console.warn('formatDateTime: dateTimeString이 비어있음');
+        return '날짜/시간 없음';
+      }
+      
+      const date = new Date(dateTimeString);
+      
+      if (isNaN(date.getTime())) {
+        console.error('formatDateTime: 유효하지 않은 날짜/시간:', dateTimeString);
+        return '날짜/시간 오류';
+      }
+      
+      return format(date, 'MM/dd HH:mm', { locale: ko });
     } catch (error) {
-      console.error('날짜시간 포맷 오류:', error);
-      return '--/-- --:--';
+      console.error('formatDateTime 오류:', error, 'dateTimeString:', dateTimeString);
+      return '날짜/시간 오류';
     }
   };
 
@@ -393,29 +1797,335 @@ export default function AttendancePage() {
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-2 sm:p-4">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center">
-            <Clock className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2 text-green-600" />
-            출근 관리
-          </h1>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="뒤로가기"
+            >
+              <span className="text-2xl">←</span>
+            </button>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2 text-green-600" />
+              출근 관리
+            </h1>
+          </div>
           
           <div className="text-right">
-            <p className="text-xs text-gray-600">현재 시간</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {format(currentTime, 'yyyy년 MM월 dd일 HH:mm:ss', { locale: ko })}
-            </p>
+            <div className="text-sm font-semibold text-gray-900">
+              <div>{format(currentTime, 'yyyy년 MM월 dd일', { locale: ko })}</div>
+              <div>{format(currentTime, 'HH:mm:ss', { locale: ko })}</div>
+            </div>
           </div>
         </div>
 
-        {/* 디버깅 정보 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs">
-          <p><strong>디버깅 정보:</strong></p>
-          <p>사용자 ID: {currentUser?.employee_id || '없음'}</p>
-          <p>사용자 이름: {currentUser?.name || '없음'}</p>
-          <p>오늘 스케줄 수: {todaySchedules.length}개</p>
-          <p>월간 기록 수: {monthlyRecords.length}개</p>
-          <p>로딩 상태: {loading ? '로딩 중' : '완료'}</p>
+        {/* 간단한 사용자 정보 - 업계 표준 스타일 */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <User className="h-8 w-8 text-blue-600" />
+              <div>
+                <p className="text-lg font-semibold text-gray-900">{currentUser?.name || '사용자'}</p>
+                <p className="text-sm text-gray-500">{currentUser?.employee_id || 'ID'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">
+                {(() => {
+                  // attendance 데이터가 있으면 실시간 근무 시간 사용
+                  if (dailyAttendance.totalWorkTime) {
+                    return dailyAttendance.totalWorkTime;
+                  }
+                  
+                  if (todaySchedules.length === 0) return '0h 0m';
+                  
+                  // 스케줄된 시간 계산 (각 스케줄의 시간 합계 - 점심시간 자동 제외)
+                  const totalScheduledHours = todaySchedules.reduce((total, schedule) => {
+                    if (schedule.scheduled_start && schedule.scheduled_end) {
+                      const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+                      const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+                      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                      return total + hours;
+                    }
+                    return total;
+                  }, 0);
+                  
+                  const hours = Math.floor(totalScheduledHours);
+                  const minutes = Math.round((totalScheduledHours - hours) * 60);
+                  return `${hours}h ${minutes}m`;
+                })()}
+              </div>
+              <div className="text-sm text-gray-500">오늘 근무 시간</div>
+            </div>
+          </div>
         </div>
 
+        {/* 일일 근무 요약 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">📊 오늘 근무 요약</h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                {(() => {
+                  if (todaySchedules.length === 0) return '0h 0m';
+                  
+                  // 스케줄된 시간 계산 (각 스케줄의 시간 합계 - 점심시간 자동 제외)
+                  const totalScheduledHours = todaySchedules.reduce((total, schedule) => {
+                    if (schedule.scheduled_start && schedule.scheduled_end) {
+                      const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+                      const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+                      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                      return total + hours;
+                    }
+                    return total;
+                  }, 0);
+                  
+                  const hours = Math.floor(totalScheduledHours);
+                  const minutes = Math.round((totalScheduledHours - hours) * 60);
+                  return `${hours}h ${minutes}m`;
+                })()}
+              </div>
+              <div className="text-sm text-blue-700">스케줄 시간</div>
+            </div>
+            
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {(() => {
+                  // attendance 데이터가 있으면 실시간 근무 시간 사용
+                  if (dailyAttendance.totalWorkTime) {
+                    return dailyAttendance.totalWorkTime;
+                  }
+                  
+                  // 스케줄이 없어도 실제 근무시간이 있으면 표시
+                  if (todaySchedules.length === 0) {
+                    if (dailyAttendance.totalWorkTime) {
+                      return dailyAttendance.totalWorkTime;
+                    }
+                    return '0h 0m';
+                  }
+                  
+                  const totalHours = todaySchedules
+                    .filter(s => s.actual_start && s.actual_end)
+                    .reduce((total, s) => {
+                      const start = new Date(s.actual_start!);
+                      const end = new Date(s.actual_end!);
+                      return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                    }, 0);
+                  
+                  if (totalHours === 0) return '0h 0m';
+                  
+                  const hours = Math.floor(totalHours);
+                  const minutes = Math.round((totalHours - hours) * 60);
+                  return `${hours}h ${minutes}m`;
+                })()}
+              </div>
+              <div className="text-sm text-green-700">실제 근무 시간</div>
+            </div>
+            
+            <div className="relative group">
+              <div className="text-2xl font-bold text-purple-600">
+                {(() => {
+                  // attendance 데이터가 있으면 실시간 근무 시간 사용
+                  if (dailyAttendance.totalWorkTime) {
+                    const [hours, minutes] = dailyAttendance.totalWorkTime.split('h ');
+                    const actualHours = parseInt(hours) + (parseInt(minutes.replace('m', '')) / 60);
+                    
+                    // 스케줄된 시간이 있으면 차이 계산, 없으면 0
+                    const scheduledHours = todaySchedules.length > 0 ? todaySchedules.reduce((total, schedule) => {
+                      if (schedule.scheduled_start && schedule.scheduled_end) {
+                        const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+                        const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+                        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                        return total + hours;
+                      }
+                      return total;
+                    }, 0) : 0;
+                    
+                    const difference = actualHours - scheduledHours;
+                    
+                    if (difference === 0) return '0h 0m';
+                    
+                    const diffHours = Math.floor(Math.abs(difference));
+                    const diffMinutes = Math.round((Math.abs(difference) - diffHours) * 60);
+                    const sign = difference > 0 ? '+' : '-';
+                    return `${sign}${diffHours}h ${diffMinutes}m`;
+                  }
+                  
+                  // 스케줄이 없어도 실제 근무시간이 있으면 표시
+                  if (todaySchedules.length === 0) {
+                    if (dailyAttendance.totalWorkTime) {
+                      return dailyAttendance.totalWorkTime;
+                    }
+                    return '0h 0m';
+                  }
+                  
+                  // 스케줄된 시간 계산 (각 스케줄의 시간 합계 - 점심시간 자동 제외)
+                  const scheduledHours = todaySchedules.reduce((total, schedule) => {
+                    if (schedule.scheduled_start && schedule.scheduled_end) {
+                      const start = new Date(`2000-01-01T${schedule.scheduled_start}`);
+                      const end = new Date(`2000-01-01T${schedule.scheduled_end}`);
+                      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                      return total + hours;
+                    }
+                    return total;
+                  }, 0);
+                  
+                  // 실제 근무 시간 계산
+                  const actualHours = todaySchedules
+                    .filter(s => s.actual_start && s.actual_end)
+                    .reduce((total, s) => {
+                      const start = new Date(s.actual_start!);
+                      const end = new Date(s.actual_end!);
+                      return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                    }, 0);
+                  
+                  const difference = actualHours - scheduledHours;
+                  
+                  if (difference === 0) return '0h 0m';
+                  
+                  const diffHours = Math.floor(Math.abs(difference));
+                  const diffMinutes = Math.round((Math.abs(difference) - diffHours) * 60);
+                  const sign = difference > 0 ? '+' : '-';
+                  
+                  return `${sign}${diffHours}h ${diffMinutes}m`;
+                })()}
+              </div>
+              <div className="text-sm text-purple-700">시간 차이</div>
+              
+              {/* 툴팁 */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10">
+                <div className="text-center">
+                  <div className="font-medium mb-1">실제 근무 시간 - 스케줄 시간</div>
+                  <div className="text-gray-300">
+                    +값: 초과 근무<br/>
+                    -값: 부족 근무
+                  </div>
+                </div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+              </div>
+            </div>
+            
+
+          </div>
+        </div>
+
+
+        {/* 간단한 출근 관리 - 업계 표준 스타일 */}
+        <div className="bg-white rounded-lg border p-6 shadow-sm mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">📱 간단한 출근 관리</h3>
+          
+          <div className="space-y-6">
+            {/* 현재 상태 표시 */}
+            <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border-2 border-blue-200">
+              <div className="text-2xl font-bold text-gray-800 mb-2">
+                {dailyAttendance.hasBreak ? "☕ 휴식 중" :
+                 dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime ? "🟢 근무 중" : 
+                 dailyAttendance.checkOutTime ? "✅ 근무 완료" : "⏰ 출근 전"}
+              </div>
+              
+              {dailyAttendance.checkInTime && (
+                <div className="text-lg text-gray-600">
+                  출근: {(() => {
+                    try {
+                      const date = new Date(dailyAttendance.checkInTime);
+                      // dailyAttendance.checkInTime이 이미 한국 시간이므로 추가 변환 불필요
+                      return format(date, "MM/dd HH:mm", { locale: ko });
+                    } catch (error) {
+                      console.error('출근 시간 변환 오류:', error);
+                      return dailyAttendance.checkInTime;
+                    }
+                  })()}
+                </div>
+              )}
+              
+              {dailyAttendance.checkOutTime && (
+                <div className="text-lg text-gray-600">
+                  퇴근: {(() => {
+                    try {
+                      const date = new Date(dailyAttendance.checkOutTime);
+                      return format(date, "MM/dd HH:mm", { locale: ko });
+                    } catch (error) {
+                      console.error('퇴근 시간 변환 오류:', error);
+                      return dailyAttendance.checkOutTime;
+                    }
+                  })()}
+                </div>
+              )}
+              
+              {dailyAttendance.hasBreak && (
+                <div className="text-sm text-orange-600 mt-1">
+                  ☕ 휴식 중 (휴식 시작: {(() => {
+                    try {
+                      const date = new Date(dailyAttendance.breakStartTime || '');
+                      return format(date, "HH:mm", { locale: ko });
+                    } catch (error) {
+                      return '--:--';
+                    }
+                  })()})
+                </div>
+              )}
+            </div>
+            
+            {/* 간단한 버튼들 */}
+            <div className="grid grid-cols-1 gap-4">
+              {!dailyAttendance.isCheckedIn && !dailyAttendance.hasBreak && (
+                <button
+                  onClick={handleSimpleCheckIn}
+                  disabled={checkingIn}
+                  className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
+                >
+                  <CheckCircle className="h-6 w-6 mr-3 inline" />
+                  {checkingIn ? "처리중..." : "출근 체크"}
+                </button>
+              )}
+              
+              {dailyAttendance.isCheckedIn && !dailyAttendance.checkOutTime && !dailyAttendance.hasBreak && (
+                <>
+                  <button
+                    onClick={handleBreakStart}
+                    disabled={checkingIn}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    <Coffee className="h-6 w-6 mr-3 inline" />
+                    {checkingIn ? "처리중..." : "휴식 시작"}
+                  </button>
+                  
+                  <button
+                    onClick={handleSimpleCheckOut}
+                    disabled={checkingIn}
+                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    <XCircle className="h-6 w-6 mr-3 inline" />
+                    {checkingIn ? "처리중..." : "퇴근 체크"}
+                  </button>
+                </>
+              )}
+
+              {dailyAttendance.hasBreak && (
+                <>
+                  <button
+                    onClick={handleBreakReturn}
+                    disabled={checkingIn}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    <Coffee className="h-6 w-6 mr-3 inline" />
+                    {checkingIn ? "처리중..." : "휴식 후 복귀"}
+                  </button>
+                  
+                  <button
+                    onClick={handleSimpleCheckOut}
+                    disabled={checkingIn}
+                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-xl text-xl font-bold disabled:opacity-50 w-full shadow-lg transform hover:scale-105 transition-all"
+                  >
+                    <XCircle className="h-6 w-6 mr-3 inline" />
+                    {checkingIn ? "처리중..." : "퇴근 체크"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
@@ -423,90 +2133,183 @@ export default function AttendancePage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* 오늘의 스케줄 */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-green-600" />
-                오늘의 근무 스케줄
+            {/* 간단한 스케줄 요약 - 업계 표준 스타일 */}
+            <div className="bg-white rounded-lg border p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 text-center flex items-center justify-center">
+                <Calendar className="h-6 w-6 mr-2 text-blue-600" />
+                오늘의 근무 요약
               </h2>
               
               {todaySchedules.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <Clock className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                  <p>오늘 등록된 근무 스케줄이 없습니다.</p>
+                  <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg">오늘 등록된 근무 스케줄이 없습니다.</p>
+                  
+                  {/* 휴식 기록 표시 */}
+                  {(dailyAttendance.hasBreak || dailyAttendance.breakRecords.length > 0) && (
+                    <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center justify-center text-orange-600 mb-3">
+                        <Coffee className="h-5 w-5 mr-2" />
+                        <span className="font-semibold">휴식 기록</span>
+                      </div>
+                      
+                      {/* 현재 휴식 중인 경우 */}
+                      {dailyAttendance.hasBreak && (
+                        <div className="text-sm text-orange-600 mb-2">
+                          🔴 휴식 중 (시작: {(() => {
+                            try {
+                              const date = new Date(dailyAttendance.breakStartTime || '');
+                              return format(date, "HH:mm", { locale: ko });
+                            } catch (error) {
+                              return '--:--';
+                            }
+                          })()})
+                        </div>
+                      )}
+                      
+                      {/* 휴식 기록 목록 */}
+                      {dailyAttendance.breakRecords.length > 0 && (
+                        <div className="space-y-1">
+                          {dailyAttendance.breakRecords.map((record, index) => (
+                            <div key={index} className="text-xs text-orange-500">
+                              {record.type === 'start' ? '🟡' : '🟢'} 
+                              {record.type === 'start' ? '휴식 시작' : '휴식 종료'}: {record.time}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {todaySchedules.map((schedule) => {
-                    const status = getAttendanceStatus(schedule);
-                    const canCheckIn = !schedule.actual_start;
-                    const canCheckOut = schedule.actual_start && !schedule.actual_end;
+                <div className="space-y-4">
+                  {(() => {
+                    const groupedSchedules = groupSchedulesByTimeRange(todaySchedules);
                     
-                    return (
-                      <div key={schedule.id} className="bg-white rounded-lg border p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <span className="text-sm font-medium text-gray-900">
-                                {formatTime(schedule.scheduled_start)} - {formatTime(schedule.scheduled_end)}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                                {status.text}
-                              </span>
-                            </div>
+                    return groupedSchedules.map((group, groupIndex) => {
+                      const totalSlots = group.schedules.length;
+                      const completedSlots = group.schedules.filter(s => s.actual_start && s.actual_end).length;
+                      const inProgressSlots = group.schedules.filter(s => s.actual_start && !s.actual_end).length;
+                      
+                      const getStatusIcon = (status: string) => {
+                        switch (status) {
+                          case 'completed': return '✅';
+                          case 'in-progress': return '🟢';
+                          case 'pending': return '⏰';
+                          default: return '❓';
+                        }
+                      };
+                      
+                      const getStatusText = (status: string) => {
+                        switch (status) {
+                          case 'completed': return '완료';
+                          case 'in-progress': return '근무중';
+                          case 'pending': return '대기중';
+                          default: return '알 수 없음';
+                        }
+                      };
+                      
+                      return (
+                                              <div key={groupIndex} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-4">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {formatTime(group.startTime)} - {formatTime(group.endTime)}
+                            </span>
+                            <span className="text-3xl">
+                              {getStatusIcon(group.status)}
+                            </span>
+                            <span className="px-4 py-2 bg-gradient-to-r from-green-50 to-blue-50 rounded-full text-sm font-semibold text-gray-700 border border-green-200">
+                              {getStatusText(group.status)}
+                            </span>
+                          </div>
                             
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
-                              {schedule.actual_start && (
-                                <div className="flex items-center">
-                                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                                  출근: {formatDateTime(schedule.actual_start)}
+                            <div className="text-right">
+                              <div className="text-center">
+                                <div className="text-xs text-gray-500 mb-1">실제 근무</div>
+                                <div className="text-sm font-medium text-gray-700">
+                                  {group.actualStart ? formatTime(group.actualStart) : '--:--'} → {group.actualEnd ? formatTime(group.actualEnd) : '--:--'}
                                 </div>
-                              )}
-                              {schedule.actual_end && (
-                                <div className="flex items-center">
-                                  <XCircle className="h-3 w-3 mr-1 text-red-500" />
-                                  퇴근: {formatDateTime(schedule.actual_end)}
-                                </div>
-                              )}
+                              </div>
                             </div>
                           </div>
                           
-                          <div className="flex space-x-2">
-                            {canCheckIn && (
-                              <button
-                                onClick={() => handleCheckIn(schedule.id)}
-                                disabled={checkingIn}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                {checkingIn ? '처리중...' : '출근'}
-                              </button>
-                            )}
-                            
-                            {canCheckOut && (
-                              <button
-                                onClick={() => handleCheckOut(schedule.id)}
-                                disabled={checkingIn}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                {checkingIn ? '처리중...' : '퇴근'}
-                              </button>
-                            )}
+                          {/* 고급스러운 진행률 바 */}
+                          <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500 ease-out"
+                              style={{ width: `${(completedSlots / totalSlots) * 100}%` }}
+                            ></div>
                           </div>
+                          
+
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </div>
 
-            {/* 이번 달 출근 기록 */}
+            {/* 휴식 기록 섹션 - 스케줄이 있어도 표시 */}
+            {(dailyAttendance.hasBreak || dailyAttendance.breakRecords.length > 0) && (
+              <div className="bg-white rounded-lg border p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 text-center flex items-center justify-center">
+                  <Coffee className="h-6 w-6 mr-2 text-orange-600" />
+                  휴식 기록
+                </h2>
+                
+                <div className="space-y-3">
+                  {/* 현재 휴식 중인 경우 */}
+                  {dailyAttendance.hasBreak && (
+                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center text-orange-600">
+                        <Coffee className="h-5 w-5 mr-2" />
+                        <span className="font-semibold">현재 휴식 중</span>
+                      </div>
+                      <div className="text-sm text-orange-500 mt-1">
+                        휴식 시작: {(() => {
+                          try {
+                            const date = new Date(dailyAttendance.breakStartTime || '');
+                            return format(date, "HH:mm", { locale: ko });
+                          } catch (error) {
+                            return '--:--';
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 휴식 기록 목록 */}
+                  {dailyAttendance.breakRecords.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-gray-700">오늘의 휴식 기록</h3>
+                      {dailyAttendance.breakRecords.map((record, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                          <div className="flex items-center">
+                            <span className="text-lg mr-2">
+                              {record.type === 'start' ? '🟡' : '🟢'}
+                            </span>
+                            <span className="text-sm font-medium">
+                              {record.type === 'start' ? '휴식 시작' : '휴식 종료'}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-600 font-mono">
+                            {record.time}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 이번 달 출근 요약 */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
                 <User className="h-5 w-5 mr-2 text-blue-600" />
-                이번 달 출근 기록
+                이번 달 출근 요약
               </h2>
               
               {monthlyRecords.length === 0 ? (
@@ -515,43 +2318,93 @@ export default function AttendancePage() {
                   <p>이번 달 출근 기록이 없습니다.</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {monthlyRecords.map((record) => {
-                    const status = getAttendanceStatus(record);
-                    
-                    return (
-                      <div key={record.id} className="bg-white rounded-lg border p-3 text-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <span className="font-medium text-gray-900">
-                              {format(new Date(record.schedule_date), 'MM/dd (EEE)', { locale: ko })}
-                            </span>
-                            <span className="text-gray-600">
-                              {formatTime(record.scheduled_start)} - {formatTime(record.scheduled_end)}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
-                              {status.text}
-                            </span>
-                          </div>
-                          
-                          <div className="text-xs text-gray-500">
-                            {record.actual_start && record.actual_end && (
-                              <span>
-                                {formatTime(record.actual_start)} - {formatTime(record.actual_end)}
-                              </span>
-                            )}
-                          </div>
+                <div className="space-y-3">
+                  {/* 월간 통계 */}
+                  <div className="bg-white rounded-lg border p-4">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold text-green-600">
+                          {formatHoursToHm(computeMonthlyActualHours(monthlyRecords))}
                         </div>
-                        
-                        {record.check_in_location && (
-                          <div className="mt-1 flex items-center text-xs text-gray-500">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            위치 정보 기록됨
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-600">완료된 시간</div>
                       </div>
-                    );
-                  })}
+                      <div>
+                        <div className="text-2xl font-bold text-orange-600">
+                          {(() => {
+                            // 스케줄된 시간의 총합 (각 날짜별 스케줄 시간 누적)
+                            const totalScheduledHours = monthlyRecords.reduce((total, r) => {
+                              if (r.scheduled_start && r.scheduled_end) {
+                                const start = new Date(`2000-01-01T${r.scheduled_start}`);
+                                const end = new Date(`2000-01-01T${r.scheduled_end}`);
+                                const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                                console.log(`월간 스케줄: ${r.schedule_date} ${r.scheduled_start}-${r.scheduled_end} = ${hours}시간`);
+                                return total + hours;
+                              }
+                              return total;
+                            }, 0);
+                            console.log(`총 스케줄 시간: ${totalScheduledHours}시간`);
+                            return formatHoursToHm(totalScheduledHours);
+                          })()}
+                        </div>
+                        <div className="text-sm text-gray-600">스케줄 시간</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 일별 요약 (최근 7일) */}
+                  <div className="bg-white rounded-lg border p-4">
+                    <h3 className="text-md font-medium text-gray-700 mb-3">최근 7일 요약</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {(() => {
+                        const recentRecords = monthlyRecords
+                          .filter(r => {
+                            const recordDate = new Date(r.schedule_date);
+                            const today = new Date();
+                            const diffTime = Math.abs(today.getTime() - recordDate.getTime());
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            return diffDays <= 7;
+                          })
+                          .sort((a, b) => new Date(b.schedule_date).getTime() - new Date(a.schedule_date).getTime());
+                        
+                        const dailySummary = recentRecords.reduce((acc, record) => {
+                          const date = record.schedule_date;
+                          if (!acc[date]) {
+                            acc[date] = {
+                              date,
+                              totalSchedules: 0,
+                              completedSchedules: 0,
+                              totalHours: 0,
+                              scheduledHours: 0
+                            };
+                          }
+                          acc[date].totalSchedules++;
+                          
+                          // 스케줄된 시간 계산 (각 날짜별로 누적)
+                          if (record.scheduled_start && record.scheduled_end) {
+                            const start = new Date(`2000-01-01T${record.scheduled_start}`);
+                            const end = new Date(`2000-01-01T${record.scheduled_end}`);
+                            acc[date].scheduledHours += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                          }
+                          
+                          // 실제 근무시간은 날짜별로 중복 제거하여 계산
+                          acc[date].totalHours = computeDailyActualHours(recentRecords, date);
+                          return acc;
+                        }, {} as Record<string, { date: string; totalSchedules: number; completedSchedules: number; totalHours: number; scheduledHours: number }>);
+                        
+                        return Object.values(dailySummary).map((summary) => (
+                          <div key={summary.date} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                            <span className="font-medium text-gray-900">
+                              {format(new Date(summary.date), 'MM/dd (EEE)', { locale: ko })}
+                            </span>
+                            <div className="flex items-center space-x-4 text-gray-600">
+                              <span className="text-xs text-gray-500">스케줄: {formatHoursToHm(summary.scheduledHours)}</span>
+                              <span className="text-xs text-gray-500">실제: {formatHoursToHm(summary.totalHours)}</span>
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
