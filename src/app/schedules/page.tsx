@@ -265,6 +265,10 @@ export default function SchedulesPage() {
     console.log('🔍 getSchedulesForDateAndTimeMonthly 호출:', { dateStr, timeStr });
     
     return schedules.filter(schedule => {
+      // 내 스케줄만 보기 필터 적용
+      if (showOnlyMySchedules && schedule.employee_id !== currentUser?.id) {
+        return false;
+      }
       const scheduleDate = schedule.schedule_date;
       const startTime = schedule.scheduled_start;
       const endTime = schedule.scheduled_end;
@@ -315,6 +319,10 @@ export default function SchedulesPage() {
     console.log('🔍 getSchedulesForDateAndTime 호출:', { dateStr, timeStr });
     
     return schedules.filter(schedule => {
+      // 내 스케줄만 보기 필터 적용
+      if (showOnlyMySchedules && schedule.employee_id !== currentUser?.id) {
+        return false;
+      }
       const scheduleDate = schedule.schedule_date;
       const startTime = schedule.scheduled_start;
       const endTime = schedule.scheduled_end;
@@ -915,6 +923,24 @@ export default function SchedulesPage() {
             </button>
           </div>
         </div>
+
+        {/* 내 스케줄만 보기 필터 (주간/월간 화면용) */}
+        {viewMode !== 'list' && (
+          <div className="flex justify-center mb-2 sm:mb-3">
+            <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+              <input
+                type="checkbox"
+                id="showOnlyMySchedulesMain"
+                checked={showOnlyMySchedules}
+                onChange={(e) => setShowOnlyMySchedules(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="showOnlyMySchedulesMain" className="text-sm font-medium text-gray-700">
+                내 스케줄만 보기
+              </label>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-4 sm:py-6">
