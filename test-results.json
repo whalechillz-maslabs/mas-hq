@@ -114,21 +114,21 @@
   },
   "suites": [
     {
-      "title": "dom-structure-debug.spec.ts",
-      "file": "dom-structure-debug.spec.ts",
+      "title": "rendering-state-debug.spec.ts",
+      "file": "rendering-state-debug.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "DOM 구조 디버그",
-          "file": "dom-structure-debug.spec.ts",
+          "title": "렌더링 상태 디버그",
+          "file": "rendering-state-debug.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "테이블 렌더링 문제 분석",
-              "ok": true,
+              "title": "로딩 및 렌더링 상태 확인",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -141,48 +141,120 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5555,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 10750,
+                      "error": {
+                        "message": "Error: page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': ':has-text(\"해당 조건에 맞는 스케줄이 없습니다\")' is not a valid selector.\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+                        "stack": "Error: page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': ':has-text(\"해당 조건에 맞는 스케줄이 없습니다\")' is not a valid selector.\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/rendering-state-debug.spec.ts:37:35",
+                        "location": {
+                          "file": "eval at evaluate (:291:30), <anonymous>",
+                          "column": 34,
+                          "line": 3
+                        }
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "eval at evaluate (:291:30), <anonymous>",
+                            "column": 34,
+                            "line": 3
+                          },
+                          "message": "Error: page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': ':has-text(\"해당 조건에 맞는 스케줄이 없습니다\")' is not a valid selector.\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/rendering-state-debug.spec.ts:37:35"
+                        }
+                      ],
                       "stdout": [
                         {
-                          "text": "🔍 DOM 구조 분석 시작\n"
+                          "text": "🎨 렌더링 상태 디버그 시작\n"
                         },
                         {
-                          "text": "📊 DOM 분석 결과:\n"
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
                         },
                         {
-                          "text": "   테이블 개수: 0\n"
+                          "text": "📝 🔄 loadSchedules 시작 {selectedDate: 2025-09-20, selectedEmployee: all, filterStatus: no-attendance}\n"
                         },
                         {
-                          "text": "   tbody 개수: 0\n"
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
                         },
                         {
-                          "text": "   로딩 요소 개수: 0\n"
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
                         },
                         {
-                          "text": "   스케줄 관련 텍스트: []\n"
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
                         },
                         {
-                          "text": "🏁 DOM 구조 분석 완료\n"
+                          "text": "✅ 페이지 로딩 완료\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
+                        },
+                        {
+                          "text": "📝 🔄 loadSchedules 시작 {selectedDate: 2025-09-19, selectedEmployee: all, filterStatus: no-attendance}\n"
+                        },
+                        {
+                          "text": "📅 날짜 변경 완료\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
+                        },
+                        {
+                          "text": "📝 🔄 loadSchedules 시작 {selectedDate: 2025-09-19, selectedEmployee: all, filterStatus: no-attendance}\n"
+                        },
+                        {
+                          "text": "🔍 조회 버튼 클릭 완료\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}\n"
+                        },
+                        {
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}\n"
                         }
                       ],
                       "stderr": [
                         {
-                          "text": "(node:22793) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                          "text": "(node:23361) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                         }
                       ],
                       "retry": 0,
-                      "startTime": "2025-09-20T08:27:15.937Z",
+                      "startTime": "2025-09-20T08:28:45.775Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "eval at evaluate (:291:30), <anonymous>",
+                        "column": 34,
+                        "line": 3
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "f3691b53c253ac7d5305-e6007e3d1891d01729e0",
-              "file": "dom-structure-debug.spec.ts",
+              "id": "0cea87e45932e8f85a70-54ee499d4ad8d51aba22",
+              "file": "rendering-state-debug.spec.ts",
               "line": 4,
               "column": 7
             }
@@ -193,11 +265,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-20T08:27:15.585Z",
-    "duration": 7372.133,
-    "expected": 1,
+    "startTime": "2025-09-20T08:28:45.427Z",
+    "duration": 12548.419,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

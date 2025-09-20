@@ -131,23 +131,22 @@ export default function InsertAttendanceEnhancedPage() {
       if (error) throw error;
 
       // 필터 적용
+      console.log('🔄 필터링 시작', { filterStatus, dataCount: data?.length });
       let filteredData = data || [];
       
-      if (filterStatus === 'no-attendance') {
-        filteredData = filteredData.filter(schedule => {
-          try {
-            return !schedule.actual_start || 
-                   schedule.actual_start === null || 
-                   schedule.actual_start === '' ||
-                   schedule.actual_start === 'null';
-          } catch (error) {
-            console.warn('미출근 필터 처리 중 오류:', error, schedule);
-            return true; // 에러 시 미출근으로 간주
-          }
-        });
-      } else if (filterStatus === 'partial-attendance') {
-        filteredData = filteredData.filter(schedule => {
-          try {
+      try {
+        if (filterStatus === 'no-attendance') {
+          console.log('📋 미출근 필터 적용');
+          filteredData = filteredData.filter(schedule => {
+            const result = !schedule.actual_start || 
+                          schedule.actual_start === null || 
+                          schedule.actual_start === '' ||
+                          schedule.actual_start === 'null';
+            return result;
+          });
+        } else if (filterStatus === 'partial-attendance') {
+          console.log('📋 부분 출근 필터 적용');
+          filteredData = filteredData.filter(schedule => {
             const hasStart = schedule.actual_start && 
                            schedule.actual_start !== null && 
                            schedule.actual_start !== '' &&
@@ -157,14 +156,10 @@ export default function InsertAttendanceEnhancedPage() {
                          schedule.actual_end === '' ||
                          schedule.actual_end === 'null';
             return hasStart && noEnd;
-          } catch (error) {
-            console.warn('부분 출근 필터 처리 중 오류:', error, schedule);
-            return false;
-          }
-        });
-      } else if (filterStatus === 'completed') {
-        filteredData = filteredData.filter(schedule => {
-          try {
+          });
+        } else if (filterStatus === 'completed') {
+          console.log('📋 완료 필터 적용');
+          filteredData = filteredData.filter(schedule => {
             const hasStart = schedule.actual_start && 
                            schedule.actual_start !== null && 
                            schedule.actual_start !== '' &&
@@ -174,15 +169,18 @@ export default function InsertAttendanceEnhancedPage() {
                           schedule.actual_end !== '' &&
                           schedule.actual_end !== 'null';
             return hasStart && hasEnd;
-          } catch (error) {
-            console.warn('완료 필터 처리 중 오류:', error, schedule);
-            return false;
-          }
-        });
+          });
+        }
+        console.log('✅ 필터링 완료', { originalCount: data?.length, filteredCount: filteredData.length });
+      } catch (filterError) {
+        console.error('❌ 필터링 중 오류:', filterError);
+        filteredData = data || []; // 필터링 실패 시 원본 데이터 사용
       }
 
       console.log('✅ 필터링된 스케줄 데이터', { count: filteredData.length });
+      console.log('📝 setSchedules 호출 전');
       setSchedules(filteredData);
+      console.log('📝 setSchedules 호출 후');
     } catch (error) {
       console.error('스케줄 로드 오류:', error);
       console.error('에러 상세:', error);
