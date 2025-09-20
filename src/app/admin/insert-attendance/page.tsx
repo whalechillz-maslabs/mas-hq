@@ -210,22 +210,18 @@ export default function InsertAttendanceEnhancedPage() {
       const normalizedStart = normalizeTime(scheduledStart);
       const normalizedEnd = normalizeTime(scheduledEnd);
       
-      // 정시 출근 (스케줄 시작 시간)
-      const checkInTime = new Date(`${selectedDate}T${normalizedStart}`).toISOString();
+      // 정시 출근 (스케줄 시작 시간) - ISO 형식
+      const checkInDateTime = new Date(`${selectedDate}T${normalizedStart}`).toISOString();
       
-      // 정시 퇴근 (스케줄 종료 시간)
-      const checkOutTime = new Date(`${selectedDate}T${normalizedEnd}`).toISOString();
-      
-      // 휴식 시간 계산 (12:00-13:00 기본값, 스케줄에 따라 조정)
-      const breakStart = new Date(`${selectedDate}T12:00:00`).toISOString();
-      const breakEnd = new Date(`${selectedDate}T13:00:00`).toISOString();
+      // 정시 퇴근 (스케줄 종료 시간) - ISO 형식
+      const checkOutDateTime = new Date(`${selectedDate}T${normalizedEnd}`).toISOString();
 
-      // 1. schedules 테이블 업데이트
+      // 1. schedules 테이블 업데이트 (ISO 형식 사용)
       const { error: scheduleError } = await supabase
         .from('schedules')
         .update({
-          actual_start: checkInTime,
-          actual_end: checkOutTime,
+          actual_start: checkInDateTime,
+          actual_end: checkOutDateTime,
           status: 'completed',
           employee_note: '정시 출퇴근/휴식 자동 체크',
           updated_at: new Date().toISOString()
