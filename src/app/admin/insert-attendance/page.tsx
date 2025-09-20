@@ -109,60 +109,54 @@ export default function InsertAttendanceEnhancedPage() {
   };
 
   const loadSchedules = async () => {
-    console.log('🔄 loadSchedules 시작', { selectedDate, selectedEmployee, filterStatus });
+    console.log('🔄 loadSchedules 시작');
     setLoading(true);
     
-    try {
-      let query = supabase
-        .from('schedules')
-        .select(`
-          *,
-          employee:employees!schedules_employee_id_fkey(name, employee_id)
-        `)
-        .eq('schedule_date', selectedDate)
-        .in('status', ['approved', 'pending', 'completed', 'in_progress']);
-
-      if (selectedEmployee !== 'all') {
-        query = query.eq('employee_id', selectedEmployee);
-      }
-
-      const { data, error } = await query;
-      console.log('📊 스케줄 쿼리 결과', { data: data?.length, error });
-
-      if (error) {
-        console.error('❌ Supabase 쿼리 에러:', error);
-        setSchedules([]);
-        setLoading(false);
-        return;
-      }
-
-      // 간단한 필터링
-      let filteredData = data || [];
-      console.log('🔄 필터링 시작', { filterStatus, dataCount: filteredData.length });
-      
-      if (filterStatus === 'no-attendance') {
-        filteredData = filteredData.filter(schedule => !schedule.actual_start);
-      } else if (filterStatus === 'partial-attendance') {
-        filteredData = filteredData.filter(schedule => 
-          schedule.actual_start && !schedule.actual_end
-        );
-      } else if (filterStatus === 'completed') {
-        filteredData = filteredData.filter(schedule => 
-          schedule.actual_start && schedule.actual_end
-        );
-      }
-
-      console.log('✅ 필터링 완료', { originalCount: data?.length, filteredCount: filteredData.length });
-      console.log('📝 setSchedules 호출');
-      setSchedules(filteredData);
-      
-    } catch (error) {
-      console.error('❌ loadSchedules 에러:', error);
-      setSchedules([]);
-    }
+    // 강제로 loading을 false로 설정하는 타이머 (최대 10초)
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ 타임아웃: 강제로 loading false 설정');
+      setLoading(false);
+    }, 10000);
     
-    console.log('🏁 loadSchedules 완료 - Loading false로 설정');
+    const { data, error } = await supabase
+      .from('schedules')
+      .select(`
+        *,
+        employee:employees!schedules_employee_id_fkey(name, employee_id)
+      `)
+      .eq('schedule_date', selectedDate)
+      .in('status', ['approved', 'pending', 'completed', 'in_progress']);
+
+    console.log('📊 쿼리 완료', { data: data?.length, error });
+    
+    clearTimeout(timeoutId);
+    
+    if (error) {
+      console.error('❌ 에러:', error);
+      setSchedules([]);
+      setLoading(false);
+      return;
+    }
+
+    // 직원 필터
+    let filteredData = data || [];
+    if (selectedEmployee !== 'all') {
+      filteredData = filteredData.filter(s => s.employee_id === selectedEmployee);
+    }
+
+    // 상태 필터
+    if (filterStatus === 'no-attendance') {
+      filteredData = filteredData.filter(s => !s.actual_start);
+    } else if (filterStatus === 'partial-attendance') {
+      filteredData = filteredData.filter(s => s.actual_start && !s.actual_end);
+    } else if (filterStatus === 'completed') {
+      filteredData = filteredData.filter(s => s.actual_start && s.actual_end);
+    }
+
+    console.log('✅ 최종 결과', { count: filteredData.length });
+    setSchedules(filteredData);
     setLoading(false);
+    console.log('🏁 완료');
   };
 
   const loadAttendanceRecords = async () => {

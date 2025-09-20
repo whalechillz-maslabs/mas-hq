@@ -1,6 +1,6 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="10.682936999999999">
-<testsuite name="rendering-state-debug.spec.ts" timestamp="2025-09-20T08:29:53.638Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="9.476" errors="0">
-<testcase name="렌더링 상태 디버그 › 로딩 및 렌더링 상태 확인" classname="rendering-state-debug.spec.ts" time="9.476">
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="12.808286">
+<testsuite name="rendering-state-debug.spec.ts" timestamp="2025-09-20T08:31:10.055Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="11.544" errors="0">
+<testcase name="렌더링 상태 디버그 › 로딩 및 렌더링 상태 확인" classname="rendering-state-debug.spec.ts" time="11.544">
 <failure message="rendering-state-debug.spec.ts:4:7 로딩 및 렌더링 상태 확인" type="FAILURE">
 <![CDATA[  [chromium-stable] › rendering-state-debug.spec.ts:4:7 › 렌더링 상태 디버그 › 로딩 및 렌더링 상태 확인 ──────────────
 
@@ -52,7 +52,7 @@
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:23765) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:24214) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>
