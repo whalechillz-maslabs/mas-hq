@@ -413,7 +413,7 @@ export default function SchedulesPage() {
     const isPassed = isTimePassed(scheduleDate, { time: schedule.scheduled_start, label: '', isLunch: false });
     const userRole = currentUser?.role?.name;
     
-    // 권한 체크
+    // 권한 체크 
     if (userRole === 'admin') {
       // 관리자는 모든 스케줄 수정 가능
     } else if (userRole === 'manager') {
@@ -1185,10 +1185,13 @@ export default function SchedulesPage() {
                                   ? 'bg-green-100 text-green-800' 
                                     : schedule.status === 'pending'
                                     ? 'bg-yellow-100 text-yellow-800'
+                                    : schedule.status === 'completed'
+                                    ? 'bg-blue-100 text-blue-800'
                                     : 'bg-red-100 text-red-800'
                                 }`}>
                                   {schedule.status === 'approved' ? '승인' : 
-                                   schedule.status === 'pending' ? '대기' : '취소'}
+                                   schedule.status === 'pending' ? '대기' : 
+                                   schedule.status === 'completed' ? '완료' : '취소'}
                                 </div>
                                 {/* 수정/삭제 버튼 (본인 스케줄만) */}
                                 {schedule.employee_id === currentUser?.id && (
