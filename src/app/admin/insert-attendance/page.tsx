@@ -190,8 +190,9 @@ export default function InsertAttendanceEnhancedPage() {
       // 에러 발생 시 사용자에게 알림
       alert('스케줄을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
     } finally {
-      console.log('🏁 loadSchedules 완료');
+      console.log('🏁 loadSchedules 완료', { schedulesCount: filteredData?.length });
       setLoading(false);
+      console.log('⚡ Loading 상태를 false로 설정');
     }
   };
 
@@ -1023,6 +1024,10 @@ export default function InsertAttendanceEnhancedPage() {
             </div>
           </div>
 
+          {(() => {
+            console.log('🎨 렌더링 상태', { loading, schedulesLength: schedules.length });
+            return null;
+          })()}
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>

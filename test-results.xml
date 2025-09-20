@@ -1,34 +1,18 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="11.752792000000001">
-<testsuite name="attendance-detailed-debug.spec.ts" timestamp="2025-09-20T08:23:42.615Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="9.81" errors="0">
-<testcase name="출근 관리 페이지 상세 디버그 › 상세 디버그 및 에러 분석" classname="attendance-detailed-debug.spec.ts" time="9.81">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="7.372133">
+<testsuite name="dom-structure-debug.spec.ts" timestamp="2025-09-20T08:27:15.658Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="5.555" errors="0">
+<testcase name="DOM 구조 디버그 › 테이블 렌더링 문제 분석" classname="dom-structure-debug.spec.ts" time="5.555">
 <system-out>
-<![CDATA[🔍 상세 디버그 시작
-🌐 페이지 로딩 중...
-✅ 페이지 로딩 완료
-⚛️ React 루트 요소 존재: false
-🔍 조회 버튼 클릭
-❌ 조회 버튼 클릭 실패: Error: locator.isVisible: Error: strict mode violation: locator(':has-text("데이터가 없습니다"), :has-text("스케줄이 없습니다")') resolved to 7 elements:
-    1) <html lang="ko">…</html> aka locator('html')
-    2) <body class="__variable_188709 __variable_9a8899 antialiased">…</body> aka locator('body')
-    3) <div class="min-h-screen bg-gray-50 p-4">…</div> aka locator('div').filter({ hasText: '출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001' }).first()
-    4) <div class="max-w-7xl mx-auto">…</div> aka getByText('출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001')
-    5) <div class="bg-white rounded-lg shadow-sm border">…</div> aka getByText('스케줄 목록전체 해제총 0개해당 조건에 맞는 스케줄이 없습니다')
-    6) <div class="p-8 text-center text-gray-500">…</div> aka locator('div').filter({ hasText: /^해당 조건에 맞는 스케줄이 없습니다\.$/ })
-    7) <p>해당 조건에 맞는 스케줄이 없습니다.</p> aka getByText('해당 조건에 맞는 스케줄이 없습니다')
-
-Call log:
-[2m    - checking visibility of locator(':has-text("데이터가 없습니다"), :has-text("스케줄이 없습니다")')[22m
-
-
-📊 디버그 요약:
-   - 콘솔 메시지 수: 0
-   - 실패한 네트워크 요청 수: 0
-
-🏁 상세 디버그 완료
+<![CDATA[🔍 DOM 구조 분석 시작
+📊 DOM 분석 결과:
+   테이블 개수: 0
+   tbody 개수: 0
+   로딩 요소 개수: 0
+   스케줄 관련 텍스트: []
+🏁 DOM 구조 분석 완료
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:21393) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:22793) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>

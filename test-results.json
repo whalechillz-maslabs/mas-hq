@@ -114,20 +114,20 @@
   },
   "suites": [
     {
-      "title": "attendance-detailed-debug.spec.ts",
-      "file": "attendance-detailed-debug.spec.ts",
+      "title": "dom-structure-debug.spec.ts",
+      "file": "dom-structure-debug.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "출근 관리 페이지 상세 디버그",
-          "file": "attendance-detailed-debug.spec.ts",
+          "title": "DOM 구조 디버그",
+          "file": "dom-structure-debug.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "상세 디버그 및 에러 분석",
+              "title": "테이블 렌더링 문제 분석",
               "ok": true,
               "tags": [],
               "tests": [
@@ -142,47 +142,38 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9810,
+                      "duration": 5555,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "🔍 상세 디버그 시작\n"
+                          "text": "🔍 DOM 구조 분석 시작\n"
                         },
                         {
-                          "text": "🌐 페이지 로딩 중...\n"
+                          "text": "📊 DOM 분석 결과:\n"
                         },
                         {
-                          "text": "✅ 페이지 로딩 완료\n"
+                          "text": "   테이블 개수: 0\n"
                         },
                         {
-                          "text": "⚛️ React 루트 요소 존재: false\n"
+                          "text": "   tbody 개수: 0\n"
                         },
                         {
-                          "text": "🔍 조회 버튼 클릭\n"
+                          "text": "   로딩 요소 개수: 0\n"
                         },
                         {
-                          "text": "❌ 조회 버튼 클릭 실패: Error: locator.isVisible: Error: strict mode violation: locator(':has-text(\"데이터가 없습니다\"), :has-text(\"스케줄이 없습니다\")') resolved to 7 elements:\n    1) <html lang=\"ko\">…</html> aka locator('html')\n    2) <body class=\"__variable_188709 __variable_9a8899 antialiased\">…</body> aka locator('body')\n    3) <div class=\"min-h-screen bg-gray-50 p-4\">…</div> aka locator('div').filter({ hasText: '출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001' }).first()\n    4) <div class=\"max-w-7xl mx-auto\">…</div> aka getByText('출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001')\n    5) <div class=\"bg-white rounded-lg shadow-sm border\">…</div> aka getByText('스케줄 목록전체 해제총 0개해당 조건에 맞는 스케줄이 없습니다')\n    6) <div class=\"p-8 text-center text-gray-500\">…</div> aka locator('div').filter({ hasText: /^해당 조건에 맞는 스케줄이 없습니다\\.$/ })\n    7) <p>해당 조건에 맞는 스케줄이 없습니다.</p> aka getByText('해당 조건에 맞는 스케줄이 없습니다')\n\nCall log:\n\u001b[2m    - checking visibility of locator(':has-text(\"데이터가 없습니다\"), :has-text(\"스케줄이 없습니다\")')\u001b[22m\n\n"
+                          "text": "   스케줄 관련 텍스트: []\n"
                         },
                         {
-                          "text": "\n📊 디버그 요약:\n"
-                        },
-                        {
-                          "text": "   - 콘솔 메시지 수: 0\n"
-                        },
-                        {
-                          "text": "   - 실패한 네트워크 요청 수: 0\n"
-                        },
-                        {
-                          "text": "\n🏁 상세 디버그 완료\n"
+                          "text": "🏁 DOM 구조 분석 완료\n"
                         }
                       ],
                       "stderr": [
                         {
-                          "text": "(node:21393) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                          "text": "(node:22793) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                         }
                       ],
                       "retry": 0,
-                      "startTime": "2025-09-20T08:23:42.899Z",
+                      "startTime": "2025-09-20T08:27:15.937Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -190,8 +181,8 @@
                   "status": "expected"
                 }
               ],
-              "id": "3b9ff6b7e1ee2c98528f-e3d198cfa8876f6fec8c",
-              "file": "attendance-detailed-debug.spec.ts",
+              "id": "f3691b53c253ac7d5305-e6007e3d1891d01729e0",
+              "file": "dom-structure-debug.spec.ts",
               "line": 4,
               "column": 7
             }
@@ -202,8 +193,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-20T08:23:42.550Z",
-    "duration": 11752.792000000001,
+    "startTime": "2025-09-20T08:27:15.585Z",
+    "duration": 7372.133,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,
