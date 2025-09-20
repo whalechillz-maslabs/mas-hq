@@ -25,6 +25,7 @@ interface Schedule {
   status: string;
   actual_start: string | null;
   actual_end: string | null;
+  employee_note?: string;
   employee: {
     name: string;
     employee_id: string;
@@ -42,6 +43,28 @@ interface AttendanceRecord {
   check_in_location: any;
   check_out_location: any;
 }
+
+// 스케줄 관리와 동일한 시간 정규화 함수
+const normalizeTime = (timeStr: string) => {
+  if (!timeStr) return '';
+  
+  // ISO 형식인 경우 시간 부분만 추출
+  if (timeStr.includes('T')) {
+    const timePart = timeStr.split('T')[1];
+    if (timePart) {
+      timeStr = timePart; // HH:mm:ss.sssZ -> HH:mm:ss 부분만
+    }
+  }
+  
+  // "09:00:00" -> "09:00", "09:00" -> "09:00"
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+  if (match) {
+    const hours = match[1].padStart(2, '0');
+    const minutes = match[2];
+    return `${hours}:${minutes}`;
+  }
+  return '';
+};
 
 export default function InsertAttendanceEnhancedPage() {
   const router = useRouter();
@@ -211,14 +234,14 @@ export default function InsertAttendanceEnhancedPage() {
 
       if (scheduleError) throw scheduleError;
 
-      // 2. attendance 테이블 업데이트 또는 생성
+      // 2. attendance 테이블 업데이트 또는 생성 (TIME 타입 필드에는 HH:mm:ss 형식)
       const attendanceData = {
         employee_id: schedule.employee_id,
         date: selectedDate,
-        check_in_time: checkInTime,
-        check_out_time: checkOutTime,
-        break_start_time: breakStart,
-        break_end_time: breakEnd,
+        check_in_time: normalizedStart,  // HH:mm:ss 형식
+        check_out_time: normalizedEnd,   // HH:mm:ss 형식
+        break_start_time: '12:00:00',    // HH:mm:ss 형식
+        break_end_time: '13:00:00',      // HH:mm:ss 형식
         updated_at: new Date().toISOString()
       };
 
@@ -328,26 +351,14 @@ export default function InsertAttendanceEnhancedPage() {
       record.employee_id === schedule.employee_id && record.date === selectedDate
     );
 
-    // 시간 형식 변환 함수 (타임존 변환 방지)
-    const extractTimeFromISO = (isoString: string) => {
-      if (!isoString) return '';
-      try {
-        if (isoString.includes('T')) {
-          const timePart = isoString.split('T')[1];
-          return timePart ? timePart.substring(0, 5) : ''; // HH:mm 형식
-        }
-        return isoString.substring(0, 5); // HH:mm 형식
-      } catch (error) {
-        return '';
-      }
-    };
+    // 공통 normalizeTime 함수 사용
 
     setEditingSchedule(schedule);
     setEditForm({
-      checkInTime: extractTimeFromISO(schedule.actual_start || ''),
-      checkOutTime: extractTimeFromISO(schedule.actual_end || ''),
-      breakStartTime: attendance?.break_start_time ? attendance.break_start_time.substring(0, 5) : '',
-      breakEndTime: attendance?.break_end_time ? attendance.break_end_time.substring(0, 5) : '',
+      checkInTime: normalizeTime(schedule.actual_start || ''),
+      checkOutTime: normalizeTime(schedule.actual_end || ''),
+      breakStartTime: attendance?.break_start_time ? normalizeTime(attendance.break_start_time) : '',
+      breakEndTime: attendance?.break_end_time ? normalizeTime(attendance.break_end_time) : '',
       note: schedule.employee_note || ''
     });
     setShowEditModal(true);
@@ -1167,33 +1178,13 @@ export default function InsertAttendanceEnhancedPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {schedule.actual_start ? 
-                                  (() => {
-                                    try {
-                                      if (schedule.actual_start.includes('T')) {
-                                        const timePart = schedule.actual_start.split('T')[1];
-                                        return timePart ? timePart.substring(0, 8) : schedule.actual_start;
-                                      }
-                                      return schedule.actual_start.substring(0, 8);
-                                    } catch (error) {
-                                      return schedule.actual_start;
-                                    }
-                                  })() : 
+                                  normalizeTime(schedule.actual_start) : 
                                   <span className="text-gray-400">-</span>
                                 }
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {schedule.actual_end ? 
-                                  (() => {
-                                    try {
-                                      if (schedule.actual_end.includes('T')) {
-                                        const timePart = schedule.actual_end.split('T')[1];
-                                        return timePart ? timePart.substring(0, 8) : schedule.actual_end;
-                                      }
-                                      return schedule.actual_end.substring(0, 8);
-                                    } catch (error) {
-                                      return schedule.actual_end;
-                                    }
-                                  })() : 
+                                  normalizeTime(schedule.actual_end) : 
                                   <span className="text-gray-400">-</span>
                                 }
                               </td>
