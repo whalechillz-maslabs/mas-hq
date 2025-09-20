@@ -132,21 +132,34 @@ export default function InsertAttendanceEnhancedPage() {
       let filteredData = data || [];
       
       if (filterStatus === 'no-attendance') {
-        filteredData = filteredData.filter(schedule => !schedule.actual_start);
+        filteredData = filteredData.filter(schedule => 
+          !schedule.actual_start || schedule.actual_start === null || schedule.actual_start === ''
+        );
       } else if (filterStatus === 'partial-attendance') {
         filteredData = filteredData.filter(schedule => 
-          schedule.actual_start && !schedule.actual_end
+          schedule.actual_start && 
+          schedule.actual_start !== null && 
+          schedule.actual_start !== '' &&
+          (!schedule.actual_end || schedule.actual_end === null || schedule.actual_end === '')
         );
       } else if (filterStatus === 'completed') {
         filteredData = filteredData.filter(schedule => 
-          schedule.actual_start && schedule.actual_end
+          schedule.actual_start && 
+          schedule.actual_start !== null && 
+          schedule.actual_start !== '' &&
+          schedule.actual_end && 
+          schedule.actual_end !== null && 
+          schedule.actual_end !== ''
         );
       }
 
       setSchedules(filteredData);
     } catch (error) {
       console.error('스케줄 로드 오류:', error);
+      console.error('에러 상세:', error);
       setSchedules([]);
+      // 에러 발생 시 사용자에게 알림
+      alert('스케줄을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
     } finally {
       setLoading(false);
     }
