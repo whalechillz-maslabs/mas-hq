@@ -1811,15 +1811,6 @@ export default function AttendancePage() {
               출근 관리
             </h1>
           </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => router.push("/schedules")}
-              className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-1"
-            >
-              <Calendar className="h-4 w-4" />
-              <span>스케줄 관리</span>
-            </button>
-          </div>
           
           <div className="text-right">
             <div className="text-sm font-semibold text-gray-900">
