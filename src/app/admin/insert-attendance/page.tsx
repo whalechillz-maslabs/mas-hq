@@ -739,12 +739,23 @@ export default function InsertAttendanceEnhancedPage() {
                           {schedule.actual_start ? 
                             (() => {
                               try {
-                                const date = new Date(schedule.actual_start);
-                                return isNaN(date.getTime()) ? 
-                                  schedule.actual_start.split('T')[1]?.substring(0, 5) || schedule.actual_start :
-                                  format(date, 'HH:mm');
+                                // ISO 형식인 경우 (2025-09-19T08:57:37.073+00:00)
+                                if (schedule.actual_start.includes('T')) {
+                                  const date = new Date(schedule.actual_start);
+                                  return isNaN(date.getTime()) ? 
+                                    schedule.actual_start.split('T')[1]?.substring(0, 8) || schedule.actual_start :
+                                    format(date, 'HH:mm:ss');
+                                }
+                                // HH:mm:ss 형식인 경우 (08:57:37)
+                                else if (schedule.actual_start.includes(':')) {
+                                  return schedule.actual_start.substring(0, 8);
+                                }
+                                // 기타 형식
+                                else {
+                                  return schedule.actual_start;
+                                }
                               } catch (error) {
-                                return schedule.actual_start.split('T')[1]?.substring(0, 5) || schedule.actual_start;
+                                return schedule.actual_start;
                               }
                             })() : 
                             <span className="text-gray-400">-</span>
@@ -754,12 +765,23 @@ export default function InsertAttendanceEnhancedPage() {
                           {schedule.actual_end ? 
                             (() => {
                               try {
-                                const date = new Date(schedule.actual_end);
-                                return isNaN(date.getTime()) ? 
-                                  schedule.actual_end.split('T')[1]?.substring(0, 5) || schedule.actual_end :
-                                  format(date, 'HH:mm');
+                                // ISO 형식인 경우 (2025-09-19T16:00:55.576+00:00)
+                                if (schedule.actual_end.includes('T')) {
+                                  const date = new Date(schedule.actual_end);
+                                  return isNaN(date.getTime()) ? 
+                                    schedule.actual_end.split('T')[1]?.substring(0, 8) || schedule.actual_end :
+                                    format(date, 'HH:mm:ss');
+                                }
+                                // HH:mm:ss 형식인 경우 (16:00:55)
+                                else if (schedule.actual_end.includes(':')) {
+                                  return schedule.actual_end.substring(0, 8);
+                                }
+                                // 기타 형식
+                                else {
+                                  return schedule.actual_end;
+                                }
                               } catch (error) {
-                                return schedule.actual_end.split('T')[1]?.substring(0, 5) || schedule.actual_end;
+                                return schedule.actual_end;
                               }
                             })() : 
                             <span className="text-gray-400">-</span>
