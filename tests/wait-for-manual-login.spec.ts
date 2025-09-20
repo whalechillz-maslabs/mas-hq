@@ -24,7 +24,7 @@ test.describe('수동 로그인 대기 테스트', () => {
     console.log('   4. 로그인이 완료되면 이 창에서 아무 키나 누르세요');
     
     // 사용자가 로그인을 완료할 때까지 대기 (5분)
-z    await page.waitForTimeout(600000); // 10분 대기
+    await page.waitForTimeout(600000); // 10분 대기
     
     console.log('✅ 로그인 대기 완료');
     

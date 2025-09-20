@@ -109,6 +109,7 @@ export default function InsertAttendanceEnhancedPage() {
   };
 
   const loadSchedules = async () => {
+    console.log('🔄 loadSchedules 시작', { selectedDate, selectedEmployee, filterStatus });
     setLoading(true);
     try {
       let query = supabase
@@ -125,6 +126,7 @@ export default function InsertAttendanceEnhancedPage() {
       }
 
       const { data, error } = await query;
+      console.log('📊 스케줄 쿼리 결과', { data: data?.length, error });
 
       if (error) throw error;
 
@@ -179,6 +181,7 @@ export default function InsertAttendanceEnhancedPage() {
         });
       }
 
+      console.log('✅ 필터링된 스케줄 데이터', { count: filteredData.length });
       setSchedules(filteredData);
     } catch (error) {
       console.error('스케줄 로드 오류:', error);
@@ -187,6 +190,7 @@ export default function InsertAttendanceEnhancedPage() {
       // 에러 발생 시 사용자에게 알림
       alert('스케줄을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
     } finally {
+      console.log('🏁 loadSchedules 완료');
       setLoading(false);
     }
   };

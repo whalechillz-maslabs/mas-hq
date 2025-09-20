@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 4
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "reporter": [
@@ -45,7 +45,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 4
+          "actualWorkers": 1
         },
         "id": "chromium-nightly",
         "name": "chromium-nightly",
@@ -61,7 +61,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 4
+          "actualWorkers": 1
         },
         "id": "chromium-stable",
         "name": "chromium-stable",
@@ -77,7 +77,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 4
+          "actualWorkers": 1
         },
         "id": "firefox",
         "name": "firefox",
@@ -93,7 +93,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 4
+          "actualWorkers": 1
         },
         "id": "webkit",
         "name": "webkit",
@@ -114,21 +114,21 @@
   },
   "suites": [
     {
-      "title": "chromium-nightly-performance.spec.ts",
-      "file": "chromium-nightly-performance.spec.ts",
+      "title": "attendance-detailed-debug.spec.ts",
+      "file": "attendance-detailed-debug.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Chromium Nightly Performance Tests",
-          "file": "chromium-nightly-performance.spec.ts",
+          "title": "출근 관리 페이지 상세 디버그",
+          "file": "attendance-detailed-debug.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "should load page with optimal performance",
-              "ok": false,
+              "title": "상세 디버그 및 에러 분석",
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -141,301 +141,58 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 15749,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/MASLABS/\u001b[39m\nReceived string:  \u001b[31m\"Login – Vercel\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 10000ms\u001b[22m\n\u001b[2m    14 × unexpected value \"Login – Vercel\"\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/MASLABS/\u001b[39m\nReceived string:  \u001b[31m\"Login – Vercel\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 10000ms\u001b[22m\n\u001b[2m    14 × unexpected value \"Login – Vercel\"\u001b[22m\n\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:30:24",
-                        "location": {
-                          "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                          "column": 24,
-                          "line": 30
-                        },
-                        "snippet": "  28 |     \n  29 |     // 페이지 제목 확인\n> 30 |     await expect(page).toHaveTitle(/MASLABS/);\n     |                        ^\n  31 |   });\n  32 |\n  33 |   test('should measure memory usage', async ({ page }) => {"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                            "column": 24,
-                            "line": 30
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/MASLABS/\u001b[39m\nReceived string:  \u001b[31m\"Login – Vercel\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 10000ms\u001b[22m\n\u001b[2m    14 × unexpected value \"Login – Vercel\"\u001b[22m\n\n\n  28 |     \n  29 |     // 페이지 제목 확인\n> 30 |     await expect(page).toHaveTitle(/MASLABS/);\n     |                        ^\n  31 |   });\n  32 |\n  33 |   test('should measure memory usage', async ({ page }) => {\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:30:24"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 9810,
+                      "errors": [],
                       "stdout": [
                         {
-                          "text": "Page load time: 3403ms\n"
+                          "text": "🔍 상세 디버그 시작\n"
+                        },
+                        {
+                          "text": "🌐 페이지 로딩 중...\n"
+                        },
+                        {
+                          "text": "✅ 페이지 로딩 완료\n"
+                        },
+                        {
+                          "text": "⚛️ React 루트 요소 존재: false\n"
+                        },
+                        {
+                          "text": "🔍 조회 버튼 클릭\n"
+                        },
+                        {
+                          "text": "❌ 조회 버튼 클릭 실패: Error: locator.isVisible: Error: strict mode violation: locator(':has-text(\"데이터가 없습니다\"), :has-text(\"스케줄이 없습니다\")') resolved to 7 elements:\n    1) <html lang=\"ko\">…</html> aka locator('html')\n    2) <body class=\"__variable_188709 __variable_9a8899 antialiased\">…</body> aka locator('body')\n    3) <div class=\"min-h-screen bg-gray-50 p-4\">…</div> aka locator('div').filter({ hasText: '출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001' }).first()\n    4) <div class=\"max-w-7xl mx-auto\">…</div> aka getByText('출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001')\n    5) <div class=\"bg-white rounded-lg shadow-sm border\">…</div> aka getByText('스케줄 목록전체 해제총 0개해당 조건에 맞는 스케줄이 없습니다')\n    6) <div class=\"p-8 text-center text-gray-500\">…</div> aka locator('div').filter({ hasText: /^해당 조건에 맞는 스케줄이 없습니다\\.$/ })\n    7) <p>해당 조건에 맞는 스케줄이 없습니다.</p> aka getByText('해당 조건에 맞는 스케줄이 없습니다')\n\nCall log:\n\u001b[2m    - checking visibility of locator(':has-text(\"데이터가 없습니다\"), :has-text(\"스케줄이 없습니다\")')\u001b[22m\n\n"
+                        },
+                        {
+                          "text": "\n📊 디버그 요약:\n"
+                        },
+                        {
+                          "text": "   - 콘솔 메시지 수: 0\n"
+                        },
+                        {
+                          "text": "   - 실패한 네트워크 요청 수: 0\n"
+                        },
+                        {
+                          "text": "\n🏁 상세 디버그 완료\n"
                         }
                       ],
                       "stderr": [
                         {
-                          "text": "(node:81484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                          "text": "(node:21393) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                         }
                       ],
                       "retry": 0,
-                      "startTime": "2025-09-18T17:09:06.074Z",
+                      "startTime": "2025-09-20T08:23:42.899Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                        "column": 24,
-                        "line": 30
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
-              "id": "d2cf69537877daeee6c0-6915cab06c752522c747",
-              "file": "chromium-nightly-performance.spec.ts",
-              "line": 18,
-              "column": 7
-            },
-            {
-              "title": "should measure memory usage",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-stable",
-                  "projectName": "chromium-stable",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "failed",
-                      "duration": 5093,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:49:28",
-                        "location": {
-                          "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                          "column": 28,
-                          "line": 49
-                        },
-                        "snippet": "  47 |     \n  48 |     // 메모리 사용량이 허용 범위 내인지 확인\n> 49 |     expect(usedJSHeapSize).toBeLessThan(100 * 1024 * 1024); // 100MB 이하\n     |                            ^\n  50 |   });\n  51 |\n  52 |   test('should handle navigation efficiently', async ({ page }) => {"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                            "column": 28,
-                            "line": 49
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m\n\n  47 |     \n  48 |     // 메모리 사용량이 허용 범위 내인지 확인\n> 49 |     expect(usedJSHeapSize).toBeLessThan(100 * 1024 * 1024); // 100MB 이하\n     |                            ^\n  50 |   });\n  51 |\n  52 |   test('should handle navigation efficiently', async ({ page }) => {\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:49:28"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "Memory Metrics: { usedJSHeapSize: \u001b[32m'NaN MB'\u001b[39m, totalJSHeapSize: \u001b[32m'NaN MB'\u001b[39m }\n"
-                        }
-                      ],
-                      "stderr": [
-                        {
-                          "text": "(node:81481) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
-                        }
-                      ],
-                      "retry": 0,
-                      "startTime": "2025-09-18T17:09:06.072Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                        "column": 28,
-                        "line": 49
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "d2cf69537877daeee6c0-3e4e3e9753f9c5cbb024",
-              "file": "chromium-nightly-performance.spec.ts",
-              "line": 33,
-              "column": 7
-            },
-            {
-              "title": "should handle navigation efficiently",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-stable",
-                  "projectName": "chromium-stable",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "failed",
-                      "duration": 14414,
-                      "error": {
-                        "message": "TimeoutError: page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=대시보드')\u001b[22m\n",
-                        "stack": "TimeoutError: page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=대시보드')\u001b[22m\n\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:59:16",
-                        "location": {
-                          "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                          "column": 16,
-                          "line": 59
-                        },
-                        "snippet": "  57 |     \n  58 |     // 대시보드로 이동\n> 59 |     await page.click('text=대시보드');\n     |                ^\n  60 |     await page.waitForLoadState('networkidle');\n  61 |     \n  62 |     const navigationTime = Date.now() - navigationStart;"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                            "column": 16,
-                            "line": 59
-                          },
-                          "message": "TimeoutError: page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=대시보드')\u001b[22m\n\n\n  57 |     \n  58 |     // 대시보드로 이동\n> 59 |     await page.click('text=대시보드');\n     |                ^\n  60 |     await page.waitForLoadState('networkidle');\n  61 |     \n  62 |     const navigationTime = Date.now() - navigationStart;\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:59:16"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-09-18T17:09:06.079Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                        "column": 16,
-                        "line": 59
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "d2cf69537877daeee6c0-571066e7db0f8005c45a",
-              "file": "chromium-nightly-performance.spec.ts",
-              "line": 52,
-              "column": 7
-            },
-            {
-              "title": "should optimize resource loading",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-stable",
-                  "projectName": "chromium-stable",
-                  "results": [
-                    {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
-                      "status": "failed",
-                      "duration": 4524,
-                      "error": {
-                        "message": "Error: toBeVisible can be only used with Locator object",
-                        "stack": "Error: toBeVisible can be only used with Locator object\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:94:24",
-                        "location": {
-                          "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                          "column": 24,
-                          "line": 94
-                        },
-                        "snippet": "  92 |     \n  93 |     // 페이지가 최적화된 상태로 로드되었는지 확인\n> 94 |     await expect(page).toBeVisible();\n     |                        ^\n  95 |   });\n  96 | });\n  97 |"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                            "column": 24,
-                            "line": 94
-                          },
-                          "message": "Error: toBeVisible can be only used with Locator object\n\n  92 |     \n  93 |     // 페이지가 최적화된 상태로 로드되었는지 확인\n> 94 |     await expect(page).toBeVisible();\n     |                        ^\n  95 |   });\n  96 | });\n  97 |\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:94:24"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-09-18T17:09:06.073Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts",
-                        "column": 24,
-                        "line": 94
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "d2cf69537877daeee6c0-2780fc21be39c4e47161",
-              "file": "chromium-nightly-performance.spec.ts",
-              "line": 71,
+              "id": "3b9ff6b7e1ee2c98528f-e3d198cfa8876f6fec8c",
+              "file": "attendance-detailed-debug.spec.ts",
+              "line": 4,
               "column": 7
             }
           ]
@@ -445,11 +202,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-18T17:09:05.682Z",
-    "duration": 19563.015,
-    "expected": 0,
+    "startTime": "2025-09-20T08:23:42.550Z",
+    "duration": 11752.792000000001,
+    "expected": 1,
     "skipped": 0,
-    "unexpected": 4,
+    "unexpected": 0,
     "flaky": 0
   }
 }

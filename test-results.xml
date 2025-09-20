@@ -1,176 +1,37 @@
-<testsuites id="" name="" tests="4" failures="4" skipped="0" errors="0" time="19.563015">
-<testsuite name="chromium-nightly-performance.spec.ts" timestamp="2025-09-18T17:09:05.696Z" hostname="chromium-stable" tests="4" failures="4" skipped="0" time="39.78" errors="0">
-<testcase name="Chromium Nightly Performance Tests › should load page with optimal performance" classname="chromium-nightly-performance.spec.ts" time="15.749">
-<failure message="chromium-nightly-performance.spec.ts:18:7 should load page with optimal performance" type="FAILURE">
-<![CDATA[  [chromium-stable] › chromium-nightly-performance.spec.ts:18:7 › Chromium Nightly Performance Tests › should load page with optimal performance 
-
-    Error: expect(page).toHaveTitle(expected) failed
-
-    Expected pattern: /MASLABS/
-    Received string:  "Login – Vercel"
-    Timeout: 10000ms
-
-    Call log:
-      - Expect "toHaveTitle" with timeout 10000ms
-        14 × unexpected value "Login – Vercel"
-
-
-      28 |     
-      29 |     // 페이지 제목 확인
-    > 30 |     await expect(page).toHaveTitle(/MASLABS/);
-         |                        ^
-      31 |   });
-      32 |
-      33 |   test('should measure memory usage', async ({ page }) => {
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:30:24
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/error-context.md
-]]>
-</failure>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="11.752792000000001">
+<testsuite name="attendance-detailed-debug.spec.ts" timestamp="2025-09-20T08:23:42.615Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="9.81" errors="0">
+<testcase name="출근 관리 페이지 상세 디버그 › 상세 디버그 및 에러 분석" classname="attendance-detailed-debug.spec.ts" time="9.81">
 <system-out>
-<![CDATA[Page load time: 3403ms
+<![CDATA[🔍 상세 디버그 시작
+🌐 페이지 로딩 중...
+✅ 페이지 로딩 완료
+⚛️ React 루트 요소 존재: false
+🔍 조회 버튼 클릭
+❌ 조회 버튼 클릭 실패: Error: locator.isVisible: Error: strict mode violation: locator(':has-text("데이터가 없습니다"), :has-text("스케줄이 없습니다")') resolved to 7 elements:
+    1) <html lang="ko">…</html> aka locator('html')
+    2) <body class="__variable_188709 __variable_9a8899 antialiased">…</body> aka locator('body')
+    3) <div class="min-h-screen bg-gray-50 p-4">…</div> aka locator('div').filter({ hasText: '출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001' }).first()
+    4) <div class="max-w-7xl mx-auto">…</div> aka getByText('출근 관리 (고급 기능)휴식 시간 수정 및 스케줄 기반 정시 출퇴근 자동 체크가 가능합니다.날짜직원전체 직원김탁수 (MASLABS-001')
+    5) <div class="bg-white rounded-lg shadow-sm border">…</div> aka getByText('스케줄 목록전체 해제총 0개해당 조건에 맞는 스케줄이 없습니다')
+    6) <div class="p-8 text-center text-gray-500">…</div> aka locator('div').filter({ hasText: /^해당 조건에 맞는 스케줄이 없습니다\.$/ })
+    7) <p>해당 조건에 맞는 스케줄이 없습니다.</p> aka getByText('해당 조건에 맞는 스케줄이 없습니다')
 
-[[ATTACHMENT|test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/test-failed-1.png]]
+Call log:
+[2m    - checking visibility of locator(':has-text("데이터가 없습니다"), :has-text("스케줄이 없습니다")')[22m
 
-[[ATTACHMENT|test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/video.webm]]
 
-[[ATTACHMENT|test-results/chromium-nightly-performan-647e9-ge-with-optimal-performance-chromium-stable/error-context.md]]
+📊 디버그 요약:
+   - 콘솔 메시지 수: 0
+   - 실패한 네트워크 요청 수: 0
+
+🏁 상세 디버그 완료
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:81484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:21393) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>
-</testcase>
-<testcase name="Chromium Nightly Performance Tests › should measure memory usage" classname="chromium-nightly-performance.spec.ts" time="5.093">
-<failure message="chromium-nightly-performance.spec.ts:33:7 should measure memory usage" type="FAILURE">
-<![CDATA[  [chromium-stable] › chromium-nightly-performance.spec.ts:33:7 › Chromium Nightly Performance Tests › should measure memory usage 
-
-    Error: expect(received).toBeLessThan(expected)
-
-    Matcher error: received value must be a number or bigint
-
-    Received has value: undefined
-
-      47 |     
-      48 |     // 메모리 사용량이 허용 범위 내인지 확인
-    > 49 |     expect(usedJSHeapSize).toBeLessThan(100 * 1024 * 1024); // 100MB 이하
-         |                            ^
-      50 |   });
-      51 |
-      52 |   test('should handle navigation efficiently', async ({ page }) => {
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:49:28
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[Memory Metrics: { usedJSHeapSize: [32m'NaN MB'[39m, totalJSHeapSize: [32m'NaN MB'[39m }
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/video.webm]]
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-33c5a-should-measure-memory-usage-chromium-stable/error-context.md]]
-]]>
-</system-out>
-<system-err>
-<![CDATA[(node:81481) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-]]>
-</system-err>
-</testcase>
-<testcase name="Chromium Nightly Performance Tests › should handle navigation efficiently" classname="chromium-nightly-performance.spec.ts" time="14.414">
-<failure message="chromium-nightly-performance.spec.ts:52:7 should handle navigation efficiently" type="FAILURE">
-<![CDATA[  [chromium-stable] › chromium-nightly-performance.spec.ts:52:7 › Chromium Nightly Performance Tests › should handle navigation efficiently 
-
-    TimeoutError: page.click: Timeout 10000ms exceeded.
-    Call log:
-      - waiting for locator('text=대시보드')
-
-
-      57 |     
-      58 |     // 대시보드로 이동
-    > 59 |     await page.click('text=대시보드');
-         |                ^
-      60 |     await page.waitForLoadState('networkidle');
-      61 |     
-      62 |     const navigationTime = Date.now() - navigationStart;
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:59:16
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/video.webm]]
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-b452b-ndle-navigation-efficiently-chromium-stable/error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Chromium Nightly Performance Tests › should optimize resource loading" classname="chromium-nightly-performance.spec.ts" time="4.524">
-<failure message="chromium-nightly-performance.spec.ts:71:7 should optimize resource loading" type="FAILURE">
-<![CDATA[  [chromium-stable] › chromium-nightly-performance.spec.ts:71:7 › Chromium Nightly Performance Tests › should optimize resource loading 
-
-    Error: toBeVisible can be only used with Locator object
-
-      92 |     
-      93 |     // 페이지가 최적화된 상태로 로드되었는지 확인
-    > 94 |     await expect(page).toBeVisible();
-         |                        ^
-      95 |   });
-      96 | });
-      97 |
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/chromium-nightly-performance.spec.ts:94:24
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/video.webm]]
-
-[[ATTACHMENT|test-results/chromium-nightly-performan-a31be-d-optimize-resource-loading-chromium-stable/error-context.md]]
-]]>
-</system-out>
 </testcase>
 </testsuite>
 </testsuites>
