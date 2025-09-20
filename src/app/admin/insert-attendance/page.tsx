@@ -132,25 +132,51 @@ export default function InsertAttendanceEnhancedPage() {
       let filteredData = data || [];
       
       if (filterStatus === 'no-attendance') {
-        filteredData = filteredData.filter(schedule => 
-          !schedule.actual_start || schedule.actual_start === null || schedule.actual_start === ''
-        );
+        filteredData = filteredData.filter(schedule => {
+          try {
+            return !schedule.actual_start || 
+                   schedule.actual_start === null || 
+                   schedule.actual_start === '' ||
+                   schedule.actual_start === 'null';
+          } catch (error) {
+            console.warn('미출근 필터 처리 중 오류:', error, schedule);
+            return true; // 에러 시 미출근으로 간주
+          }
+        });
       } else if (filterStatus === 'partial-attendance') {
-        filteredData = filteredData.filter(schedule => 
-          schedule.actual_start && 
-          schedule.actual_start !== null && 
-          schedule.actual_start !== '' &&
-          (!schedule.actual_end || schedule.actual_end === null || schedule.actual_end === '')
-        );
+        filteredData = filteredData.filter(schedule => {
+          try {
+            const hasStart = schedule.actual_start && 
+                           schedule.actual_start !== null && 
+                           schedule.actual_start !== '' &&
+                           schedule.actual_start !== 'null';
+            const noEnd = !schedule.actual_end || 
+                         schedule.actual_end === null || 
+                         schedule.actual_end === '' ||
+                         schedule.actual_end === 'null';
+            return hasStart && noEnd;
+          } catch (error) {
+            console.warn('부분 출근 필터 처리 중 오류:', error, schedule);
+            return false;
+          }
+        });
       } else if (filterStatus === 'completed') {
-        filteredData = filteredData.filter(schedule => 
-          schedule.actual_start && 
-          schedule.actual_start !== null && 
-          schedule.actual_start !== '' &&
-          schedule.actual_end && 
-          schedule.actual_end !== null && 
-          schedule.actual_end !== ''
-        );
+        filteredData = filteredData.filter(schedule => {
+          try {
+            const hasStart = schedule.actual_start && 
+                           schedule.actual_start !== null && 
+                           schedule.actual_start !== '' &&
+                           schedule.actual_start !== 'null';
+            const hasEnd = schedule.actual_end && 
+                          schedule.actual_end !== null && 
+                          schedule.actual_end !== '' &&
+                          schedule.actual_end !== 'null';
+            return hasStart && hasEnd;
+          } catch (error) {
+            console.warn('완료 필터 처리 중 오류:', error, schedule);
+            return false;
+          }
+        });
       }
 
       setSchedules(filteredData);
