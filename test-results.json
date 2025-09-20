@@ -142,7 +142,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 10750,
+                      "duration": 9476,
                       "error": {
                         "message": "Error: page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': ':has-text(\"해당 조건에 맞는 스케줄이 없습니다\")' is not a valid selector.\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
                         "stack": "Error: page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': ':has-text(\"해당 조건에 맞는 스케줄이 없습니다\")' is not a valid selector.\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at eval (eval at evaluate (:291:30), <anonymous>:3:34)\n    at UtilityScript.evaluate (<anonymous>:293:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/rendering-state-debug.spec.ts:37:35",
@@ -209,7 +209,7 @@
                           "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
                         },
                         {
-                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}\n"
+                          "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}\n"
                         },
                         {
                           "text": "📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}\n"
@@ -220,11 +220,11 @@
                       ],
                       "stderr": [
                         {
-                          "text": "(node:23361) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                          "text": "(node:23765) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                         }
                       ],
                       "retry": 0,
-                      "startTime": "2025-09-20T08:28:45.775Z",
+                      "startTime": "2025-09-20T08:29:53.913Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -265,8 +265,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-20T08:28:45.427Z",
-    "duration": 12548.419,
+    "startTime": "2025-09-20T08:29:53.621Z",
+    "duration": 10682.937,
     "expected": 0,
     "skipped": 0,
     "unexpected": 1,

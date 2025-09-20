@@ -111,6 +111,7 @@ export default function InsertAttendanceEnhancedPage() {
   const loadSchedules = async () => {
     console.log('🔄 loadSchedules 시작', { selectedDate, selectedEmployee, filterStatus });
     setLoading(true);
+    
     try {
       let query = supabase
         .from('schedules')
@@ -128,70 +129,40 @@ export default function InsertAttendanceEnhancedPage() {
       const { data, error } = await query;
       console.log('📊 스케줄 쿼리 결과', { data: data?.length, error });
 
-      if (error) throw error;
-
-      // 필터 적용
-      console.log('🔄 필터링 시작', { filterStatus, dataCount: data?.length });
-      let filteredData = data || [];
-      
-      try {
-        if (filterStatus === 'no-attendance') {
-          console.log('📋 미출근 필터 적용');
-          filteredData = filteredData.filter(schedule => {
-            const result = !schedule.actual_start || 
-                          schedule.actual_start === null || 
-                          schedule.actual_start === '' ||
-                          schedule.actual_start === 'null';
-            return result;
-          });
-        } else if (filterStatus === 'partial-attendance') {
-          console.log('📋 부분 출근 필터 적용');
-          filteredData = filteredData.filter(schedule => {
-            const hasStart = schedule.actual_start && 
-                           schedule.actual_start !== null && 
-                           schedule.actual_start !== '' &&
-                           schedule.actual_start !== 'null';
-            const noEnd = !schedule.actual_end || 
-                         schedule.actual_end === null || 
-                         schedule.actual_end === '' ||
-                         schedule.actual_end === 'null';
-            return hasStart && noEnd;
-          });
-        } else if (filterStatus === 'completed') {
-          console.log('📋 완료 필터 적용');
-          filteredData = filteredData.filter(schedule => {
-            const hasStart = schedule.actual_start && 
-                           schedule.actual_start !== null && 
-                           schedule.actual_start !== '' &&
-                           schedule.actual_start !== 'null';
-            const hasEnd = schedule.actual_end && 
-                          schedule.actual_end !== null && 
-                          schedule.actual_end !== '' &&
-                          schedule.actual_end !== 'null';
-            return hasStart && hasEnd;
-          });
-        }
-        console.log('✅ 필터링 완료', { originalCount: data?.length, filteredCount: filteredData.length });
-      } catch (filterError) {
-        console.error('❌ 필터링 중 오류:', filterError);
-        filteredData = data || []; // 필터링 실패 시 원본 데이터 사용
+      if (error) {
+        console.error('❌ Supabase 쿼리 에러:', error);
+        setSchedules([]);
+        setLoading(false);
+        return;
       }
 
-      console.log('✅ 필터링된 스케줄 데이터', { count: filteredData.length });
-      console.log('📝 setSchedules 호출 전');
+      // 간단한 필터링
+      let filteredData = data || [];
+      console.log('🔄 필터링 시작', { filterStatus, dataCount: filteredData.length });
+      
+      if (filterStatus === 'no-attendance') {
+        filteredData = filteredData.filter(schedule => !schedule.actual_start);
+      } else if (filterStatus === 'partial-attendance') {
+        filteredData = filteredData.filter(schedule => 
+          schedule.actual_start && !schedule.actual_end
+        );
+      } else if (filterStatus === 'completed') {
+        filteredData = filteredData.filter(schedule => 
+          schedule.actual_start && schedule.actual_end
+        );
+      }
+
+      console.log('✅ 필터링 완료', { originalCount: data?.length, filteredCount: filteredData.length });
+      console.log('📝 setSchedules 호출');
       setSchedules(filteredData);
-      console.log('📝 setSchedules 호출 후');
+      
     } catch (error) {
-      console.error('스케줄 로드 오류:', error);
-      console.error('에러 상세:', error);
+      console.error('❌ loadSchedules 에러:', error);
       setSchedules([]);
-      // 에러 발생 시 사용자에게 알림
-      alert('스케줄을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
-    } finally {
-      console.log('🏁 loadSchedules 완료', { schedulesCount: filteredData?.length });
-      setLoading(false);
-      console.log('⚡ Loading 상태를 false로 설정');
     }
+    
+    console.log('🏁 loadSchedules 완료 - Loading false로 설정');
+    setLoading(false);
   };
 
   const loadAttendanceRecords = async () => {
