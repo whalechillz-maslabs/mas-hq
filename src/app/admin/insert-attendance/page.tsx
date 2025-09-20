@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, CheckCircle, XCircle, Search, Filter, Download, Coffee, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -54,6 +54,7 @@ export default function InsertAttendanceEnhancedPage() {
   const [filterStatus, setFilterStatus] = useState<string>('no-attendance');
   const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [collapsedEmployees, setCollapsedEmployees] = useState<Set<string>>(new Set());
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -567,6 +568,39 @@ export default function InsertAttendanceEnhancedPage() {
     }
   };
 
+  // 직원별 스케줄 접고 펴기 토글
+  const toggleEmployeeCollapse = (employeeId: string) => {
+    const newCollapsed = new Set(collapsedEmployees);
+    if (newCollapsed.has(employeeId)) {
+      newCollapsed.delete(employeeId);
+    } else {
+      newCollapsed.add(employeeId);
+    }
+    setCollapsedEmployees(newCollapsed);
+  };
+
+  // 직원별 스케줄 그룹화
+  const getGroupedSchedules = () => {
+    const grouped = schedules.reduce((acc, schedule) => {
+      const employeeId = schedule.employee_id;
+      if (!acc[employeeId]) {
+        acc[employeeId] = {
+          employee: schedule.employee,
+          schedules: []
+        };
+      }
+      acc[employeeId].schedules.push(schedule);
+      return acc;
+    }, {} as Record<string, { employee: any; schedules: Schedule[] }>);
+
+    // 각 직원의 스케줄을 시간순으로 정렬
+    Object.values(grouped).forEach(group => {
+      group.schedules.sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start));
+    });
+
+    return grouped;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -789,151 +823,225 @@ export default function InsertAttendanceEnhancedPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {schedules
-                    .sort((a, b) => {
-                      // 직원별로 그룹화하고, 같은 직원 내에서는 시간순으로 정렬
-                      if (a.employee?.name !== b.employee?.name) {
-                        return (a.employee?.name || '').localeCompare(b.employee?.name || '');
-                      }
-                      return (a.scheduled_start || '').localeCompare(b.scheduled_start || '');
-                    })
-                    .map((schedule, index, sortedSchedules) => {
-                    const attendanceInfo = getAttendanceInfo(schedule);
-                    const isFirstOfEmployee = index === 0 || 
-                      sortedSchedules[index - 1].employee?.name !== schedule.employee?.name;
+                  {Object.entries(getGroupedSchedules()).map(([employeeId, group]) => {
+                    const isCollapsed = collapsedEmployees.has(employeeId);
+                    const employeeSchedules = group.schedules;
+                    const firstSchedule = employeeSchedules[0];
+                    const attendanceInfo = getAttendanceInfo(firstSchedule);
                     
                     return (
-                      <tr key={schedule.id} className={`hover:bg-gray-50 ${isFirstOfEmployee ? 'border-t-2 border-blue-200' : ''}`}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedSchedules.includes(schedule.id)}
-                            onChange={() => handleSelectSchedule(schedule.id)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap ${isFirstOfEmployee ? 'bg-blue-50' : ''}`}>
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-8 w-8">
-                              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                                isFirstOfEmployee ? 'bg-blue-200' : 'bg-blue-100'
-                              }`}>
-                                <span className={`text-sm font-medium ${
-                                  isFirstOfEmployee ? 'text-blue-900' : 'text-blue-800'
-                                }`}>
-                                  {schedule.employee?.name?.charAt(0) || '?'}
-                                </span>
+                      <React.Fragment key={employeeId}>
+                        {/* 직원 헤더 행 */}
+                        <tr className="bg-blue-50 border-t-2 border-blue-200">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={employeeSchedules.every(s => selectedSchedules.includes(s.id))}
+                              onChange={() => {
+                                const allSelected = employeeSchedules.every(s => selectedSchedules.includes(s.id));
+                                if (allSelected) {
+                                  setSelectedSchedules(prev => prev.filter(id => !employeeSchedules.some(s => s.id === id)));
+                                } else {
+                                  setSelectedSchedules(prev => [...prev, ...employeeSchedules.map(s => s.id).filter(id => !prev.includes(id))]);
+                                }
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => toggleEmployeeCollapse(employeeId)}
+                                className="mr-2 text-blue-600 hover:text-blue-800"
+                              >
+                                {isCollapsed ? '▶' : '▼'}
+                              </button>
+                              <div className="flex-shrink-0 h-8 w-8">
+                                <div className="h-8 w-8 rounded-full flex items-center justify-center bg-blue-200">
+                                  <span className="text-sm font-medium text-blue-900">
+                                    {group.employee?.name?.charAt(0) || '?'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-blue-900 font-semibold">
+                                  {group.employee?.name || '알 수 없음'}
+                                  <span className="ml-2 text-xs text-blue-600">
+                                    ({employeeSchedules.length}개 스케줄)
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {group.employee?.employee_id || 'N/A'}
+                                </div>
                               </div>
                             </div>
-                            <div className="ml-3">
-                              <div className={`text-sm font-medium ${
-                                isFirstOfEmployee ? 'text-blue-900 font-semibold' : 'text-gray-900'
-                              }`}>
-                                {schedule.employee?.name || '알 수 없음'}
-                                {isFirstOfEmployee && <span className="ml-2 text-xs text-blue-600">(첫 번째 스케줄)</span>}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {schedule.employee?.employee_id || 'N/A'}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {schedule.scheduled_start} - {schedule.scheduled_end}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {schedule.actual_start ? 
-                            (() => {
-                              try {
-                                // ISO 형식인 경우 (2025-09-19T08:57:37.073+00:00)
-                                if (schedule.actual_start.includes('T')) {
-                                  // UTC 시간을 그대로 표시 (타임존 변환 방지)
-                                  const timePart = schedule.actual_start.split('T')[1];
-                                  if (timePart) {
-                                    return timePart.substring(0, 8); // HH:mm:ss 부분만 추출
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {isCollapsed ? (
+                              <span className="text-gray-500">
+                                {employeeSchedules[0]?.scheduled_start} - {employeeSchedules[employeeSchedules.length - 1]?.scheduled_end}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {isCollapsed && firstSchedule.actual_start ? (
+                              (() => {
+                                try {
+                                  if (firstSchedule.actual_start.includes('T')) {
+                                    const timePart = firstSchedule.actual_start.split('T')[1];
+                                    return timePart ? timePart.substring(0, 8) : firstSchedule.actual_start;
                                   }
-                                  return schedule.actual_start;
+                                  return firstSchedule.actual_start.substring(0, 8);
+                                } catch (error) {
+                                  return firstSchedule.actual_start;
                                 }
-                                // HH:mm:ss 형식인 경우 (08:57:37)
-                                else if (schedule.actual_start.includes(':')) {
-                                  return schedule.actual_start.substring(0, 8);
-                                }
-                                // 기타 형식
-                                else {
-                                  return schedule.actual_start;
-                                }
-                              } catch (error) {
-                                return schedule.actual_start;
-                              }
-                            })() : 
-                            <span className="text-gray-400">-</span>
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {schedule.actual_end ? 
-                            (() => {
-                              try {
-                                // ISO 형식인 경우 (2025-09-19T16:00:55.576+00:00)
-                                if (schedule.actual_end.includes('T')) {
-                                  // UTC 시간을 그대로 표시 (타임존 변환 방지)
-                                  const timePart = schedule.actual_end.split('T')[1];
-                                  if (timePart) {
-                                    return timePart.substring(0, 8); // HH:mm:ss 부분만 추출
+                              })()
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {isCollapsed && firstSchedule.actual_end ? (
+                              (() => {
+                                try {
+                                  if (firstSchedule.actual_end.includes('T')) {
+                                    const timePart = firstSchedule.actual_end.split('T')[1];
+                                    return timePart ? timePart.substring(0, 8) : firstSchedule.actual_end;
                                   }
-                                  return schedule.actual_end;
+                                  return firstSchedule.actual_end.substring(0, 8);
+                                } catch (error) {
+                                  return firstSchedule.actual_end;
                                 }
-                                // HH:mm:ss 형식인 경우 (16:00:55)
-                                else if (schedule.actual_end.includes(':')) {
-                                  return schedule.actual_end.substring(0, 8);
-                                }
-                                // 기타 형식
-                                else {
-                                  return schedule.actual_end;
-                                }
-                              } catch (error) {
-                                return schedule.actual_end;
-                              }
-                            })() : 
-                            <span className="text-gray-400">-</span>
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendanceInfo.hasBreak ? (
-                            <div className="flex items-center space-x-1">
-                              <Coffee className="h-4 w-4 text-orange-500" />
-                              <span>{attendanceInfo.breakStart} - {attendanceInfo.breakEnd}</span>
+                              })()
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {isCollapsed && attendanceInfo.hasBreak ? (
+                              <div className="flex items-center space-x-1">
+                                <Coffee className="h-4 w-4 text-orange-500" />
+                                <span>{attendanceInfo.breakStart} - {attendanceInfo.breakEnd}</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {isCollapsed ? getStatusBadge(firstSchedule) : <span className="text-gray-400">-</span>}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleIndividualLunchBreak(employeeId)}
+                                className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                                title="점심 휴식 설정 (12:00-13:00)"
+                              >
+                                점심휴식
+                              </button>
                             </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(schedule)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEditAttendance(schedule)}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              수정
-                            </button>
-                            <button
-                              onClick={() => handleAutoCheckIn(schedule)}
-                              className="text-green-600 hover:text-green-800 text-sm font-medium"
-                            >
-                              정시체크
-                            </button>
-                            <button
-                              onClick={() => handleIndividualLunchBreak(schedule.employee_id)}
-                              className="text-orange-600 hover:text-orange-800 text-sm font-medium"
-                              title="점심 휴식 설정 (12:00-13:00)"
-                            >
-                              점심휴식
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
+                        
+                        {/* 개별 스케줄 행들 (접힌 상태가 아닐 때만 표시) */}
+                        {!isCollapsed && employeeSchedules.map((schedule, index) => {
+                          const scheduleAttendanceInfo = getAttendanceInfo(schedule);
+                          return (
+                            <tr key={schedule.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSchedules.includes(schedule.id)}
+                                  onChange={() => handleSelectSchedule(schedule.id)}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center ml-8">
+                                  <div className="flex-shrink-0 h-6 w-6">
+                                    <div className="h-6 w-6 rounded-full flex items-center justify-center bg-gray-100">
+                                      <span className="text-xs font-medium text-gray-600">
+                                        {index + 1}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="ml-3">
+                                    <div className="text-sm font-medium text-gray-700">
+                                      {schedule.scheduled_start} - {schedule.scheduled_end}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {schedule.scheduled_start} - {schedule.scheduled_end}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {schedule.actual_start ? 
+                                  (() => {
+                                    try {
+                                      if (schedule.actual_start.includes('T')) {
+                                        const timePart = schedule.actual_start.split('T')[1];
+                                        return timePart ? timePart.substring(0, 8) : schedule.actual_start;
+                                      }
+                                      return schedule.actual_start.substring(0, 8);
+                                    } catch (error) {
+                                      return schedule.actual_start;
+                                    }
+                                  })() : 
+                                  <span className="text-gray-400">-</span>
+                                }
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {schedule.actual_end ? 
+                                  (() => {
+                                    try {
+                                      if (schedule.actual_end.includes('T')) {
+                                        const timePart = schedule.actual_end.split('T')[1];
+                                        return timePart ? timePart.substring(0, 8) : schedule.actual_end;
+                                      }
+                                      return schedule.actual_end.substring(0, 8);
+                                    } catch (error) {
+                                      return schedule.actual_end;
+                                    }
+                                  })() : 
+                                  <span className="text-gray-400">-</span>
+                                }
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {scheduleAttendanceInfo.hasBreak ? (
+                                  <div className="flex items-center space-x-1">
+                                    <Coffee className="h-4 w-4 text-orange-500" />
+                                    <span>{scheduleAttendanceInfo.breakStart} - {scheduleAttendanceInfo.breakEnd}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {getStatusBadge(schedule)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditAttendance(schedule)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    onClick={() => handleAutoCheckIn(schedule)}
+                                    className="text-green-600 hover:text-green-800 text-sm font-medium"
+                                  >
+                                    정시체크
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
