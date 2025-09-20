@@ -530,8 +530,22 @@ export default function InsertAttendanceEnhancedPage() {
     
     return {
       hasBreak: attendance?.break_start_time && attendance?.break_end_time,
-      breakStart: attendance?.break_start_time ? format(new Date(attendance.break_start_time), 'HH:mm') : null,
-      breakEnd: attendance?.break_end_time ? format(new Date(attendance.break_end_time), 'HH:mm') : null
+      breakStart: attendance?.break_start_time ? (() => {
+        try {
+          return format(new Date(attendance.break_start_time), 'HH:mm');
+        } catch (error) {
+          console.warn('break_start_time 파싱 에러:', error, attendance.break_start_time);
+          return normalizeTime(attendance.break_start_time);
+        }
+      })() : null,
+      breakEnd: attendance?.break_end_time ? (() => {
+        try {
+          return format(new Date(attendance.break_end_time), 'HH:mm');
+        } catch (error) {
+          console.warn('break_end_time 파싱 에러:', error, attendance.break_end_time);
+          return normalizeTime(attendance.break_end_time);
+        }
+      })() : null
     };
   };
 
