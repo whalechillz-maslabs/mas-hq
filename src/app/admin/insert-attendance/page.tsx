@@ -378,9 +378,11 @@ export default function InsertAttendanceEnhancedPage() {
       const breakStartTime = formatTimeForDB(editForm.breakStartTime);
       const breakEndTime = formatTimeForDB(editForm.breakEndTime);
 
-      // schedules 테이블용 시간 형식 (타임존 변환 방지)
-      const checkInDateTime = checkInTime;
-      const checkOutDateTime = checkOutTime;
+      // schedules 테이블용 ISO 형식 (UTC로 명시적 저장하여 타임존 변환 방지)
+      const checkInDateTime = checkInTime ? 
+        `${selectedDate}T${checkInTime}Z` : null;
+      const checkOutDateTime = checkOutTime ? 
+        `${selectedDate}T${checkOutTime}Z` : null;
 
       if (editingSchedule.id === 'new') {
         // 새로운 스케줄 생성 (스케줄이 없는 직원)
