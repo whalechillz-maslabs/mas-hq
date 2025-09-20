@@ -7,7 +7,12 @@ const supabase = createClient(
 );
 
 async function autoUpdateScheduleStatus() {
-  console.log('=== 자동 스케줄 상태 업데이트 ===');
+  console.log('=== 하이브리드 자동 스케줄 상태 업데이트 ===');
+  console.log('📋 시스템 로직:');
+  console.log('  - 출근 기록 있음: completed (정상 완료)');
+  console.log('  - 출근 기록 없음: completed (급여 정산 대상)');
+  console.log('  - 급여 정산을 위해 모든 스케줄을 completed로 처리');
+  console.log('');
   
   try {
     // 1. 오늘 날짜 계산 (한국 시간 기준)
@@ -57,34 +62,39 @@ async function autoUpdateScheduleStatus() {
         }
         
         if (attendance && attendance.check_in_time) {
-          // 출근 기록이 있으면 'completed'로 변경
+          // 출근 기록이 있으면 'completed'로 변경 (정상 완료)
           const { error: updateError } = await supabase
             .from('schedules')
             .update({
               status: 'completed',
-              employee_note: '자동 완료 (출근 기록 있음)'
+              employee_note: schedule.employee_note ? 
+                `${schedule.employee_note} | 자동 완료 (출근 기록 있음)` : 
+                '자동 완료 (출근 기록 있음)'
             })
             .eq('id', schedule.id);
           
           if (updateError) {
             console.error(`스케줄 ${schedule.id} 업데이트 실패:`, updateError);
           } else {
-            console.log(`✅ 스케줄 ${schedule.id}를 completed로 변경`);
+            console.log(`✅ 스케줄 ${schedule.id}를 completed로 변경 (출근 기록 있음)`);
           }
         } else {
-          // 출근 기록이 없으면 'cancelled'로 변경
+          // 출근 기록이 없어도 'completed'로 변경 (하이브리드 시스템)
+          // 급여 정산을 위해 완료 처리하되, 메모에 출근 기록 없음을 표시
           const { error: updateError } = await supabase
             .from('schedules')
             .update({
-              status: 'cancelled',
-              employee_note: '자동 취소 (출근 기록 없음)'
+              status: 'completed',
+              employee_note: schedule.employee_note ? 
+                `${schedule.employee_note} | 자동 완료 (출근 기록 없음 - 급여 정산 대상)` : 
+                '자동 완료 (출근 기록 없음 - 급여 정산 대상)'
             })
             .eq('id', schedule.id);
           
           if (updateError) {
             console.error(`스케줄 ${schedule.id} 업데이트 실패:`, updateError);
           } else {
-            console.log(`❌ 스케줄 ${schedule.id}를 cancelled로 변경`);
+            console.log(`⚠️ 스케줄 ${schedule.id}를 completed로 변경 (출근 기록 없음)`);
           }
         }
       }

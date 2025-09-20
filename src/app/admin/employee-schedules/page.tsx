@@ -58,6 +58,7 @@ export default function EmployeeSchedulesPage() {
   const [autoApprove, setAutoApprove] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
 
   // 리스트 보기에서 연도/월 변경 시 currentDate 업데이트
   const handleYearMonthChange = (year: number, month: number) => {
@@ -204,12 +205,51 @@ export default function EmployeeSchedulesPage() {
         setSchedules([]);
       } else {
         setSchedules(data || []);
+        // 스케줄 조회 후 출근 기록도 조회
+        await fetchAttendanceRecords();
       }
     } catch (error) {
       console.error('Error fetching schedules:', error);
       setSchedules([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 출근 기록 조회 함수
+  const fetchAttendanceRecords = async () => {
+    if (!selectedEmployee) return;
+    
+    try {
+      let startDate, endDate;
+      
+      if (viewMode === 'week') {
+        startDate = startOfWeek(currentDate, { locale: ko, weekStartsOn: 0 });
+        endDate = endOfWeek(currentDate, { locale: ko });
+      } else if (viewMode === 'month') {
+        startDate = startOfMonth(currentDate);
+        endDate = endOfMonth(currentDate);
+      } else {
+        startDate = new Date(selectedYear, selectedMonth - 1, 1);
+        endDate = new Date(selectedYear, selectedMonth, 0);
+      }
+
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('employee_id', selectedEmployee.id)
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'));
+
+      if (error) {
+        console.error('Error fetching attendance records:', error);
+        setAttendanceRecords([]);
+      } else {
+        setAttendanceRecords(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching attendance records:', error);
+      setAttendanceRecords([]);
     }
   };
 
@@ -1339,7 +1379,15 @@ export default function EmployeeSchedulesPage() {
                                       }`}>
                                         {schedule.status === 'approved' ? '승인' : 
                                          schedule.status === 'pending' ? '대기' : 
-                                         schedule.status === 'completed' ? '완료' : '취소'}
+                                         schedule.status === 'completed' ? (
+                                           (() => {
+                                             const attendance = attendanceRecords.find(record => 
+                                               record.employee_id === schedule.employee_id && 
+                                               record.date === schedule.schedule_date
+                                             );
+                                             return attendance ? '완료 ✅' : '완료 ⚠️';
+                                           })()
+                                         ) : '취소'}
                                       </div>
                                     </div>
                                   </div>
