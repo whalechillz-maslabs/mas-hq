@@ -368,14 +368,25 @@ export default function InsertAttendanceEnhancedPage() {
     if (!editingSchedule) return;
 
     try {
-      const checkInDateTime = editForm.checkInTime ? 
-        new Date(`${selectedDate}T${editForm.checkInTime}:00`).toISOString() : null;
-      const checkOutDateTime = editForm.checkOutTime ? 
-        new Date(`${selectedDate}T${editForm.checkOutTime}:00`).toISOString() : null;
-      const breakStartDateTime = editForm.breakStartTime ? 
-        new Date(`${selectedDate}T${editForm.breakStartTime}:00`).toISOString() : null;
-      const breakEndDateTime = editForm.breakEndTime ? 
-        new Date(`${selectedDate}T${editForm.breakEndTime}:00`).toISOString() : null;
+      // 시간을 HH:mm:ss 형식으로 정규화 (타임존 변환 방지)
+      const formatTimeForDB = (timeStr: string) => {
+        if (!timeStr) return null;
+        // HH:mm 형식을 HH:mm:ss 형식으로 변환
+        return timeStr.includes(':') && timeStr.split(':').length === 2 
+          ? `${timeStr}:00` 
+          : timeStr;
+      };
+
+      const checkInTime = formatTimeForDB(editForm.checkInTime);
+      const checkOutTime = formatTimeForDB(editForm.checkOutTime);
+      const breakStartTime = formatTimeForDB(editForm.breakStartTime);
+      const breakEndTime = formatTimeForDB(editForm.breakEndTime);
+
+      // schedules 테이블용 ISO 형식 (타임존 변환 포함)
+      const checkInDateTime = checkInTime ? 
+        new Date(`${selectedDate}T${checkInTime}`).toISOString() : null;
+      const checkOutDateTime = checkOutTime ? 
+        new Date(`${selectedDate}T${checkOutTime}`).toISOString() : null;
 
       if (editingSchedule.id === 'new') {
         // 새로운 스케줄 생성 (스케줄이 없는 직원)
@@ -414,14 +425,14 @@ export default function InsertAttendanceEnhancedPage() {
       }
 
       // attendance 테이블 업데이트 또는 생성 (휴식 시간 포함)
-      // TIME 타입 필드에는 시간 부분만 전송 (HH:mm:ss 형식)
+      // TIME 타입 필드에는 직접 HH:mm:ss 형식으로 전송 (타임존 변환 방지)
       const attendanceData = {
         employee_id: editingSchedule.employee_id,
         date: selectedDate,
-        check_in_time: checkInDateTime ? checkInDateTime.split('T')[1].substring(0, 8) : null,
-        check_out_time: checkOutDateTime ? checkOutDateTime.split('T')[1].substring(0, 8) : null,
-        break_start_time: breakStartDateTime ? breakStartDateTime.split('T')[1].substring(0, 8) : null,
-        break_end_time: breakEndDateTime ? breakEndDateTime.split('T')[1].substring(0, 8) : null,
+        check_in_time: checkInTime,  // 직접 HH:mm:ss 형식
+        check_out_time: checkOutTime,  // 직접 HH:mm:ss 형식
+        break_start_time: breakStartTime,  // 직접 HH:mm:ss 형식
+        break_end_time: breakEndTime,  // 직접 HH:mm:ss 형식
         updated_at: new Date().toISOString()
       };
 
