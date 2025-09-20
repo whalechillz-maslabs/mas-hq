@@ -488,6 +488,85 @@ export default function InsertAttendanceEnhancedPage() {
     };
   };
 
+  // 점심 휴식 빠른 설정 (모든 직원)
+  const handleBulkLunchBreak = async () => {
+    if (!confirm('모든 직원의 점심 휴식시간(12:00-13:00)을 설정하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const today = selectedDate;
+      const lunchStart = '12:00:00';
+      const lunchEnd = '13:00:00';
+
+      // 해당 날짜에 스케줄이 있는 모든 직원 조회
+      const uniqueEmployees = [...new Set(schedules.map(s => s.employee_id))];
+      
+      const attendanceUpdates = uniqueEmployees.map(employeeId => ({
+        employee_id: employeeId,
+        date: today,
+        break_start_time: lunchStart,
+        break_end_time: lunchEnd,
+        notes: '점심 휴식 (관리자 일괄 설정)'
+      }));
+
+      // attendance 테이블에 upsert
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert(attendanceUpdates, { 
+          onConflict: 'employee_id,date',
+          ignoreDuplicates: false 
+        });
+
+      if (attendanceError) throw attendanceError;
+
+      alert(`✅ ${uniqueEmployees.length}명의 직원 점심 휴식시간이 설정되었습니다!`);
+      await loadAttendanceRecords();
+    } catch (error: any) {
+      console.error('점심 휴식 설정 오류:', error);
+      alert(`점심 휴식 설정 실패: ${error.message}`);
+    }
+  };
+
+  // 개별 직원 점심 휴식 설정
+  const handleIndividualLunchBreak = async (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (!employee) return;
+
+    if (!confirm(`${employee.name}님의 점심 휴식시간(12:00-13:00)을 설정하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const today = selectedDate;
+      const lunchStart = '12:00:00';
+      const lunchEnd = '13:00:00';
+
+      const attendanceData = {
+        employee_id: employeeId,
+        date: today,
+        break_start_time: lunchStart,
+        break_end_time: lunchEnd,
+        notes: '점심 휴식 (관리자 설정)'
+      };
+
+      const { error: attendanceError } = await supabase
+        .from('attendance')
+        .upsert(attendanceData, { 
+          onConflict: 'employee_id,date',
+          ignoreDuplicates: false 
+        });
+
+      if (attendanceError) throw attendanceError;
+
+      alert(`✅ ${employee.name}님의 점심 휴식시간이 설정되었습니다!`);
+      await loadAttendanceRecords();
+    } catch (error: any) {
+      console.error('점심 휴식 설정 오류:', error);
+      alert(`점심 휴식 설정 실패: ${error.message}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -576,6 +655,33 @@ export default function InsertAttendanceEnhancedPage() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 점심 휴식 빠른 설정 버튼 */}
+        {schedules.length > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Coffee className="h-5 w-5 text-orange-600" />
+                <span className="text-sm font-medium text-orange-800">
+                  점심 휴식 빠른 설정
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleBulkLunchBreak}
+                  disabled={processing}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                >
+                  <Coffee className="h-4 w-4 inline mr-2" />
+                  전체 점심 휴식 설정
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-orange-600 mt-2">
+              모든 직원의 점심 휴식시간(12:00-13:00)을 한번에 설정합니다.
+            </p>
           </div>
         )}
 
@@ -817,6 +923,13 @@ export default function InsertAttendanceEnhancedPage() {
                               className="text-green-600 hover:text-green-800 text-sm font-medium"
                             >
                               정시체크
+                            </button>
+                            <button
+                              onClick={() => handleIndividualLunchBreak(schedule.employee_id)}
+                              className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                              title="점심 휴식 설정 (12:00-13:00)"
+                            >
+                              점심휴식
                             </button>
                           </div>
                         </td>
