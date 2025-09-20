@@ -1,58 +1,50 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="12.808286">
-<testsuite name="rendering-state-debug.spec.ts" timestamp="2025-09-20T08:31:10.055Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="11.544" errors="0">
-<testcase name="렌더링 상태 디버그 › 로딩 및 렌더링 상태 확인" classname="rendering-state-debug.spec.ts" time="11.544">
-<failure message="rendering-state-debug.spec.ts:4:7 로딩 및 렌더링 상태 확인" type="FAILURE">
-<![CDATA[  [chromium-stable] › rendering-state-debug.spec.ts:4:7 › 렌더링 상태 디버그 › 로딩 및 렌더링 상태 확인 ──────────────
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="19.641484999999996">
+<testsuite name="sept19_final_test.spec.ts" timestamp="2025-09-20T09:44:12.791Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="17.02" errors="0">
+<testcase name="9월 19일 최종 테스트 › 9월 19일 모든 필터 정상 작동 확인" classname="sept19_final_test.spec.ts" time="17.02">
+<failure message="sept19_final_test.spec.ts:4:7 9월 19일 모든 필터 정상 작동 확인" type="FAILURE">
+<![CDATA[  [chromium-stable] › sept19_final_test.spec.ts:4:7 › 9월 19일 최종 테스트 › 9월 19일 모든 필터 정상 작동 확인 ────────
 
-    Error: page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': ':has-text("해당 조건에 맞는 스케줄이 없습니다")' is not a valid selector.
-        at eval (eval at evaluate (:291:30), <anonymous>:3:34)
-        at UtilityScript.evaluate (<anonymous>:293:16)
-        at UtilityScript.<anonymous> (<anonymous>:1:44)
-        at eval (eval at evaluate (:291:30), <anonymous>:3:34)
-        at UtilityScript.evaluate (<anonymous>:293:16)
-        at UtilityScript.<anonymous> (<anonymous>:1:44)
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/rendering-state-debug.spec.ts:37:35
+    TimeoutError: locator.selectOption: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('select').nth(1)
+
+
+      50 |     // 완료 상태 필터 테스트
+      51 |     console.log('🔄 완료 상태 필터 테스트');
+    > 52 |     await statusSelect.selectOption('completed');
+         |                        ^
+      53 |     await searchButton.click();
+      54 |     await page.waitForTimeout(3000);
+      55 |     
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/sept19_final_test.spec.ts:52:24
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/test-failed-1.png
+    ../test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
     attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/video.webm
+    ../test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/video.webm
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ../test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/error-context.md
+    Error Context: ../test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/error-context.md
 ]]>
 </failure>
 <system-out>
-<![CDATA[🎨 렌더링 상태 디버그 시작
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🔄 loadSchedules 시작 {selectedDate: 2025-09-20, selectedEmployee: all, filterStatus: no-attendance}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-✅ 페이지 로딩 완료
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🔄 loadSchedules 시작 {selectedDate: 2025-09-19, selectedEmployee: all, filterStatus: no-attendance}
-📅 날짜 변경 완료
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🔄 loadSchedules 시작 {selectedDate: 2025-09-19, selectedEmployee: all, filterStatus: no-attendance}
-🔍 조회 버튼 클릭 완료
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 0}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}
-📝 🎨 렌더링 상태 {loading: true, schedulesLength: 7}
+<![CDATA[🎯 9월 19일 최종 테스트 시작
+📅 9월 19일로 날짜 설정
+💥 페이지 에러: Invalid time value
+📊 전체 조회 - 테이블 존재: false
+🔄 완료 상태 필터 테스트
 
-[[ATTACHMENT|test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/test-failed-1.png]]
+[[ATTACHMENT|test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/test-failed-1.png]]
 
-[[ATTACHMENT|test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/video.webm]]
+[[ATTACHMENT|test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/video.webm]]
 
-[[ATTACHMENT|test-results/rendering-state-debug-렌더링-상태-디버그-로딩-및-렌더링-상태-확인-chromium-stable/error-context.md]]
+[[ATTACHMENT|test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:24214) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:47081) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>

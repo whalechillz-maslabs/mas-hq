@@ -46,24 +46,29 @@ interface AttendanceRecord {
 
 // 스케줄 관리와 동일한 시간 정규화 함수
 const normalizeTime = (timeStr: string) => {
-  if (!timeStr) return '';
+  if (!timeStr || typeof timeStr !== 'string') return '';
   
-  // ISO 형식인 경우 시간 부분만 추출
-  if (timeStr.includes('T')) {
-    const timePart = timeStr.split('T')[1];
-    if (timePart) {
-      timeStr = timePart; // HH:mm:ss.sssZ -> HH:mm:ss 부분만
+  try {
+    // ISO 형식인 경우 시간 부분만 추출
+    if (timeStr.includes('T')) {
+      const timePart = timeStr.split('T')[1];
+      if (timePart) {
+        timeStr = timePart; // HH:mm:ss.sssZ -> HH:mm:ss 부분만
+      }
     }
+    
+    // "09:00:00" -> "09:00", "09:00" -> "09:00"
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+    if (match) {
+      const hours = match[1].padStart(2, '0');
+      const minutes = match[2];
+      return `${hours}:${minutes}`;
+    }
+    return '';
+  } catch (error) {
+    console.warn('normalizeTime 에러:', error, timeStr);
+    return '';
   }
-  
-  // "09:00:00" -> "09:00", "09:00" -> "09:00"
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
-  if (match) {
-    const hours = match[1].padStart(2, '0');
-    const minutes = match[2];
-    return `${hours}:${minutes}`;
-  }
-  return '';
 };
 
 export default function InsertAttendanceEnhancedPage() {
@@ -1196,16 +1201,28 @@ export default function InsertAttendanceEnhancedPage() {
                                 {schedule.scheduled_start} - {schedule.scheduled_end}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {schedule.actual_start ? 
-                                  normalizeTime(schedule.actual_start) : 
-                                  <span className="text-gray-400">-</span>
-                                }
+                                {(() => {
+                                  try {
+                                    return schedule.actual_start ? 
+                                      normalizeTime(schedule.actual_start) : 
+                                      <span className="text-gray-400">-</span>;
+                                  } catch (error) {
+                                    console.warn('actual_start 렌더링 에러:', error, schedule.actual_start);
+                                    return <span className="text-red-400">에러</span>;
+                                  }
+                                })()}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {schedule.actual_end ? 
-                                  normalizeTime(schedule.actual_end) : 
-                                  <span className="text-gray-400">-</span>
-                                }
+                                {(() => {
+                                  try {
+                                    return schedule.actual_end ? 
+                                      normalizeTime(schedule.actual_end) : 
+                                      <span className="text-gray-400">-</span>;
+                                  } catch (error) {
+                                    console.warn('actual_end 렌더링 에러:', error, schedule.actual_end);
+                                    return <span className="text-red-400">에러</span>;
+                                  }
+                                })()}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {scheduleAttendanceInfo.hasBreak ? (
