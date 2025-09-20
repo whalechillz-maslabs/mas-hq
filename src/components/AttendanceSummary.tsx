@@ -87,7 +87,12 @@ export default function AttendanceSummary({ employeeId, currentDate }: Attendanc
           // 스케줄이 있는 날
           const scheduledStart = new Date(`${dateStr}T${schedule.scheduled_start}:00`);
           const scheduledEnd = new Date(`${dateStr}T${schedule.scheduled_end}:00`);
-          const scheduledHours = (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
+          let scheduledHours = (scheduledEnd.getTime() - scheduledStart.getTime()) / (1000 * 60 * 60);
+          
+          // 스케줄 시간에서 점심시간(1시간) 제외 (순수 근무시간만 계산)
+          if (scheduledHours > 4) { // 4시간 이상 근무시 점심시간 제외
+            scheduledHours -= 1;
+          }
 
           let actualHours = 0;
           let status: AttendanceData['status'] = 'absent';
@@ -326,7 +331,13 @@ export default function AttendanceSummary({ employeeId, currentDate }: Attendanc
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-3">일별 상세 내역</h3>
         <div className="space-y-2">
-          {attendanceData.map((day) => (
+          {attendanceData.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p>선택된 기간에 데이터가 없습니다.</p>
+            </div>
+          ) : (
+            attendanceData.map((day) => (
             <div key={day.date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <Calendar className="h-4 w-4 text-gray-500" />
@@ -366,7 +377,8 @@ export default function AttendanceSummary({ employeeId, currentDate }: Attendanc
                 </div>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
