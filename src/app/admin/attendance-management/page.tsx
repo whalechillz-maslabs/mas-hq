@@ -1,1180 +1,282 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Calendar, Clock, Users, CheckCircle, XCircle, Search, Filter, Download, Eye, Coffee } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { auth, supabase } from '@/lib/supabase';
-import { 
-  Clock, MapPin, Users, Calendar, Filter, Download,
-  Search, Eye, CheckCircle, XCircle, AlertCircle,
-  TrendingUp, BarChart3, Download as DownloadIcon,
-  Coffee, Edit3, Save, X, Trash2
-} from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { format, startOfMonth, endOfMonth, addDays, subDays } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
-interface AttendanceRecord {
+interface Employee {
   id: string;
+  name: string;
   employee_id: string;
-  employee_name: string;
-  employee_id_code: string;
-  employment_type: string;
-  schedule_date: string;
-  scheduled_start: string;
-  scheduled_end: string;
-  actual_start: string | null;
-  actual_end: string | null;
-  break_minutes: number;
-  total_hours: number;
-  overtime_hours: number;
-  status: string;
-  employee_note: string;
-  manager_note: string;
-  notes: string | null;
-  schedule_count: number;
-  first_schedule_start: string;
-  location?: any; // 위치 정보
-  total_break_minutes?: number; // 총 휴식 시간 (분)
-  last_schedule_end: string;
+  role?: {
+    name: string;
+  };
 }
 
-export default function AttendanceManagementPage() {
+interface ConsolidatedSchedule {
+  employee_id: string;
+  employee_name: string;
+  employee_code: string;
+  date: string;
+  workBlocks: {
+    start: string;
+    end: string;
+    duration: number; // 분 단위
+    status: 'completed' | 'in-progress' | 'no-attendance';
+    checkIn: string | null;
+    checkOut: string | null;
+    location: string | null;
+  }[];
+  totalScheduledHours: number;
+  totalActualHours: number;
+  overallStatus: 'completed' | 'partial' | 'no-attendance';
+}
+
+export default function AttendanceManagementImprovedPage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingRecord, setEditingRecord] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    checkInTime: '',
-    checkOutTime: ''
-  });
-
-  // 위치 정보 가져오기 함수
-  const getCurrentLocation = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('위치 서비스가 지원되지 않습니다.'));
-      }
-
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      });
-    });
-  };
-
-  // 좌표를 주소로 변환하는 함수 (Reverse Geocoding)
-  const getAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string> => {
-    try {
-      // 1. Google Maps Geocoding API 시도 (API 키가 있는 경우)
-      if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=ko&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.status === 'OK' && data.results.length > 0) {
-            const result = data.results[0];
-            const addressComponents = result.address_components;
-            
-            // 시/도, 구/군, 동/읍/면 정보 추출
-            let city = '';
-            let district = '';
-            let neighborhood = '';
-            
-            addressComponents.forEach((component: any) => {
-              if (component.types.includes('administrative_area_level_1')) {
-                city = component.long_name;
-              } else if (component.types.includes('administrative_area_level_2')) {
-                district = component.long_name;
-              } else if (component.types.includes('sublocality_level_1') || 
-                         component.types.includes('sublocality_level_2') ||
-                         component.types.includes('neighborhood')) {
-                neighborhood = component.long_name;
-              }
-            });
-            
-            // 주소 조합
-            let address = '';
-            if (city) address += city;
-            if (district) address += ` ${district}`;
-            if (neighborhood) address += ` ${neighborhood}`;
-            
-            return address.trim() || result.formatted_address;
-          }
-        }
-      }
-      
-      // 2. 무료 Nominatim API 사용 (OpenStreetMap 기반)
-      const nominatimResponse = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ko&addressdetails=1`
-      );
-      
-      if (nominatimResponse.ok) {
-        const data = await nominatimResponse.json();
-        
-        if (data.display_name) {
-          // 한국 주소 형식으로 변환
-          const address = data.address;
-          if (address) {
-            let koreanAddress = '';
-            if (address.state) koreanAddress += address.state;
-            if (address.city || address.town || address.village) {
-              koreanAddress += ` ${address.city || address.town || address.village}`;
-            }
-            if (address.suburb || address.neighbourhood) {
-              koreanAddress += ` ${address.suburb || address.neighbourhood}`;
-            }
-            return koreanAddress.trim() || data.display_name;
-          }
-          return data.display_name;
-        }
-      }
-      
-      // 3. 모든 API 실패 시 좌표 반환
-      throw new Error('모든 Geocoding API 실패');
-      
-    } catch (error) {
-      console.warn('주소 변환 오류:', error);
-      // 실패 시 좌표 반환
-      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-    }
-  };
-
-  // 휴식 시간 계산 함수
-  const calculateTotalBreakMinutes = (notes: string | null): number => {
-    if (!notes) return 0;
-    
-    // 관리자가 입력한 휴식 시간 확인 (최우선)
-    const adminBreakMatch = notes.match(/관리자 입력 휴식 시간: (\d+)분/);
-    if (adminBreakMatch) {
-      console.log('📝 관리자 입력 휴식 시간 사용:', parseInt(adminBreakMatch[1]), '분');
-      return parseInt(adminBreakMatch[1]);
-    }
-    
-    // 직원이 버튼으로 입력한 휴식 시간 계산
-    let totalMinutes = 0;
-    const breakStartMatches = notes.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/g);
-    const breakEndMatches = notes.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/g);
-    
-    if (breakStartMatches && breakEndMatches) {
-      const breakPeriods: { start: string; end: string }[] = [];
-      
-      // 휴식 시작 시간들 파싱
-      breakStartMatches.forEach(match => {
-        const timeMatch = match.match(/휴식 시작: (오전|오후) (\d{2}:\d{2})/);
-        if (timeMatch) {
-          const period = timeMatch[1];
-          const time = timeMatch[2];
-          const [hours, minutes] = time.split(':').map(Number);
-          let hour24 = hours;
-          if (period === '오후' && hours !== 12) hour24 += 12;
-          if (period === '오전' && hours === 12) hour24 = 0;
-          breakPeriods.push({ start: `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`, end: '' });
-        }
-      });
-      
-      // 휴식 종료 시간들 파싱
-      breakEndMatches.forEach(match => {
-        const timeMatch = match.match(/휴식 후 복귀: (오전|오후) (\d{2}:\d{2})/);
-        if (timeMatch) {
-          const period = timeMatch[1];
-          const time = timeMatch[2];
-          const [hours, minutes] = time.split(':').map(Number);
-          let hour24 = hours;
-          if (period === '오후' && hours !== 12) hour24 += 12;
-          if (period === '오전' && hours === 12) hour24 = 0;
-          const endTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-          
-          // 가장 가까운 시작 시간과 매칭
-          for (let i = breakPeriods.length - 1; i >= 0; i--) {
-            if (!breakPeriods[i].end) {
-              breakPeriods[i].end = endTime;
-              break;
-            }
-          }
-        }
-      });
-      
-      // 각 휴식 시간 계산
-      breakPeriods.forEach(period => {
-        if (period.start && period.end) {
-          const [startHour, startMin] = period.start.split(':').map(Number);
-          const [endHour, endMin] = period.end.split(':').map(Number);
-          const startMinutes = startHour * 60 + startMin;
-          const endMinutes = endHour * 60 + endMin;
-          totalMinutes += endMinutes - startMinutes;
-        }
-      });
-    }
-    
-    return totalMinutes;
-  };
-
-  // 한국 시간 기준으로 오늘 날짜 설정
-  const getKoreaToday = () => {
-    const now = new Date();
-    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
-    return koreaTime.toISOString().split('T')[0];
-  };
-
-  // 위치 데이터 초기화 함수
-  const clearLocationData = async () => {
-    if (!confirm('모든 직원의 위치 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('attendance')
-        .update({ location: null })
-        .eq('date', selectedDate);
-
-      if (error) {
-        throw error;
-      }
-
-      alert('위치 데이터가 성공적으로 초기화되었습니다.');
-      loadData();
-    } catch (error: any) {
-      console.error('위치 데이터 초기화 오류:', error);
-      alert(`위치 데이터 초기화에 실패했습니다: ${error.message}`);
-    }
-  };
-
-  // 기존 좌표 데이터를 주소로 변환하는 함수
-  const convertCoordinatesToAddress = async () => {
-    if (!confirm('기존 좌표 데이터를 주소로 변환하시겠습니까? 이 작업은 시간이 걸릴 수 있습니다.')) {
-      return;
-    }
-
-    try {
-      // 현재 날짜의 출근 데이터 조회
-      const { data: attendanceData, error: fetchError } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('date', selectedDate);
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (!attendanceData || attendanceData.length === 0) {
-        alert('변환할 위치 데이터가 없습니다.');
-        return;
-      }
-
-      let convertedCount = 0;
-      
-      for (const record of attendanceData) {
-        if (record.location && 
-            record.location.latitude && 
-            record.location.longitude && 
-            !record.location.address) {
-          
-          try {
-            const address = await getAddressFromCoordinates(
-              record.location.latitude, 
-              record.location.longitude
-            );
-            
-            const updatedLocation = {
-              ...record.location,
-              address: address,
-              note: `위치 추적됨 - ${address}`
-            };
-            
-            const { error: updateError } = await supabase
-              .from('attendance')
-              .update({ location: updatedLocation })
-              .eq('id', record.id);
-            
-            if (updateError) {
-              console.error('위치 업데이트 오류:', updateError);
-            } else {
-              convertedCount++;
-            }
-            
-            // API 호출 제한을 위한 지연
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-          } catch (error) {
-            console.error('주소 변환 오류:', error);
-          }
-        }
-      }
-      
-      alert(`${convertedCount}개의 위치 데이터가 주소로 변환되었습니다.`);
-      loadData();
-      
-    } catch (error: any) {
-      console.error('좌표 변환 오류:', error);
-      alert(`좌표 변환에 실패했습니다: ${error.message}`);
-    }
-  };
-
-  const [selectedDate, setSelectedDate] = useState(getKoreaToday());
-  const [selectedDepartment, setSelectedDepartment] = useState('전체 부서');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [consolidatedSchedules, setConsolidatedSchedules] = useState<ConsolidatedSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
-    checkUser();
-  }, []);
+    loadEmployees();
+    loadConsolidatedSchedules();
+  }, [selectedDate, selectedEmployee, filterStatus]);
 
-  useEffect(() => {
-    if (currentUser) {
-      loadData();
-    }
-  }, [currentUser, selectedDate]);
-
-  const checkUser = async () => {
+  const loadEmployees = async () => {
     try {
-      // localStorage 기반 인증 확인
-      if (typeof window === 'undefined') return;
-      
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      const currentEmployee = localStorage.getItem('currentEmployee');
-      
-      if (!isLoggedIn || !currentEmployee) {
-        router.push('/login');
-        return;
-      }
-      
-      const employee = JSON.parse(currentEmployee);
-      
-      // 관리자 권한 확인
-      if (employee.role !== 'admin' && 
-          employee.role !== 'manager' &&
-          employee.name !== '김탁수') {
-        router.push('/dashboard');
-        return;
-      }
-      
-      setCurrentUser(employee);
-    } catch (error) {
-      console.error('사용자 확인 오류:', error);
-      router.push('/login');
-    }
-  };
-
-  // 관리자가 출근/퇴근 시간을 수정하는 함수
-  const updateAttendanceTime = async (employeeId: string, date: string, checkInTime: string, checkOutTime: string) => {
-    try {
-      console.log(`🔄 출근/퇴근 시간 수정 시작:`, {
-        employeeId,
-        date,
-        checkInTime,
-        checkOutTime
-      });
-      
-      // 먼저 해당 직원의 실제 UUID를 찾기
-      const { data: employeeData, error: employeeError } = await supabase
+      const { data, error } = await supabase
         .from('employees')
-        .select('id, employee_id, name')
-        .eq('employee_id', employeeId)
-        .single();
-      
-      if (employeeError) {
-        console.error('❌ 직원 정보 조회 실패:', employeeError);
-        throw new Error(`직원 정보를 찾을 수 없습니다: ${employeeId}`);
-      }
-      
-      console.log('👤 직원 정보 조회 성공:', employeeData);
-      
-      // 위치 정보 가져오기
-      let location = null;
-      try {
-        const position = await getCurrentLocation();
-        
-        // 좌표를 주소로 변환
-        const address = await getAddressFromCoordinates(
-          position.coords.latitude, 
-          position.coords.longitude
-        );
-        
-        location = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString(),
-          address: address,
-          note: `위치 추적됨 - ${address}`
-        };
-        console.log('📍 위치 정보 가져오기 성공:', location);
-      } catch (locationError) {
-        console.warn('⚠️ 위치 정보를 가져올 수 없습니다:', locationError);
-        // 위치 정보 없이도 수정 가능
-        location = {
-          latitude: 37.2934474, // 기본값 (수원시 영통구 법조로 149번길 200)
-          longitude: 127.0714828,
-          accuracy: null,
-          timestamp: new Date().toISOString(),
-          address: '수원시 영통구 법조로 149번길 200',
-          note: '위치 정보 없음 - 수원시 영통구 법조로 149번길 200'
-        };
-      }
-      
-      // 근무 시간 계산 (정리된 시간 사용, 휴식시간 공제)
-      let totalHours = 0;
-      const cleanCheckInTime = checkInTime && checkInTime.trim() !== '' ? checkInTime.trim() : null;
-      const cleanCheckOutTime = checkOutTime && checkOutTime.trim() !== '' ? checkOutTime.trim() : null;
-      
-      if (cleanCheckInTime && cleanCheckOutTime) {
-        const startTime = new Date(`2000-01-01T${cleanCheckInTime}`);
-        const endTime = new Date(`2000-01-01T${cleanCheckOutTime}`);
-        const grossHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-        
-        // 기존 휴식시간 조회하여 공제
-        const { data: existingAttendance } = await supabase
-          .from('attendance')
-          .select('notes')
-          .eq('employee_id', employeeData.id)
-          .eq('date', date)
-          .single();
-        
-        let breakMinutes = 0;
-        if (existingAttendance?.notes) {
-          breakMinutes = calculateTotalBreakMinutes(existingAttendance.notes);
-        }
-        
-        const breakHours = breakMinutes / 60;
-        totalHours = Math.max(0, grossHours - breakHours); // 휴식시간 공제, 음수 방지
-        
-        console.log('📊 근무시간 계산:', {
-          grossHours: grossHours.toFixed(2),
-          breakHours: breakHours.toFixed(2),
-          netHours: totalHours.toFixed(2)
-        });
-      }
-      
-      console.log('📊 계산된 근무 시간:', totalHours);
-      
-      console.log('🧹 정리된 시간:', {
-        originalCheckIn: checkInTime,
-        originalCheckOut: checkOutTime,
-        cleanCheckIn: cleanCheckInTime,
-        cleanCheckOut: cleanCheckOutTime
-      });
-      
-      // attendance 테이블 업데이트 또는 생성 (실제 UUID 사용)
-      const { error: updateError } = await supabase
-        .from('attendance')
-        .upsert({
-          employee_id: employeeData.id, // 실제 UUID 사용
-          date: date,
-          check_in_time: cleanCheckInTime, // 정리된 시간 사용
-          check_out_time: cleanCheckOutTime, // 정리된 시간 사용
-          total_hours: totalHours,
-          overtime_hours: 0,
-          status: cleanCheckOutTime ? 'completed' : 'present',
-          location: location, // 위치 정보 추가
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'employee_id,date'
-        });
-      
-      if (updateError) {
-        console.error('❌ 출근/퇴근 시간 수정 실패:', updateError);
-        throw updateError;
-      } else {
-        console.log('✅ 출근/퇴근 시간 수정 완료');
-        // 데이터 다시 로드
-        loadData();
-      }
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setEmployees(data || []);
     } catch (error) {
-      console.error('출근/퇴근 시간 수정 오류:', error);
-      throw error;
+      console.error('직원 목록 로드 오류:', error);
     }
   };
 
-  // 편집 모드 시작
-  const startEdit = (record: AttendanceRecord) => {
-    setEditingRecord(record.employee_id_code); // MASLABS-003 형식 사용
-    setEditForm({
-      checkInTime: record.actual_start ? record.actual_start.split('T')[1]?.substring(0, 5) || '' : '',
-      checkOutTime: record.actual_end ? record.actual_end.split('T')[1]?.substring(0, 5) || '' : ''
-    });
-  };
-
-  // 편집 취소
-  const cancelEdit = () => {
-    setEditingRecord(null);
-    setEditForm({ checkInTime: '', checkOutTime: '' });
-  };
-
-  // 편집 저장
-  const saveEdit = async (record: AttendanceRecord) => {
+  const loadConsolidatedSchedules = async () => {
+    setLoading(true);
     try {
-      console.log('💾 편집 저장 시작:', {
-        record: record,
-        editForm: editForm
-      });
-
-      await updateAttendanceTime(
-        record.employee_id_code, // MASLABS-003 형식 사용
-        record.schedule_date,
-        editForm.checkInTime,
-        editForm.checkOutTime
-      );
-      
-      setEditingRecord(null);
-      setEditForm({ checkInTime: '', checkOutTime: '' });
-      alert('출근/퇴근 시간이 성공적으로 수정되었습니다.');
-    } catch (error: any) {
-      console.error('❌ 편집 저장 실패:', error);
-      alert(`출근/퇴근 시간 수정에 실패했습니다.\n오류: ${error.message || error}`);
-    }
-  };
-
-  // 상세보기 함수 (통계 정보 포함)
-  const viewDetails = (record: AttendanceRecord) => {
-    const details = `
-📋 ${record.employee_name} 상세 정보
-
-👤 직원 정보:
-• 이름: ${record.employee_name}
-• 사번: ${record.employee_id_code}
-• 고용형태: ${record.employment_type}
-
-⏰ 근무 현황:
-• 예정 시간: ${record.scheduled_start ? formatTime(record.scheduled_start) : '없음'} - ${record.scheduled_end ? formatTime(record.scheduled_end) : '없음'}
-• 실제 출근: ${record.actual_start ? formatTime(record.actual_start) : '미출근'}
-• 실제 퇴근: ${record.actual_end ? formatTime(record.actual_end) : '미퇴근'}
-• 근무 시간: ${record.total_hours > 0 ? formatWorkTime(record.total_hours) : '0시간'}
-• 휴식 시간: ${record.total_break_minutes && record.total_break_minutes > 0 ? `${Math.floor(record.total_break_minutes / 60)}h ${record.total_break_minutes % 60}m` : '0시간'}
-• 상태: ${getStatusText(getActualStatus(record))}
-
-📍 위치 정보:
-• 위치: ${record.location ? (record.location.address || record.location.note || '위치 추적됨') : '위치 없음'}
-    `;
-    alert(details);
-  };
-
-  // 스케줄 삭제 함수
-  const deleteSchedule = async (record: AttendanceRecord) => {
-    // 스케줄이 없는 경우 삭제 불가
-    if (!record.scheduled_start || !record.scheduled_end) {
-      alert('삭제할 스케줄이 없습니다.');
-      return;
-    }
-
-    if (!confirm(`${record.employee_name}의 ${record.schedule_date} 스케줄을 삭제하시겠습니까?`)) {
-      return;
-    }
-
-    try {
-      console.log('🗑️ 스케줄 삭제 시작:', {
-        scheduleId: record.id,
-        employeeName: record.employee_name,
-        scheduleDate: record.schedule_date,
-        scheduledStart: record.scheduled_start,
-        scheduledEnd: record.scheduled_end
-      });
-
-      // schedules 테이블에서 스케줄 삭제
-      const { error: deleteError } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', record.id);
-
-      if (deleteError) {
-        console.error('❌ 스케줄 삭제 실패:', deleteError);
-        alert(`스케줄 삭제에 실패했습니다: ${deleteError.message}`);
-        return;
-      }
-
-      console.log('✅ 스케줄 삭제 완료');
-      alert('스케줄이 성공적으로 삭제되었습니다.');
-      
-      // 데이터 다시 로드
-      loadData();
-    } catch (error: any) {
-      console.error('스케줄 삭제 오류:', error);
-      alert(`스케줄 삭제 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
-
-  // 출근 기록 삭제 함수
-  const deleteAttendanceRecord = async (record: AttendanceRecord) => {
-    if (!confirm(`${record.employee_name}의 ${record.schedule_date} 출근 기록을 완전히 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) {
-      return;
-    }
-
-    try {
-      console.log('🗑️ 출근 기록 삭제 시작:', {
-        attendanceId: record.id,
-        employeeName: record.employee_name,
-        scheduleDate: record.schedule_date
-      });
-
-      // attendance 테이블에서 출근 기록 삭제
-      const { error: deleteError } = await supabase
-        .from('attendance')
-        .delete()
-        .eq('id', record.id);
-
-      if (deleteError) {
-        console.error('❌ 출근 기록 삭제 실패:', deleteError);
-        alert(`출근 기록 삭제에 실패했습니다: ${deleteError.message}`);
-        return;
-      }
-
-      console.log('✅ 출근 기록 삭제 완료');
-      alert('출근 기록이 성공적으로 삭제되었습니다.');
-      
-      // 데이터 다시 로드
-      loadData();
-    } catch (error: any) {
-      console.error('출근 기록 삭제 오류:', error);
-      alert(`출근 기록 삭제 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
-
-  // 휴식 시간 수정 함수
-  const editBreakTime = async (record: AttendanceRecord) => {
-    const currentBreakMinutes = record.total_break_minutes || 0;
-    const currentBreakHours = Math.floor(currentBreakMinutes / 60);
-    const currentBreakMins = currentBreakMinutes % 60;
-    
-    const breakTimeInput = prompt(
-      `${record.employee_name}의 휴식 시간을 입력하세요:\n\n` +
-      `현재: ${currentBreakHours}시간 ${currentBreakMins}분\n\n` +
-      `⚠️ 주의: 관리자 입력 시 기존 직원 휴식 기록이 덮어쓰기됩니다.\n\n` +
-      `입력 형식: "1시간 30분" 또는 "90분" 또는 "1.5시간"`,
-      `${currentBreakHours}시간 ${currentBreakMins}분`
-    );
-
-    if (!breakTimeInput) return;
-
-    try {
-      // 입력된 시간을 분으로 변환
-      let totalMinutes = 0;
-      const input = breakTimeInput.trim();
-      
-      // "1시간 30분" 형식
-      if (input.includes('시간') && input.includes('분')) {
-        const hourMatch = input.match(/(\d+)시간/);
-        const minMatch = input.match(/(\d+)분/);
-        const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
-        const minutes = minMatch ? parseInt(minMatch[1]) : 0;
-        totalMinutes = hours * 60 + minutes;
-      }
-      // "90분" 형식
-      else if (input.includes('분')) {
-        const minMatch = input.match(/(\d+)분/);
-        if (minMatch) {
-          totalMinutes = parseInt(minMatch[1]);
-        }
-      }
-      // "1.5시간" 형식
-      else if (input.includes('시간')) {
-        const hourMatch = input.match(/(\d+(?:\.\d+)?)시간/);
-        if (hourMatch) {
-          totalMinutes = Math.round(parseFloat(hourMatch[1]) * 60);
-        }
-      }
-      // 숫자만 입력된 경우 (분으로 간주)
-      else if (/^\d+$/.test(input)) {
-        totalMinutes = parseInt(input);
-      }
-      else {
-        alert('올바른 형식으로 입력해주세요. 예: "1시간 30분", "90분", "1.5시간"');
-        return;
-      }
-
-      if (totalMinutes < 0) {
-        alert('휴식 시간은 0분 이상이어야 합니다.');
-        return;
-      }
-
-      console.log('⏰ 휴식 시간 수정 시작:', {
-        employeeName: record.employee_name,
-        scheduleDate: record.schedule_date,
-        currentBreakMinutes,
-        newBreakMinutes: totalMinutes
-      });
-
-      // attendance 레코드를 직원(UUID) + 날짜로 조회 후 업데이트/생성
-      // record.employee_id는 UUID, record.schedule_date는 YYYY-MM-DD
-      const { data: existingAttendance, error: findError } = await supabase
-        .from('attendance')
-        .select('id')
-        .eq('employee_id', record.employee_id)
-        .eq('date', record.schedule_date)
-        .single();
-
-      if (findError && findError.code !== 'PGRST116') {
-        // PGRST116: No rows found
-        console.error('❌ 휴식 시간 수정 - 기존 출근 기록 조회 실패:', findError);
-      }
-
-      const notesValue = `관리자 입력 휴식 시간: ${totalMinutes}분 (${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분)`;
-
-      let updateError: any = null;
-      if (existingAttendance && existingAttendance.id) {
-        // 업데이트
-        const { error } = await supabase
-          .from('attendance')
-          .update({
-            notes: notesValue,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingAttendance.id);
-        updateError = error;
-      } else {
-        // 없으면 생성 (최소 필드 포함)
-        const { error } = await supabase
-          .from('attendance')
-          .insert({
-            employee_id: record.employee_id,
-            date: record.schedule_date,
-            notes: notesValue,
-            status: 'present',
-            updated_at: new Date().toISOString(),
-          });
-        updateError = error;
-      }
-
-      if (updateError) {
-        console.error('❌ 휴식 시간 수정 실패:', updateError);
-        alert(`휴식 시간 수정에 실패했습니다: ${updateError.message}`);
-        return;
-      }
-
-      console.log('✅ 휴식 시간 수정 완료');
-      alert(`휴식 시간이 ${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분으로 수정되었습니다.`);
-      
-      // 데이터 다시 로드
-      loadData();
-    } catch (error: any) {
-      console.error('휴식 시간 수정 오류:', error);
-      alert(`휴식 시간 수정 중 오류가 발생했습니다: ${error.message}`);
-    }
-  };
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      console.log("출근 데이터 로딩 시작...", { selectedDate });
-
-      // 1. 스케줄 데이터 조회
-      const { data: scheduleData, error: scheduleError } = await supabase
+      // 1. 해당 날짜의 모든 스케줄 조회
+      let query = supabase
         .from('schedules')
         .select(`
           *,
-          employees!schedules_employee_id_fkey (
-            id,
-            name,
-            employee_id,
-            employment_type
-          )
+          employee:employees!schedules_employee_id_fkey(name, employee_id)
         `)
         .eq('schedule_date', selectedDate)
-        .order('scheduled_start', { ascending: true });
+        .in('status', ['approved', 'pending', 'completed', 'in_progress']);
 
-      if (scheduleError) {
-        console.error('스케줄 데이터 조회 오류:', scheduleError);
-        throw scheduleError;
+      if (selectedEmployee !== 'all') {
+        query = query.eq('employee_id', selectedEmployee);
       }
 
-      console.log(`📅 ${selectedDate} 스케줄 데이터:`, scheduleData?.length || 0);
+      const { data: schedules, error: scheduleError } = await query;
 
-      // 2. 출근 데이터 조회
-      const { data: attendanceData, error: attendanceError } = await supabase
+      if (scheduleError) throw scheduleError;
+
+      // 2. attendance 테이블에서 실제 출근 기록 조회
+      const { data: attendanceRecords, error: attendanceError } = await supabase
         .from('attendance')
         .select('*')
         .eq('date', selectedDate);
 
-      if (attendanceError) {
-        console.error('출근 데이터 조회 오류:', attendanceError);
-        throw attendanceError;
-      }
+      if (attendanceError) throw attendanceError;
 
-      console.log(`📊 ${selectedDate} 출근 데이터:`, attendanceData?.length || 0);
-
-      // 3. 데이터 변환 및 병합
-      const employeeMap = new Map();
+      // 3. 스케줄을 직원별로 그룹화하고 연속된 시간대를 통합
+      const employeeGroups = new Map<string, any[]>();
       
-      // 스케줄 데이터 처리 - 각 스케줄을 별도 레코드로 처리
-      if (scheduleData) {
-        scheduleData.forEach(schedule => {
-          const employee = schedule.employees;
-          if (!employee) return;
-
-          // 각 스케줄을 고유한 키로 처리 (employee_id + scheduled_start)
-          const scheduleKey = `${schedule.employee_id}_${schedule.scheduled_start}`;
-          
-          employeeMap.set(scheduleKey, {
-            id: schedule.id,
-            employee_id: schedule.employee_id,
-            employee_name: employee.name,
-            employee_id_code: employee.employee_id,
-            employment_type: employee.employment_type || "미지정",
-            schedule_date: schedule.schedule_date,
-            scheduled_start: schedule.scheduled_start,
-            scheduled_end: schedule.scheduled_end,
-            actual_start: schedule.actual_start,
-            actual_end: schedule.actual_end,
-            break_minutes: schedule.break_minutes || 0,
-            total_hours: 0,
-            overtime_hours: 0,
-            status: schedule.status || 'pending',
-            employee_note: schedule.employee_note || "",
-            manager_note: schedule.manager_note || "",
-            notes: null,
-            schedule_count: 1,
-            first_schedule_start: schedule.scheduled_start,
-            last_schedule_end: schedule.scheduled_end
-          });
-        });
-      }
-
-      // 출근 데이터와 병합
-      if (attendanceData) {
-        for (const attendance of attendanceData) {
-          const employeeId = attendance.employee_id;
-          
-          // 해당 직원의 모든 스케줄에 출근 데이터 적용
-          for (const [key, record] of employeeMap.entries()) {
-            if (record.employee_id === employeeId) {
-              record.actual_start = attendance.check_in_time ? `${selectedDate}T${attendance.check_in_time}` : null;
-              record.actual_end = attendance.check_out_time ? `${selectedDate}T${attendance.check_out_time}` : null;
-              
-              // 근무시간 계산 (휴식시간 공제)
-              let calculatedTotalHours = 0;
-              if (attendance.check_in_time && attendance.check_out_time) {
-                const startTime = new Date(`2000-01-01T${attendance.check_in_time}`);
-                const endTime = new Date(`2000-01-01T${attendance.check_out_time}`);
-                const grossHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                
-                // 휴식시간 공제
-                const breakMinutes = calculateTotalBreakMinutes(attendance.notes);
-                const breakHours = breakMinutes / 60;
-                calculatedTotalHours = Math.max(0, grossHours - breakHours);
-                
-                console.log(`📊 ${record.employee_name} 근무시간 재계산:`, {
-                  grossHours: grossHours.toFixed(2),
-                  breakHours: breakHours.toFixed(2),
-                  netHours: calculatedTotalHours.toFixed(2)
-                });
-              }
-              
-              record.total_hours = calculatedTotalHours;
-              record.overtime_hours = attendance.overtime_hours || 0;
-              record.status = attendance.status || record.status;
-              record.notes = attendance.notes || null;
-              record.location = attendance.location || null;
-              record.total_break_minutes = calculateTotalBreakMinutes(attendance.notes);
-            }
-          }
-          
-          // 출근 데이터만 있고 스케줄이 없는 경우
-          const hasSchedule = Array.from(employeeMap.values()).some(record => record.employee_id === employeeId);
-          if (!hasSchedule) {
-            const { data: employee } = await supabase
-              .from('employees')
-              .select('name, employee_id, employment_type')
-              .eq('id', attendance.employee_id)
-              .single();
-
-            if (employee) {
-              // 근무시간 계산 (휴식시간 공제)
-              let calculatedTotalHours = 0;
-              if (attendance.check_in_time && attendance.check_out_time) {
-                const startTime = new Date(`2000-01-01T${attendance.check_in_time}`);
-                const endTime = new Date(`2000-01-01T${attendance.check_out_time}`);
-                const grossHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                
-                // 휴식시간 공제
-                const breakMinutes = calculateTotalBreakMinutes(attendance.notes);
-                const breakHours = breakMinutes / 60;
-                calculatedTotalHours = Math.max(0, grossHours - breakHours);
-                
-                console.log(`📊 ${employee.name} (스케줄 없음) 근무시간 재계산:`, {
-                  grossHours: grossHours.toFixed(2),
-                  breakHours: breakHours.toFixed(2),
-                  netHours: calculatedTotalHours.toFixed(2)
-                });
-              }
-              
-              const noScheduleKey = `${employeeId}_no_schedule`;
-              employeeMap.set(noScheduleKey, {
-                id: attendance.id,
-                employee_id: attendance.employee_id,
-                employee_name: employee.name,
-                employee_id_code: employee.employee_id,
-                employment_type: employee.employment_type || "미지정",
-                schedule_date: selectedDate,
-                scheduled_start: null,
-                scheduled_end: null,
-                actual_start: attendance.check_in_time ? `${selectedDate}T${attendance.check_in_time}` : null,
-                actual_end: attendance.check_out_time ? `${selectedDate}T${attendance.check_out_time}` : null,
-                break_minutes: 0,
-                total_hours: calculatedTotalHours,
-                overtime_hours: attendance.overtime_hours || 0,
-                status: attendance.status || 'pending',
-                employee_note: "",
-                manager_note: "",
-                schedule_count: 0,
-                first_schedule_start: null,
-                last_schedule_end: null
-              });
-            }
-          }
+      (schedules || []).forEach(schedule => {
+        const empId = schedule.employee_id;
+        if (!employeeGroups.has(empId)) {
+          employeeGroups.set(empId, []);
         }
-      }
-
-      const records = Array.from(employeeMap.values());
-      setAttendanceRecords(records);
-      console.log('✅ 출근 데이터 로딩 완료:', records.length);
-
-    } catch (error) {
-      console.error("출근 데이터 로딩 중 오류:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 시간 포맷팅 함수
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return '-';
-    
-    // 시간만 있는 경우 (HH:MM:SS 형식) - 스케줄 시간은 이미 한국 시간이므로 변환하지 않음
-    if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
-      try {
-        const [hours, minutes] = timeString.split(':').map(Number);
-        // 스케줄 시간은 이미 한국 시간이므로 그대로 사용
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      } catch (error) {
-        console.error('시간 변환 오류:', error, timeString);
-        return timeString.substring(0, 5); // 파싱 실패 시 원본 반환
-      }
-    }
-    
-    // ISO 날짜 형식인 경우 - 이미 한국 시간이므로 추가 변환 불필요
-    try {
-      const date = new Date(timeString);
-      
-      // 이미 한국 시간이므로 추가 변환 없이 바로 시간 추출
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      
-      return `${hours}:${minutes}`;
-    } catch (error) {
-      console.error('시간 변환 오류:', error, timeString);
-      return timeString; // 파싱 실패 시 원본 반환
-    }
-  };
-
-  // 근무 시간 포맷팅 함수
-  const formatWorkTime = (hours: number) => {
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
-    return `${wholeHours}h ${minutes}m`;
-  };
-
-  // 스케줄 시간 포맷팅 함수
-  const formatScheduleDuration = (start: string, end: string) => {
-    if (!start || !end) return '-';
-    
-    try {
-      const startTime = new Date(`2000-01-01T${start}`);
-      const endTime = new Date(`2000-01-01T${end}`);
-      const diffMs = endTime.getTime() - startTime.getTime();
-      const diffHours = diffMs / (1000 * 60 * 60);
-      
-      return `${Math.round(diffHours)}h`;
-    } catch (error) {
-      return '-';
-    }
-  };
-
-  // 상태 확인 함수 - 휴식 상태 감지 로직 및 시간 기반 상태 판단 추가
-  const getActualStatus = (record: AttendanceRecord) => {
-    // 디버깅: 허상원의 상태 확인
-    if (record.employee_name === '허상원') {
-      console.log('🔍 허상원 상태 디버깅:', {
-        employee_name: record.employee_name,
-        status: record.status,
-        employee_note: record.employee_note,
-        notes: record.notes,
-        actual_start: record.actual_start,
-        actual_end: record.actual_end
+        employeeGroups.get(empId)!.push(schedule);
       });
+
+      const consolidated: ConsolidatedSchedule[] = [];
+
+      employeeGroups.forEach((empSchedules, empId) => {
+        // 직원 정보
+        const employee = empSchedules[0].employee;
+        const attendance = attendanceRecords?.find(record => 
+          record.employee_id === empId && record.date === selectedDate
+        );
+
+        // 스케줄을 시간순으로 정렬
+        empSchedules.sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start));
+
+        // 연속된 시간대를 통합하여 workBlocks 생성
+        const workBlocks: any[] = [];
+        let currentBlock: any = null;
+
+        empSchedules.forEach(schedule => {
+          const startTime = schedule.scheduled_start;
+          const endTime = schedule.scheduled_end;
+          
+          if (!currentBlock) {
+            // 첫 번째 블록 시작
+            currentBlock = {
+              start: startTime,
+              end: endTime,
+              schedules: [schedule],
+              status: getScheduleStatus(schedule, attendance)
+            };
+          } else {
+            // 연속된 시간대인지 확인 (30분 간격)
+            const currentEnd = new Date(`2000-01-01T${currentBlock.end}`);
+            const nextStart = new Date(`2000-01-01T${startTime}`);
+            const timeDiff = (nextStart.getTime() - currentEnd.getTime()) / (1000 * 60); // 분 단위
+
+            if (timeDiff <= 30) {
+              // 연속된 시간대 - 블록 확장
+              currentBlock.end = endTime;
+              currentBlock.schedules.push(schedule);
+            } else {
+              // 새로운 블록 시작
+              workBlocks.push(createWorkBlock(currentBlock, attendance));
+              currentBlock = {
+                start: startTime,
+                end: endTime,
+                schedules: [schedule],
+                status: getScheduleStatus(schedule, attendance)
+              };
+            }
+          }
+        });
+
+        // 마지막 블록 추가
+        if (currentBlock) {
+          workBlocks.push(createWorkBlock(currentBlock, attendance));
+        }
+
+        // 총 시간 계산
+        const totalScheduledMinutes = workBlocks.reduce((total, block) => total + block.duration, 0);
+        const totalScheduledHours = totalScheduledMinutes / 60;
+        
+        // 실제 근무 시간 계산 (attendance 기록 기반)
+        let totalActualHours = 0;
+        if (attendance?.check_in_time && attendance?.check_out_time) {
+          const checkIn = new Date(attendance.check_in_time);
+          const checkOut = new Date(attendance.check_out_time);
+          totalActualHours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+        }
+
+        // 전체 상태 결정
+        let overallStatus: 'completed' | 'partial' | 'no-attendance' = 'no-attendance';
+        if (attendance?.check_in_time && attendance?.check_out_time) {
+          overallStatus = 'completed';
+        } else if (attendance?.check_in_time) {
+          overallStatus = 'partial';
+        }
+
+        consolidated.push({
+          employee_id: empId,
+          employee_name: employee?.name || '알 수 없음',
+          employee_code: employee?.employee_id || 'N/A',
+          date: selectedDate,
+          workBlocks,
+          totalScheduledHours,
+          totalActualHours,
+          overallStatus
+        });
+      });
+
+      // 필터 적용
+      let filtered = consolidated;
+      if (filterStatus === 'no-attendance') {
+        filtered = consolidated.filter(emp => emp.overallStatus === 'no-attendance');
+      } else if (filterStatus === 'partial') {
+        filtered = consolidated.filter(emp => emp.overallStatus === 'partial');
+      } else if (filterStatus === 'completed') {
+        filtered = consolidated.filter(emp => emp.overallStatus === 'completed');
+      }
+
+      setConsolidatedSchedules(filtered);
+    } catch (error) {
+      console.error('통합 스케줄 로드 오류:', error);
+      setConsolidatedSchedules([]);
+    } finally {
+      setLoading(false);
     }
-    
-    // 휴식 상태 확인 - 단, 이미 퇴근한 경우는 제외
-    // 1. schedules 테이블의 status가 'break'인 경우
-    if (record.status === 'break' && !record.actual_end) {
-      console.log('✅ schedules 테이블에서 break 상태 감지:', record.employee_name);
-      return 'break';
-    }
-    
-    // 2. employee_note에 '휴식 시작'이 있는 경우 (퇴근하지 않은 경우만)
-    if (record.employee_note && 
-        record.employee_note.includes('휴식 시작') && 
-        !record.employee_note.includes('휴식 후 복귀') &&
-        !record.actual_end) {
-      console.log('✅ employee_note에서 휴식 상태 감지:', record.employee_name, record.employee_note);
-      return 'break';
-    }
-    
-    // 3. attendance 테이블의 notes 필드에서 휴식 상태 확인 (퇴근하지 않은 경우만)
-    if (record.notes && 
-        record.notes.includes('휴식 시작') && 
-        !record.notes.includes('휴식 후 복귀') &&
-        !record.actual_end) {
-      console.log('✅ attendance notes에서 휴식 상태 감지:', record.employee_name, record.notes);
-      return 'break';
-    }
-    
-    // 휴식 상태가 아닌 경우, 실제 출근/퇴근 상태를 우선 확인
-    // 출근했지만 퇴근하지 않은 경우는 'working' 상태
-    if (record.actual_start && !record.actual_end) {
-      return 'working';
-    }
-    
-    // 출근하고 퇴근한 경우는 'completed' 상태
-    if (record.actual_start && record.actual_end) {
+  };
+
+  const getScheduleStatus = (schedule: any, attendance: any) => {
+    if (attendance?.check_in_time && attendance?.check_out_time) {
       return 'completed';
+    } else if (attendance?.check_in_time) {
+      return 'in-progress';
+    } else {
+      return 'no-attendance';
     }
-    
-    // 출근하지 않은 경우 - 스케줄 시간을 고려한 상태 판단
-    if (record.scheduled_start) {
-      const now = new Date();
-      const currentTime = now.getHours() * 60 + now.getMinutes(); // 현재 시간을 분으로 변환
-      
-      // 스케줄 시작 시간을 분으로 변환
-      const [scheduleHour, scheduleMinute] = record.scheduled_start.split(':').map(Number);
-      const scheduleStartTime = scheduleHour * 60 + scheduleMinute;
-      
-      // 아직 출근 시간이 안된 경우
-      if (currentTime < scheduleStartTime) {
-        return 'pending';
-      }
-      
-      // 출근 시간이 지났는데 출근하지 않은 경우
-      return 'not_checked_in';
-    }
-    
-    // 스케줄이 없는 경우
-    return 'not_checked_in';
   };
 
-  // 상태별 스타일
-  const getStatusStyle = (status: string) => {
+  const createWorkBlock = (block: any, attendance: any) => {
+    const startTime = new Date(`2000-01-01T${block.start}`);
+    const endTime = new Date(`2000-01-01T${block.end}`);
+    const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // 분 단위
+
+    return {
+      start: block.start,
+      end: block.end,
+      duration,
+      status: block.status,
+      checkIn: attendance?.check_in_time ? format(new Date(attendance.check_in_time), 'HH:mm') : null,
+      checkOut: attendance?.check_out_time ? format(new Date(attendance.check_out_time), 'HH:mm') : null,
+      location: attendance?.check_in_location ? '위치 기록됨' : '위치 없음',
+      scheduleCount: block.schedules.length
+    };
+  };
+
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed': return 'text-green-600 bg-green-100';
-      case 'working': return 'text-blue-600 bg-blue-100';
-      case 'break': return 'text-orange-600 bg-orange-100';
-      case 'not_checked_in': return 'text-red-600 bg-red-100';
-      case 'pending': return 'text-gray-600 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'completed':
+        return <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">완료</span>;
+      case 'partial':
+        return <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">근무중</span>;
+      case 'no-attendance':
+        return <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">미출근</span>;
+      default:
+        return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">알 수 없음</span>;
     }
   };
 
-  // 상태별 아이콘
-  const getStatusIcon = (status: string) => {
+  const getWorkBlockStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4" />;
-      case 'working': return <Clock className="w-4 h-4" />;
-      case 'break': return <Coffee className="w-4 h-4" />;
-      case 'not_checked_in': return <XCircle className="w-4 h-4" />;
-      case 'pending': return <AlertCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      case 'completed':
+        return <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">완료</span>;
+      case 'in-progress':
+        return <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">근무중</span>;
+      case 'no-attendance':
+        return <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">미출근</span>;
+      default:
+        return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">알 수 없음</span>;
     }
   };
-
-  // 상태별 텍스트
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed': return '완료';
-      case 'working': return '근무중';
-      case 'break': return '휴식중';
-      case 'not_checked_in': return '미출근';
-      case 'pending': return '대기중';
-      default: return '대기';
-    }
-  };
-
-  // 필터링된 데이터 (이름순 정렬)
-  const filteredRecords = attendanceRecords
-    .filter(record => {
-      const matchesSearch = !searchTerm || 
-        record.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.employee_id_code.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      return matchesSearch;
-    })
-    .sort((a, b) => {
-      // 이름순 정렬, 이름이 같으면 사번순 정렬
-      if (a.employee_name !== b.employee_name) {
-        return a.employee_name.localeCompare(b.employee_name, 'ko');
-      }
-      return a.employee_id_code.localeCompare(b.employee_id_code, 'ko');
-    });
-
-  // 통계 계산 - 직원별로 중복 제거하여 계산
-  const uniqueEmployees = new Map();
-  filteredRecords.forEach(record => {
-    if (!uniqueEmployees.has(record.employee_id)) {
-      uniqueEmployees.set(record.employee_id, record);
-    }
-  });
-  
-  const uniqueRecords = Array.from(uniqueEmployees.values());
-  const completedCount = uniqueRecords.filter(r => getActualStatus(r) === 'completed').length;
-  const workingCount = uniqueRecords.filter(r => getActualStatus(r) === 'working').length;
-  const breakCount = uniqueRecords.filter(r => getActualStatus(r) === 'break').length;
-  const notCheckedInCount = uniqueRecords.filter(r => getActualStatus(r) === 'not_checked_in').length;
-  const pendingCount = uniqueRecords.filter(r => getActualStatus(r) === 'pending').length;
-  
-  const avgHours = filteredRecords.length > 0 
-    ? filteredRecords.reduce((sum, r) => sum + r.total_hours, 0) / filteredRecords.length 
-    : 0;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">데이터를 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
         {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">출근 관리</h1>
-              <p className="mt-2 text-gray-600">직원들의 출근체크 위치/시간 확인 및 관리</p>
-            </div>
-            <div className="flex space-x-3">
-              <button 
-                onClick={convertCoordinatesToAddress}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                title="GPS 좌표를 실제 주소로 변환"
-              >
-                좌표→주소 변환
-              </button>
-              <button 
-                onClick={clearLocationData}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                title="선택된 날짜의 모든 위치 데이터 삭제"
-              >
-                위치 데이터 초기화
-              </button>
-            </div>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Users className="h-6 w-6 mr-2 text-blue-600" />
+            출근 관리 (개선된 버전)
+          </h1>
+          <p className="text-gray-600 mt-1">30분 단위 분할을 통합하여 직관적으로 표시합니다.</p>
         </div>
 
         {/* 필터 섹션 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">날짜</label>
@@ -1185,323 +287,198 @@ export default function AttendanceManagementPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">부서</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">직원</label>
               <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="전체 부서">전체 부서</option>
+                <option value="all">전체 직원</option>
+                {employees.map(employee => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.name} ({employee.employee_id})
+                  </option>
+                ))}
               </select>
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">검색</label>
-              <input
-                type="text"
-                placeholder="이름 또는 사번"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              >
+                <option value="all">전체</option>
+                <option value="no-attendance">미출근</option>
+                <option value="partial">근무중</option>
+                <option value="completed">완료</option>
+              </select>
             </div>
+            
             <div className="flex items-end">
               <button
-                onClick={loadData}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                onClick={loadConsolidatedSchedules}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                필터 적용
+                <Search className="h-4 w-4 inline mr-2" />
+                조회
               </button>
             </div>
           </div>
         </div>
 
-        {/* 요약 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* 통계 카드 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">출근 완료</p>
-                <p className="text-2xl font-bold text-green-600">{completedCount}명</p>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">완료</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {consolidatedSchedules.filter(emp => emp.overallStatus === 'completed').length}명
+                </p>
               </div>
             </div>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          
+          <div className="bg-white rounded-lg shadow-sm border p-4">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Clock className="w-6 h-6 text-blue-600" />
+                <Clock className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">근무 중</p>
-                <p className="text-2xl font-bold text-blue-600">{workingCount}명</p>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">근무중</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {consolidatedSchedules.filter(emp => emp.overallStatus === 'partial').length}명
+                </p>
               </div>
             </div>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          
+          <div className="bg-white rounded-lg shadow-sm border p-4">
             <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Coffee className="w-6 h-6 text-orange-600" />
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <XCircle className="h-6 w-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">휴식 중</p>
-                <p className="text-2xl font-bold text-orange-600">{breakCount}명</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">미출근</p>
-                <p className="text-2xl font-bold text-red-600">{notCheckedInCount}명</p>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">미출근</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {consolidatedSchedules.filter(emp => emp.overallStatus === 'no-attendance').length}명
+                </p>
               </div>
             </div>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          
+          <div className="bg-white rounded-lg shadow-sm border p-4">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
+                <Users className="h-6 w-6 text-purple-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">평균 근무시간</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {avgHours > 0 ? formatWorkTime(avgHours) : '0h 0m'}
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">총 직원</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {consolidatedSchedules.length}명
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 출근 기록 테이블 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">출근 기록</h2>
-            <p className="text-sm text-gray-600">총 {uniqueRecords.length}명의 기록 ({filteredRecords.length}개 스케줄)</p>
+        {/* 통합된 스케줄 목록 */}
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-semibold text-gray-900">통합된 출근 기록</h2>
+            <p className="text-sm text-gray-600 mt-1">30분 단위 분할을 연속된 근무 블록으로 통합하여 표시</p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    직원 정보
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    스케줄
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    실제 출근
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    휴식 시간
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    실제 퇴근
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    근무 시간
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    위치
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    상태
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    액션
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRecords.map((record) => {
-                  const actualStatus = getActualStatus(record);
-                  return (
-                    <tr key={record.employee_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-600">
-                                {record.employee_name.charAt(0)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="ml-4">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">로딩 중...</p>
+            </div>
+          ) : consolidatedSchedules.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>해당 조건에 맞는 출근 기록이 없습니다.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {consolidatedSchedules.map((employee) => (
+                <div key={employee.employee_id} className="p-6">
+                  {/* 직원 헤더 */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-800">
+                            {employee.employee_name.charAt(0)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {employee.employee_name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {employee.employee_code} • {format(new Date(employee.date), 'yyyy년 MM월 dd일', { locale: ko })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      {getStatusBadge(employee.overallStatus)}
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">스케줄 시간</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {employee.totalScheduledHours.toFixed(1)}h
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">실제 시간</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {employee.totalActualHours.toFixed(1)}h
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 근무 블록들 */}
+                  <div className="space-y-3">
+                    {employee.workBlocks.map((block, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {record.employee_name}
+                              {block.start} - {block.end}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {record.employee_id_code} • {record.employment_type}
+                              ({block.duration}분, {block.scheduleCount}개 스케줄)
+                            </div>
+                            {getWorkBlockStatusBadge(block.status)}
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div>
+                              <span className="font-medium">출근:</span> {block.checkIn || '-'}
+                            </div>
+                            <div>
+                              <span className="font-medium">퇴근:</span> {block.checkOut || '-'}
+                            </div>
+                            <div>
+                              <span className="font-medium">위치:</span> {block.location}
                             </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {record.scheduled_start && record.scheduled_end ? (
-                            <>
-                              {formatTime(record.scheduled_start)} - {formatTime(record.scheduled_end)}
-                              <br />
-                              <span className="text-xs text-gray-500">
-                                ({formatScheduleDuration(record.scheduled_start, record.scheduled_end)})
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-gray-400">---</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editingRecord === record.employee_id_code ? (
-                          <div className="text-sm text-gray-900">
-                            <div className="font-medium mb-1">실제 출근</div>
-                            <input
-                              type="time"
-                              value={editForm.checkInTime}
-                              onChange={(e) => setEditForm({...editForm, checkInTime: e.target.value})}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-900">
-                            <div className="font-medium">실제 출근</div>
-                            <div className="text-xs text-gray-500">
-                              {formatTime(record.actual_start)}
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div 
-                          className="text-sm text-gray-900 cursor-pointer hover:text-orange-600 hover:bg-orange-50 px-2 py-1 rounded transition-colors"
-                          onClick={() => editBreakTime(record)}
-                          title="클릭하여 휴식 시간 수정"
-                        >
-                          {record.total_break_minutes && record.total_break_minutes > 0 
-                            ? `${Math.floor(record.total_break_minutes / 60)}h ${record.total_break_minutes % 60}m`
-                            : '-'
-                          }
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editingRecord === record.employee_id_code ? (
-                          <div className="text-sm text-gray-900">
-                            <div className="font-medium mb-1">실제 퇴근</div>
-                            <input
-                              type="time"
-                              value={editForm.checkOutTime}
-                              onChange={(e) => setEditForm({...editForm, checkOutTime: e.target.value})}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-900">
-                            <div className="font-medium">실제 퇴근</div>
-                            <div className="text-xs text-gray-500">
-                              {formatTime(record.actual_end)}
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {record.total_hours > 0 ? formatWorkTime(record.total_hours) : '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-xs text-gray-500">
-                          {record.location 
-                            ? (record.location.address || 
-                               record.location.note || 
-                               (record.location.latitude && record.location.longitude 
-                                 ? `위치 추적됨 (${record.location.latitude.toFixed(4)}, ${record.location.longitude.toFixed(4)})`
-                                 : '위치 추적됨'))
-                            : '위치 없음'
-                          }
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(actualStatus)}`}>
-                          {getStatusIcon(actualStatus)}
-                          <span className="ml-1">{getStatusText(actualStatus)}</span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {editingRecord === record.employee_id_code ? (
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => saveEdit(record)}
-                              className="text-green-600 hover:text-green-900"
-                              title="저장"
-                            >
-                              <Save className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={cancelEdit}
-                              className="text-red-600 hover:text-red-900"
-                              title="취소"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => startEdit(record)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="출근/퇴근 시간 수정"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => viewDetails(record)}
-                              className="text-indigo-600 hover:text-indigo-900" 
-                              title="상세보기 (통계 포함)"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => editBreakTime(record)}
-                              className="text-orange-600 hover:text-orange-900" 
-                              title="휴식 시간 수정"
-                            >
-                              <Coffee className="w-4 h-4" />
-                            </button>
-                            {record.scheduled_start && record.scheduled_end ? (
-                              <button 
-                                onClick={() => deleteSchedule(record)}
-                                className="text-red-600 hover:text-red-900" 
-                                title="스케줄 삭제"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={() => deleteAttendanceRecord(record)}
-                                className="text-red-600 hover:text-red-900" 
-                                title="출근 기록 삭제"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
