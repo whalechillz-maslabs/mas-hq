@@ -2306,14 +2306,6 @@ export default function AttendancePage() {
               </div>
             )}
 
-
-            {/* 근태 서머리 */}
-            {currentUser && (
-              <AttendanceSummary 
-                employeeId={currentUser.id} 
-                currentDate={format(new Date(), "yyyy-MM-dd")} 
-              />
-            )}
             {/* 이번 달 출근 요약 */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
@@ -2407,6 +2399,13 @@ export default function AttendancePage() {
                             </span>
                             <div className="flex items-center space-x-4 text-gray-600">
 
+            {/* 근태 서머리 */}
+            {currentUser && (
+              <AttendanceSummary 
+                employeeId={currentUser.id} 
+                currentDate={format(new Date(), "yyyy-MM-dd")} 
+              />
+            )}
                               <span className="text-xs text-gray-500">스케줄: {formatHoursToHm(summary.scheduledHours)}</span>
                               <span className="text-xs text-gray-500">실제: {formatHoursToHm(summary.totalHours)}</span>
                             </div>

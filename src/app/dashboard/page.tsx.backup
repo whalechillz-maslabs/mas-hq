@@ -1850,6 +1850,14 @@ export default function DashboardPage() {
           
           {/* 모든 직원 메뉴 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            <button 
+              onClick={() => router.push('/schedules')}
+              className="p-6 bg-blue-50 border-2 border-blue-200 rounded-2xl hover:bg-blue-100 transition-all duration-200 text-left"
+            >
+              <Calendar className="h-10 w-10 text-blue-600 mb-3" />
+              <h3 className="font-bold text-lg text-blue-900 mb-2">근무 스케줄</h3>
+              <p className="text-sm text-blue-700">근무 시간 확인 및 관리</p>
+            </button>
             
             <button 
               onClick={() => router.push('/salary')}
@@ -1882,9 +1890,9 @@ export default function DashboardPage() {
               onClick={() => router.push('/attendance')}
               className="p-6 bg-indigo-50 border-2 border-indigo-200 rounded-2xl hover:bg-indigo-100 transition-all duration-200 text-left"
             >
-              <BarChart3 className="h-10 w-10 text-indigo-600 mb-3" />
-              <h3 className="font-bold text-lg text-indigo-900 mb-2">근태 관리</h3>
-              <p className="text-sm text-indigo-700">출근체크, 스케줄, 근태분석</p>
+              <Clock className="h-10 w-10 text-indigo-600 mb-3" />
+              <h3 className="font-bold text-lg text-indigo-900 mb-2">출근 체크</h3>
+              <p className="text-sm text-indigo-700">출근 체크 및 근무 기록</p>
             </button>
             
                   <button
