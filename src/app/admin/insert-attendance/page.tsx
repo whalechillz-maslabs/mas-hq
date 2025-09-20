@@ -366,11 +366,12 @@ export default function InsertAttendanceEnhancedPage() {
     try {
       // 시간을 HH:mm:ss 형식으로 정규화 (타임존 변환 방지)
       const formatTimeForDB = (timeStr: string) => {
-        if (!timeStr) return null;
+        if (!timeStr || timeStr.trim() === '' || timeStr === '') return null;
         // HH:mm 형식을 HH:mm:ss 형식으로 변환
-        return timeStr.includes(':') && timeStr.split(':').length === 2 
-          ? `${timeStr}:00` 
-          : timeStr;
+        if (timeStr.includes(':') && timeStr.split(':').length === 2) {
+          return `${timeStr}:00`;
+        }
+        return timeStr;
       };
 
       const checkInTime = formatTimeForDB(editForm.checkInTime);
