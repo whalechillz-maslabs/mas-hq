@@ -328,12 +328,26 @@ export default function InsertAttendanceEnhancedPage() {
       record.employee_id === schedule.employee_id && record.date === selectedDate
     );
 
+    // 시간 형식 변환 함수 (타임존 변환 방지)
+    const extractTimeFromISO = (isoString: string) => {
+      if (!isoString) return '';
+      try {
+        if (isoString.includes('T')) {
+          const timePart = isoString.split('T')[1];
+          return timePart ? timePart.substring(0, 5) : ''; // HH:mm 형식
+        }
+        return isoString.substring(0, 5); // HH:mm 형식
+      } catch (error) {
+        return '';
+      }
+    };
+
     setEditingSchedule(schedule);
     setEditForm({
-      checkInTime: schedule.actual_start ? format(new Date(schedule.actual_start), 'HH:mm') : '',
-      checkOutTime: schedule.actual_end ? format(new Date(schedule.actual_end), 'HH:mm') : '',
-      breakStartTime: attendance?.break_start_time ? format(new Date(attendance.break_start_time), 'HH:mm') : '',
-      breakEndTime: attendance?.break_end_time ? format(new Date(attendance.break_end_time), 'HH:mm') : '',
+      checkInTime: extractTimeFromISO(schedule.actual_start || ''),
+      checkOutTime: extractTimeFromISO(schedule.actual_end || ''),
+      breakStartTime: attendance?.break_start_time ? attendance.break_start_time.substring(0, 5) : '',
+      breakEndTime: attendance?.break_end_time ? attendance.break_end_time.substring(0, 5) : '',
       note: schedule.employee_note || ''
     });
     setShowEditModal(true);
