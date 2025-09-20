@@ -741,10 +741,12 @@ export default function InsertAttendanceEnhancedPage() {
                               try {
                                 // ISO 형식인 경우 (2025-09-19T08:57:37.073+00:00)
                                 if (schedule.actual_start.includes('T')) {
-                                  const date = new Date(schedule.actual_start);
-                                  return isNaN(date.getTime()) ? 
-                                    schedule.actual_start.split('T')[1]?.substring(0, 8) || schedule.actual_start :
-                                    format(date, 'HH:mm:ss');
+                                  // UTC 시간을 그대로 표시 (타임존 변환 방지)
+                                  const timePart = schedule.actual_start.split('T')[1];
+                                  if (timePart) {
+                                    return timePart.substring(0, 8); // HH:mm:ss 부분만 추출
+                                  }
+                                  return schedule.actual_start;
                                 }
                                 // HH:mm:ss 형식인 경우 (08:57:37)
                                 else if (schedule.actual_start.includes(':')) {
@@ -767,10 +769,12 @@ export default function InsertAttendanceEnhancedPage() {
                               try {
                                 // ISO 형식인 경우 (2025-09-19T16:00:55.576+00:00)
                                 if (schedule.actual_end.includes('T')) {
-                                  const date = new Date(schedule.actual_end);
-                                  return isNaN(date.getTime()) ? 
-                                    schedule.actual_end.split('T')[1]?.substring(0, 8) || schedule.actual_end :
-                                    format(date, 'HH:mm:ss');
+                                  // UTC 시간을 그대로 표시 (타임존 변환 방지)
+                                  const timePart = schedule.actual_end.split('T')[1];
+                                  if (timePart) {
+                                    return timePart.substring(0, 8); // HH:mm:ss 부분만 추출
+                                  }
+                                  return schedule.actual_end;
                                 }
                                 // HH:mm:ss 형식인 경우 (16:00:55)
                                 else if (schedule.actual_end.includes(':')) {
