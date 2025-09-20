@@ -1333,10 +1333,13 @@ export default function EmployeeSchedulesPage() {
                                           ? 'bg-green-100 text-green-800' 
                                           : schedule.status === 'pending'
                                           ? 'bg-yellow-100 text-yellow-800'
+                                          : schedule.status === 'completed'
+                                          ? 'bg-blue-100 text-blue-800'
                                           : 'bg-red-100 text-red-800'
                                       }`}>
                                         {schedule.status === 'approved' ? '승인' : 
-                                         schedule.status === 'pending' ? '대기' : '취소'}
+                                         schedule.status === 'pending' ? '대기' : 
+                                         schedule.status === 'completed' ? '완료' : '취소'}
                                       </div>
                                     </div>
                                   </div>
@@ -1359,6 +1362,28 @@ export default function EmployeeSchedulesPage() {
                                       >
                                         <XCircle className="h-4 w-4" />
                                         <span>취소</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  {/* 완료된 스케줄 수정/삭제 버튼 추가 */}
+                                  {schedule.status === 'completed' && (
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleEditSchedule(schedule)}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                        <span>수정</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSchedule(schedule.id)}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span>삭제</span>
                                       </button>
                                     </div>
                                   )}
