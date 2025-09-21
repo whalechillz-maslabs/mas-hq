@@ -1024,7 +1024,12 @@ export default function DashboardPage() {
           
           // 오늘의 시타 예약 정보 추출
           const todaySitaTasks = urgentTasks.filter(task => {
-            if (task.operation_type?.code !== 'OP5' || !task.sita_booking) return false;
+            // OP5 업무이고 시타 예약이 있거나 방문 예약 날짜가 있는 경우
+            if (task.operation_type?.code !== 'OP5') return false;
+            
+            // 시타 예약이 있거나 방문 예약 날짜가 있는 경우 포함
+            const hasSitaBooking = task.sita_booking || task.visit_booking_date;
+            if (!hasSitaBooking) return false;
             
             // 한국 시간 기준으로 오늘 날짜 계산
             const now = new Date();
@@ -1032,7 +1037,8 @@ export default function DashboardPage() {
             const today = koreaTime.toISOString().split('T')[0]; // 2025-09-22
             const todayFormatted = today.replace(/-/g, '.'); // 2025.09.22
             
-            return task.visit_booking_date === todayFormatted;
+            // 방문 예약 날짜가 오늘인 경우 또는 시타 예약이 있는 경우
+            return task.visit_booking_date === todayFormatted || task.sita_booking;
           }).sort((a, b) => {
             // 시간순 정렬
             const timeA = a.visit_booking_time || '00:00';
