@@ -1031,7 +1031,12 @@ export default function DashboardPage() {
                     if (task.operation_type?.code !== 'OP5') return false;
                     if (!task.sita_booking && !task.visit_booking_date) return false;
                     
-                    // 오늘 날짜와 비교
+                    // sita_booking이 true인 경우 (방문 예약이 있는 경우)
+                    if (task.sita_booking) {
+                      return true;
+                    }
+                    
+                    // visit_booking_date가 오늘인 경우
                     if (task.visit_booking_date) {
                       const now = new Date();
                       const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
@@ -1056,7 +1061,12 @@ export default function DashboardPage() {
                 if (task.operation_type?.code !== 'OP5') return false;
                 if (!task.sita_booking && !task.visit_booking_date) return false;
                 
-                // 오늘 날짜와 비교
+                // sita_booking이 true인 경우 (방문 예약이 있는 경우)
+                if (task.sita_booking) {
+                  return true;
+                }
+                
+                // visit_booking_date가 오늘인 경우
                 if (task.visit_booking_date) {
                   const now = new Date();
                   const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
