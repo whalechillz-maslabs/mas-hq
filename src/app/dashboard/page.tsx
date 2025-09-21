@@ -1067,56 +1067,6 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* 오늘의 시타 예약 정보 (디버깅용 - 항상 표시) */}
-              {true && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-blue-800 flex items-center">
-                      <Clock className="h-5 w-5 mr-2" />
-                      오늘의 시타 예약 ({todaySitaTasks.length}건) - 디버깅
-                    </h3>
-                    <span className="text-sm text-blue-600 font-medium">
-                      {new Date().toLocaleDateString('ko-KR', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric',
-                        weekday: 'long'
-                      })}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {todaySitaTasks.length > 0 ? (
-                      todaySitaTasks.map((task, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <div>
-                              <p className="font-medium text-gray-900">{task.customer_name}</p>
-                              <p className="text-sm text-gray-600">{task.visit_booking_time || '시간 미정'}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-blue-700">OP5</p>
-                            <p className="text-xs text-gray-500">{task.employee?.name || '담당자 미정'}</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-800">
-                          디버깅: todaySitaTasks 배열이 비어있습니다. 
-                          <br />
-                          긴급 업무 총 {urgentTasks.length}건 중 OP5 업무: {urgentTasks.filter(task => task.operation_type?.code === 'OP5').length}건
-                          <br />
-                          현재 시간: {new Date().toLocaleString('ko-KR')}
-                          <br />
-                          한국 시간: {new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toLocaleString('ko-KR')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* 긴급 업무 토글 버튼 */}
               <div className="mb-4">
@@ -2222,6 +2172,83 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* 오늘의 시타 예약 섹션 (별도 섹션) */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center">
+            <Clock className="h-6 w-6 mr-3 text-blue-600" />
+            오늘의 시타 예약
+            <span className="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+              {(() => {
+                const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
+                const urgentTasks = tasksByPriority.urgent;
+                const todaySitaTasks = urgentTasks.filter(task => {
+                  if (task.operation_type?.code !== 'OP5') return false;
+                  const hasSitaBooking = task.sita_booking || task.visit_booking_date;
+                  if (!hasSitaBooking) return false;
+                  const now = new Date();
+                  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                  const today = koreaTime.toISOString().split('T')[0];
+                  const todayFormatted = today.replace(/-/g, '.');
+                  return task.visit_booking_date === todayFormatted || task.sita_booking;
+                });
+                return todaySitaTasks.length;
+              })()}건
+            </span>
+          </h2>
+        </div>
+        <div className="space-y-2">
+          {(() => {
+            const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
+            const urgentTasks = tasksByPriority.urgent;
+            const todaySitaTasks = urgentTasks.filter(task => {
+              if (task.operation_type?.code !== 'OP5') return false;
+              const hasSitaBooking = task.sita_booking || task.visit_booking_date;
+              if (!hasSitaBooking) return false;
+              const now = new Date();
+              const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+              const today = koreaTime.toISOString().split('T')[0];
+              const todayFormatted = today.replace(/-/g, '.');
+              return task.visit_booking_date === todayFormatted || task.sita_booking;
+            }).sort((a, b) => {
+              const timeA = a.visit_booking_time || '00:00';
+              const timeB = b.visit_booking_time || '00:00';
+              return timeA.localeCompare(timeB);
+            });
+
+            if (todaySitaTasks.length > 0) {
+              return todaySitaTasks.map((task, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div>
+                      <p className="font-medium text-gray-900">{task.customer_name}</p>
+                      <p className="text-sm text-gray-600">{task.visit_booking_time || '시간 미정'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-blue-700">OP5</p>
+                    <p className="text-xs text-gray-500">{task.employee?.name || '담당자 미정'}</p>
+                  </div>
+                </div>
+              ));
+            } else {
+              return (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    오늘의 시타 예약이 없습니다.
+                    <br />
+                    현재 시간: {new Date().toLocaleString('ko-KR')}
+                    <br />
+                    한국 시간: {new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toLocaleString('ko-KR')}
+                  </p>
+                </div>
+              );
+            }
+          })()}
+        </div>
+      </div>
     </div>
   );
 }
