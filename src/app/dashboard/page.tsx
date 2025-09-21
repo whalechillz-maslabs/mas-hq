@@ -2184,11 +2184,8 @@ export default function DashboardPage() {
                 const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
                 const urgentTasks = tasksByPriority.urgent;
                 const todaySitaTasks = urgentTasks.filter(task => {
-                  // OP5 업무만 필터링
-                  if (task.operation_type?.code !== 'OP5') return false;
-                  
-                  // 방문 예약이 있거나 시타 예약이 있는 경우 포함
-                  return task.sita_booking || task.visit_booking_date;
+                  // OP5 업무만 필터링 (모든 OP5 업무 포함)
+                  return task.operation_type?.code === 'OP5';
                 });
                 return todaySitaTasks.length;
               })()}건
@@ -2200,11 +2197,8 @@ export default function DashboardPage() {
             const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
             const urgentTasks = tasksByPriority.urgent;
             const todaySitaTasks = urgentTasks.filter(task => {
-              // OP5 업무만 필터링
-              if (task.operation_type?.code !== 'OP5') return false;
-              
-              // 방문 예약이 있거나 시타 예약이 있는 경우 포함
-              return task.sita_booking || task.visit_booking_date;
+              // OP5 업무만 필터링 (모든 OP5 업무 포함)
+              return task.operation_type?.code === 'OP5';
             }).sort((a, b) => {
               const timeA = a.visit_booking_time || '00:00';
               const timeB = b.visit_booking_time || '00:00';
