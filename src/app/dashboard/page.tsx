@@ -2181,11 +2181,23 @@ export default function DashboardPage() {
             오늘의 시타 예약
             <span className="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
               {(() => {
-                const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
-                const urgentTasks = tasksByPriority.urgent;
-                const todaySitaTasks = urgentTasks.filter(task => {
-                  // OP5 업무만 필터링 (모든 OP5 업무 포함)
-                  return task.operation_type?.code === 'OP5';
+                // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
+                const allTasks = data?.recentSharedTasks || [];
+                const todaySitaTasks = allTasks.filter(task => {
+                  // OP5 업무이고 시타 예약이 있는 경우
+                  if (task.operation_type?.code !== 'OP5') return false;
+                  if (!task.sita_booking && !task.visit_booking_date) return false;
+                  
+                  // 오늘 날짜와 비교
+                  if (task.visit_booking_date) {
+                    const now = new Date();
+                    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                    const today = koreaTime.toISOString().split('T')[0];
+                    const todayFormatted = today.replace(/-/g, '.');
+                    return task.visit_booking_date === todayFormatted;
+                  }
+                  
+                  return false;
                 });
                 return todaySitaTasks.length;
               })()}건
@@ -2194,14 +2206,28 @@ export default function DashboardPage() {
         </div>
         <div className="space-y-2">
           {(() => {
-            const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
-            const urgentTasks = tasksByPriority.urgent;
-            const todaySitaTasks = urgentTasks.filter(task => {
-              // OP5 업무만 필터링 (모든 OP5 업무 포함)
-              return task.operation_type?.code === 'OP5';
+            // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
+            const allTasks = data?.recentSharedTasks || [];
+            const todaySitaTasks = allTasks.filter(task => {
+              // OP5 업무이고 시타 예약이 있는 경우
+              if (task.operation_type?.code !== 'OP5') return false;
+              if (!task.sita_booking && !task.visit_booking_date) return false;
+              
+              // 오늘 날짜와 비교
+              if (task.visit_booking_date) {
+                const now = new Date();
+                const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                const today = koreaTime.toISOString().split('T')[0];
+                const todayFormatted = today.replace(/-/g, '.');
+                return task.visit_booking_date === todayFormatted;
+              }
+              
+              return false;
             }).sort((a, b) => {
-              // 고객명으로 정렬
-              return (a.customer_name || '').localeCompare(b.customer_name || '');
+              // 시간순 정렬
+              const timeA = a.visit_booking_time || '00:00';
+              const timeB = b.visit_booking_time || '00:00';
+              return timeA.localeCompare(timeB);
             });
 
             if (todaySitaTasks.length > 0) {
