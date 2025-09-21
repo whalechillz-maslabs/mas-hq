@@ -162,6 +162,9 @@ export default function SharedTasksAdminPage() {
         notes: formData.get('notes') as string,
         customer_name: formData.get('customer_name') as string,
         task_priority: formData.get('task_priority') as string,
+        sita_booking: formData.get('sita_booking') === 'on',
+        visit_booking_date: formData.get('visit_booking_date') as string || null,
+        visit_booking_time: formData.get('visit_booking_time') as string || null,
         updated_at: new Date().toISOString()
       };
 
@@ -242,6 +245,9 @@ export default function SharedTasksAdminPage() {
             created_at,
             task_priority,
             achievement_status,
+            sita_booking,
+            visit_booking_date,
+            visit_booking_time,
             operation_type:operation_types(code, name, points),
             employee:employees(name, employee_id)
           `)
@@ -591,6 +597,45 @@ export default function SharedTasksAdminPage() {
                   </select>
                 </div>
 
+                {/* 방문 예약 관련 필드 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    방문 예약
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="sita_booking"
+                      defaultChecked={editingTask.sita_booking || false}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-600">방문 예약 있음</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    방문 예약 날짜
+                  </label>
+                  <input
+                    type="date"
+                    name="visit_booking_date"
+                    defaultValue={editingTask.visit_booking_date || ''}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    방문 예약 시간
+                  </label>
+                  <input
+                    type="time"
+                    name="visit_booking_time"
+                    defaultValue={editingTask.visit_booking_time || ''}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
 
                 <div className="text-sm text-gray-500">
                   <p><strong>작성자:</strong> {editingTask.employee?.name}</p>
