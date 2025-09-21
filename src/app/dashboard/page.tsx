@@ -2184,14 +2184,11 @@ export default function DashboardPage() {
                 const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
                 const urgentTasks = tasksByPriority.urgent;
                 const todaySitaTasks = urgentTasks.filter(task => {
+                  // OP5 업무만 필터링
                   if (task.operation_type?.code !== 'OP5') return false;
-                  const hasSitaBooking = task.sita_booking || task.visit_booking_date;
-                  if (!hasSitaBooking) return false;
-                  const now = new Date();
-                  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-                  const today = koreaTime.toISOString().split('T')[0];
-                  const todayFormatted = today.replace(/-/g, '.');
-                  return task.visit_booking_date === todayFormatted || task.sita_booking;
+                  
+                  // 방문 예약이 있거나 시타 예약이 있는 경우 포함
+                  return task.sita_booking || task.visit_booking_date;
                 });
                 return todaySitaTasks.length;
               })()}건
@@ -2203,14 +2200,11 @@ export default function DashboardPage() {
             const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
             const urgentTasks = tasksByPriority.urgent;
             const todaySitaTasks = urgentTasks.filter(task => {
+              // OP5 업무만 필터링
               if (task.operation_type?.code !== 'OP5') return false;
-              const hasSitaBooking = task.sita_booking || task.visit_booking_date;
-              if (!hasSitaBooking) return false;
-              const now = new Date();
-              const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-              const today = koreaTime.toISOString().split('T')[0];
-              const todayFormatted = today.replace(/-/g, '.');
-              return task.visit_booking_date === todayFormatted || task.sita_booking;
+              
+              // 방문 예약이 있거나 시타 예약이 있는 경우 포함
+              return task.sita_booking || task.visit_booking_date;
             }).sort((a, b) => {
               const timeA = a.visit_booking_time || '00:00';
               const timeB = b.visit_booking_time || '00:00';
