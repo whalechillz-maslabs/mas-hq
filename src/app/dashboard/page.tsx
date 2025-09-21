@@ -2200,9 +2200,8 @@ export default function DashboardPage() {
               // OP5 업무만 필터링 (모든 OP5 업무 포함)
               return task.operation_type?.code === 'OP5';
             }).sort((a, b) => {
-              const timeA = a.visit_booking_time || '00:00';
-              const timeB = b.visit_booking_time || '00:00';
-              return timeA.localeCompare(timeB);
+              // 고객명으로 정렬
+              return (a.customer_name || '').localeCompare(b.customer_name || '');
             });
 
             if (todaySitaTasks.length > 0) {
