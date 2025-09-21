@@ -1022,23 +1022,10 @@ export default function DashboardPage() {
           const urgentTasks = tasksByPriority.urgent;
           const hasUrgentTasks = urgentTasks.length > 0;
           
-          // 오늘의 시타 예약 정보 추출
+          // 오늘의 시타 예약 정보 추출 (디버깅용 - 모든 OP5 업무 포함)
           const todaySitaTasks = urgentTasks.filter(task => {
-            // OP5 업무이고 시타 예약이 있거나 방문 예약 날짜가 있는 경우
-            if (task.operation_type?.code !== 'OP5') return false;
-            
-            // 시타 예약이 있거나 방문 예약 날짜가 있는 경우 포함
-            const hasSitaBooking = task.sita_booking || task.visit_booking_date;
-            if (!hasSitaBooking) return false;
-            
-            // 한국 시간 기준으로 오늘 날짜 계산
-            const now = new Date();
-            const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
-            const today = koreaTime.toISOString().split('T')[0]; // 2025-09-22
-            const todayFormatted = today.replace(/-/g, '.'); // 2025.09.22
-            
-            // 방문 예약 날짜가 오늘인 경우 또는 시타 예약이 있는 경우
-            return task.visit_booking_date === todayFormatted || task.sita_booking;
+            // OP5 업무만 필터링 (디버깅용)
+            return task.operation_type?.code === 'OP5';
           }).sort((a, b) => {
             // 시간순 정렬
             const timeA = a.visit_booking_time || '00:00';
