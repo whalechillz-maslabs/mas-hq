@@ -1016,35 +1016,98 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* 오늘의 시타 예약 섹션 (맨 상단) */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <Clock className="h-6 w-6 mr-3 text-blue-600" />
+              오늘의 시타 예약
+              <span className="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                {(() => {
+                  // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
+                  const allTasks = data?.recentSharedTasks || [];
+                  const todaySitaTasks = allTasks.filter(task => {
+                    // OP5 업무이고 시타 예약이 있는 경우
+                    if (task.operation_type?.code !== 'OP5') return false;
+                    if (!task.sita_booking && !task.visit_booking_date) return false;
+                    
+                    // 오늘 날짜와 비교
+                    if (task.visit_booking_date) {
+                      const now = new Date();
+                      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                      const today = koreaTime.toISOString().split('T')[0];
+                      const todayFormatted = today.replace(/-/g, '.');
+                      return task.visit_booking_date === todayFormatted;
+                    }
+                    
+                    return false;
+                  });
+                  return todaySitaTasks.length;
+                })()}건
+              </span>
+            </h2>
+          </div>
+          <div className="space-y-2">
+            {(() => {
+              // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
+              const allTasks = data?.recentSharedTasks || [];
+              const todaySitaTasks = allTasks.filter(task => {
+                // OP5 업무이고 시타 예약이 있는 경우
+                if (task.operation_type?.code !== 'OP5') return false;
+                if (!task.sita_booking && !task.visit_booking_date) return false;
+                
+                // 오늘 날짜와 비교
+                if (task.visit_booking_date) {
+                  const now = new Date();
+                  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                  const today = koreaTime.toISOString().split('T')[0];
+                  const todayFormatted = today.replace(/-/g, '.');
+                  return task.visit_booking_date === todayFormatted;
+                }
+                
+                return false;
+              }).sort((a, b) => {
+                // 시간순 정렬
+                const timeA = a.visit_booking_time || '00:00';
+                const timeB = b.visit_booking_time || '00:00';
+                return timeA.localeCompare(timeB);
+              });
+
+              if (todaySitaTasks.length > 0) {
+                return todaySitaTasks.map((task, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div>
+                        <p className="font-medium text-gray-900">{task.customer_name}</p>
+                        <p className="text-sm text-gray-600">{task.visit_booking_time || '시간 미정'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-blue-600">{task.operation_type?.code}</p>
+                      <p className="text-xs text-gray-500">{task.employee?.name}</p>
+                    </div>
+                  </div>
+                ));
+              } else {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-lg font-medium">오늘의 시타 예약이 없습니다</p>
+                    <p className="text-sm">새로운 시타 예약을 추가해보세요</p>
+                  </div>
+                );
+              }
+            })()}
+          </div>
+        </div>
+
         {/* 긴급 업무 섹션 (메인 화면) */}
         {(() => {
           const tasksByPriority = data?.recentSharedTasks ? getTasksByPriority(data.recentSharedTasks) : { urgent: [], high: [], normal: [], low: [], my: [] };
           const urgentTasks = tasksByPriority.urgent;
           const hasUrgentTasks = urgentTasks.length > 0;
           
-          // 오늘의 시타 예약 정보 추출
-          const todaySitaTasks = urgentTasks.filter(task => {
-            // OP5 업무이고 시타 예약이 있거나 방문 예약 날짜가 있는 경우
-            if (task.operation_type?.code !== 'OP5') return false;
-            
-            // 시타 예약이 있거나 방문 예약 날짜가 있는 경우 포함
-            const hasSitaBooking = task.sita_booking || task.visit_booking_date;
-            if (!hasSitaBooking) return false;
-            
-            // 한국 시간 기준으로 오늘 날짜 계산
-            const now = new Date();
-            const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
-            const today = koreaTime.toISOString().split('T')[0]; // 2025-09-22
-            const todayFormatted = today.replace(/-/g, '.'); // 2025.09.22
-            
-            // 방문 예약 날짜가 오늘인 경우 또는 시타 예약이 있는 경우
-            return task.visit_booking_date === todayFormatted || task.sita_booking;
-          }).sort((a, b) => {
-            // 시간순 정렬
-            const timeA = a.visit_booking_time || '00:00';
-            const timeB = b.visit_booking_time || '00:00';
-            return timeA.localeCompare(timeB);
-          });
 
           return (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -2173,95 +2236,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 오늘의 시타 예약 섹션 (별도 섹션) */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center">
-            <Clock className="h-6 w-6 mr-3 text-blue-600" />
-            오늘의 시타 예약
-            <span className="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-              {(() => {
-                // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
-                const allTasks = data?.recentSharedTasks || [];
-                const todaySitaTasks = allTasks.filter(task => {
-                  // OP5 업무이고 시타 예약이 있는 경우
-                  if (task.operation_type?.code !== 'OP5') return false;
-                  if (!task.sita_booking && !task.visit_booking_date) return false;
-                  
-                  // 오늘 날짜와 비교
-                  if (task.visit_booking_date) {
-                    const now = new Date();
-                    const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-                    const today = koreaTime.toISOString().split('T')[0];
-                    const todayFormatted = today.replace(/-/g, '.');
-                    return task.visit_booking_date === todayFormatted;
-                  }
-                  
-                  return false;
-                });
-                return todaySitaTasks.length;
-              })()}건
-            </span>
-          </h2>
-        </div>
-        <div className="space-y-2">
-          {(() => {
-            // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
-            const allTasks = data?.recentSharedTasks || [];
-            const todaySitaTasks = allTasks.filter(task => {
-              // OP5 업무이고 시타 예약이 있는 경우
-              if (task.operation_type?.code !== 'OP5') return false;
-              if (!task.sita_booking && !task.visit_booking_date) return false;
-              
-              // 오늘 날짜와 비교
-              if (task.visit_booking_date) {
-                const now = new Date();
-                const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-                const today = koreaTime.toISOString().split('T')[0];
-                const todayFormatted = today.replace(/-/g, '.');
-                return task.visit_booking_date === todayFormatted;
-              }
-              
-              return false;
-            }).sort((a, b) => {
-              // 시간순 정렬
-              const timeA = a.visit_booking_time || '00:00';
-              const timeB = b.visit_booking_time || '00:00';
-              return timeA.localeCompare(timeB);
-            });
-
-            if (todaySitaTasks.length > 0) {
-              return todaySitaTasks.map((task, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{task.customer_name}</p>
-                      <p className="text-sm text-gray-600">{task.visit_booking_time || '시간 미정'}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-blue-700">OP5</p>
-                    <p className="text-xs text-gray-500">{task.employee?.name || '담당자 미정'}</p>
-                  </div>
-                </div>
-              ));
-            } else {
-              return (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    오늘의 시타 예약이 없습니다.
-                    <br />
-                    현재 시간: {new Date().toLocaleString('ko-KR')}
-                    <br />
-                    한국 시간: {new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toLocaleString('ko-KR')}
-                  </p>
-                </div>
-              );
-            }
-          })()}
-        </div>
-      </div>
     </div>
   );
 }
