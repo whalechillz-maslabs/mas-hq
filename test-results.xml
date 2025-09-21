@@ -1,50 +1,13 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="19.681251">
-<testsuite name="sept19_final_test.spec.ts" timestamp="2025-09-20T09:46:08.460Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="17.476" errors="0">
-<testcase name="9월 19일 최종 테스트 › 9월 19일 모든 필터 정상 작동 확인" classname="sept19_final_test.spec.ts" time="17.476">
-<failure message="sept19_final_test.spec.ts:4:7 9월 19일 모든 필터 정상 작동 확인" type="FAILURE">
-<![CDATA[  [chromium-stable] › sept19_final_test.spec.ts:4:7 › 9월 19일 최종 테스트 › 9월 19일 모든 필터 정상 작동 확인 ────────
-
-    TimeoutError: locator.selectOption: Timeout 10000ms exceeded.
-    Call log:
-      - waiting for locator('select').nth(1)
-
-
-      50 |     // 완료 상태 필터 테스트
-      51 |     console.log('🔄 완료 상태 필터 테스트');
-    > 52 |     await statusSelect.selectOption('completed');
-         |                        ^
-      53 |     await searchButton.click();
-      54 |     await page.waitForTimeout(3000);
-      55 |     
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/sept19_final_test.spec.ts:52:24
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/error-context.md
-]]>
-</failure>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="6.794782">
+<testsuite name="tasks-page-test.spec.ts" timestamp="2025-09-21T01:40:52.223Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="4.89" errors="0">
+<testcase name="업무 기록 페이지 접근 테스트" classname="tasks-page-test.spec.ts" time="4.89">
 <system-out>
-<![CDATA[🎯 9월 19일 최종 테스트 시작
-📅 9월 19일로 날짜 설정
-💥 페이지 에러: Invalid time value
-📊 전체 조회 - 테이블 존재: false
-🔄 완료 상태 필터 테스트
-
-[[ATTACHMENT|test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/video.webm]]
-
-[[ATTACHMENT|test-results/sept19_final_test-9월-19일-최종-테스트-9월-19일-모든-필터-정상-작동-확인-chromium-stable/error-context.md]]
+<![CDATA[🔍 업무 기록 페이지 접근 테스트 시작
+✅ 업무 기록 페이지 접근 테스트 완료
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:47809) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:46179) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>
