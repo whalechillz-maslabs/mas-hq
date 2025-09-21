@@ -1,13 +1,55 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="6.794782">
-<testsuite name="tasks-page-test.spec.ts" timestamp="2025-09-21T01:40:52.223Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="4.89" errors="0">
-<testcase name="업무 기록 페이지 접근 테스트" classname="tasks-page-test.spec.ts" time="4.89">
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="16.063016">
+<testsuite name="dashboard-quick-test.spec.ts" timestamp="2025-09-21T01:41:21.160Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="14.486" errors="0">
+<testcase name="대시보드 페이지 접근 테스트" classname="dashboard-quick-test.spec.ts" time="14.486">
+<failure message="dashboard-quick-test.spec.ts:3:5 대시보드 페이지 접근 테스트" type="FAILURE">
+<![CDATA[  [chromium-stable] › dashboard-quick-test.spec.ts:3:5 › 대시보드 페이지 접근 테스트 ───────────────────────────
+
+    Error: expect(locator).not.toContainText(expected) failed
+
+    Locator: locator('body')
+    Expected string: not "Application error"
+    Received string: "Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information)."
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "not toContainText" with timeout 10000ms
+      - waiting for locator('body')
+        14 × locator resolved to <body>…</body>
+           - unexpected value "Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information)."
+
+
+      21 |   
+      22 |   // 페이지가 정상적으로 로딩되는지 확인
+    > 23 |   await expect(page.locator('body')).not.toContainText('Application error');
+         |                                          ^
+      24 |   
+      25 |   // 대시보드 요소들이 보이는지 확인
+      26 |   await expect(page.locator('text=빠른 메뉴')).toBeVisible();
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts:23:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/error-context.md
+]]>
+</failure>
 <system-out>
-<![CDATA[🔍 업무 기록 페이지 접근 테스트 시작
-✅ 업무 기록 페이지 접근 테스트 완료
+<![CDATA[🔍 대시보드 페이지 접근 테스트 시작
+
+[[ATTACHMENT|test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/error-context.md]]
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:46179) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:46400) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>

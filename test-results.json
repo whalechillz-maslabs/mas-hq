@@ -114,14 +114,14 @@
   },
   "suites": [
     {
-      "title": "tasks-page-test.spec.ts",
-      "file": "tasks-page-test.spec.ts",
+      "title": "dashboard-quick-test.spec.ts",
+      "file": "dashboard-quick-test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "업무 기록 페이지 접근 테스트",
-          "ok": true,
+          "title": "대시보드 페이지 접근 테스트",
+          "ok": false,
           "tags": [],
           "tests": [
             {
@@ -134,33 +134,70 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 4890,
-                  "errors": [],
+                  "status": "failed",
+                  "duration": 14486,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nExpected string: not \u001b[32m\"Application error\"\u001b[39m\nReceived string: \u001b[31m\"\u001b[7mApplication error\u001b[27m: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"not toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    14 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m       - unexpected value \"Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nExpected string: not \u001b[32m\"Application error\"\u001b[39m\nReceived string: \u001b[31m\"\u001b[7mApplication error\u001b[27m: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"not toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    14 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m       - unexpected value \"Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[22m\n\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts:23:42",
+                    "location": {
+                      "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts",
+                      "column": 42,
+                      "line": 23
+                    },
+                    "snippet": "  21 |   \n  22 |   // 페이지가 정상적으로 로딩되는지 확인\n> 23 |   await expect(page.locator('body')).not.toContainText('Application error');\n     |                                          ^\n  24 |   \n  25 |   // 대시보드 요소들이 보이는지 확인\n  26 |   await expect(page.locator('text=빠른 메뉴')).toBeVisible();"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts",
+                        "column": 42,
+                        "line": 23
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nExpected string: not \u001b[32m\"Application error\"\u001b[39m\nReceived string: \u001b[31m\"\u001b[7mApplication error\u001b[27m: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"not toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    14 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m       - unexpected value \"Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[22m\n\n\n  21 |   \n  22 |   // 페이지가 정상적으로 로딩되는지 확인\n> 23 |   await expect(page.locator('body')).not.toContainText('Application error');\n     |                                          ^\n  24 |   \n  25 |   // 대시보드 요소들이 보이는지 확인\n  26 |   await expect(page.locator('text=빠른 메뉴')).toBeVisible();\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts:23:42"
+                    }
+                  ],
                   "stdout": [
                     {
-                      "text": "🔍 업무 기록 페이지 접근 테스트 시작\n"
-                    },
-                    {
-                      "text": "✅ 업무 기록 페이지 접근 테스트 완료\n"
+                      "text": "🔍 대시보드 페이지 접근 테스트 시작\n"
                     }
                   ],
                   "stderr": [
                     {
-                      "text": "(node:46179) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                      "text": "(node:46400) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                     }
                   ],
                   "retry": 0,
-                  "startTime": "2025-09-21T01:40:52.512Z",
+                  "startTime": "2025-09-21T01:41:21.452Z",
                   "annotations": [],
-                  "attachments": []
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts",
+                    "column": 42,
+                    "line": 23
+                  }
                 }
               ],
-              "status": "expected"
+              "status": "unexpected"
             }
           ],
-          "id": "c97c56bd9d5ef08b3d12-91564e2cdb14dc32e23e",
-          "file": "tasks-page-test.spec.ts",
+          "id": "e769128a7ee2f36a2b1d-55a6461ea98bb1814b64",
+          "file": "dashboard-quick-test.spec.ts",
           "line": 3,
           "column": 5
         }
@@ -169,11 +206,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-21T01:40:52.171Z",
-    "duration": 6794.781999999999,
-    "expected": 1,
+    "startTime": "2025-09-21T01:41:21.145Z",
+    "duration": 16063.016,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }
