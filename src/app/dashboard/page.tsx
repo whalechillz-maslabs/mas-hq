@@ -1022,10 +1022,23 @@ export default function DashboardPage() {
           const urgentTasks = tasksByPriority.urgent;
           const hasUrgentTasks = urgentTasks.length > 0;
           
-          // 오늘의 시타 예약 정보 추출 (디버깅용 - 모든 OP5 업무 포함)
+          // 오늘의 시타 예약 정보 추출
           const todaySitaTasks = urgentTasks.filter(task => {
-            // OP5 업무만 필터링 (디버깅용)
-            return task.operation_type?.code === 'OP5';
+            // OP5 업무이고 시타 예약이 있거나 방문 예약 날짜가 있는 경우
+            if (task.operation_type?.code !== 'OP5') return false;
+            
+            // 시타 예약이 있거나 방문 예약 날짜가 있는 경우 포함
+            const hasSitaBooking = task.sita_booking || task.visit_booking_date;
+            if (!hasSitaBooking) return false;
+            
+            // 한국 시간 기준으로 오늘 날짜 계산
+            const now = new Date();
+            const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+            const today = koreaTime.toISOString().split('T')[0]; // 2025-09-22
+            const todayFormatted = today.replace(/-/g, '.'); // 2025.09.22
+            
+            // 방문 예약 날짜가 오늘인 경우 또는 시타 예약이 있는 경우
+            return task.visit_booking_date === todayFormatted || task.sita_booking;
           }).sort((a, b) => {
             // 시간순 정렬
             const timeA = a.visit_booking_time || '00:00';
@@ -1054,25 +1067,25 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* 오늘의 시타 예약 정보 (디버깅용 - 항상 표시) */}
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-blue-800 flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
-                    오늘의 시타 예약 ({todaySitaTasks.length}건) - 디버깅
-                  </h3>
-                  <span className="text-sm text-blue-600 font-medium">
-                    {new Date().toLocaleDateString('ko-KR', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric',
-                      weekday: 'long'
-                    })}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {todaySitaTasks.length > 0 ? (
-                    todaySitaTasks.map((task, index) => (
+              {/* 오늘의 시타 예약 정보 */}
+              {todaySitaTasks.length > 0 && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-blue-800 flex items-center">
+                      <Clock className="h-5 w-5 mr-2" />
+                      오늘의 시타 예약 ({todaySitaTasks.length}건)
+                    </h3>
+                    <span className="text-sm text-blue-600 font-medium">
+                      {new Date().toLocaleDateString('ko-KR', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric',
+                        weekday: 'long'
+                      })}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {todaySitaTasks.map((task, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
                         <div className="flex items-center space-x-3">
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -1086,18 +1099,10 @@ export default function DashboardPage() {
                           <p className="text-xs text-gray-500">{task.employee?.name || '담당자 미정'}</p>
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800">
-                        디버깅: todaySitaTasks 배열이 비어있습니다. 
-                        <br />
-                        긴급 업무 총 {urgentTasks.length}건 중 OP5 업무: {urgentTasks.filter(task => task.operation_type?.code === 'OP5').length}건
-                      </p>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 긴급 업무 토글 버튼 */}
               <div className="mb-4">
