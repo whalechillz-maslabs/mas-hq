@@ -153,10 +153,13 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  console.log('=== Dashboard 컴포넌트 렌더링 시작 ===');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [data, setData] = useState<DashboardData | null>(null);
+  
+  console.log('Dashboard 컴포넌트 상태:', { data: !!data, loading, currentTime });
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showAllSharedTasks, setShowAllSharedTasks] = useState(false);
@@ -174,6 +177,8 @@ export default function DashboardPage() {
   const [showUrgentTasks, setShowUrgentTasks] = useState(false);
 
   useEffect(() => {
+    console.log('=== useEffect 훅 실행 ===');
+    console.log('loadDashboardData 함수 호출 시작');
     loadDashboardData();
     
     const timer = setInterval(() => {
@@ -259,6 +264,7 @@ export default function DashboardPage() {
 
   const loadDashboardData = async () => {
     try {
+      console.log('=== loadDashboardData 함수 시작 ===');
       setLoading(true);
       
       // 현재 로그인한 사용자 정보 가져오기 (로컬 스토리지에서)
@@ -267,8 +273,11 @@ export default function DashboardPage() {
         const isLoggedIn = localStorage.getItem('isLoggedIn');
         const employeeData = localStorage.getItem('currentEmployee');
         
+        console.log('로컬 스토리지 확인:', { isLoggedIn, employeeData: !!employeeData });
+        
         if (isLoggedIn === 'true' && employeeData) {
           currentUser = JSON.parse(employeeData);
+          console.log('현재 사용자:', currentUser);
         }
       }
       
@@ -279,6 +288,7 @@ export default function DashboardPage() {
       }
 
       // 직원 정보와 관련 데이터 가져오기
+      console.log('직원 정보 조회 시작, 사용자 ID:', currentUser.id);
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
         .select(`
@@ -290,6 +300,7 @@ export default function DashboardPage() {
         .eq('id', currentUser.id)
         .single();
 
+      console.log('직원 정보 조회 결과:', { employeeData, employeeError });
       if (employeeError) {
         console.error('직원 정보 조회 오류:', employeeError);
       }
@@ -593,16 +604,22 @@ export default function DashboardPage() {
       };
 
       // 최근 공유 업무 (모든 업무 유형) 가져오기
-      const { data: operationTypesData } = await supabase
+      console.log('operation_types 조회 시작');
+      const { data: operationTypesData, error: operationTypesError } = await supabase
         .from('operation_types')
         .select('id, code')
         .in('code', ['OP1', 'OP2', 'OP3', 'OP4', 'OP5', 'OP6', 'OP7', 'OP8', 'OP9', 'OP10', 'OP11', 'OP12']);
+      
+      console.log('operation_types 조회 결과:', { operationTypesData, operationTypesError });
 
       let recentSharedTasks: SharedTask[] = [];
+      console.log('recentSharedTasks 초기화, operationTypesData 존재:', !!operationTypesData);
       if (operationTypesData && operationTypesData.length > 0) {
         const operationTypeIds = operationTypesData.map(op => op.id);
+        console.log('operationTypeIds:', operationTypeIds);
+        console.log('recentSharedTasks 쿼리 실행 시작');
         
-        const { data: sharedTasksData } = await supabase
+        const { data: sharedTasksData, error: sharedTasksError } = await supabase
           .from('employee_tasks')
           .select(`
             id,
@@ -613,14 +630,36 @@ export default function DashboardPage() {
             created_at,
             task_priority,
             achievement_status,
+            sita_booking,
+            visit_booking_date,
+            visit_booking_time,
             operation_type:operation_types(code, name, points),
             employee:employees(name, employee_id)
           `)
           .in('operation_type_id', operationTypeIds)
           .in('task_priority', ['urgent', 'high', 'normal', 'low'])
-          .eq('achievement_status', 'pending') // 완료된 업무 제외
           .order('created_at', { ascending: false })
-          .limit(20);
+          .limit(50); // 더 많은 업무를 가져오도록 수정
+
+        // 상세한 디버깅 로그 추가
+        console.log('=== recentSharedTasks 쿼리 디버깅 ===');
+        console.log('operationTypeIds:', operationTypeIds);
+        console.log('sharedTasksError:', sharedTasksError);
+        console.log('sharedTasksData 개수:', sharedTasksData?.length || 0);
+        console.log('sharedTasksData:', sharedTasksData);
+        
+        if (sharedTasksData && sharedTasksData.length > 0) {
+          console.log('첫 번째 업무:', sharedTasksData[0]);
+          console.log('모든 업무의 고객명:', sharedTasksData.map(task => task.customer_name));
+          console.log('모든 업무의 우선순위:', sharedTasksData.map(task => task.task_priority));
+          console.log('모든 업무의 완료상태:', sharedTasksData.map(task => task.achievement_status));
+          
+          // 김상돈 업무 찾기
+          const kimSangDonTask = sharedTasksData.find(task => 
+            task.customer_name && task.customer_name.includes('김상돈')
+          );
+          console.log('김상돈 업무 찾기 결과:', kimSangDonTask);
+        }
 
         recentSharedTasks = sharedTasksData || [];
       }
@@ -654,8 +693,11 @@ export default function DashboardPage() {
       }
 
       // 팀원 순위 계산
+      console.log('팀원 순위 계산 시작');
       const teamRankings = await calculateTeamRankings(startOfMonthStr, endOfMonthStr);
+      console.log('팀원 순위 계산 완료:', teamRankings);
 
+      console.log('setData 호출 시작, recentSharedTasks 개수:', recentSharedTasks.length);
       setData({
         employee: employeeData || currentUser,
         todaySchedule: scheduleData,
@@ -676,8 +718,11 @@ export default function DashboardPage() {
       });
 
     } catch (error) {
-      console.error('대시보드 데이터 로드 오류:', error);
+      console.error('=== 대시보드 데이터 로드 오류 ===');
+      console.error('오류 상세:', error);
+      console.error('오류 스택:', error instanceof Error ? error.stack : 'No stack trace');
       // 에러가 있어도 기본 데이터 설정
+      console.log('기본 데이터 설정 시작');
       setData({
         employee: null,
         todaySchedule: null,
@@ -754,6 +799,7 @@ export default function DashboardPage() {
         todaySales: 0
       });
     } finally {
+      console.log('=== loadDashboardData 함수 완료 ===');
       setLoading(false);
     }
   };
@@ -1016,101 +1062,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 오늘의 시타 예약 섹션 (맨 상단) */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center">
-              <Clock className="h-6 w-6 mr-3 text-blue-600" />
-              오늘의 시타 예약
-              <span className="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                {(() => {
-                  // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
-                  const allTasks = data?.recentSharedTasks || [];
-                  const todaySitaTasks = allTasks.filter(task => {
-                    // OP5 업무이고 시타 예약이 있는 경우
-                    if (task.operation_type?.code !== 'OP5') return false;
-                    if (!task.sita_booking && !task.visit_booking_date) return false;
-                    
-                    // sita_booking이 true인 경우 (방문 예약이 있는 경우)
-                    if (task.sita_booking) {
-                      return true;
-                    }
-                    
-                    // visit_booking_date가 오늘인 경우
-                    if (task.visit_booking_date) {
-                      const now = new Date();
-                      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-                      const today = koreaTime.toISOString().split('T')[0];
-                      const todayFormatted = today.replace(/-/g, '.');
-                      return task.visit_booking_date === todayFormatted;
-                    }
-                    
-                    return false;
-                  });
-                  return todaySitaTasks.length;
-                })()}건
-              </span>
-            </h2>
-          </div>
-          <div className="space-y-2">
-            {(() => {
-              // 모든 사용자의 업무에서 오늘의 시타 예약 찾기
-              const allTasks = data?.recentSharedTasks || [];
-              const todaySitaTasks = allTasks.filter(task => {
-                // OP5 업무이고 시타 예약이 있는 경우
-                if (task.operation_type?.code !== 'OP5') return false;
-                if (!task.sita_booking && !task.visit_booking_date) return false;
-                
-                // sita_booking이 true인 경우 (방문 예약이 있는 경우)
-                if (task.sita_booking) {
-                  return true;
-                }
-                
-                // visit_booking_date가 오늘인 경우
-                if (task.visit_booking_date) {
-                  const now = new Date();
-                  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-                  const today = koreaTime.toISOString().split('T')[0];
-                  const todayFormatted = today.replace(/-/g, '.');
-                  return task.visit_booking_date === todayFormatted;
-                }
-                
-                return false;
-              }).sort((a, b) => {
-                // 시간순 정렬
-                const timeA = a.visit_booking_time || '00:00';
-                const timeB = b.visit_booking_time || '00:00';
-                return timeA.localeCompare(timeB);
-              });
-
-              if (todaySitaTasks.length > 0) {
-                return todaySitaTasks.map((task, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <div>
-                        <p className="font-medium text-gray-900">{task.customer_name}</p>
-                        <p className="text-sm text-gray-600">{task.visit_booking_time || '시간 미정'}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-blue-600">{task.operation_type?.code}</p>
-                      <p className="text-xs text-gray-500">{task.employee?.name}</p>
-                    </div>
-                  </div>
-                ));
-              } else {
-                return (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-lg font-medium">오늘의 시타 예약이 없습니다</p>
-                    <p className="text-sm">새로운 시타 예약을 추가해보세요</p>
-                  </div>
-                );
-              }
-            })()}
-          </div>
-        </div>
 
         {/* 긴급 업무 섹션 (메인 화면) */}
         {(() => {
@@ -1195,6 +1146,25 @@ export default function DashboardPage() {
                                     새 업무
                                   </span>
                                 )}
+                                {/* 금일 시타 뱃지 추가 */}
+                                {(() => {
+                                  // 오늘 시타 예약이 있는지 확인
+                                  const now = new Date();
+                                  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+                                  const today = koreaTime.toISOString().split('T')[0];
+                                  const todayFormatted = today.replace(/-/g, '.');
+                                  
+                                  const hasTodaySita = task.sita_booking && (
+                                    task.visit_booking_date === today || 
+                                    task.visit_booking_date === todayFormatted
+                                  );
+                                  
+                                  return hasTodaySita ? (
+                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                      금일 시타
+                                    </span>
+                                  ) : null;
+                                })()}
                                 {isOverdue && (
                                   <Siren className="h-4 w-4 text-red-500 animate-pulse" />
                                 )}
