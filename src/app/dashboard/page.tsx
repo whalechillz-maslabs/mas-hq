@@ -2081,14 +2081,6 @@ export default function DashboardPage() {
                   <h3 className="font-bold text-lg text-green-900 mb-2">급여 명세서 생성</h3>
                 <p className="text-sm text-green-700">직원 급여 명세서 생성 및 발행</p>
               </button>
-              <button 
-                onClick={() => router.push('/admin/simple-settlement')}
-                  className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl hover:bg-yellow-100 transition-all duration-200 text-left"
-              >
-                  <Calculator className="h-10 w-10 text-yellow-600 mb-3" />
-                  <h3 className="font-bold text-lg text-yellow-900 mb-2">간단한 정산 테스트</h3>
-                <p className="text-sm text-yellow-700">직원 급여 정산 테스트 및 확인</p>
-              </button>
             </div>
           </div>
         )}
