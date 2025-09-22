@@ -977,24 +977,33 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-7xl mx-auto">
         {/* 개선된 상단바 */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl shadow-xl p-6 mb-6 text-white">
           <div className="flex items-center justify-between">
             {/* 로고 영역 */}
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">MASLABS</h1>
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <Building2 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">MASLABS</h1>
+                <p className="text-blue-100 text-sm font-medium">인사관리 시스템</p>
+              </div>
             </div>
             
             {/* 중앙 날짜/시간 영역 - 데스크톱에서만 표시 */}
             <div className="hidden md:block text-center">
-              <div className="text-sm text-gray-600 whitespace-pre-line font-medium">
+              <div className="text-sm text-white/90 whitespace-pre-line font-medium">
                 {formatDateTime(currentTime)}
               </div>
+              <div className="text-xs text-blue-200 mt-1">
+                {data?.employee?.name}님, 오늘도 화이팅!
               </div>
+            </div>
               
             {/* 우측 사용자 영역 */}
             <div className="flex items-center space-x-2 md:space-x-4">
               {/* 알림 아이콘 - 알림 개수 뱃지 추가 */}
-              <button className="p-2 text-gray-600 hover:text-yellow-600 transition-colors relative">
+              <button className="p-2 text-white/80 hover:text-yellow-300 transition-colors relative">
                 <Bell className="h-5 w-5 md:h-6 md:w-6" />
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 md:h-5 md:w-5 flex items-center justify-center font-bold">
@@ -1005,15 +1014,15 @@ export default function DashboardPage() {
               
               {/* 사용자 정보 - 모바일에서 축약 */}
               <div className="hidden sm:block text-right">
-                <p className="text-xs md:text-sm text-gray-600">Hi,</p>
-                <p className="text-sm md:text-base font-semibold text-gray-900 truncate max-w-24 md:max-w-32">
+                <p className="text-xs md:text-sm text-blue-200">안녕하세요,</p>
+                <p className="text-sm md:text-base font-semibold text-white truncate max-w-24 md:max-w-32">
                   {data?.employee?.nickname || data?.employee?.name || '사용자'}님
                 </p>
               </div>
               
               {/* 모바일에서 사용자 이름만 표시 */}
               <div className="sm:hidden text-right">
-                <p className="text-sm font-semibold text-gray-900 truncate max-w-16">
+                <p className="text-sm font-semibold text-white truncate max-w-16">
                   {data?.employee?.nickname || data?.employee?.name || '사용자'}
                 </p>
               </div>
@@ -1023,7 +1032,7 @@ export default function DashboardPage() {
               {/* 로그아웃 버튼 */}
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                className="p-2 text-white/80 hover:text-red-300 transition-colors"
                 title="로그아웃"
               >
                 <LogOut className="h-5 w-5 md:h-6 md:w-6" />
@@ -1032,7 +1041,7 @@ export default function DashboardPage() {
               {/* 모바일 메뉴 버튼 */}
                 <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="md:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors"
+                className="md:hidden p-2 text-white/80 hover:text-blue-300 transition-colors"
                 title="메뉴"
               >
                 <Menu className="h-5 w-5" />
@@ -1042,14 +1051,17 @@ export default function DashboardPage() {
           
           {/* 모바일 날짜/시간 - 상단바 아래에 표시 */}
           <div className="md:hidden mt-3 text-center">
-            <div className="text-sm text-gray-600 whitespace-pre-line font-medium">
+            <div className="text-sm text-white/90 whitespace-pre-line font-medium">
               {formatDateTime(currentTime)}
+            </div>
+            <div className="text-xs text-blue-200 mt-1">
+              {data?.employee?.name}님, 오늘도 화이팅!
             </div>
           </div>
           
           {/* 모바일 메뉴 드롭다운 */}
           {showMobileMenu && (
-            <div className="md:hidden mt-3 pt-3 border-t border-gray-200">
+            <div className="md:hidden mt-3 pt-3 border-t border-white/20">
               <div className="flex flex-col space-y-2">
                 <button className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                   프로필 설정
