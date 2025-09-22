@@ -2093,6 +2093,15 @@ export default function DashboardPage() {
                   <h3 className="font-bold text-lg text-green-900 mb-2">급여 명세서 생성</h3>
                 <p className="text-sm text-green-700">직원 급여 명세서 생성 및 발행</p>
               </button>
+
+              <button 
+                onClick={() => router.push('/admin/leave-management')}
+                  className="p-6 bg-purple-50 border-2 border-purple-200 rounded-2xl hover:bg-purple-100 transition-all duration-200 text-left"
+              >
+                  <Calendar className="h-10 w-10 text-purple-600 mb-3" />
+                  <h3 className="font-bold text-lg text-purple-900 mb-2">연차 관리 시스템</h3>
+                <p className="text-sm text-purple-700">직원 연차 신청, 승인 및 잔여일 관리</p>
+              </button>
             </div>
           </div>
         )}
