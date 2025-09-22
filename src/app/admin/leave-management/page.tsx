@@ -85,33 +85,38 @@ export default function LeaveManagementPage() {
 
       if (employeesError) throw employeesError;
 
-      // 연차 잔여 로드
+      // 연차 잔여 로드 - 별도 쿼리로 해결
       const { data: balanceData, error: balanceError } = await supabase
         .from('leave_balance')
-        .select(`
-          *,
-          employees!leave_balance_employee_id_fkey(id, name, employee_id, hire_date, employment_type)
-        `)
+        .select('*')
         .eq('year', new Date().getFullYear())
         .order('remaining_days', { ascending: false });
 
       if (balanceError) throw balanceError;
 
-      // 연차 신청 로드
+      // 연차 신청 로드 - 별도 쿼리로 해결
       const { data: requestData, error: requestError } = await supabase
         .from('leave_requests')
-        .select(`
-          *,
-          employees!leave_requests_employee_id_fkey(id, name, employee_id, hire_date, employment_type)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (requestError) throw requestError;
 
+      // 직원 데이터와 연차 데이터를 조인
+      const balancesWithEmployees = (balanceData || []).map(balance => ({
+        ...balance,
+        employees: employeesData?.find(emp => emp.id === balance.employee_id)
+      }));
+
+      const requestsWithEmployees = (requestData || []).map(request => ({
+        ...request,
+        employees: employeesData?.find(emp => emp.id === request.employee_id)
+      }));
+
       setEmployees(employeesData || []);
-      setLeaveBalances(balanceData || []);
-      setLeaveRequests(requestData || []);
+      setLeaveBalances(balancesWithEmployees);
+      setLeaveRequests(requestsWithEmployees);
 
     } catch (error) {
       console.error('데이터 로드 오류:', error);
