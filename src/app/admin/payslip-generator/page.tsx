@@ -387,9 +387,24 @@ export default function PayslipGenerator() {
       });
     });
 
+    // 주휴수당 계산 (주 15시간 이상 근무 시)
+    let weeklyHolidayPay = 0;
+    const workDays = Object.keys(dailyHours).length;
+    const weeksWorked = Math.ceil(workDays / 5); // 주 5일 기준으로 주 수 계산
+    const averageHoursPerWeek = totalHours / weeksWorked;
+    
+    // 주 15시간 이상 근무 시 주휴수당 지급 (법정 기준)
+    if (averageHoursPerWeek >= 15) {
+      const latestHourlyRate = wages[wages.length - 1].base_wage;
+      weeklyHolidayPay = 7 * latestHourlyRate; // 7시간 × 시급
+    }
+
+    // 총 급여 계산 (기본급 + 주휴수당)
+    const totalEarnings = totalWage + weeklyHolidayPay;
+    
     // 세금 계산 (3.3% 사업소득세)
-    const taxAmount = Math.round(totalWage * 0.033);
-    const netSalary = totalWage - taxAmount; // 총 급여에서 세금을 차감한 실수령액
+    const taxAmount = Math.round(totalEarnings * 0.033);
+    const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -400,10 +415,10 @@ export default function PayslipGenerator() {
       salary_period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'part_time',
       base_salary: totalWage,
-      overtime_pay: 0,
+      overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
       incentive: 0,
       point_bonus: 0,
-      total_earnings: totalWage,
+      total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
       status: 'generated',
@@ -625,9 +640,24 @@ export default function PayslipGenerator() {
       });
     });
 
+    // 주휴수당 계산 (주 15시간 이상 근무 시)
+    let weeklyHolidayPay = 0;
+    const workDays = Object.keys(dailyHours).length;
+    const weeksWorked = Math.ceil(workDays / 5); // 주 5일 기준으로 주 수 계산
+    const averageHoursPerWeek = totalHours / weeksWorked;
+    
+    // 주 15시간 이상 근무 시 주휴수당 지급 (법정 기준)
+    if (averageHoursPerWeek >= 15) {
+      const latestHourlyRate = wages[wages.length - 1].base_wage;
+      weeklyHolidayPay = 7 * latestHourlyRate; // 7시간 × 시급
+    }
+
+    // 총 급여 계산 (기본급 + 주휴수당)
+    const totalEarnings = totalWage + weeklyHolidayPay;
+    
     // 세금 계산 (3.3% 사업소득세)
-    const taxAmount = Math.round(totalWage * 0.033);
-    const netSalary = totalWage - taxAmount; // 총 급여에서 세금을 차감한 실수령액
+    const taxAmount = Math.round(totalEarnings * 0.033);
+    const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -638,10 +668,10 @@ export default function PayslipGenerator() {
       salary_period: periodName, // 사용자가 입력한 정산서명 사용
       employment_type: 'part_time',
       base_salary: totalWage,
-      overtime_pay: 0,
+      overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
       incentive: 0,
       point_bonus: 0,
-      total_earnings: totalWage,
+      total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
       status: 'generated',
@@ -1109,7 +1139,7 @@ export default function PayslipGenerator() {
               </div>
               ${payslip.overtime_pay > 0 ? `
               <div class="salary-item">
-                <span>연장수당</span>
+                <span>주휴수당</span>
                 <span>${payslip.overtime_pay.toLocaleString()}원</span>
               </div>
               ` : ''}
@@ -1407,7 +1437,7 @@ export default function PayslipGenerator() {
               </div>
               ${payslipData.overtime_pay > 0 ? `
               <div class="salary-item">
-                <span>연장수당</span>
+                <span>주휴수당</span>
                 <span>${payslipData.overtime_pay.toLocaleString()}원</span>
               </div>
               ` : ''}
@@ -1968,7 +1998,7 @@ export default function PayslipGenerator() {
                 </div>
                 {payslipData.overtime_pay > 0 && (
                   <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">연장근무수당</span>
+                    <span className="text-gray-600">주휴수당</span>
                     <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
                   </div>
                 )}
@@ -2086,7 +2116,7 @@ export default function PayslipGenerator() {
                         onChange={() => handleCheck('overtimePay')}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">연장근무수당 확인</span>
+                      <span className="text-sm text-gray-700">주휴수당 확인</span>
                     </label>
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
@@ -2257,7 +2287,7 @@ export default function PayslipGenerator() {
                         <span>{(selectedPayslipForDetails.base_salary || 0).toLocaleString()}원</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>연장근무수당</span>
+                        <span>주휴수당</span>
                         <span>{(selectedPayslipForDetails.overtime_pay || 0).toLocaleString()}원</span>
                       </div>
                       <div className="flex justify-between">
