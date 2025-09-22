@@ -41,6 +41,19 @@ interface Contract {
     family_register?: string;
     bank_account?: string;
   };
+  // 급여 변동 이력 (JSONB)
+  salary_history?: {
+    effective_date: string;
+    salary: number;
+    reason: string;
+    notes?: string;
+  }[];
+  // 수습기간 설정
+  probation_period?: {
+    start_date: string;
+    end_date: string;
+    minimum_wage: boolean; // 최저임금 적용 여부
+  };
   employees?: Employee;
 }
 
@@ -66,7 +79,15 @@ export default function ContractManagementPage() {
     work_time: '09:00-17:00',
     lunch_break: 1,
     meal_allowance: 0,
-    includes_weekly_holiday: true
+    includes_weekly_holiday: true,
+    // 급여 변동 이력
+    salary_history: [] as { effective_date: string; salary: number; reason: string; notes?: string }[],
+    // 수습기간 설정
+    probation_period: {
+      start_date: '',
+      end_date: '',
+      minimum_wage: false,
+    },
   });
 
   // 서명 데이터
@@ -134,7 +155,13 @@ export default function ContractManagementPage() {
           salary: newContract.salary,
           work_hours: newContract.work_hours,
           work_days: newContract.work_days,
-          status: 'draft'
+          status: 'draft',
+          // 급여 변동 이력 저장
+          salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
+          // 수습기간 설정 저장
+          probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
+            ? newContract.probation_period 
+            : null
         })
         .select()
         .single();
@@ -154,7 +181,13 @@ export default function ContractManagementPage() {
         work_time: '09:00-17:00',
         lunch_break: 1,
         meal_allowance: 0,
-        includes_weekly_holiday: true
+        includes_weekly_holiday: true,
+        salary_history: [],
+        probation_period: {
+          start_date: '',
+          end_date: '',
+          minimum_wage: false,
+        },
       });
       loadData();
     } catch (error) {
@@ -723,6 +756,143 @@ export default function ContractManagementPage() {
                   <label htmlFor="includes_weekly_holiday" className="ml-2 block text-sm text-gray-900">
                     주휴수당 포함
                   </label>
+                </div>
+
+                {/* 수습기간 설정 */}
+                <div className="border-t pt-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">수습기간 설정 (선택사항)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">수습 시작일</label>
+                      <input
+                        type="date"
+                        value={newContract.probation_period.start_date}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          probation_period: { 
+                            ...newContract.probation_period, 
+                            start_date: e.target.value 
+                          } 
+                        })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">수습 종료일</label>
+                      <input
+                        type="date"
+                        value={newContract.probation_period.end_date}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          probation_period: { 
+                            ...newContract.probation_period, 
+                            end_date: e.target.value 
+                          } 
+                        })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center mt-3">
+                    <input
+                      type="checkbox"
+                      id="minimum_wage"
+                      checked={newContract.probation_period.minimum_wage}
+                      onChange={(e) => setNewContract({ 
+                        ...newContract, 
+                        probation_period: { 
+                          ...newContract.probation_period, 
+                          minimum_wage: e.target.checked 
+                        } 
+                      })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="minimum_wage" className="ml-2 block text-sm text-gray-900">
+                      수습기간 중 최저임금 적용 (10,000원/시간)
+                    </label>
+                  </div>
+                </div>
+
+                {/* 급여 변동 이력 */}
+                <div className="border-t pt-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">급여 변동 이력 (선택사항)</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    최형호처럼 시급이 변동되는 경우 미리 설정할 수 있습니다.
+                  </p>
+                  <div className="space-y-3">
+                    {newContract.salary_history.map((item, index) => (
+                      <div key={index} className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">적용일</label>
+                          <input
+                            type="date"
+                            value={item.effective_date}
+                            onChange={(e) => {
+                              const newHistory = [...newContract.salary_history];
+                              newHistory[index].effective_date = e.target.value;
+                              setNewContract({ ...newContract, salary_history: newHistory });
+                            }}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">급여</label>
+                          <input
+                            type="number"
+                            value={item.salary}
+                            onChange={(e) => {
+                              const newHistory = [...newContract.salary_history];
+                              newHistory[index].salary = parseInt(e.target.value);
+                              setNewContract({ ...newContract, salary_history: newHistory });
+                            }}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="13000"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">변경 사유</label>
+                          <input
+                            type="text"
+                            value={item.reason}
+                            onChange={(e) => {
+                              const newHistory = [...newContract.salary_history];
+                              newHistory[index].reason = e.target.value;
+                              setNewContract({ ...newContract, salary_history: newHistory });
+                            }}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="성과 개선"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newHistory = newContract.salary_history.filter((_, i) => i !== index);
+                              setNewContract({ ...newContract, salary_history: newHistory });
+                            }}
+                            className="px-2 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newHistory = [...newContract.salary_history, {
+                          effective_date: '',
+                          salary: 0,
+                          reason: '',
+                          notes: ''
+                        }];
+                        setNewContract({ ...newContract, salary_history: newHistory });
+                      }}
+                      className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors"
+                    >
+                      + 급여 변동 추가
+                    </button>
+                  </div>
                 </div>
               </div>
 
