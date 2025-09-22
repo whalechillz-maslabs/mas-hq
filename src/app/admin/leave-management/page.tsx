@@ -15,6 +15,7 @@ interface Employee {
   employee_id: string;
   hire_date: string;
   employment_type: string;
+  leave_anniversary_date?: string; // 연차 기산일
 }
 
 interface LeaveBalance {
@@ -24,6 +25,7 @@ interface LeaveBalance {
   total_days: number;
   used_days: number;
   remaining_days: number;
+  leave_anniversary_date?: string; // 연차 기산일
   employees?: Employee;
 }
 
@@ -57,7 +59,8 @@ export default function LeaveManagementPage() {
   const [newBalance, setNewBalance] = useState({
     employee_id: '',
     year: new Date().getFullYear(),
-    total_days: 11
+    total_days: 11,
+    leave_anniversary_date: ''
   });
 
   // 연차 신청용 상태
@@ -72,11 +75,15 @@ export default function LeaveManagementPage() {
     loadData();
   }, []);
 
-  // 연차 일수 자동 계산 함수
-  const calculateLeaveDays = (hireDate: string) => {
-    const hire = new Date(hireDate);
+  // 연차 일수 자동 계산 함수 (연차 기산일 기준)
+  const calculateLeaveDays = (anniversaryDate: string, hireDate?: string) => {
+    // 연차 기산일이 있으면 그것을 사용, 없으면 입사일 사용
+    const baseDate = anniversaryDate || hireDate;
+    if (!baseDate) return 0;
+    
+    const base = new Date(baseDate);
     const currentYear = new Date().getFullYear();
-    const yearsWorked = currentYear - hire.getFullYear();
+    const yearsWorked = currentYear - base.getFullYear();
     
     // 1년 미만: 0일, 1년 이상: 11일부터 시작
     if (yearsWorked < 1) return 0;
@@ -95,7 +102,7 @@ export default function LeaveManagementPage() {
       // 직원 목록 로드
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
-        .select('id, name, employee_id, hire_date, employment_type')
+        .select('id, name, employee_id, hire_date, employment_type, leave_anniversary_date')
         .eq('status', 'active')
         .order('name');
 
@@ -119,11 +126,13 @@ export default function LeaveManagementPage() {
 
       if (requestError) throw requestError;
 
-      // 자동 연차 생성 (입사일 기준)
+      // 자동 연차 생성 (연차 기산일 기준)
       const currentYear = new Date().getFullYear();
       for (const employee of employeesData || []) {
-        if (employee.hire_date) {
-          const calculatedDays = calculateLeaveDays(employee.hire_date);
+        // 연차 기산일이 있으면 그것을 사용, 없으면 입사일 사용
+        const anniversaryDate = employee.leave_anniversary_date || employee.hire_date;
+        if (anniversaryDate) {
+          const calculatedDays = calculateLeaveDays(anniversaryDate, employee.hire_date);
           
           // 해당 직원의 연차 데이터가 없으면 자동 생성
           const existingBalance = balanceData?.find(b => b.employee_id === employee.id);
@@ -135,7 +144,8 @@ export default function LeaveManagementPage() {
                   employee_id: employee.id,
                   year: currentYear,
                   total_days: calculatedDays,
-                  used_days: 0
+                  used_days: 0,
+                  leave_anniversary_date: anniversaryDate
                 });
             } catch (error) {
               console.error(`${employee.name} 연차 자동 생성 실패:`, error);
@@ -183,14 +193,23 @@ export default function LeaveManagementPage() {
           employee_id: newBalance.employee_id,
           year: newBalance.year,
           total_days: newBalance.total_days,
-          used_days: 0
+          used_days: 0,
+          leave_anniversary_date: newBalance.leave_anniversary_date
         });
 
       if (error) throw error;
 
+      // 직원의 연차 기산일도 업데이트
+      if (newBalance.leave_anniversary_date) {
+        await supabase
+          .from('employees')
+          .update({ leave_anniversary_date: newBalance.leave_anniversary_date })
+          .eq('id', newBalance.employee_id);
+      }
+
       alert('연차 잔여일이 추가되었습니다.');
       setShowAddModal(false);
-      setNewBalance({ employee_id: '', year: new Date().getFullYear(), total_days: 11 });
+      setNewBalance({ employee_id: '', year: new Date().getFullYear(), total_days: 11, leave_anniversary_date: '' });
       loadData();
     } catch (error) {
       console.error('연차 잔여일 추가 오류:', error);
@@ -643,11 +662,13 @@ export default function LeaveManagementPage() {
                     value={newBalance.employee_id}
                     onChange={(e) => {
                       const selectedEmployee = employees.find(emp => emp.id === e.target.value);
-                      const calculatedDays = selectedEmployee?.hire_date ? calculateLeaveDays(selectedEmployee.hire_date) : 11;
+                      const anniversaryDate = selectedEmployee?.leave_anniversary_date || selectedEmployee?.hire_date;
+                      const calculatedDays = anniversaryDate ? calculateLeaveDays(anniversaryDate, selectedEmployee?.hire_date) : 11;
                       setNewBalance({ 
                         ...newBalance, 
                         employee_id: e.target.value,
-                        total_days: calculatedDays
+                        total_days: calculatedDays,
+                        leave_anniversary_date: anniversaryDate || ''
                       });
                     }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -670,6 +691,25 @@ export default function LeaveManagementPage() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">연차 기산일</label>
+                  <input
+                    type="date"
+                    value={newBalance.leave_anniversary_date}
+                    onChange={(e) => {
+                      const calculatedDays = e.target.value ? calculateLeaveDays(e.target.value) : 0;
+                      setNewBalance({ 
+                        ...newBalance, 
+                        leave_anniversary_date: e.target.value,
+                        total_days: calculatedDays
+                      });
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    💡 알바→정직원 전환 시 연차 계산 기준일을 설정하세요
+                  </p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">총 연차 일수</label>
                   <input
                     type="number"
@@ -679,13 +719,14 @@ export default function LeaveManagementPage() {
                   />
                   {newBalance.employee_id && (() => {
                     const selectedEmployee = employees.find(emp => emp.id === newBalance.employee_id);
-                    const calculatedDays = selectedEmployee?.hire_date ? calculateLeaveDays(selectedEmployee.hire_date) : 0;
+                    const anniversaryDate = newBalance.leave_anniversary_date || selectedEmployee?.leave_anniversary_date || selectedEmployee?.hire_date;
+                    const calculatedDays = anniversaryDate ? calculateLeaveDays(anniversaryDate, selectedEmployee?.hire_date) : 0;
                     return (
                       <p className="text-sm text-blue-600 mt-1">
-                        💡 입사일 기준 자동 계산: {calculatedDays}일
-                        {selectedEmployee?.hire_date && (
+                        💡 연차 기산일 기준 자동 계산: {calculatedDays}일
+                        {anniversaryDate && (
                           <span className="text-gray-500">
-                            (입사: {selectedEmployee.hire_date})
+                            (기산일: {anniversaryDate})
                           </span>
                         )}
                       </p>
