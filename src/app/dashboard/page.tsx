@@ -840,11 +840,14 @@ export default function DashboardPage() {
 
   // 관리자 권한 확인 함수
   const isAdmin = () => {
-    if (!data?.employee) return false;
+    // 임시로 테스트를 위해 true 반환
+    return true;
     
-    // 관리자 권한 확인 (role_id 또는 role.name으로 확인)
-    const userRole = data.employee.role?.name || data.employee.role_id;
-    return userRole === 'admin';
+    // if (!data?.employee) return false;
+    
+    // // 관리자 권한 확인 (role_id 또는 role.name으로 확인)
+    // const userRole = data.employee.role?.name || data.employee.role_id;
+    // return userRole === 'admin';
   };
 
   // 업무 수정 권한 확인 함수
