@@ -17,6 +17,21 @@ interface Employee {
   employment_type: string;
   monthly_salary?: number;
   hourly_rate?: number;
+  // 연봉계약 관련 필드 추가
+  salary_structure?: {
+    contract_type: 'hourly' | 'monthly' | 'annual';
+    base_salary?: number;
+    meal_allowance?: number;
+    includes_weekly_holiday?: boolean;
+    work_schedule?: {
+      days_per_week: number;
+      hours_per_day: number;
+      hours_per_week: number;
+      work_time: string;
+      lunch_break: number;
+    };
+    effective_date?: string; // 계약 변경 적용일
+  };
 }
 
 interface PayslipData {
@@ -78,6 +93,27 @@ export default function PayslipGenerator() {
   const [editingDates, setEditingDates] = useState(false);
   const [editIssuedDate, setEditIssuedDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
+  
+  // 연봉계약 전환 관련 상태
+  const [showContractChangeModal, setShowContractChangeModal] = useState(false);
+  const [contractChangeData, setContractChangeData] = useState({
+    employee_id: '',
+    employee_name: '',
+    current_contract: 'hourly' as 'hourly' | 'monthly' | 'annual',
+    new_contract: 'annual' as 'hourly' | 'monthly' | 'annual',
+    effective_date: '',
+    annual_salary: 28080000,
+    monthly_salary: 2340000,
+    meal_allowance: 140000,
+    includes_weekly_holiday: true,
+    work_schedule: {
+      days_per_week: 5,
+      hours_per_day: 7,
+      hours_per_week: 35,
+      work_time: '09:00-17:00',
+      lunch_break: 1
+    }
+  });
 
   useEffect(() => {
     loadEmployees();
@@ -1614,6 +1650,37 @@ export default function PayslipGenerator() {
               >
                 {showPayslipList ? '목록 숨기기' : '발행된 급여명세서 목록'}
               </button>
+              {selectedEmployee && (
+                <button
+                  onClick={() => {
+                    const employee = employees.find(emp => emp.id === selectedEmployee);
+                    if (employee) {
+                      setContractChangeData({
+                        employee_id: employee.id,
+                        employee_name: employee.name,
+                        current_contract: employee.employment_type === 'part_time' ? 'hourly' : 'monthly',
+                        new_contract: 'annual',
+                        effective_date: '2025-10-01',
+                        annual_salary: 28080000,
+                        monthly_salary: 2340000,
+                        meal_allowance: 140000,
+                        includes_weekly_holiday: true,
+                        work_schedule: {
+                          days_per_week: 5,
+                          hours_per_day: 7,
+                          hours_per_week: 35,
+                          work_time: '09:00-17:00',
+                          lunch_break: 1
+                        }
+                      });
+                      setShowContractChangeModal(true);
+                    }
+                  }}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  연봉계약 전환
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -2424,6 +2491,171 @@ export default function PayslipGenerator() {
                     닫기
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 연봉계약 전환 모달 */}
+        {showContractChangeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold mb-4">연봉계약 전환</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">직원명</label>
+                  <input
+                    type="text"
+                    value={contractChangeData.employee_name}
+                    readOnly
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">현재 계약 유형</label>
+                  <input
+                    type="text"
+                    value={contractChangeData.current_contract === 'hourly' ? '일급계약' : '월급계약'}
+                    readOnly
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">새 계약 유형</label>
+                  <input
+                    type="text"
+                    value="연봉계약"
+                    readOnly
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">적용일</label>
+                  <input
+                    type="date"
+                    value={contractChangeData.effective_date}
+                    onChange={(e) => setContractChangeData({
+                      ...contractChangeData,
+                      effective_date: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">연봉 (원)</label>
+                  <input
+                    type="number"
+                    value={contractChangeData.annual_salary}
+                    onChange={(e) => setContractChangeData({
+                      ...contractChangeData,
+                      annual_salary: parseInt(e.target.value),
+                      monthly_salary: Math.round(parseInt(e.target.value) / 12)
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">월급 (원)</label>
+                  <input
+                    type="number"
+                    value={contractChangeData.monthly_salary}
+                    readOnly
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">식대 (원)</label>
+                  <input
+                    type="number"
+                    value={contractChangeData.meal_allowance}
+                    onChange={(e) => setContractChangeData({
+                      ...contractChangeData,
+                      meal_allowance: parseInt(e.target.value)
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="includes_weekly_holiday"
+                    checked={contractChangeData.includes_weekly_holiday}
+                    onChange={(e) => setContractChangeData({
+                      ...contractChangeData,
+                      includes_weekly_holiday: e.target.checked
+                    })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includes_weekly_holiday" className="ml-2 block text-sm text-gray-900">
+                    주휴수당 포함
+                  </label>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">계약 조건 요약</h4>
+                  <div className="text-sm text-blue-800 space-y-1">
+                    <p>• 연봉: {contractChangeData.annual_salary.toLocaleString()}원</p>
+                    <p>• 월급: {contractChangeData.monthly_salary.toLocaleString()}원</p>
+                    <p>• 식대: {contractChangeData.meal_allowance.toLocaleString()}원</p>
+                    <p>• 주휴수당: {contractChangeData.includes_weekly_holiday ? '포함' : '별도'}</p>
+                    <p>• 근무시간: 주 5일, 일 7시간 (35시간/주)</p>
+                    <p>• 적용일: {contractChangeData.effective_date}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowContractChangeModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('employees')
+                        .update({
+                          employment_type: 'full_time',
+                          monthly_salary: contractChangeData.monthly_salary,
+                          salary_structure: {
+                            contract_type: 'annual',
+                            base_salary: contractChangeData.monthly_salary,
+                            meal_allowance: contractChangeData.meal_allowance,
+                            includes_weekly_holiday: contractChangeData.includes_weekly_holiday,
+                            work_schedule: contractChangeData.work_schedule,
+                            effective_date: contractChangeData.effective_date
+                          }
+                        })
+                        .eq('id', contractChangeData.employee_id);
+
+                      if (error) {
+                        console.error('계약 변경 실패:', error);
+                        alert('계약 변경에 실패했습니다.');
+                        return;
+                      }
+
+                      alert(`${contractChangeData.employee_name} 직원의 계약이 연봉계약으로 변경되었습니다.`);
+                      setShowContractChangeModal(false);
+                      loadEmployees(); // 직원 목록 새로고침
+                    } catch (error) {
+                      console.error('계약 변경 중 오류:', error);
+                      alert('계약 변경 중 오류가 발생했습니다.');
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  계약 변경 실행
+                </button>
               </div>
             </div>
           </div>
