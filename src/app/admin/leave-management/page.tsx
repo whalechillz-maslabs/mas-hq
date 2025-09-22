@@ -24,7 +24,7 @@ interface LeaveBalance {
   total_days: number;
   used_days: number;
   remaining_days: number;
-  employee?: Employee;
+  employees?: Employee;
 }
 
 interface LeaveRequest {
@@ -38,7 +38,7 @@ interface LeaveRequest {
   approved_by?: string;
   approved_at?: string;
   rejection_reason?: string;
-  employee?: Employee;
+  employees?: Employee;
 }
 
 export default function LeaveManagementPage() {
@@ -90,7 +90,7 @@ export default function LeaveManagementPage() {
         .from('leave_balance')
         .select(`
           *,
-          employee:employees(id, name, employee_id, hire_date, employment_type)
+          employees!leave_balance_employee_id_fkey(id, name, employee_id, hire_date, employment_type)
         `)
         .eq('year', new Date().getFullYear())
         .order('remaining_days', { ascending: false });
@@ -102,7 +102,7 @@ export default function LeaveManagementPage() {
         .from('leave_requests')
         .select(`
           *,
-          employee:employees(id, name, employee_id, hire_date, employment_type)
+          employees!leave_requests_employee_id_fkey(id, name, employee_id, hire_date, employment_type)
         `)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -227,13 +227,13 @@ export default function LeaveManagementPage() {
   };
 
   const filteredBalances = leaveBalances.filter(balance =>
-    balance.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    balance.employee?.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    balance.employees?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    balance.employees?.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredRequests = leaveRequests.filter(request =>
-    request.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    request.employee?.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    request.employees?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    request.employees?.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
@@ -392,13 +392,13 @@ export default function LeaveManagementPage() {
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {balance.employee?.name}
+                                  {balance.employees?.name}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {balance.employee?.employee_id}
+                            {balance.employees?.employee_id}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {balance.total_days}일
@@ -479,10 +479,10 @@ export default function LeaveManagementPage() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {request.employee?.name}
+                                {request.employees?.name}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {request.employee?.employee_id}
+                                {request.employees?.employee_id}
                               </div>
                             </div>
                           </div>

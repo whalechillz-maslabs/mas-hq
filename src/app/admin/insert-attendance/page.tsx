@@ -124,12 +124,12 @@ export default function InsertAttendanceEnhancedPage() {
     }, 10000);
     
     const { data, error } = await supabase
-      .from('schedules')
-      .select(`
-        *,
-        employee:employees!schedules_employee_id_fkey(name, employee_id)
-      `)
-      .eq('schedule_date', selectedDate)
+        .from('schedules')
+        .select(`
+          *,
+          employee:employees!schedules_employee_id_fkey(name, employee_id)
+        `)
+        .eq('schedule_date', selectedDate)
       .in('status', ['approved', 'pending', 'completed', 'in_progress']);
 
     console.log('📊 쿼리 완료', { data: data?.length, error });
@@ -144,23 +144,23 @@ export default function InsertAttendanceEnhancedPage() {
     }
 
     // 직원 필터
-    let filteredData = data || [];
+      let filteredData = data || [];
     if (selectedEmployee !== 'all') {
       filteredData = filteredData.filter(s => s.employee_id === selectedEmployee);
     }
-
+      
     // 상태 필터
-    if (filterStatus === 'no-attendance') {
+      if (filterStatus === 'no-attendance') {
       filteredData = filteredData.filter(s => !s.actual_start);
-    } else if (filterStatus === 'partial-attendance') {
+      } else if (filterStatus === 'partial-attendance') {
       filteredData = filteredData.filter(s => s.actual_start && !s.actual_end);
-    } else if (filterStatus === 'completed') {
+      } else if (filterStatus === 'completed') {
       filteredData = filteredData.filter(s => s.actual_start && s.actual_end);
-    }
+      }
 
     console.log('✅ 최종 결과', { count: filteredData.length });
-    setSchedules(filteredData);
-    setLoading(false);
+      setSchedules(filteredData);
+      setLoading(false);
     console.log('🏁 완료');
   };
 
@@ -231,7 +231,7 @@ export default function InsertAttendanceEnhancedPage() {
       // 1. schedules 테이블 업데이트 (ISO 형식 사용)
       const { error: scheduleError } = await supabase
         .from('schedules')
-        .update({
+        .update({ 
           actual_start: checkInDateTime,
           actual_end: checkOutDateTime,
           status: 'completed',
@@ -314,11 +314,11 @@ export default function InsertAttendanceEnhancedPage() {
 
         // schedules 테이블 업데이트
         await supabase
-          .from('schedules')
-          .update({
+        .from('schedules')
+        .update({ 
             actual_start: checkInTime,
             actual_end: checkOutTime,
-            status: 'completed',
+          status: 'completed',
             employee_note: '일괄 정시 출퇴근/휴식 자동 체크',
             updated_at: new Date().toISOString()
           })
@@ -415,7 +415,7 @@ export default function InsertAttendanceEnhancedPage() {
             updated_at: new Date().toISOString()
           });
 
-        if (scheduleError) throw scheduleError;
+      if (scheduleError) throw scheduleError;
       } else {
         // 기존 스케줄 업데이트
         const { error: scheduleError } = await supabase
@@ -445,14 +445,14 @@ export default function InsertAttendanceEnhancedPage() {
         updated_at: new Date().toISOString()
       };
 
-      const { error: attendanceError } = await supabase
-        .from('attendance')
+        const { error: attendanceError } = await supabase
+          .from('attendance')
         .upsert(attendanceData, { 
           onConflict: 'employee_id,date',
           ignoreDuplicates: false 
         });
 
-      if (attendanceError) throw attendanceError;
+        if (attendanceError) throw attendanceError;
 
       alert('✅ 출근시간이 성공적으로 저장되었습니다!');
       setShowEditModal(false);
@@ -718,14 +718,14 @@ export default function InsertAttendanceEnhancedPage() {
       // schedules 테이블도 업데이트
       for (const schedule of employeeSchedules) {
         const { error: scheduleError } = await supabase
-          .from('schedules')
-          .update({
+        .from('schedules')
+        .update({ 
             actual_start: `${today}T${schedule.scheduled_start}Z`,
             actual_end: `${today}T${schedule.scheduled_end}Z`,
-            status: 'completed',
+          status: 'completed',
             employee_note: '정시 체크 (관리자 일괄 처리)',
             updated_at: new Date().toISOString()
-          })
+        })
           .eq('id', schedule.id);
 
         if (scheduleError) {
@@ -1096,9 +1096,9 @@ export default function InsertAttendanceEnhancedPage() {
                       <React.Fragment key={employeeId}>
                         {/* 직원 헤더 행 */}
                         <tr className="bg-blue-50 border-t-2 border-blue-200">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="checkbox"
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
                               checked={employeeSchedules.every(s => selectedSchedules.includes(s.id))}
                               onChange={() => {
                                 const allSelected = employeeSchedules.every(s => selectedSchedules.includes(s.id));
@@ -1108,38 +1108,38 @@ export default function InsertAttendanceEnhancedPage() {
                                   setSelectedSchedules(prev => [...prev, ...employeeSchedules.map(s => s.id).filter(id => !prev.includes(id))]);
                                 }
                               }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
                               <button
                                 onClick={() => toggleEmployeeCollapse(employeeId)}
                                 className="mr-2 text-blue-600 hover:text-blue-800"
                               >
                                 {isCollapsed ? '▶' : '▼'}
                               </button>
-                              <div className="flex-shrink-0 h-8 w-8">
+                          <div className="flex-shrink-0 h-8 w-8">
                                 <div className="h-8 w-8 rounded-full flex items-center justify-center bg-blue-200">
                                   <span className="text-sm font-medium text-blue-900">
                                     {group.employee?.name?.charAt(0) || '?'}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="ml-3">
+                              </span>
+                            </div>
+                          </div>
+                          <div className="ml-3">
                                 <div className="text-sm font-medium text-blue-900 font-semibold">
                                   {group.employee?.name || '알 수 없음'}
                                   <span className="ml-2 text-xs text-blue-600">
                                     ({employeeSchedules.length}개 스케줄)
                                   </span>
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {group.employee?.employee_id || 'N/A'}
-                                </div>
-                              </div>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="text-sm text-gray-500">
+                                  {group.employee?.employee_id || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {isCollapsed ? (
                               <span className="text-gray-500">
                                 {employeeSchedules[0]?.scheduled_start} - {employeeSchedules[employeeSchedules.length - 1]?.scheduled_end}
@@ -1147,8 +1147,8 @@ export default function InsertAttendanceEnhancedPage() {
                             ) : (
                               <span className="text-gray-500">-</span>
                             )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {isCollapsed && firstSchedule.actual_start ? (
                               (() => {
                                 try {
@@ -1162,7 +1162,7 @@ export default function InsertAttendanceEnhancedPage() {
                                 }
                               })()
                             ) : (
-                              <span className="text-gray-400">-</span>
+                          <span className="text-gray-400">-</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1181,15 +1181,15 @@ export default function InsertAttendanceEnhancedPage() {
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {isCollapsed && attendanceInfo.hasBreak ? (
                               <div className="flex items-center space-x-1">
                                 <Coffee className="h-4 w-4 text-orange-500" />
                                 <span>{attendanceInfo.breakStart} - {attendanceInfo.breakEnd}</span>
                               </div>
                             ) : (
-                              <span className="text-gray-400">-</span>
+                          <span className="text-gray-400">-</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1281,10 +1281,10 @@ export default function InsertAttendanceEnhancedPage() {
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {getStatusBadge(schedule)}
-                              </td>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(schedule)}
+                      </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex space-x-2">
                                   <button
@@ -1301,7 +1301,7 @@ export default function InsertAttendanceEnhancedPage() {
                                   </button>
                                 </div>
                               </td>
-                            </tr>
+                    </tr>
                           );
                         })}
                       </React.Fragment>
