@@ -72,6 +72,22 @@ export default function LeaveManagementPage() {
     loadData();
   }, []);
 
+  // 연차 일수 자동 계산 함수
+  const calculateLeaveDays = (hireDate: string) => {
+    const hire = new Date(hireDate);
+    const currentYear = new Date().getFullYear();
+    const yearsWorked = currentYear - hire.getFullYear();
+    
+    // 1년 미만: 0일, 1년 이상: 11일부터 시작
+    if (yearsWorked < 1) return 0;
+    if (yearsWorked < 2) return 11;
+    if (yearsWorked < 3) return 12;
+    if (yearsWorked < 4) return 14;
+    if (yearsWorked < 5) return 15;
+    if (yearsWorked < 6) return 16;
+    return 20; // 6년 이상
+  };
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -103,8 +119,42 @@ export default function LeaveManagementPage() {
 
       if (requestError) throw requestError;
 
+      // 자동 연차 생성 (입사일 기준)
+      const currentYear = new Date().getFullYear();
+      for (const employee of employeesData || []) {
+        if (employee.hire_date) {
+          const calculatedDays = calculateLeaveDays(employee.hire_date);
+          
+          // 해당 직원의 연차 데이터가 없으면 자동 생성
+          const existingBalance = balanceData?.find(b => b.employee_id === employee.id);
+          if (!existingBalance && calculatedDays > 0) {
+            try {
+              await supabase
+                .from('leave_balance')
+                .insert({
+                  employee_id: employee.id,
+                  year: currentYear,
+                  total_days: calculatedDays,
+                  used_days: 0
+                });
+            } catch (error) {
+              console.error(`${employee.name} 연차 자동 생성 실패:`, error);
+            }
+          }
+        }
+      }
+
+      // 연차 데이터 다시 로드 (자동 생성된 것 포함)
+      const { data: updatedBalanceData, error: updatedBalanceError } = await supabase
+        .from('leave_balance')
+        .select('*')
+        .eq('year', currentYear)
+        .order('remaining_days', { ascending: false });
+
+      if (updatedBalanceError) throw updatedBalanceError;
+
       // 직원 데이터와 연차 데이터를 조인
-      const balancesWithEmployees = (balanceData || []).map(balance => ({
+      const balancesWithEmployees = (updatedBalanceData || []).map(balance => ({
         ...balance,
         employees: employeesData?.find(emp => emp.id === balance.employee_id)
       }));
@@ -591,13 +641,21 @@ export default function LeaveManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">직원 선택</label>
                   <select
                     value={newBalance.employee_id}
-                    onChange={(e) => setNewBalance({ ...newBalance, employee_id: e.target.value })}
+                    onChange={(e) => {
+                      const selectedEmployee = employees.find(emp => emp.id === e.target.value);
+                      const calculatedDays = selectedEmployee?.hire_date ? calculateLeaveDays(selectedEmployee.hire_date) : 11;
+                      setNewBalance({ 
+                        ...newBalance, 
+                        employee_id: e.target.value,
+                        total_days: calculatedDays
+                      });
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">직원을 선택하세요</option>
                     {employees.map(employee => (
                       <option key={employee.id} value={employee.id}>
-                        {employee.name} ({employee.employee_id})
+                        {employee.name} ({employee.employee_id}) - 입사: {employee.hire_date}
                       </option>
                     ))}
                   </select>
@@ -619,6 +677,20 @@ export default function LeaveManagementPage() {
                     onChange={(e) => setNewBalance({ ...newBalance, total_days: parseInt(e.target.value) })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  {newBalance.employee_id && (() => {
+                    const selectedEmployee = employees.find(emp => emp.id === newBalance.employee_id);
+                    const calculatedDays = selectedEmployee?.hire_date ? calculateLeaveDays(selectedEmployee.hire_date) : 0;
+                    return (
+                      <p className="text-sm text-blue-600 mt-1">
+                        💡 입사일 기준 자동 계산: {calculatedDays}일
+                        {selectedEmployee?.hire_date && (
+                          <span className="text-gray-500">
+                            (입사: {selectedEmployee.hire_date})
+                          </span>
+                        )}
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
