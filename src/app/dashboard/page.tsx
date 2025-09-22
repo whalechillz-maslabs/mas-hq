@@ -24,6 +24,9 @@ interface SharedTask {
   created_at: string;
   task_priority?: string;
   achievement_status?: string;
+  sita_booking?: boolean;
+  visit_booking_date?: string;
+  visit_booking_time?: string;
   operation_type?: {
     code: string;
     name: string;
@@ -661,7 +664,7 @@ export default function DashboardPage() {
           console.log('김상돈 업무 찾기 결과:', kimSangDonTask);
         }
 
-        recentSharedTasks = sharedTasksData || [];
+        recentSharedTasks = (sharedTasksData || []) as unknown as SharedTask[];
       }
 
       // 내 업무 가져오기 (모든 업무 유형)
@@ -689,7 +692,7 @@ export default function DashboardPage() {
           .order('created_at', { ascending: false })
           .limit(20);
 
-        myTasks = myTasksData || [];
+        myTasks = (myTasksData || []) as unknown as SharedTask[];
       }
 
       // 팀원 순위 계산
@@ -837,8 +840,11 @@ export default function DashboardPage() {
 
   // 관리자 권한 확인 함수
   const isAdmin = () => {
-    // 임시로 모든 사용자에게 관리자 권한 부여 (테스트용)
-    return true;
+    if (!data?.employee) return false;
+    
+    // 관리자 권한 확인 (role_id 또는 role.name으로 확인)
+    const userRole = data.employee.role?.name || data.employee.role_id;
+    return userRole === 'admin';
   };
 
   // 업무 수정 권한 확인 함수
@@ -1974,7 +1980,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 관리자 전용 메뉴 */}
-          {(data?.employee?.role_id === 'admin' || data?.employee?.role?.name === 'admin') && (
+          {isAdmin() && (
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Award className="h-6 w-6 mr-3 text-indigo-600" />
@@ -2035,9 +2041,8 @@ export default function DashboardPage() {
         </div>
           )}
 
-          {/* 관리자 + 매니저 메뉴 */}
-          {((data?.employee?.role_id === 'admin' || data?.employee?.role?.name === 'admin') ||
-            (data?.employee?.role_id === 'manager' || data?.employee?.role?.name === 'manager')) && (
+          {/* 관리자 전용 메뉴 (기존 관리자 + 매니저 기능) */}
+          {isAdmin() && (
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Award className="h-6 w-6 mr-3 text-blue-600" />
@@ -2096,10 +2101,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-          {/* 관리자 + 매니저 + 팀장 메뉴 */}
-          {((data?.employee?.role_id === 'admin' || data?.employee?.role?.name === 'admin') ||
-            (data?.employee?.role_id === 'manager' || data?.employee?.role?.name === 'manager') ||
-            (data?.employee?.role_id === 'team_lead' || data?.employee?.role?.name === 'team_lead')) && (
+          {/* 관리자 전용 메뉴 (기존 팀 관리 기능) */}
+          {isAdmin() && (
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Users className="h-6 w-6 mr-3 text-green-600" />
