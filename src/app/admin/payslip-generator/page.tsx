@@ -53,6 +53,7 @@ interface PayslipData {
   // 시간제 급여 관련 필드
   total_hours?: number;
   hourly_rate?: number;
+  weeklyHolidayCalculation?: string; // 주휴수당 산출 식
   daily_details?: Array<{
     date: string;
     hours: number;
@@ -390,25 +391,34 @@ export default function PayslipGenerator() {
     // 주휴수당 계산 (주별로 15시간 이상 근무 시)
     let weeklyHolidayPay = 0;
     const latestHourlyRate = wages[wages.length - 1].base_wage;
+    let weeklyHolidayCalculation = ''; // 산출 식 저장
     
-    // 주별 근무시간 계산
-    const weeklyHours: { [key: string]: number } = {};
+    // 주별 근무시간 및 근무일수 계산
+    const weeklyData: { [key: string]: { hours: number, days: number } } = {};
     Object.keys(dailyHours).forEach(date => {
       const dateObj = new Date(date);
       const weekStart = new Date(dateObj);
       weekStart.setDate(dateObj.getDate() - dateObj.getDay()); // 일요일을 주의 시작으로
       const weekKey = weekStart.toISOString().split('T')[0];
       
-      if (!weeklyHours[weekKey]) {
-        weeklyHours[weekKey] = 0;
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = { hours: 0, days: 0 };
       }
-      weeklyHours[weekKey] += dailyHours[date];
+      weeklyData[weekKey].hours += dailyHours[date];
+      weeklyData[weekKey].days += 1;
     });
     
     // 주별로 15시간 이상인 주에 대해 주휴수당 지급
-    Object.values(weeklyHours).forEach(hours => {
-      if (hours >= 15) {
-        weeklyHolidayPay += 7 * latestHourlyRate; // 7시간 × 시급
+    Object.entries(weeklyData).forEach(([weekKey, data]) => {
+      if (data.hours >= 15) {
+        // 변동형 계약: 실제 근무일수로 1일 평균 근무시간 계산
+        const avgHoursPerDay = data.hours / data.days;
+        const weeklyHolidayAmount = Math.round(avgHoursPerDay * latestHourlyRate);
+        weeklyHolidayPay += weeklyHolidayAmount;
+        
+        // 산출 식 추가
+        const weekNumber = Object.keys(weeklyData).indexOf(weekKey) + 1;
+        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 ÷ ${data.days}일 = ${avgHoursPerDay.toFixed(1)}시간/일 → ${avgHoursPerDay.toFixed(1)}시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
       }
     });
 
@@ -437,6 +447,7 @@ export default function PayslipGenerator() {
       status: 'generated',
       total_hours: totalHours,
       hourly_rate: wages[wages.length - 1].base_wage, // 최신 시급
+      weeklyHolidayCalculation: weeklyHolidayCalculation, // 주휴수당 산출 식
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
         hours: detail.hours,
@@ -656,25 +667,34 @@ export default function PayslipGenerator() {
     // 주휴수당 계산 (주별로 15시간 이상 근무 시)
     let weeklyHolidayPay = 0;
     const latestHourlyRate = wages[wages.length - 1].base_wage;
+    let weeklyHolidayCalculation = ''; // 산출 식 저장
     
-    // 주별 근무시간 계산
-    const weeklyHours: { [key: string]: number } = {};
+    // 주별 근무시간 및 근무일수 계산
+    const weeklyData: { [key: string]: { hours: number, days: number } } = {};
     Object.keys(dailyHours).forEach(date => {
       const dateObj = new Date(date);
       const weekStart = new Date(dateObj);
       weekStart.setDate(dateObj.getDate() - dateObj.getDay()); // 일요일을 주의 시작으로
       const weekKey = weekStart.toISOString().split('T')[0];
       
-      if (!weeklyHours[weekKey]) {
-        weeklyHours[weekKey] = 0;
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = { hours: 0, days: 0 };
       }
-      weeklyHours[weekKey] += dailyHours[date];
+      weeklyData[weekKey].hours += dailyHours[date];
+      weeklyData[weekKey].days += 1;
     });
     
     // 주별로 15시간 이상인 주에 대해 주휴수당 지급
-    Object.values(weeklyHours).forEach(hours => {
-      if (hours >= 15) {
-        weeklyHolidayPay += 7 * latestHourlyRate; // 7시간 × 시급
+    Object.entries(weeklyData).forEach(([weekKey, data]) => {
+      if (data.hours >= 15) {
+        // 변동형 계약: 실제 근무일수로 1일 평균 근무시간 계산
+        const avgHoursPerDay = data.hours / data.days;
+        const weeklyHolidayAmount = Math.round(avgHoursPerDay * latestHourlyRate);
+        weeklyHolidayPay += weeklyHolidayAmount;
+        
+        // 산출 식 추가
+        const weekNumber = Object.keys(weeklyData).indexOf(weekKey) + 1;
+        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 ÷ ${data.days}일 = ${avgHoursPerDay.toFixed(1)}시간/일 → ${avgHoursPerDay.toFixed(1)}시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
       }
     });
 
@@ -2023,9 +2043,17 @@ export default function PayslipGenerator() {
                   <span className="font-medium">{payslipData.base_salary.toLocaleString()}원</span>
                 </div>
                 {payslipData.overtime_pay > 0 && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">주휴수당</span>
-                    <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
+                  <div className="py-2 border-b">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">주휴수당</span>
+                      <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
+                    </div>
+                    {payslipData.weeklyHolidayCalculation && (
+                      <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        <div className="font-medium mb-1">산출 식:</div>
+                        <pre className="whitespace-pre-wrap">{payslipData.weeklyHolidayCalculation}</pre>
+                      </div>
+                    )}
                   </div>
                 )}
                 {payslipData.incentive > 0 && (
