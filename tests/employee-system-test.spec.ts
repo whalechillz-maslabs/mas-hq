@@ -124,19 +124,6 @@ test.describe('직원 관리 시스템 테스트', () => {
     await expect(page.locator('text=3,000,000원')).toBeVisible();
   });
 
-  test('파트타임 정산 페이지 확인', async ({ page }) => {
-    await page.goto('http://localhost:3000/admin/part-time-settlement');
-    
-    // 파트타임 정산 페이지 제목 확인
-    await expect(page.locator('h1')).toContainText('파트타임 정산');
-    
-    // 파트타임 직원 선택
-    await page.selectOption('select[name="employee_id"]', 'MASLABS-003');
-    
-    // 허상원 정보 확인
-    await expect(page.locator('text=허상원')).toBeVisible();
-    await expect(page.locator('text=13,000원')).toBeVisible();
-  });
 
   test('모든 페이지 네비게이션 확인', async ({ page }) => {
     // 대시보드에서 각 페이지로 이동 테스트

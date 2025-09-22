@@ -2082,14 +2082,6 @@ export default function DashboardPage() {
                 <p className="text-sm text-green-700">직원 급여 명세서 생성 및 발행</p>
               </button>
               <button 
-                onClick={() => router.push('/admin/part-time-settlement')}
-                  className="p-6 bg-purple-50 border-2 border-purple-200 rounded-2xl hover:bg-purple-100 transition-all duration-200 text-left"
-              >
-                  <Calculator className="h-10 w-10 text-purple-600 mb-3" />
-                  <h3 className="font-bold text-lg text-purple-900 mb-2">파트타임 정산</h3>
-                <p className="text-sm text-purple-700">파트타임 직원 일자별 정산 관리</p>
-              </button>
-              <button 
                 onClick={() => router.push('/admin/simple-settlement')}
                   className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl hover:bg-yellow-100 transition-all duration-200 text-left"
               >
