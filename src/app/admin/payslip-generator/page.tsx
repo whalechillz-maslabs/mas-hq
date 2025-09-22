@@ -387,17 +387,30 @@ export default function PayslipGenerator() {
       });
     });
 
-    // 주휴수당 계산 (주 15시간 이상 근무 시)
+    // 주휴수당 계산 (주별로 15시간 이상 근무 시)
     let weeklyHolidayPay = 0;
-    const workDays = Object.keys(dailyHours).length;
-    const weeksWorked = Math.ceil(workDays / 5); // 주 5일 기준으로 주 수 계산
-    const averageHoursPerWeek = totalHours / weeksWorked;
+    const latestHourlyRate = wages[wages.length - 1].base_wage;
     
-    // 주 15시간 이상 근무 시 주휴수당 지급 (법정 기준)
-    if (averageHoursPerWeek >= 15) {
-      const latestHourlyRate = wages[wages.length - 1].base_wage;
-      weeklyHolidayPay = 7 * latestHourlyRate; // 7시간 × 시급
-    }
+    // 주별 근무시간 계산
+    const weeklyHours: { [key: string]: number } = {};
+    Object.keys(dailyHours).forEach(date => {
+      const dateObj = new Date(date);
+      const weekStart = new Date(dateObj);
+      weekStart.setDate(dateObj.getDate() - dateObj.getDay()); // 일요일을 주의 시작으로
+      const weekKey = weekStart.toISOString().split('T')[0];
+      
+      if (!weeklyHours[weekKey]) {
+        weeklyHours[weekKey] = 0;
+      }
+      weeklyHours[weekKey] += dailyHours[date];
+    });
+    
+    // 주별로 15시간 이상인 주에 대해 주휴수당 지급
+    Object.values(weeklyHours).forEach(hours => {
+      if (hours >= 15) {
+        weeklyHolidayPay += 7 * latestHourlyRate; // 7시간 × 시급
+      }
+    });
 
     // 총 급여 계산 (기본급 + 주휴수당)
     const totalEarnings = totalWage + weeklyHolidayPay;
@@ -640,17 +653,30 @@ export default function PayslipGenerator() {
       });
     });
 
-    // 주휴수당 계산 (주 15시간 이상 근무 시)
+    // 주휴수당 계산 (주별로 15시간 이상 근무 시)
     let weeklyHolidayPay = 0;
-    const workDays = Object.keys(dailyHours).length;
-    const weeksWorked = Math.ceil(workDays / 5); // 주 5일 기준으로 주 수 계산
-    const averageHoursPerWeek = totalHours / weeksWorked;
+    const latestHourlyRate = wages[wages.length - 1].base_wage;
     
-    // 주 15시간 이상 근무 시 주휴수당 지급 (법정 기준)
-    if (averageHoursPerWeek >= 15) {
-      const latestHourlyRate = wages[wages.length - 1].base_wage;
-      weeklyHolidayPay = 7 * latestHourlyRate; // 7시간 × 시급
-    }
+    // 주별 근무시간 계산
+    const weeklyHours: { [key: string]: number } = {};
+    Object.keys(dailyHours).forEach(date => {
+      const dateObj = new Date(date);
+      const weekStart = new Date(dateObj);
+      weekStart.setDate(dateObj.getDate() - dateObj.getDay()); // 일요일을 주의 시작으로
+      const weekKey = weekStart.toISOString().split('T')[0];
+      
+      if (!weeklyHours[weekKey]) {
+        weeklyHours[weekKey] = 0;
+      }
+      weeklyHours[weekKey] += dailyHours[date];
+    });
+    
+    // 주별로 15시간 이상인 주에 대해 주휴수당 지급
+    Object.values(weeklyHours).forEach(hours => {
+      if (hours >= 15) {
+        weeklyHolidayPay += 7 * latestHourlyRate; // 7시간 × 시급
+      }
+    });
 
     // 총 급여 계산 (기본급 + 주휴수당)
     const totalEarnings = totalWage + weeklyHolidayPay;
