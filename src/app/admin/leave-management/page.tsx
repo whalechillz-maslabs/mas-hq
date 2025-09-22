@@ -126,9 +126,14 @@ export default function LeaveManagementPage() {
 
       if (requestError) throw requestError;
 
-      // 자동 연차 생성 (연차 기산일 기준)
+      // 자동 연차 생성 (연차 기산일 기준) - 정직원만
       const currentYear = new Date().getFullYear();
       for (const employee of employeesData || []) {
+        // 파트타임(알바) 직원은 연차 생성하지 않음
+        if (employee.employment_type === 'part_time') {
+          continue;
+        }
+        
         // 연차 기산일이 있으면 그것을 사용, 없으면 입사일 사용
         const anniversaryDate = employee.leave_anniversary_date || employee.hire_date;
         if (anniversaryDate) {
@@ -674,11 +679,13 @@ export default function LeaveManagementPage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">직원을 선택하세요</option>
-                    {employees.map(employee => (
-                      <option key={employee.id} value={employee.id}>
-                        {employee.name} ({employee.employee_id}) - 입사: {employee.hire_date}
-                      </option>
-                    ))}
+                    {employees
+                      .filter(employee => employee.employment_type !== 'part_time') // 파트타임 제외
+                      .map(employee => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name} ({employee.employee_id}) - 입사: {employee.hire_date}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
@@ -766,11 +773,13 @@ export default function LeaveManagementPage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">직원을 선택하세요</option>
-                    {employees.map(employee => (
-                      <option key={employee.id} value={employee.id}>
-                        {employee.name} ({employee.employee_id})
-                      </option>
-                    ))}
+                    {employees
+                      .filter(employee => employee.employment_type !== 'part_time') // 파트타임 제외
+                      .map(employee => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name} ({employee.employee_id})
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
