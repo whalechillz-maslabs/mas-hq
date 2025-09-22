@@ -232,7 +232,7 @@ export default function ContractManagementPage() {
         <table class="info-table">
             <tr>
                 <th>계약 유형</th>
-                <td>${contract.contract_type === 'part_time' ? '파트타임' : contract.contract_type === 'full_time' ? '정규직' : '연봉제'}</td>
+                <td>${contract.contract_type === 'part_time' ? '파트타임 (시급제)' : contract.contract_type === 'full_time' ? '정규직 (월급제)' : contract.contract_type === 'annual' ? '연봉제' : '정규직'}</td>
             </tr>
             <tr>
                 <th>계약 기간</th>
@@ -244,7 +244,7 @@ export default function ContractManagementPage() {
             </tr>
             <tr>
                 <th>급여</th>
-                <td>${contract.salary.toLocaleString()}원 ${contract.contract_type === 'part_time' ? '(시급)' : contract.contract_type === 'full_time' ? '(월급)' : '(연봉)'}</td>
+                <td>${contract.salary.toLocaleString()}원 ${contract.contract_type === 'part_time' ? '(시급)' : contract.contract_type === 'full_time' ? '(월급)' : contract.contract_type === 'annual' ? '(연봉)' : '(월급)'}</td>
             </tr>
         </table>
     </div>
@@ -605,10 +605,15 @@ export default function ContractManagementPage() {
                     })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="part_time">파트타임</option>
-                    <option value="full_time">정규직</option>
+                    <option value="part_time">파트타임 (시급제)</option>
+                    <option value="full_time">정규직 (월급제)</option>
                     <option value="annual">연봉제</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newContract.contract_type === 'part_time' && '• 시급으로 급여 계산 • 4대보험 미가입'}
+                    {newContract.contract_type === 'full_time' && '• 월급으로 급여 지급 • 4대보험 가입 • 연차 제공'}
+                    {newContract.contract_type === 'annual' && '• 연봉을 12개월로 나누어 월급 지급 • 4대보험 가입 • 연차 제공'}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -633,14 +638,28 @@ export default function ContractManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">급여 (원)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {newContract.contract_type === 'part_time' ? '시급 (원)' : 
+                     newContract.contract_type === 'full_time' ? '월급 (원)' : 
+                     newContract.contract_type === 'annual' ? '연봉 (원)' : '급여 (원)'}
+                  </label>
                   <input
                     type="number"
                     value={newContract.salary}
                     onChange={(e) => setNewContract({ ...newContract, salary: parseInt(e.target.value) })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="급여를 입력하세요"
+                    placeholder={
+                      newContract.contract_type === 'part_time' ? '시급을 입력하세요 (예: 10000)' :
+                      newContract.contract_type === 'full_time' ? '월급을 입력하세요 (예: 3000000)' :
+                      newContract.contract_type === 'annual' ? '연봉을 입력하세요 (예: 36000000)' :
+                      '급여를 입력하세요'
+                    }
                   />
+                  {newContract.contract_type === 'annual' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      * 연봉은 12개월로 나누어 월급으로 지급됩니다
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
