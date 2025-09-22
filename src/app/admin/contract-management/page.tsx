@@ -808,7 +808,7 @@ export default function ContractManagementPage() {
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                     <label htmlFor="minimum_wage" className="ml-2 block text-sm text-gray-900">
-                      수습기간 중 최저임금 적용 (10,000원/시간)
+                      수습기간 중 최저임금 적용 (10,030원/시간)
                     </label>
                   </div>
                 </div>

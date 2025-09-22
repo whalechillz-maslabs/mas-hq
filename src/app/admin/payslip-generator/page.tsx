@@ -46,6 +46,7 @@ interface PayslipData {
   overtime_pay: number;
   incentive: number;
   point_bonus: number;
+  meal_allowance: number; // 식대
   total_earnings: number;
   tax_amount: number;
   net_salary: number;
@@ -296,6 +297,20 @@ export default function PayslipGenerator() {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
+    // 계약서에서 식대 정보 조회
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .select('meal_allowance, salary_history, probation_period')
+      .eq('employee_id', employee.id)
+      .lte('start_date', endDate)
+      .or(`end_date.is.null,end_date.gte.${startDate}`)
+      .eq('status', 'active')
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    const mealAllowance = contract?.meal_allowance || 0;
+    
     const { data: schedules, error: scheduleError } = await supabase
       .from('schedules')
       .select('*')
@@ -422,11 +437,12 @@ export default function PayslipGenerator() {
       }
     });
 
-    // 총 급여 계산 (기본급 + 주휴수당)
-    const totalEarnings = totalWage + weeklyHolidayPay;
+    // 총 급여 계산 (기본급 + 주휴수당 + 식대)
+    const totalEarnings = totalWage + weeklyHolidayPay + mealAllowance;
     
-    // 세금 계산 (3.3% 사업소득세)
-    const taxAmount = Math.round(totalEarnings * 0.033);
+    // 세금 계산 (3.3% 사업소득세 - 식대는 비과세)
+    const taxableAmount = totalWage + weeklyHolidayPay;
+    const taxAmount = Math.round(taxableAmount * 0.033);
     const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
@@ -441,6 +457,7 @@ export default function PayslipGenerator() {
       overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
       incentive: 0,
       point_bonus: 0,
+      meal_allowance: mealAllowance, // 식대
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -482,12 +499,31 @@ export default function PayslipGenerator() {
   };
 
   const generateMonthlyPayslip = async (employee: Employee, year: number, month: number) => {
+    // 계약서에서 식대 정보 조회
+    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+    
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .select('meal_allowance, salary_history, probation_period')
+      .eq('employee_id', employee.id)
+      .lte('start_date', endDate)
+      .or(`end_date.is.null,end_date.gte.${startDate}`)
+      .eq('status', 'active')
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    const mealAllowance = contract?.meal_allowance || 0;
+    
     const baseSalary = employee.monthly_salary || 0;
     const overtimePay = 0; // 추후 구현
     const incentive = 0; // 추후 구현
     const pointBonus = 0; // 추후 구현
-    const totalEarnings = baseSalary + overtimePay + incentive + pointBonus;
-    const taxAmount = Math.round(totalEarnings * 0.033); // 3.3% 사업소득세
+    const totalEarnings = baseSalary + overtimePay + incentive + pointBonus + mealAllowance;
+    const taxableAmount = baseSalary + overtimePay + incentive + pointBonus; // 식대는 비과세
+    const taxAmount = Math.round(taxableAmount * 0.033); // 3.3% 사업소득세
     const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
@@ -502,6 +538,7 @@ export default function PayslipGenerator() {
       overtime_pay: overtimePay,
       incentive: incentive,
       point_bonus: pointBonus,
+      meal_allowance: mealAllowance, // 식대
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -570,6 +607,20 @@ export default function PayslipGenerator() {
     if (employee.employment_type !== 'part_time') {
       throw new Error('분할 생성은 시간제 직원만 가능합니다.');
     }
+
+    // 계약서에서 식대 정보 조회
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .select('meal_allowance, salary_history, probation_period')
+      .eq('employee_id', employee.id)
+      .lte('start_date', endDate)
+      .or(`end_date.is.null,end_date.gte.${startDate}`)
+      .eq('status', 'active')
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    const mealAllowance = contract?.meal_allowance || 0;
 
     // 해당 기간의 스케줄 조회
     const { data: schedules, error: scheduleError } = await supabase
@@ -698,11 +749,12 @@ export default function PayslipGenerator() {
       }
     });
 
-    // 총 급여 계산 (기본급 + 주휴수당)
-    const totalEarnings = totalWage + weeklyHolidayPay;
+    // 총 급여 계산 (기본급 + 주휴수당 + 식대)
+    const totalEarnings = totalWage + weeklyHolidayPay + mealAllowance;
     
-    // 세금 계산 (3.3% 사업소득세)
-    const taxAmount = Math.round(totalEarnings * 0.033);
+    // 세금 계산 (3.3% 사업소득세 - 식대는 비과세)
+    const taxableAmount = totalWage + weeklyHolidayPay;
+    const taxAmount = Math.round(taxableAmount * 0.033);
     const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
 
     const payslip: PayslipData = {
@@ -717,6 +769,7 @@ export default function PayslipGenerator() {
       overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
       incentive: 0,
       point_bonus: 0,
+      meal_allowance: mealAllowance, // 식대
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -1187,6 +1240,12 @@ export default function PayslipGenerator() {
               <div class="salary-item">
                 <span>주휴수당</span>
                 <span>${payslip.overtime_pay.toLocaleString()}원</span>
+              </div>
+              ` : ''}
+              ${payslip.meal_allowance > 0 ? `
+              <div class="salary-item">
+                <span>식대</span>
+                <span>${payslip.meal_allowance.toLocaleString()}원</span>
               </div>
               ` : ''}
               ${payslip.incentive > 0 ? `
@@ -3811,6 +3870,12 @@ export default function PayslipGenerator() {
                         <pre className="whitespace-pre-wrap">{payslipData.weeklyHolidayCalculation}</pre>
                       </div>
                     )}
+                  </div>
+                )}
+                {payslipData.meal_allowance > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">식대</span>
+                    <span className="font-medium">{payslipData.meal_allowance.toLocaleString()}원</span>
                   </div>
                 )}
                 {payslipData.incentive > 0 && (
