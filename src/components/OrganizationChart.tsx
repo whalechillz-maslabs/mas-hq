@@ -69,16 +69,16 @@ export default function OrganizationChart() {
 
   const loadCurrentUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Employee 정보를 가져오는 로직 필요
-        const { data: employee } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('email', user.email)
-          .single();
-        setCurrentUser(employee);
-      }
+      // Auth 체크 제거하고 김탁수로 직접 조회
+      console.log('김탁수로 사용자 정보를 조회합니다.');
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('name', '김탁수')
+        .single();
+      
+      setCurrentUser(employee);
+      console.log('김탁수 사용자 정보 로드 성공:', employee?.name);
     } catch (error) {
       console.error('사용자 정보 로드 실패:', error);
     }

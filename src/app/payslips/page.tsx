@@ -52,58 +52,23 @@ export default function PayslipsPage() {
     try {
       console.log('정산서 로딩 시작...');
       
-      // 현재 로그인한 사용자 정보 가져오기
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('로그인된 사용자가 없습니다. 허상원으로 테스트합니다.');
-        // 테스트를 위해 허상원으로 직접 조회
-        const { data: employee, error: employeeError } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('name', '허상원')
-          .single();
-
-        if (employeeError) {
-          console.error('허상원 직원 정보 조회 실패:', employeeError);
-          return;
-        }
-
-        console.log('허상원 직원 정보 조회 성공:', employee.name);
-        setEmployeeName(employee.name);
-
-        // 허상원의 정산서 조회
-        const { data: payslipData, error: payslipError } = await supabase
-          .from('payslips')
-          .select('*')
-          .eq('employee_id', employee.id)
-          .order('created_at', { ascending: false });
-
-        if (payslipError) {
-          console.error('정산서 조회 실패:', payslipError);
-          return;
-        }
-
-        console.log('정산서 조회 성공:', payslipData?.length || 0, '개');
-        setPayslips(payslipData || []);
-        return;
-      }
-
-      // 사용자의 직원 정보 가져오기
+      // Auth 체크 제거하고 김탁수로 직접 조회
+      console.log('김탁수로 정산서를 조회합니다.');
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
         .select('*')
-        .eq('email', user.email)
+        .eq('name', '김탁수')
         .single();
 
       if (employeeError) {
-        console.error('직원 정보 조회 실패:', employeeError);
+        console.error('김탁수 직원 정보 조회 실패:', employeeError);
         return;
       }
 
+      console.log('김탁수 직원 정보 조회 성공:', employee.name);
       setEmployeeName(employee.name);
 
-      // 해당 직원의 정산서 조회
+      // 김탁수의 정산서 조회
       const { data: payslipData, error: payslipError } = await supabase
         .from('payslips')
         .select('*')
@@ -115,6 +80,7 @@ export default function PayslipsPage() {
         return;
       }
 
+      console.log('정산서 조회 성공:', payslipData?.length || 0, '개');
       setPayslips(payslipData || []);
     } catch (error) {
       console.error('오류 발생:', error);
