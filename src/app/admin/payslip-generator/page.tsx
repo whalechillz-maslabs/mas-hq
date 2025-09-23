@@ -328,22 +328,19 @@ export default function PayslipGenerator() {
       throw new Error(`${year}년 ${month}월에 유효한 스케줄이 없습니다.`);
     }
 
-    // 계약서에서 시급 정보 조회 (salary_history 포함)
-    const { data: wageContracts, error: wageContractError } = await supabase
-      .from('contracts')
-      .select('salary, salary_history, start_date, end_date')
+    // 실제 시급 정보 조회 (hourly_wages 테이블 사용)
+    const { data: wages, error: wageError } = await supabase
+      .from('hourly_wages')
+      .select('*')
       .eq('employee_id', employee.id)
-      .lte('start_date', endDate)
-      .or(`end_date.is.null,end_date.gte.${startDate}`)
-      .eq('status', 'active')
-      .order('start_date', { ascending: true });
+      .order('effective_start_date');
 
-    if (wageContractError) {
-      throw new Error('계약서 시급 정보 조회에 실패했습니다.');
+    if (wageError) {
+      throw new Error('시급 정보 조회에 실패했습니다.');
     }
 
-    if (!wageContracts || wageContracts.length === 0) {
-      throw new Error('계약서 시급 정보가 없습니다.');
+    if (!wages || wages.length === 0) {
+      throw new Error('시급 정보가 없습니다.');
     }
 
     // 일별 근무시간 계산 (스케줄 자체가 점심시간 제외된 상태)
@@ -376,24 +373,23 @@ export default function PayslipGenerator() {
       const hours = dailyHours[date];
       const scheduleDate = new Date(date);
       
-      // 해당 날짜에 적용되는 시급 찾기 (contracts의 salary_history 기반)
-      let hourlyWage = wageContracts[0].salary; // 기본 시급
-      
-      // salary_history가 있는 경우 날짜별 시급 적용
-      if (wageContracts[0].salary_history && Array.isArray(wageContracts[0].salary_history)) {
-        const salaryHistory = wageContracts[0].salary_history;
+      // 해당 날짜에 적용되는 시급 찾기 (hourly_wages 테이블 기반)
+      const applicableWages = wages.filter(wage => {
+        const startDate = new Date(wage.effective_start_date);
+        const endDate = wage.effective_end_date ? new Date(wage.effective_end_date) : null;
         
-        // 해당 날짜에 적용되는 시급 찾기
-        for (let i = salaryHistory.length - 1; i >= 0; i--) {
-          const historyItem = salaryHistory[i];
-          const effectiveDate = new Date(historyItem.effective_date);
-          
-          if (scheduleDate >= effectiveDate) {
-            hourlyWage = historyItem.salary;
-            break;
-          }
-        }
-      }
+        // 시작일이 해당 날짜보다 이전이고, 종료일이 없거나 해당 날짜보다 이후인 경우
+        return startDate <= scheduleDate && (!endDate || endDate >= scheduleDate);
+      });
+      
+      // 가장 최근에 시작된 시급 선택
+      const applicableWage = applicableWages.length > 0 
+        ? applicableWages.reduce((latest, current) => 
+            new Date(current.effective_start_date) > new Date(latest.effective_start_date) ? current : latest
+          )
+        : wages[0];
+      
+      const hourlyWage = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
       const dayWage = hours * hourlyWage;
       
       totalHours += hours;
@@ -409,7 +405,7 @@ export default function PayslipGenerator() {
 
     // 주휴수당 계산 (주별로 15시간 이상 근무 시)
     let weeklyHolidayPay = 0;
-    const latestHourlyRate = wageContracts[0].salary;
+    const latestHourlyRate = wages[wages.length - 1].base_wage;
     let weeklyHolidayCalculation = ''; // 산출 식 저장
     
     // 주별 근무시간 및 근무일수 계산
@@ -467,7 +463,7 @@ export default function PayslipGenerator() {
       net_salary: netSalary,
       status: 'generated',
       total_hours: totalHours,
-      hourly_rate: wageContracts[0].salary, // 기본 시급
+      hourly_rate: wages[wages.length - 1].base_wage, // 최신 시급
       weeklyHolidayCalculation: weeklyHolidayCalculation, // 주휴수당 산출 식
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
@@ -643,22 +639,19 @@ export default function PayslipGenerator() {
       throw new Error('해당 기간에 스케줄이 없습니다.');
     }
 
-    // 계약서에서 시급 정보 조회 (salary_history 포함)
-    const { data: wageContracts, error: wageContractError } = await supabase
-      .from('contracts')
-      .select('salary, salary_history, start_date, end_date')
+    // 실제 시급 정보 조회 (hourly_wages 테이블 사용)
+    const { data: wages, error: wageError } = await supabase
+      .from('hourly_wages')
+      .select('*')
       .eq('employee_id', employee.id)
-      .lte('start_date', endDate)
-      .or(`end_date.is.null,end_date.gte.${startDate}`)
-      .eq('status', 'active')
-      .order('start_date', { ascending: true });
+      .order('effective_start_date');
 
-    if (wageContractError) {
-      throw new Error('계약서 시급 정보 조회에 실패했습니다.');
+    if (wageError) {
+      throw new Error('시급 정보 조회에 실패했습니다.');
     }
 
-    if (!wageContracts || wageContracts.length === 0) {
-      throw new Error('계약서 시급 정보가 없습니다.');
+    if (!wages || wages.length === 0) {
+      throw new Error('시급 정보가 없습니다.');
     }
 
     // 일별 근무시간 계산 (스케줄의 실제 시간을 그대로 사용)
@@ -692,24 +685,23 @@ export default function PayslipGenerator() {
       const hours = dailyHours[date];
       const scheduleDate = new Date(date);
       
-      // 해당 날짜에 적용되는 시급 찾기 (contracts의 salary_history 기반)
-      let hourlyWage = wageContracts[0].salary; // 기본 시급
-      
-      // salary_history가 있는 경우 날짜별 시급 적용
-      if (wageContracts[0].salary_history && Array.isArray(wageContracts[0].salary_history)) {
-        const salaryHistory = wageContracts[0].salary_history;
+      // 해당 날짜에 적용되는 시급 찾기 (hourly_wages 테이블 기반)
+      const applicableWages = wages.filter(wage => {
+        const startDate = new Date(wage.effective_start_date);
+        const endDate = wage.effective_end_date ? new Date(wage.effective_end_date) : null;
         
-        // 해당 날짜에 적용되는 시급 찾기
-        for (let i = salaryHistory.length - 1; i >= 0; i--) {
-          const historyItem = salaryHistory[i];
-          const effectiveDate = new Date(historyItem.effective_date);
-          
-          if (scheduleDate >= effectiveDate) {
-            hourlyWage = historyItem.salary;
-            break;
-          }
-        }
-      }
+        // 시작일이 해당 날짜보다 이전이고, 종료일이 없거나 해당 날짜보다 이후인 경우
+        return startDate <= scheduleDate && (!endDate || endDate >= scheduleDate);
+      });
+      
+      // 가장 최근에 시작된 시급 선택
+      const applicableWage = applicableWages.length > 0 
+        ? applicableWages.reduce((latest, current) => 
+            new Date(current.effective_start_date) > new Date(latest.effective_start_date) ? current : latest
+          )
+        : wages[0];
+      
+      const hourlyWage = applicableWage ? applicableWage.base_wage : wages[0].base_wage;
       const dayWage = hours * hourlyWage;
       
       totalHours += hours;
@@ -725,7 +717,7 @@ export default function PayslipGenerator() {
 
     // 주휴수당 계산 (주별로 15시간 이상 근무 시)
     let weeklyHolidayPay = 0;
-    const latestHourlyRate = wageContracts[0].salary;
+    const latestHourlyRate = wages[wages.length - 1].base_wage;
     let weeklyHolidayCalculation = ''; // 산출 식 저장
     
     // 주별 근무시간 및 근무일수 계산
@@ -783,7 +775,7 @@ export default function PayslipGenerator() {
       net_salary: netSalary,
       status: 'generated',
       total_hours: totalHours,
-      hourly_rate: wageContracts[0].salary, // 기본 시급
+      hourly_rate: wages[wages.length - 1].base_wage, // 최신 시급
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
         hours: detail.hours,
