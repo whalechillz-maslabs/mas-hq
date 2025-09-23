@@ -234,7 +234,28 @@ export default function ContractManagementPage() {
       loadData();
     } catch (error) {
       console.error(isEditing ? '계약서 수정 실패:' : '계약서 생성 실패:', error);
-      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      
+      // 더 자세한 에러 정보 추출
+      let errorMessage = '알 수 없는 오류가 발생했습니다.';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Supabase 에러 객체 처리
+        if ('message' in error) {
+          errorMessage = String(error.message);
+        } else if ('error' in error) {
+          errorMessage = String(error.error);
+        } else if ('details' in error) {
+          errorMessage = String(error.details);
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // 전체 에러 객체도 콘솔에 출력
+      console.error('전체 에러 객체:', JSON.stringify(error, null, 2));
+      
       alert(isEditing ? `계약서 수정에 실패했습니다.\n오류: ${errorMessage}` : `계약서 생성에 실패했습니다.\n오류: ${errorMessage}`);
     }
   };
