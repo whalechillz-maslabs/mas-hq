@@ -234,7 +234,8 @@ export default function ContractManagementPage() {
       loadData();
     } catch (error) {
       console.error(isEditing ? '계약서 수정 실패:' : '계약서 생성 실패:', error);
-      alert(isEditing ? '계약서 수정에 실패했습니다.' : '계약서 생성에 실패했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      alert(isEditing ? `계약서 수정에 실패했습니다.\n오류: ${errorMessage}` : `계약서 생성에 실패했습니다.\n오류: ${errorMessage}`);
     }
   };
 
