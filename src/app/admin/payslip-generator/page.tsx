@@ -3598,14 +3598,6 @@ export default function PayslipGenerator() {
                     `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`
                 }
               </button>
-              {isDuplicatePeriod && !showCustomPeriod && (
-                <button
-                  onClick={generatePayslip}
-                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                >
-                  새 버전 생성
-                </button>
-              )}
               <button
                 onClick={() => setShowPayslipList(!showPayslipList)}
                 className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
