@@ -245,8 +245,23 @@ export default function PayslipGenerator() {
       if (existingPayslip) {
         const statusText = existingPayslip.status === 'generated' ? '생성됨' : 
                           existingPayslip.status === 'issued' ? '발행됨' : '지급완료';
-        alert(`이미 ${period} 기간의 급여명세서가 존재합니다. (상태: ${statusText})\n\n발행된 급여명세서 목록에서 확인해주세요.`);
-        return;
+        const shouldOverwrite = confirm(`이미 ${period} 기간의 급여명세서가 존재합니다. (상태: ${statusText})\n\n기존 명세서를 삭제하고 새로 생성하시겠습니까?`);
+        if (!shouldOverwrite) {
+          return;
+        }
+        
+        // 기존 급여명세서 삭제
+        const { error: deleteError } = await supabase
+          .from('payslips')
+          .delete()
+          .eq('employee_id', employee.id)
+          .eq('period', period);
+          
+        if (deleteError) {
+          console.error('기존 급여명세서 삭제 실패:', deleteError);
+          alert('기존 급여명세서 삭제에 실패했습니다.');
+          return;
+        }
       }
     }
 
@@ -796,7 +811,23 @@ export default function PayslipGenerator() {
       }
 
       if (existingPayslip) {
-        throw new Error(`이미 '${periodName}' 기간의 정산서가 존재합니다. 다른 이름을 사용해주세요.`);
+        const statusText = existingPayslip.status === 'generated' ? '생성됨' : 
+                          existingPayslip.status === 'issued' ? '발행됨' : '지급완료';
+        const shouldOverwrite = confirm(`이미 '${periodName}' 기간의 정산서가 존재합니다. (상태: ${statusText})\n\n기존 정산서를 삭제하고 새로 생성하시겠습니까?`);
+        if (!shouldOverwrite) {
+          throw new Error('사용자가 취소했습니다.');
+        }
+        
+        // 기존 정산서 삭제
+        const { error: deleteError } = await supabase
+          .from('payslips')
+          .delete()
+          .eq('employee_id', employee.id)
+          .eq('period', periodName);
+          
+        if (deleteError) {
+          throw new Error('기존 정산서 삭제에 실패했습니다.');
+        }
       }
 
       // 새 정산서 저장 (데이터베이스 스키마에 맞게 필드 제한)
