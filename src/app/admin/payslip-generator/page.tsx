@@ -3518,17 +3518,23 @@ export default function PayslipGenerator() {
             <div className="flex justify-center gap-4 pt-4">
               <button
                 onClick={generatePayslip}
-                disabled={!selectedEmployee || generating || isDuplicatePeriod || (showCustomPeriod && (!customStartDate || !customEndDate || !customPeriodName))}
+                disabled={!selectedEmployee || generating || (showCustomPeriod && (!customStartDate || !customEndDate || !customPeriodName))}
                 className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
               >
                 {generating ? '생성 중...' : 
-                  isDuplicatePeriod ? 
-                    `${selectedYear}년 ${selectedMonth}월 급여명세서 이미 존재` :
                   showCustomPeriod ? 
                     `${customStartDate} ~ ${customEndDate} 급여 명세서 생성` :
                     `${selectedYear}년 ${selectedMonth}월 급여 명세서 생성`
                 }
               </button>
+              {isDuplicatePeriod && !showCustomPeriod && (
+                <button
+                  onClick={generatePayslip}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  강제 재발행
+                </button>
+              )}
               <button
                 onClick={() => setShowPayslipList(!showPayslipList)}
                 className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
