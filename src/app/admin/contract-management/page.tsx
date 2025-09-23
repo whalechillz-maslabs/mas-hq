@@ -79,8 +79,10 @@ export default function ContractManagementPage() {
     work_days: 5,
     work_time: '09:00-17:00',
     lunch_break: 1,
-    meal_allowance: 0,
+    meal_allowance: 140000,
     includes_weekly_holiday: true,
+    // 4대보험 설정 (간단한 방식)
+    insurance_4major: true, // 4대보험 가입 여부
     // 급여 변동 이력
     salary_history: [] as { effective_date: string; salary: number; reason: string; notes?: string }[],
     // 수습기간 설정
@@ -162,6 +164,7 @@ export default function ContractManagementPage() {
             lunch_break: newContract.lunch_break,
             meal_allowance: newContract.meal_allowance,
             includes_weekly_holiday: newContract.includes_weekly_holiday,
+            insurance_4major: newContract.insurance_4major,
             // 급여 변동 이력 저장
             salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
             // 수습기간 설정 저장
@@ -185,6 +188,11 @@ export default function ContractManagementPage() {
             salary: newContract.salary,
             work_hours: newContract.work_hours,
             work_days: newContract.work_days,
+            work_time: newContract.work_time,
+            lunch_break: newContract.lunch_break,
+            meal_allowance: newContract.meal_allowance,
+            includes_weekly_holiday: newContract.includes_weekly_holiday,
+            insurance_4major: newContract.insurance_4major,
             status: 'draft',
             // 급여 변동 이력 저장
             salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
@@ -213,8 +221,9 @@ export default function ContractManagementPage() {
         work_days: 5,
         work_time: '09:00-17:00',
         lunch_break: 1,
-        meal_allowance: 0,
+        meal_allowance: 140000,
         includes_weekly_holiday: true,
+        insurance_4major: true,
         salary_history: [],
         probation_period: {
           start_date: '',
@@ -651,7 +660,7 @@ export default function ContractManagementPage() {
                               work_days: contract.work_days,
                               work_time: '09:00-17:00',
                               lunch_break: 1,
-                              meal_allowance: 0,
+                              meal_allowance: 140000,
                               includes_weekly_holiday: true,
                               salary_history: contract.salary_history || [],
                               probation_period: contract.probation_period || {
@@ -809,10 +818,25 @@ export default function ContractManagementPage() {
                   <input
                     type="number"
                     value={newContract.meal_allowance}
-                    onChange={(e) => setNewContract({ ...newContract, meal_allowance: parseInt(e.target.value) })}
+                    onChange={(e) => setNewContract({ ...newContract, meal_allowance: parseInt(e.target.value) || 0 })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="식대를 입력하세요"
                   />
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={newContract.insurance_4major}
+                      onChange={(e) => setNewContract({ ...newContract, insurance_4major: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">4대보험 가입</span>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    체크 시 4대보험(국민연금, 건강보험, 고용보험, 산재보험) 가입
+                  </p>
                 </div>
 
                 <div className="flex items-center">
