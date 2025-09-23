@@ -818,7 +818,13 @@ export default function ContractManagementPage() {
                   <input
                     type="number"
                     value={newContract.meal_allowance}
-                    onChange={(e) => setNewContract({ ...newContract, meal_allowance: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewContract({ 
+                        ...newContract, 
+                        meal_allowance: value === '' ? 0 : parseInt(value) || 0 
+                      });
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="식대를 입력하세요"
                   />
