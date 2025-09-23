@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { FileText, Download, Upload, User, Calendar, DollarSign, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { FileText, Download, Upload, User, Calendar, DollarSign, Clock, CheckCircle, XCircle, Eye, Edit } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,6 +65,7 @@ export default function ContractManagementPage() {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // 새 계약서 생성 폼 데이터
@@ -145,31 +146,63 @@ export default function ContractManagementPage() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('contracts')
-        .insert({
-          employee_id: newContract.employee_id,
-          contract_type: newContract.contract_type,
-          start_date: newContract.start_date,
-          end_date: newContract.end_date || null,
-          salary: newContract.salary,
-          work_hours: newContract.work_hours,
-          work_days: newContract.work_days,
-          status: 'draft',
-          // 급여 변동 이력 저장
-          salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
-          // 수습기간 설정 저장
-          probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
-            ? newContract.probation_period 
-            : null
-        })
-        .select()
-        .single();
+      if (isEditing && selectedContract) {
+        // 수정 모드
+        const { data, error } = await supabase
+          .from('contracts')
+          .update({
+            employee_id: newContract.employee_id,
+            contract_type: newContract.contract_type,
+            start_date: newContract.start_date,
+            end_date: newContract.end_date || null,
+            salary: newContract.salary,
+            work_hours: newContract.work_hours,
+            work_days: newContract.work_days,
+            work_time: newContract.work_time,
+            lunch_break: newContract.lunch_break,
+            meal_allowance: newContract.meal_allowance,
+            includes_weekly_holiday: newContract.includes_weekly_holiday,
+            // 급여 변동 이력 저장
+            salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
+            // 수습기간 설정 저장
+            probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
+              ? newContract.probation_period 
+              : null
+          })
+          .eq('id', selectedContract.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        alert('근로계약서가 수정되었습니다.');
+      } else {
+        // 생성 모드
+        const { data, error } = await supabase
+          .from('contracts')
+          .insert({
+            employee_id: newContract.employee_id,
+            contract_type: newContract.contract_type,
+            start_date: newContract.start_date,
+            end_date: newContract.end_date || null,
+            salary: newContract.salary,
+            work_hours: newContract.work_hours,
+            work_days: newContract.work_days,
+            status: 'draft',
+            // 급여 변동 이력 저장
+            salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
+            // 수습기간 설정 저장
+            probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
+              ? newContract.probation_period 
+              : null
+          })
+          .select()
+          .single();
 
-      alert('근로계약서가 생성되었습니다.');
+        if (error) throw error;
+        alert('근로계약서가 생성되었습니다.');
+      }
+
       setShowCreateModal(false);
+      setIsEditing(false);
+      setSelectedContract(null);
       setNewContract({
         employee_id: '',
         contract_type: 'part_time',
@@ -191,8 +224,8 @@ export default function ContractManagementPage() {
       });
       loadData();
     } catch (error) {
-      console.error('계약서 생성 실패:', error);
-      alert('계약서 생성에 실패했습니다.');
+      console.error(isEditing ? '계약서 수정 실패:' : '계약서 생성 실패:', error);
+      alert(isEditing ? '계약서 수정에 실패했습니다.' : '계약서 생성에 실패했습니다.');
     }
   };
 
@@ -386,7 +419,15 @@ export default function ContractManagementPage() {
       loadData();
     } catch (error) {
       console.error('서류 업로드 실패:', error);
-      alert('서류 업로드에 실패했습니다.');
+      console.error('오류 상세:', JSON.stringify(error, null, 2));
+      
+      // 더 자세한 오류 메시지 표시
+      let errorMessage = '서류 업로드에 실패했습니다.';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage += `\n오류: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -596,6 +637,36 @@ export default function ContractManagementPage() {
                           <FileText className="w-4 h-4" />
                           <span>서류</span>
                         </button>
+                        <button
+                          onClick={() => {
+                            setSelectedContract(contract);
+                            setIsEditing(true);
+                            setNewContract({
+                              employee_id: contract.employee_id,
+                              contract_type: contract.contract_type,
+                              start_date: contract.start_date,
+                              end_date: contract.end_date || '',
+                              salary: contract.salary,
+                              work_hours: contract.work_hours,
+                              work_days: contract.work_days,
+                              work_time: '09:00-17:00',
+                              lunch_break: 1,
+                              meal_allowance: 0,
+                              includes_weekly_holiday: true,
+                              salary_history: contract.salary_history || [],
+                              probation_period: contract.probation_period || {
+                                start_date: '',
+                                end_date: '',
+                                minimum_wage: false,
+                              },
+                            });
+                            setShowCreateModal(true);
+                          }}
+                          className="text-orange-600 hover:text-orange-900 flex items-center space-x-1"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>수정</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -609,7 +680,9 @@ export default function ContractManagementPage() {
         {showCreateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-bold mb-4">근로계약서 생성</h3>
+              <h3 className="text-xl font-bold mb-4">
+                {isEditing ? '근로계약서 수정' : '근로계약서 생성'}
+              </h3>
               
               <div className="space-y-4">
                 <div>
@@ -898,7 +971,11 @@ export default function ContractManagementPage() {
 
               <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setIsEditing(false);
+                    setSelectedContract(null);
+                  }}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                 >
                   취소
@@ -907,7 +984,7 @@ export default function ContractManagementPage() {
                   onClick={generateContract}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  계약서 생성
+                  {isEditing ? '계약서 수정' : '계약서 생성'}
                 </button>
               </div>
             </div>
