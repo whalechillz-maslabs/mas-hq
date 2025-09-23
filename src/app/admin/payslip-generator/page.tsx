@@ -426,14 +426,13 @@ export default function PayslipGenerator() {
     // 주별로 15시간 이상인 주에 대해 주휴수당 지급
     Object.entries(weeklyData).forEach(([weekKey, data]) => {
       if (data.hours >= 15) {
-        // 변동형 계약: 실제 근무일수로 1일 평균 근무시간 계산
-        const avgHoursPerDay = data.hours / data.days;
-        const weeklyHolidayAmount = Math.round(avgHoursPerDay * latestHourlyRate);
+        // 주 5일 근무 기준으로 1일치 임금 지급 (7시간 × 시급)
+        const weeklyHolidayAmount = 7 * latestHourlyRate; // 7시간 × 시급 = 1일치 임금
         weeklyHolidayPay += weeklyHolidayAmount;
         
         // 산출 식 추가
         const weekNumber = Object.keys(weeklyData).indexOf(weekKey) + 1;
-        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 ÷ ${data.days}일 = ${avgHoursPerDay.toFixed(1)}시간/일 → ${avgHoursPerDay.toFixed(1)}시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
+        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 (15시간 이상) → 7시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
       }
     });
 
@@ -738,14 +737,13 @@ export default function PayslipGenerator() {
     // 주별로 15시간 이상인 주에 대해 주휴수당 지급
     Object.entries(weeklyData).forEach(([weekKey, data]) => {
       if (data.hours >= 15) {
-        // 변동형 계약: 실제 근무일수로 1일 평균 근무시간 계산
-        const avgHoursPerDay = data.hours / data.days;
-        const weeklyHolidayAmount = Math.round(avgHoursPerDay * latestHourlyRate);
+        // 주 5일 근무 기준으로 1일치 임금 지급 (7시간 × 시급)
+        const weeklyHolidayAmount = 7 * latestHourlyRate; // 7시간 × 시급 = 1일치 임금
         weeklyHolidayPay += weeklyHolidayAmount;
         
         // 산출 식 추가
         const weekNumber = Object.keys(weeklyData).indexOf(weekKey) + 1;
-        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 ÷ ${data.days}일 = ${avgHoursPerDay.toFixed(1)}시간/일 → ${avgHoursPerDay.toFixed(1)}시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
+        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 (15시간 이상) → 7시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
       }
     });
 

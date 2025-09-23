@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Calendar, Clock, Save, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { scheduleNotificationManager } from '@/lib/schedule-notification-manager';
 
 function EditScheduleForm() {
   const router = useRouter();
@@ -66,6 +67,41 @@ function EditScheduleForm() {
 
       if (error) {
         throw error;
+      }
+
+      // 스케줄 수정 변경사항 기록
+      try {
+        // 현재 사용자 정보 조회
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: employee } = await supabase
+            .from('employees')
+            .select('name, employee_id')
+            .eq('id', user.id)
+            .single();
+
+          if (employee) {
+            scheduleNotificationManager.addChange({
+              action: 'update',
+              schedule: {
+                ...formData,
+                schedule_date: formData.date,
+                scheduled_start: formData.startTime,
+                scheduled_end: formData.endTime,
+                employee_note: formData.note,
+                status: formData.status
+              },
+              employee: {
+                name: employee.name,
+                employee_id: employee.employee_id
+              }
+            });
+            console.log('✅ 스케줄 수정 변경사항 기록 완료');
+          }
+        }
+      } catch (notificationError) {
+        console.error('❌ 스케줄 변경사항 기록 실패:', notificationError);
+        // 기록 실패는 스케줄 수정을 막지 않음
       }
 
       setSuccess('스케줄이 성공적으로 수정되었습니다!');

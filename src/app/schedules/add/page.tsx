@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { scheduleNotificationManager } from '@/lib/schedule-notification-manager';
 import { Calendar, Clock, Edit, Save, XCircle, User, ArrowLeft, Users, AlertCircle } from 'lucide-react';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -383,6 +384,22 @@ export default function AddSchedulePage() {
 
       if (insertError) {
         throw insertError;
+      }
+
+      // 스케줄 생성 변경사항 기록
+      try {
+        scheduleNotificationManager.addChange({
+          action: 'create',
+          schedule: data,
+          employee: {
+            name: currentUser.name,
+            employee_id: currentUser.employee_id
+          }
+        });
+        console.log('✅ 스케줄 생성 변경사항 기록 완료');
+      } catch (notificationError) {
+        console.error('❌ 스케줄 변경사항 기록 실패:', notificationError);
+        // 기록 실패는 스케줄 생성을 막지 않음
       }
 
       setSuccess('스케줄이 성공적으로 추가되었습니다!');

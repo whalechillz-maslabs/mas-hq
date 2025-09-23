@@ -1,2 +1,46 @@
-<testsuites id="" name="" tests="0" failures="0" skipped="0" errors="0" time="0.25246">
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="36.93652">
+<testsuite name="supabase-sql-execution.spec.ts" timestamp="2025-09-23T16:14:02.773Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="34.298" errors="0">
+<testcase name="Supabase SQL 실행 - 알림 설정 테이블 생성" classname="supabase-sql-execution.spec.ts" time="34.298">
+<failure message="supabase-sql-execution.spec.ts:3:5 Supabase SQL 실행 - 알림 설정 테이블 생성" type="FAILURE">
+<![CDATA[  [chromium-stable] › supabase-sql-execution.spec.ts:3:5 › Supabase SQL 실행 - 알림 설정 테이블 생성 ──────────
+
+    TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.
+
+       6 |   // 1. Supabase 대시보드로 이동
+       7 |   await page.goto('https://supabase.com/dashboard');
+    >  8 |   await page.waitForLoadState('networkidle');
+         |              ^
+       9 |   
+      10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)
+      11 |   console.log('📋 Supabase 대시보드 접속 완료');
+        at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:8:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🚀 Supabase SQL 실행 테스트 시작
+
+[[ATTACHMENT|test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/video.webm]]
+
+[[ATTACHMENT|test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/error-context.md]]
+]]>
+</system-out>
+<system-err>
+<![CDATA[(node:22045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+]]>
+</system-err>
+</testcase>
+</testsuite>
 </testsuites>

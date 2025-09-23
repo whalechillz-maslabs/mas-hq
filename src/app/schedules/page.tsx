@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays, Grid, Settings, Repeat } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { auth, supabase } from '@/lib/supabase';
+import { scheduleNotificationManager } from '@/lib/schedule-notification-manager';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, parseISO, addWeeks, subWeeks, addMonths, subMonths, isAfter, isBefore, startOfDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, generateTimeSlotsIncludingLunch } from '@/lib/schedule-optimizer';
@@ -532,6 +533,22 @@ export default function SchedulesPage() {
           throw error;
         }
         console.log('스케줄 삭제 완료:', mySchedule.id);
+
+        // 스케줄 삭제 변경사항 기록
+        try {
+          scheduleNotificationManager.addChange({
+            action: 'delete',
+            schedule: mySchedule,
+            employee: {
+              name: currentUser.name,
+              employee_id: currentUser.employee_id
+            }
+          });
+          console.log('✅ 스케줄 삭제 변경사항 기록 완료');
+        } catch (notificationError) {
+          console.error('❌ 스케줄 변경사항 기록 실패:', notificationError);
+          // 기록 실패는 스케줄 삭제를 막지 않음
+        }
       } else {
         // 새 스케줄 추가 - 정확히 해당 시간에 30분 스케줄 생성
         const [startHour, startMinute] = timeSlot.time.split(':').map(Number);
@@ -568,6 +585,22 @@ export default function SchedulesPage() {
           throw error;
         }
         console.log('스케줄 추가 완료:', data);
+
+        // 스케줄 생성 변경사항 기록
+        try {
+          scheduleNotificationManager.addChange({
+            action: 'create',
+            schedule: data[0] || data,
+            employee: {
+              name: currentUser.name,
+              employee_id: currentUser.employee_id
+            }
+          });
+          console.log('✅ 스케줄 생성 변경사항 기록 완료');
+        } catch (notificationError) {
+          console.error('❌ 스케줄 변경사항 기록 실패:', notificationError);
+          // 기록 실패는 스케줄 생성을 막지 않음
+        }
       }
 
       // 스케줄 다시 불러오기

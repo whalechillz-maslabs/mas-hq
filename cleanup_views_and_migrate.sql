@@ -4,7 +4,14 @@
 -- 설명: 중복된 뷰 정리 및 hourly_wages → contracts 마이그레이션
 -- ========================================
 
--- 1. 기존 중복 뷰들 정리
+-- 1. 필요한 컬럼들 추가 (없는 경우)
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS salary_history JSONB;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS probation_period JSONB;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS salary_structure JSONB;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS leave_anniversary_date DATE;
+ALTER TABLE payslips ADD COLUMN IF NOT EXISTS meal_allowance INTEGER DEFAULT 0;
+
+-- 2. 기존 중복 뷰들 정리
 DROP VIEW IF EXISTS contracts_with_employees CASCADE;
 DROP VIEW IF EXISTS employee_details CASCADE;
 DROP VIEW IF EXISTS monthly_attendance_summary CASCADE;
@@ -120,7 +127,7 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) hw ON true
 WHERE s.schedule_date >= '2024-01-01' -- 최근 1년 데이터만
-GROUP BY s.employee_id, e.name, e.employment_type, DATE_TRUNC('month', s.schedule_date), hw.base_wage
+GROUP BY s.employee_id, e.name, e.employment_type, DATE_TRUNC('month', s.schedule_date)
 ORDER BY s.employee_id, month DESC;
 
 -- 2-4. 급여 요약 뷰 (새로 추가)

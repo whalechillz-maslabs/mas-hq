@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays, Grid, Settings, Repeat, Search, User, Building, X, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, Users, ChevronLeft, ChevronRight, Plus, List, CalendarDays, Grid, Settings, Repeat, Search, User, Building, X, Edit, Trash2, CheckCircle, XCircle, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { auth, supabase } from '@/lib/supabase';
+import { scheduleNotificationManager } from '@/lib/schedule-notification-manager';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, parseISO, addWeeks, subWeeks, addMonths, subMonths, isAfter, isBefore, startOfDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { mergeConsecutiveTimeSlots, generateTimeSlotsExcludingLunch, generateTimeSlotsIncludingLunch } from '@/lib/schedule-optimizer';
@@ -56,6 +57,7 @@ export default function EmployeeSchedulesPage() {
   const [excludeLunch, setExcludeLunch] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [autoApprove, setAutoApprove] = useState(true);
+  const [sendingReport, setSendingReport] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -622,6 +624,20 @@ export default function EmployeeSchedulesPage() {
     }
   };
 
+  // 수동 보고서 전송
+  const handleSendReport = async () => {
+    setSendingReport(true);
+    try {
+      await scheduleNotificationManager.sendManualReport();
+      alert('일일 스케줄 보고서가 전송되었습니다!');
+    } catch (error) {
+      console.error('보고서 전송 실패:', error);
+      alert('보고서 전송에 실패했습니다.');
+    } finally {
+      setSendingReport(false);
+    }
+  };
+
   // 일괄 승인 함수 추가
   const handleBulkApproveAll = async () => {
     if (updating) {
@@ -927,6 +943,14 @@ export default function EmployeeSchedulesPage() {
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       상세 추가
+                    </button>
+                    <button
+                      onClick={handleSendReport}
+                      disabled={sendingReport}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded-lg shadow-md flex items-center transition-all duration-200 transform hover:scale-105 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      {sendingReport ? '전송 중...' : '보고서 전송'}
                     </button>
                   </div>
                 </div>

@@ -1066,10 +1066,16 @@ export default function DashboardPage() {
           {showMobileMenu && (
             <div className="md:hidden mt-3 pt-3 border-t border-white/20">
               <div className="flex flex-col space-y-2">
-                <button className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/profile')}
+                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
                   프로필 설정
                 </button>
-                <button className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                <button 
+                  onClick={() => router.push('/notifications')}
+                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
                   알림 설정
                 </button>
                 <button
