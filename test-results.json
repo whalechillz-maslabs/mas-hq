@@ -10,9 +10,7 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "reporter": [
       [
@@ -44,9 +42,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium-nightly",
         "name": "chromium-nightly",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -60,9 +56,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium-stable",
         "name": "chromium-stable",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -76,9 +70,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "firefox",
         "name": "firefox",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -92,9 +84,7 @@
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "webkit",
         "name": "webkit",
         "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
@@ -112,105 +102,69 @@
     "workers": 4,
     "webServer": null
   },
-  "suites": [
+  "suites": [],
+  "errors": [
     {
-      "title": "dashboard-quick-test.spec.ts",
-      "file": "dashboard-quick-test.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "대시보드 페이지 접근 테스트",
-          "ok": false,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium-stable",
-              "projectName": "chromium-stable",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 14486,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nExpected string: not \u001b[32m\"Application error\"\u001b[39m\nReceived string: \u001b[31m\"\u001b[7mApplication error\u001b[27m: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"not toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    14 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m       - unexpected value \"Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[22m\n",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nExpected string: not \u001b[32m\"Application error\"\u001b[39m\nReceived string: \u001b[31m\"\u001b[7mApplication error\u001b[27m: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"not toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    14 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m       - unexpected value \"Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[22m\n\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts:23:42",
-                    "location": {
-                      "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts",
-                      "column": 42,
-                      "line": 23
-                    },
-                    "snippet": "  21 |   \n  22 |   // 페이지가 정상적으로 로딩되는지 확인\n> 23 |   await expect(page.locator('body')).not.toContainText('Application error');\n     |                                          ^\n  24 |   \n  25 |   // 대시보드 요소들이 보이는지 확인\n  26 |   await expect(page.locator('text=빠른 메뉴')).toBeVisible();"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts",
-                        "column": 42,
-                        "line": 23
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nExpected string: not \u001b[32m\"Application error\"\u001b[39m\nReceived string: \u001b[31m\"\u001b[7mApplication error\u001b[27m: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[39m\nTimeout: 10000ms\n\nCall log:\n\u001b[2m  - Expect \"not toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    14 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m       - unexpected value \"Application error: a client-side exception has occurred while loading www.maslabs.kr (see the browser console for more information).\"\u001b[22m\n\n\n  21 |   \n  22 |   // 페이지가 정상적으로 로딩되는지 확인\n> 23 |   await expect(page.locator('body')).not.toContainText('Application error');\n     |                                          ^\n  24 |   \n  25 |   // 대시보드 요소들이 보이는지 확인\n  26 |   await expect(page.locator('text=빠른 메뉴')).toBeVisible();\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts:23:42"
-                    }
-                  ],
-                  "stdout": [
-                    {
-                      "text": "🔍 대시보드 페이지 접근 테스트 시작\n"
-                    }
-                  ],
-                  "stderr": [
-                    {
-                      "text": "(node:46400) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
-                    }
-                  ],
-                  "retry": 0,
-                  "startTime": "2025-09-21T01:41:21.452Z",
-                  "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/dashboard-quick-test-대시보드-페이지-접근-테스트-chromium-stable/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/dashboard-quick-test.spec.ts",
-                    "column": 42,
-                    "line": 23
-                  }
-                }
-              ],
-              "status": "unexpected"
-            }
-          ],
-          "id": "e769128a7ee2f36a2b1d-55a6461ea98bb1814b64",
-          "file": "dashboard-quick-test.spec.ts",
-          "line": 3,
-          "column": 5
-        }
-      ]
+      "message": "Error: duplicate test title \"완전한 정산 시스템 테스트\", first declared in complete-settlement-system-test.spec.ts:4",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/complete-settlement-system-test.spec.ts",
+        "line": 130,
+        "column": 16
+      },
+      "snippet": "   at complete-settlement-system-test.spec.ts:130\n\n  128 | });\n  129 |\n> 130 | test('완전한 정산 시스템 테스트', async ({ page }) => {\n      |                ^\n  131 |   console.log('🧪 완전한 정산 시스템 테스트 시작');\n  132 |   \n  133 |   // 1. 허상원으로 로그인"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 시급관리 페이지 접근 및 기본 기능 확인\", first declared in hourly-wages-management-test.spec.ts:16",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 306,
+        "column": 18
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:306\n\n  304 |     // 새 시급 등록 섹션 확인\n  305 |     const newWageSection = page.locator('text=새 시급 등록');\n> 306 |     await expect(newWageSection).toBeVisible();\n      |                  ^\n  307 |     console.log('✅ 새 시급 등록 섹션 확인');\n  308 |     \n  309 |     // 등록된 시급 목록 섹션 확인"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 허상원 시급 수정 테스트\", first declared in hourly-wages-management-test.spec.ts:52",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 342,
+        "column": 18
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:342\n\n  340 |     \n  341 |     // 수정 모달 확인\n> 342 |     const editModal = page.locator('text=시급 수정');\n      |                  ^\n  343 |     await expect(editModal).toBeVisible();\n  344 |     console.log('✅ 수정 모달 열림 확인');\n  345 |     "
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 콘솔 오류 확인\", first declared in hourly-wages-management-test.spec.ts:161",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 451,
+        "column": 18
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:451\n\n  449 |     const heoSangWonRow = page.locator('tr').filter({ hasText: '허상원' });\n  450 |     const editButton = heoSangWonRow.locator('button').first();\n> 451 |     await editButton.click();\n      |                  ^\n  452 |     await page.waitForTimeout(1000);\n  453 |     \n  454 |     // 값 수정"
+    },
+    {
+      "message": "Error: duplicate test title \"시급관리 페이지 테스트 › 네트워크 요청 확인\", first declared in hourly-wages-management-test.spec.ts:223",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/hourly-wages-management-test.spec.ts",
+        "line": 513,
+        "column": 18
+      },
+      "snippet": "   at hourly-wages-management-test.spec.ts:513\n\n  511 |         networkResponses.push({\n  512 |           url: response.url(),\n> 513 |           status: response.status(),\n      |                  ^\n  514 |           statusText: response.statusText()\n  515 |         });\n  516 |       }"
+    },
+    {
+      "message": "Error: duplicate test title \"정산서 상세보기 및 인쇄 기능 테스트\", first declared in payslip-detail-test.spec.ts:4",
+      "location": {
+        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/payslip-detail-test.spec.ts",
+        "line": 160,
+        "column": 16
+      },
+      "snippet": "   at payslip-detail-test.spec.ts:160\n\n  158 |\n  159 | test('정산서 상세보기 및 인쇄 기능 테스트', async ({ page }) => {\n> 160 |   console.log('🧪 정산서 상세보기 및 인쇄 기능 테스트 시작');\n      |                ^\n  161 |   \n  162 |   // 1. 정산서 페이지로 이동\n  163 |   await page.goto('https://www.maslabs.kr/payslips');"
     }
   ],
-  "errors": [],
   "stats": {
-    "startTime": "2025-09-21T01:41:21.145Z",
-    "duration": 16063.016,
+    "startTime": "2025-09-23T00:54:27.602Z",
+    "duration": 252.46000000000004,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }
