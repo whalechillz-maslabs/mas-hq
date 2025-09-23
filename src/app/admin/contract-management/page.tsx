@@ -328,10 +328,10 @@ export default function ContractManagementPage() {
         <div class="section-title">3. 근로조건 세부사항</div>
         <div class="terms">
             <ol>
-                <li>근무시간: ${newContract.work_time} (점심시간 ${newContract.lunch_break}시간)</li>
-                <li>주휴수당: ${newContract.includes_weekly_holiday ? '포함' : '별도 지급'}</li>
-                <li>식대: ${newContract.meal_allowance.toLocaleString()}원</li>
-                <li>4대보험: ${contract.contract_type === 'part_time' ? '해당없음' : '가입'}</li>
+                <li>근무시간: ${contract.work_time} (점심시간 ${contract.lunch_break}시간)</li>
+                <li>주휴수당: ${contract.includes_weekly_holiday ? '포함' : '별도 지급'}</li>
+                <li>식대: ${contract.meal_allowance ? contract.meal_allowance.toLocaleString() + '원' : '0원'}</li>
+                <li>4대보험: ${contract.insurance_4major ? '가입' : '해당없음'}</li>
                 <li>연차: ${contract.contract_type === 'part_time' ? '해당없음' : '근로기준법에 따라 지급'}</li>
             </ol>
         </div>
