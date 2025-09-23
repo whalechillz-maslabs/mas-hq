@@ -989,7 +989,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">MASLABS</h1>
-                <p className="text-blue-100 text-sm font-medium">인사관리 시스템</p>
+                <p className="text-blue-100 text-sm font-medium">Human Resources Management System</p>
               </div>
             </div>
             
@@ -999,14 +999,18 @@ export default function DashboardPage() {
                 {formatDateTime(currentTime)}
               </div>
               <div className="text-xs text-blue-200 mt-1">
-                {data?.employee?.name}님, 오늘도 화이팅!
+                Welcome, {data?.employee?.name}
               </div>
             </div>
               
             {/* 우측 사용자 영역 */}
             <div className="flex items-center space-x-2 md:space-x-4">
               {/* 알림 아이콘 - 알림 개수 뱃지 추가 */}
-              <button className="p-2 text-white/80 hover:text-yellow-300 transition-colors relative">
+              <button 
+                onClick={() => router.push('/notifications')}
+                className="p-2 text-white/80 hover:text-yellow-300 transition-colors relative"
+                title="알림 설정"
+              >
                 <Bell className="h-5 w-5 md:h-6 md:w-6" />
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 md:h-5 md:w-5 flex items-center justify-center font-bold">
@@ -1017,16 +1021,16 @@ export default function DashboardPage() {
               
               {/* 사용자 정보 - 모바일에서 축약 */}
               <div className="hidden sm:block text-right">
-                <p className="text-xs md:text-sm text-blue-200">안녕하세요,</p>
+                <p className="text-xs md:text-sm text-blue-200">Hello,</p>
                 <p className="text-sm md:text-base font-semibold text-white truncate max-w-24 md:max-w-32">
-                  {data?.employee?.nickname || data?.employee?.name || '사용자'}님
+                  {data?.employee?.nickname || data?.employee?.name || 'User'}
                 </p>
               </div>
               
               {/* 모바일에서 사용자 이름만 표시 */}
               <div className="sm:hidden text-right">
                 <p className="text-sm font-semibold text-white truncate max-w-16">
-                  {data?.employee?.nickname || data?.employee?.name || '사용자'}
+                  {data?.employee?.nickname || data?.employee?.name || 'User'}
                 </p>
               </div>
               
@@ -1058,7 +1062,7 @@ export default function DashboardPage() {
               {formatDateTime(currentTime)}
             </div>
             <div className="text-xs text-blue-200 mt-1">
-              {data?.employee?.name}님, 오늘도 화이팅!
+              Welcome, {data?.employee?.name}
             </div>
           </div>
           
