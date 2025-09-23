@@ -245,23 +245,40 @@ export default function PayslipGenerator() {
       if (existingPayslip) {
         const statusText = existingPayslip.status === 'generated' ? '생성됨' : 
                           existingPayslip.status === 'issued' ? '발행됨' : '지급완료';
-        const shouldOverwrite = confirm(`이미 ${period} 기간의 급여명세서가 존재합니다. (상태: ${statusText})\n\n기존 명세서를 삭제하고 새로 생성하시겠습니까?`);
-        if (!shouldOverwrite) {
+        const shouldCreateNewVersion = confirm(`이미 ${period} 기간의 급여명세서가 존재합니다. (상태: ${statusText})\n\n새 버전을 생성하시겠습니까? (기존 명세서는 보존됩니다)`);
+        if (!shouldCreateNewVersion) {
           return;
         }
         
-        // 기존 급여명세서 삭제
-        const { error: deleteError } = await supabase
+        // 새 버전 번호 생성
+        const { data: existingVersions, error: versionError } = await supabase
           .from('payslips')
-          .delete()
+          .select('period')
           .eq('employee_id', employee.id)
-          .eq('period', period);
+          .like('period', `${period}%`)
+          .order('period', { ascending: false });
           
-        if (deleteError) {
-          console.error('기존 급여명세서 삭제 실패:', deleteError);
-          alert('기존 급여명세서 삭제에 실패했습니다.');
+        if (versionError) {
+          console.error('버전 확인 중 오류:', versionError);
+          alert('버전 확인 중 오류가 발생했습니다.');
           return;
         }
+        
+        // 다음 버전 번호 계산
+        let versionNumber = 2;
+        if (existingVersions && existingVersions.length > 0) {
+          const versionPattern = new RegExp(`${period}-v(\\d+)$`);
+          const maxVersion = existingVersions
+            .map(v => {
+              const match = v.period.match(versionPattern);
+              return match ? parseInt(match[1]) : 0;
+            })
+            .reduce((max, v) => Math.max(max, v), 0);
+          versionNumber = maxVersion + 1;
+        }
+        
+        // period를 새 버전으로 변경
+        period = `${period}-v${versionNumber}`;
       }
     }
 
@@ -579,8 +596,45 @@ export default function PayslipGenerator() {
     return payslip;
   };
 
+  // 기본 기간 포맷팅 함수
+  const formatBasePeriod = (period: string, dailyDetails?: any[]) => {
+    // 월 급여명세서인 경우 (2025-06 형태)
+    if (period.match(/^\d{4}-\d{2}$/)) {
+      const [year, month] = period.split('-');
+      const monthNum = parseInt(month);
+      
+      // daily_details가 있으면 실제 근무 기간 계산
+      if (dailyDetails && dailyDetails.length > 0) {
+        const dates = dailyDetails.map(d => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
+        const startDate = dates[0];
+        const endDate = dates[dates.length - 1];
+        
+        const startDay = startDate.getDate();
+        const endDay = endDate.getDate();
+        
+        if (startDay === endDay) {
+          return `${year}년 ${monthNum}월 ${startDay}일`;
+        } else {
+          return `${year}년 ${monthNum}월 ${startDay}일-${endDay}일`;
+        }
+      }
+      
+      return `${year}년 ${monthNum}월`;
+    }
+    
+    return period;
+  };
+
   // 급여 기간을 더 구체적으로 표시하는 함수
   const formatSalaryPeriod = (period: string, dailyDetails?: any[]) => {
+    // 버전 번호가 있는 경우 표시
+    if (period.includes('-v')) {
+      const [basePeriod, version] = period.split('-v');
+      const versionNumber = parseInt(version);
+      const formattedBase = formatBasePeriod(basePeriod, dailyDetails);
+      return `${formattedBase} (v${versionNumber})`;
+    }
+    
     // 분할 급여명세서인 경우 (periodName이 사용된 경우)
     if (period.includes('차') || period.includes('~')) {
       return period; // 이미 구체적인 기간이 표시됨
@@ -813,21 +867,38 @@ export default function PayslipGenerator() {
       if (existingPayslip) {
         const statusText = existingPayslip.status === 'generated' ? '생성됨' : 
                           existingPayslip.status === 'issued' ? '발행됨' : '지급완료';
-        const shouldOverwrite = confirm(`이미 '${periodName}' 기간의 정산서가 존재합니다. (상태: ${statusText})\n\n기존 정산서를 삭제하고 새로 생성하시겠습니까?`);
-        if (!shouldOverwrite) {
+        const shouldCreateNewVersion = confirm(`이미 '${periodName}' 기간의 정산서가 존재합니다. (상태: ${statusText})\n\n새 버전을 생성하시겠습니까? (기존 정산서는 보존됩니다)`);
+        if (!shouldCreateNewVersion) {
           throw new Error('사용자가 취소했습니다.');
         }
         
-        // 기존 정산서 삭제
-        const { error: deleteError } = await supabase
+        // 새 버전 번호 생성
+        const { data: existingVersions, error: versionError } = await supabase
           .from('payslips')
-          .delete()
+          .select('period')
           .eq('employee_id', employee.id)
-          .eq('period', periodName);
+          .like('period', `${periodName}%`)
+          .order('period', { ascending: false });
           
-        if (deleteError) {
-          throw new Error('기존 정산서 삭제에 실패했습니다.');
+        if (versionError) {
+          throw new Error('버전 확인 중 오류가 발생했습니다.');
         }
+        
+        // 다음 버전 번호 계산
+        let versionNumber = 2;
+        if (existingVersions && existingVersions.length > 0) {
+          const versionPattern = new RegExp(`${periodName}-v(\\d+)$`);
+          const maxVersion = existingVersions
+            .map(v => {
+              const match = v.period.match(versionPattern);
+              return match ? parseInt(match[1]) : 0;
+            })
+            .reduce((max, v) => Math.max(max, v), 0);
+          versionNumber = maxVersion + 1;
+        }
+        
+        // periodName을 새 버전으로 변경
+        periodName = `${periodName}-v${versionNumber}`;
       }
 
       // 새 정산서 저장 (데이터베이스 스키마에 맞게 필드 제한)
@@ -3532,7 +3603,7 @@ export default function PayslipGenerator() {
                   onClick={generatePayslip}
                   className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
-                  강제 재발행
+                  새 버전 생성
                 </button>
               )}
               <button
