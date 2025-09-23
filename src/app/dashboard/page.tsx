@@ -998,9 +998,6 @@ export default function DashboardPage() {
               <div className="text-sm text-white/90 whitespace-pre-line font-medium">
                 {formatDateTime(currentTime)}
               </div>
-              <div className="text-xs text-blue-200 mt-1">
-                Welcome, {data?.employee?.name}
-              </div>
             </div>
               
             {/* 우측 사용자 영역 */}
@@ -1021,16 +1018,16 @@ export default function DashboardPage() {
               
               {/* 사용자 정보 - 모바일에서 축약 */}
               <div className="hidden sm:block text-right">
-                <p className="text-xs md:text-sm text-blue-200">Hello,</p>
+                <p className="text-xs md:text-sm text-blue-200">Welcome,</p>
                 <p className="text-sm md:text-base font-semibold text-white truncate max-w-24 md:max-w-32">
-                  {data?.employee?.nickname || data?.employee?.name || 'User'}
+                  {data?.employee?.name || 'User'}
                 </p>
               </div>
               
               {/* 모바일에서 사용자 이름만 표시 */}
               <div className="sm:hidden text-right">
                 <p className="text-sm font-semibold text-white truncate max-w-16">
-                  {data?.employee?.nickname || data?.employee?.name || 'User'}
+                  {data?.employee?.name || 'User'}
                 </p>
               </div>
               
@@ -1060,9 +1057,6 @@ export default function DashboardPage() {
           <div className="md:hidden mt-3 text-center">
             <div className="text-sm text-white/90 whitespace-pre-line font-medium">
               {formatDateTime(currentTime)}
-            </div>
-            <div className="text-xs text-blue-200 mt-1">
-              Welcome, {data?.employee?.name}
             </div>
           </div>
           

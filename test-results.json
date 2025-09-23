@@ -114,14 +114,14 @@
   },
   "suites": [
     {
-      "title": "supabase-sql-execution.spec.ts",
-      "file": "supabase-sql-execution.spec.ts",
+      "title": "kim-taksoo-schedule-test.spec.ts",
+      "file": "kim-taksoo-schedule-test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "Supabase SQL 실행 - 알림 설정 테이블 생성",
-          "ok": false,
+          "title": "김탁수 스케줄 추가 및 보고서 테스트",
+          "ok": true,
           "tags": [],
           "tests": [
             {
@@ -134,70 +134,87 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 34298,
-                  "error": {
-                    "message": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.",
-                    "stack": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:8:14",
-                    "location": {
-                      "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts",
-                      "column": 14,
-                      "line": 8
-                    },
-                    "snippet": "   6 |   // 1. Supabase 대시보드로 이동\n   7 |   await page.goto('https://supabase.com/dashboard');\n>  8 |   await page.waitForLoadState('networkidle');\n     |              ^\n   9 |   \n  10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)\n  11 |   console.log('📋 Supabase 대시보드 접속 완료');"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts",
-                        "column": 14,
-                        "line": 8
-                      },
-                      "message": "TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.\n\n   6 |   // 1. Supabase 대시보드로 이동\n   7 |   await page.goto('https://supabase.com/dashboard');\n>  8 |   await page.waitForLoadState('networkidle');\n     |              ^\n   9 |   \n  10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)\n  11 |   console.log('📋 Supabase 대시보드 접속 완료');\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:8:14"
-                    }
-                  ],
+                  "status": "passed",
+                  "duration": 20271,
+                  "errors": [],
                   "stdout": [
                     {
-                      "text": "🚀 Supabase SQL 실행 테스트 시작\n"
+                      "text": "🚀 김탁수 스케줄 추가 및 보고서 테스트 시작\n"
+                    },
+                    {
+                      "text": "📋 로그인 페이지 접속 완료\n"
+                    },
+                    {
+                      "text": "✅ 김탁수 로그인 완료\n"
+                    },
+                    {
+                      "text": "📅 스케줄 페이지 접속 완료\n"
+                    },
+                    {
+                      "text": "➕ 스케줄 추가 버튼 클릭\n"
+                    },
+                    {
+                      "text": "📅 날짜 설정: 2025-09-23\n"
+                    },
+                    {
+                      "text": "⏰ 시작 시간 설정: 09:00\n"
+                    },
+                    {
+                      "text": "⏰ 종료 시간 설정: 18:00\n"
+                    },
+                    {
+                      "text": "📝 메모 추가\n"
+                    },
+                    {
+                      "text": "💾 저장 버튼 발견: button:has-text(\"추가\")\n"
+                    },
+                    {
+                      "text": "💾 스케줄 저장 버튼 클릭\n"
+                    },
+                    {
+                      "text": "✅ 스케줄 저장 완료\n"
+                    },
+                    {
+                      "text": "👨‍💼 관리자 스케줄 페이지 접속\n"
+                    },
+                    {
+                      "text": "👤 김탁수 직원 선택\n"
+                    },
+                    {
+                      "text": "📊 보고서 전송 버튼 확인\n"
+                    },
+                    {
+                      "text": "📤 보고서 전송 버튼 클릭\n"
+                    },
+                    {
+                      "text": "⚠️ 보고서 전송 결과 확인 필요\n"
+                    },
+                    {
+                      "text": "📸 테스트 결과 스크린샷 저장\n"
+                    },
+                    {
+                      "text": "🔍 콘솔 로그: []\n"
+                    },
+                    {
+                      "text": "🎉 김탁수 스케줄 추가 및 보고서 테스트 완료\n"
                     }
                   ],
                   "stderr": [
                     {
-                      "text": "(node:22045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                      "text": "(node:26060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
                     }
                   ],
                   "retry": 0,
-                  "startTime": "2025-09-23T16:14:03.118Z",
+                  "startTime": "2025-09-23T16:25:17.768Z",
                   "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/Users/m2/MASLABS/www.maslabs.kr/test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts",
-                    "column": 14,
-                    "line": 8
-                  }
+                  "attachments": []
                 }
               ],
-              "status": "unexpected"
+              "status": "expected"
             }
           ],
-          "id": "f61a060705250b6096c2-7da470c9944fa5bbfe97",
-          "file": "supabase-sql-execution.spec.ts",
+          "id": "e4546884678457580781-e6e7c9eb6b4931898545",
+          "file": "kim-taksoo-schedule-test.spec.ts",
           "line": 3,
           "column": 5
         }
@@ -206,11 +223,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-09-23T16:14:02.753Z",
-    "duration": 36936.520000000004,
-    "expected": 0,
+    "startTime": "2025-09-23T16:25:17.410Z",
+    "duration": 21733.948,
+    "expected": 1,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

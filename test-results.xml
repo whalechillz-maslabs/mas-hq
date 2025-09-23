@@ -1,43 +1,31 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="36.93652">
-<testsuite name="supabase-sql-execution.spec.ts" timestamp="2025-09-23T16:14:02.773Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="34.298" errors="0">
-<testcase name="Supabase SQL 실행 - 알림 설정 테이블 생성" classname="supabase-sql-execution.spec.ts" time="34.298">
-<failure message="supabase-sql-execution.spec.ts:3:5 Supabase SQL 실행 - 알림 설정 테이블 생성" type="FAILURE">
-<![CDATA[  [chromium-stable] › supabase-sql-execution.spec.ts:3:5 › Supabase SQL 실행 - 알림 설정 테이블 생성 ──────────
-
-    TimeoutError: page.waitForLoadState: Timeout 30000ms exceeded.
-
-       6 |   // 1. Supabase 대시보드로 이동
-       7 |   await page.goto('https://supabase.com/dashboard');
-    >  8 |   await page.waitForLoadState('networkidle');
-         |              ^
-       9 |   
-      10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)
-      11 |   console.log('📋 Supabase 대시보드 접속 완료');
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:8:14
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/error-context.md
-]]>
-</failure>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="21.733948">
+<testsuite name="kim-taksoo-schedule-test.spec.ts" timestamp="2025-09-23T16:25:17.485Z" hostname="chromium-stable" tests="1" failures="0" skipped="0" time="20.271" errors="0">
+<testcase name="김탁수 스케줄 추가 및 보고서 테스트" classname="kim-taksoo-schedule-test.spec.ts" time="20.271">
 <system-out>
-<![CDATA[🚀 Supabase SQL 실행 테스트 시작
-
-[[ATTACHMENT|test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/test-failed-1.png]]
-
-[[ATTACHMENT|test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/video.webm]]
-
-[[ATTACHMENT|test-results/supabase-sql-execution-Supabase-SQL-실행---알림-설정-테이블-생성-chromium-stable/error-context.md]]
+<![CDATA[🚀 김탁수 스케줄 추가 및 보고서 테스트 시작
+📋 로그인 페이지 접속 완료
+✅ 김탁수 로그인 완료
+📅 스케줄 페이지 접속 완료
+➕ 스케줄 추가 버튼 클릭
+📅 날짜 설정: 2025-09-23
+⏰ 시작 시간 설정: 09:00
+⏰ 종료 시간 설정: 18:00
+📝 메모 추가
+💾 저장 버튼 발견: button:has-text("추가")
+💾 스케줄 저장 버튼 클릭
+✅ 스케줄 저장 완료
+👨‍💼 관리자 스케줄 페이지 접속
+👤 김탁수 직원 선택
+📊 보고서 전송 버튼 확인
+📤 보고서 전송 버튼 클릭
+⚠️ 보고서 전송 결과 확인 필요
+📸 테스트 결과 스크린샷 저장
+🔍 콘솔 로그: []
+🎉 김탁수 스케줄 추가 및 보고서 테스트 완료
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:22045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:26060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>
