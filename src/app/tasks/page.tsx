@@ -638,36 +638,111 @@ export default function TasksPage() {
       const originalPoints = refundTargetTask.operation_type?.points || 0;
       const refundAmount = refundData.refund_amount || refundTargetTask.sales_amount || 0;
 
-      // 새로운 환불 업무 로우 생성 (OP8 전용)
-      const { data, error } = await supabase
-        .from('employee_tasks')
-        .insert({
-          employee_id: user.id,
-          operation_type_id: op8Type.id, // OP8 전용 ID 사용
-          title: `[환불] ${refundTargetTask.title}`,
-          notes: `원본 업무: ${refundTargetTask.title}\n원본 포인트: ${originalPoints}점\n환불 사유: ${refundData.notes || ''}`,
-          task_time: refundData.task_time,
-          customer_name: refundTargetTask.customer_name,
-          sales_amount: -refundAmount, // 환불 금액을 음수로 설정
-          task_priority: refundData.task_priority || 'high',
-          achievement_status: 'completed', // 환불 업무는 바로 완료 상태
-          task_date: refundData.task_date,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      // OP11인 경우 전용 취소 로직 적용
+      if (refundTargetTask.operation_type?.code === 'OP11') {
+        // OP11 전용 취소 사유별 포인트 차감 비율
+        const op11CancellationRatios = {
+          'weather': 0.3,           // 우천 - 30% 차감
+          'course_condition': 0.4,  // 골프장 상황 - 40% 차감
+          'customer_change': 1.0,   // 고객 변심 - 100% 차감
+          'partial_cancellation': 'ratio', // 부분 취소 - 비율에 따라
+          'other': 1.0              // 기타 - 100% 차감
+        };
 
-      if (error) throw error;
+        const refundRatio = refundAmount / (refundTargetTask.sales_amount || 1);
+        const cancellationReason = refundData.cancellation_reason || 'other';
+        const cancellationRatio = op11CancellationRatios[cancellationReason as keyof typeof op11CancellationRatios] || 1.0;
+        
+        // OP11 전용 포인트 차감 계산
+        let op11PointDeduction;
+        if (cancellationRatio === 'ratio') {
+          // 부분 취소의 경우 매출 비율에 따라 차감
+          op11PointDeduction = Math.round(originalPoints * refundRatio);
+        } else {
+          // 기타 사유의 경우 취소 사유별 비율 적용
+          const ratioValue = typeof cancellationRatio === 'number' ? cancellationRatio : 1.0;
+          op11PointDeduction = Math.round(originalPoints * refundRatio * ratioValue);
+        }
+
+        // OP11 전용 메모 생성
+        const op11Notes = `[OP11 싱싱골프 취소] ${refundTargetTask.title}
+원본 업무: ${refundTargetTask.operation_type?.code} - ${refundTargetTask.operation_type?.name}
+원본 포인트: ${originalPoints}점
+취소 사유: ${getCancellationReasonText(cancellationReason)}
+환불 비율: ${(refundRatio * 100).toFixed(1)}%
+차감 포인트: ${op11PointDeduction}점
+환불 사유: ${refundData.notes || ''}`;
+
+        // OP11 전용 환불 업무 생성
+        const { data, error } = await supabase
+          .from('employee_tasks')
+          .insert({
+            employee_id: user.id,
+            operation_type_id: op8Type.id, // OP8 ID 사용
+            title: `[OP11 취소] ${refundTargetTask.title}`,
+            notes: op11Notes,
+            task_time: refundData.task_time,
+            customer_name: refundTargetTask.customer_name,
+            sales_amount: -refundAmount, // 환불 금액을 음수로 설정
+            task_priority: refundData.task_priority || 'high',
+            achievement_status: 'completed', // 환불 업무는 바로 완료 상태
+            task_date: refundData.task_date,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        console.log('OP11 취소 업무 생성 성공:', data);
+        console.log(`OP11 원본 포인트 ${originalPoints}점 중 ${op11PointDeduction}점 차감 처리됨`);
+        
+      } else {
+        // 기존 OP8 로직 (마스골프 등)
+        const { data, error } = await supabase
+          .from('employee_tasks')
+          .insert({
+            employee_id: user.id,
+            operation_type_id: op8Type.id, // OP8 전용 ID 사용
+            title: `[환불] ${refundTargetTask.title}`,
+            notes: `원본 업무: ${refundTargetTask.title}\n원본 포인트: ${originalPoints}점\n환불 사유: ${refundData.notes || ''}`,
+            task_time: refundData.task_time,
+            customer_name: refundTargetTask.customer_name,
+            sales_amount: -refundAmount, // 환불 금액을 음수로 설정
+            task_priority: refundData.task_priority || 'high',
+            achievement_status: 'completed', // 환불 업무는 바로 완료 상태
+            task_date: refundData.task_date,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        console.log('환불 업무 생성 성공:', data);
+        console.log(`원본 포인트 ${originalPoints}점 차감 처리됨`);
+      }
       
-      console.log('환불 업무 생성 성공:', data);
-      console.log(`원본 포인트 ${originalPoints}점 차감 처리됨`);
       setShowRefundModal(false);
       setRefundTargetTask(null);
       loadTasksData();
     } catch (error) {
       console.error('환불 처리 실패:', error);
     }
+  };
+
+  // OP11 취소 사유 텍스트 변환 함수
+  const getCancellationReasonText = (reason: string): string => {
+    const reasonTexts: { [key: string]: string } = {
+      'weather': '우천으로 인한 취소',
+      'course_condition': '골프장 상황으로 인한 취소',
+      'customer_change': '고객 변심',
+      'partial_cancellation': '부분 취소',
+      'other': '기타'
+    };
+    return reasonTexts[reason] || '기타';
   };
 
   const handleDeleteTask = async (taskId: string) => {
@@ -1831,7 +1906,17 @@ export default function TasksPage() {
                 <p><strong>제목:</strong> {refundTargetTask.title}</p>
                 <p><strong>고객:</strong> {refundTargetTask.customer_name || '-'}</p>
                 <p><strong>매출:</strong> {refundTargetTask.sales_amount ? `${refundTargetTask.sales_amount.toLocaleString()}원` : '-'}</p>
-                <p><strong>차감될 점수:</strong> <span className="text-red-600 font-medium">-{(refundTargetTask.operation_type?.points || 0)}점</span></p>
+                <p><strong>차감될 점수:</strong> 
+                  {refundTargetTask.operation_type?.code === 'OP11' ? (
+                    <span className="text-blue-600 font-medium">
+                      취소 사유에 따라 결정 (OP11 전용 로직)
+                    </span>
+                  ) : (
+                    <span className="text-red-600 font-medium">
+                      -{(refundTargetTask.operation_type?.points || 0)}점
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
 
@@ -1848,7 +1933,8 @@ export default function TasksPage() {
                   memo: formData.get('memo') || '',
                   task_time: formData.get('task_time') || null,
                   task_priority: formData.get('task_priority') || 'normal',
-                  refund_amount: parsedRefundAmount
+                  refund_amount: parsedRefundAmount,
+                  cancellation_reason: formData.get('cancellation_reason') || 'other'
                 });
               }}
             >
@@ -1865,6 +1951,29 @@ export default function TasksPage() {
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>
+
+                {/* OP11인 경우에만 표시되는 취소 사유 선택 */}
+                {refundTargetTask?.operation_type?.code === 'OP11' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      취소 사유 (싱싱골프 전용)
+                    </label>
+                    <select 
+                      name="cancellation_reason" 
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      required
+                    >
+                      <option value="weather">우천으로 인한 취소 (30% 차감)</option>
+                      <option value="course_condition">골프장 상황으로 인한 취소 (40% 차감)</option>
+                      <option value="customer_change">고객 변심 (100% 차감)</option>
+                      <option value="partial_cancellation">부분 취소 (비율에 따라)</option>
+                      <option value="other">기타 (100% 차감)</option>
+                    </select>
+                    <p className="text-xs text-blue-600 mt-1">
+                      💡 싱싱골프 업무는 취소 사유에 따라 차감 비율이 달라집니다
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
