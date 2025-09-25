@@ -1107,13 +1107,22 @@ export default function DashboardPage() {
                     </span>
                   )}
                 </h2>
-                <button
-                  onClick={() => router.push('/shared-tasks-admin')}
-                  className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  전체 보기
-                </button>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => router.push('/tasks')}
+                    className="flex items-center text-green-600 hover:text-green-800 text-sm font-medium"
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    업무 기록
+                  </button>
+                  <button
+                    onClick={() => router.push('/shared-tasks-admin')}
+                    className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    전체 보기
+                  </button>
+                </div>
               </div>
 
 
