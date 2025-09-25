@@ -688,8 +688,9 @@ export default function ContractManagementPage() {
                               work_days: contract.work_days,
                               work_time: '09:00-17:00',
                               lunch_break: 1,
-                              meal_allowance: 140000,
-                              includes_weekly_holiday: true,
+                              meal_allowance: contract.meal_allowance || 140000,
+                              includes_weekly_holiday: contract.includes_weekly_holiday || true,
+                              insurance_4major: contract.insurance_4major || true,
                               salary_history: contract.salary_history || [],
                               probation_period: contract.probation_period || {
                                 start_date: '',
