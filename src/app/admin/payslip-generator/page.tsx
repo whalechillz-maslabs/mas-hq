@@ -3747,7 +3747,8 @@ export default function PayslipGenerator() {
                           {formatSalaryPeriod(payslip.period, payslip.daily_details)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.employment_type === 'full_time' ? '정규직' : '시간제'}
+                          {payslip.employment_type === 'full_time' ? '정규직' : 
+                           payslip.employees?.name === '나수진' ? '일당제' : '시간제'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {payslip.total_earnings?.toLocaleString()}원
@@ -3895,7 +3896,8 @@ export default function PayslipGenerator() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">고용 형태:</span>
                     <span className="font-medium">
-                      {payslipData.employment_type === 'full_time' ? '정규직' : '시간제'}
+                      {payslipData.employment_type === 'full_time' ? '정규직' : 
+                       payslipData.employee_name === '나수진' ? '일당제' : '시간제'}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -3916,35 +3918,60 @@ export default function PayslipGenerator() {
                 </div>
               </div>
 
-              {/* 시간제 급여 상세 정보 */}
+              {/* 시간제/일당제 급여 상세 정보 */}
               {payslipData.employment_type === 'part_time' && (
                 <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-3">시간제 급여 상세</h3>
+                  <h3 className="text-md font-medium text-gray-900 mb-3">
+                    {payslipData.employee_name === '나수진' ? '일당제 급여 상세' : '시간제 급여 상세'}
+                  </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">총 근무시간:</span>
                       <span className="font-medium">{payslipData.total_hours}시간</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">시급별 계산:</span>
-                      <span className="font-medium text-gray-800">
-                        {(() => {
-                          const hourlyDetails = payslipData.daily_details?.reduce((acc, detail) => {
-                            const key = detail.hourly_rate.toString();
-                            if (!acc[key]) {
-                              acc[key] = { hours: 0, wage: 0 };
-                            }
-                            acc[key].hours += detail.hours;
-                            acc[key].wage += detail.daily_wage;
-                            return acc;
-                          }, {} as { [key: string]: { hours: number; wage: number } });
+                    {payslipData.employee_name === '나수진' ? (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">일급별 계산:</span>
+                        <span className="font-medium text-gray-800">
+                          {(() => {
+                            const dailyDetails = payslipData.daily_details?.reduce((acc, detail) => {
+                              const key = detail.daily_wage.toString();
+                              if (!acc[key]) {
+                                acc[key] = { days: 0, wage: 0 };
+                              }
+                              acc[key].days += 1;
+                              acc[key].wage += detail.daily_wage;
+                              return acc;
+                            }, {} as { [key: string]: { days: number; wage: number } });
 
-                          return Object.entries(hourlyDetails || {}).map(([rate, data]) => 
-                            `${rate.toLocaleString()}원: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
-                          ).join(', ');
-                        })()}
-                      </span>
-                    </div>
+                            return Object.entries(dailyDetails || {}).map(([wage, data]) => 
+                              `${wage.toLocaleString()}원: ${data.days}일 = ${data.wage.toLocaleString()}원`
+                            ).join(', ');
+                          })()}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">시급별 계산:</span>
+                        <span className="font-medium text-gray-800">
+                          {(() => {
+                            const hourlyDetails = payslipData.daily_details?.reduce((acc, detail) => {
+                              const key = detail.hourly_rate.toString();
+                              if (!acc[key]) {
+                                acc[key] = { hours: 0, wage: 0 };
+                              }
+                              acc[key].hours += detail.hours;
+                              acc[key].wage += detail.daily_wage;
+                              return acc;
+                            }, {} as { [key: string]: { hours: number; wage: number } });
+
+                            return Object.entries(hourlyDetails || {}).map(([rate, data]) => 
+                              `${rate.toLocaleString()}원: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
+                            ).join(', ');
+                          })()}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-600">일별 상세:</span>
                       <span className="font-medium text-gray-800">
@@ -3967,10 +3994,14 @@ export default function PayslipGenerator() {
                 {payslipData.overtime_pay > 0 && (
                   <div className="py-2 border-b">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">주휴수당</span>
+                      <span className="text-gray-600">
+                        {payslipData.employment_type === 'part_time' && payslipData.employee_name === '나수진' 
+                          ? '추가근무' 
+                          : '주휴수당'}
+                      </span>
                       <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
                     </div>
-                    {payslipData.weeklyHolidayCalculation && (
+                    {payslipData.weeklyHolidayCalculation && payslipData.employee_name !== '나수진' && (
                       <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
                         <div className="font-medium mb-1">산출 식:</div>
                         <pre className="whitespace-pre-wrap">{payslipData.weeklyHolidayCalculation}</pre>
@@ -3986,7 +4017,11 @@ export default function PayslipGenerator() {
                 )}
                 {payslipData.incentive > 0 && (
                   <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">인센티브</span>
+                    <span className="text-gray-600">
+                      {payslipData.employment_type === 'part_time' && payslipData.employee_name === '나수진' 
+                        ? '주유대' 
+                        : '인센티브'}
+                    </span>
                     <span className="font-medium">{payslipData.incentive.toLocaleString()}원</span>
                   </div>
                 )}
@@ -4310,10 +4345,12 @@ export default function PayslipGenerator() {
                       <span className="text-sm text-gray-500">총 근무시간</span>
                       <div className="font-medium">{selectedPayslipForDetails.total_hours || 0}시간</div>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">시급</span>
-                      <div className="font-medium">{(selectedPayslipForDetails.hourly_rate || 0).toLocaleString()}원/시간</div>
-                    </div>
+                    {selectedPayslipForDetails.employee_name !== '나수진' && (
+                      <div>
+                        <span className="text-sm text-gray-500">시급</span>
+                        <div className="font-medium">{(selectedPayslipForDetails.hourly_rate || 0).toLocaleString()}원/시간</div>
+                      </div>
+                    )}
                     <div>
                       <span className="text-sm text-gray-500">상태</span>
                       <div className="font-medium">
