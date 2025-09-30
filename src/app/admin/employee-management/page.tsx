@@ -26,6 +26,15 @@ interface Employee {
   hourly_rate?: number;
   password_hash?: string;
   pin_code?: string;
+  user_meta?: {
+    base_daily_wage?: number;
+    fuel_allowance?: number;
+    meal_allowance_rate?: number;
+    work_days_per_week?: number;
+    work_days_per_week_new?: number;
+    change_date?: string;
+    special_notes?: string;
+  };
 }
 
 interface Department {
@@ -241,6 +250,7 @@ export default function EmployeeManagementPage() {
           status: editingEmployee.status,
           monthly_salary: editingEmployee.monthly_salary,
           hourly_rate: editingEmployee.hourly_rate,
+          user_meta: editingEmployee.user_meta,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingEmployee.id);
@@ -901,6 +911,54 @@ export default function EmployeeManagementPage() {
                     })}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="시급 입력"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">일급 (원)</label>
+                  <input
+                    type="number"
+                    value={editingEmployee.user_meta?.base_daily_wage || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      user_meta: {
+                        ...editingEmployee.user_meta,
+                        base_daily_wage: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="일급 입력"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">주유대 (원)</label>
+                  <input
+                    type="number"
+                    value={editingEmployee.user_meta?.fuel_allowance || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      user_meta: {
+                        ...editingEmployee.user_meta,
+                        fuel_allowance: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="주유대 입력"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">식대 (원/일)</label>
+                  <input
+                    type="number"
+                    value={editingEmployee.user_meta?.meal_allowance_rate || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      user_meta: {
+                        ...editingEmployee.user_meta,
+                        meal_allowance_rate: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="식대 입력"
                   />
                 </div>
               </div>
