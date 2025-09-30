@@ -54,6 +54,12 @@ interface PayslipData {
   transportation_allowance?: number; // 교통비
   performance_bonus?: number; // 성과급/보너스
   total_earnings: number;
+  // 4대보험 필드 추가
+  national_pension?: number;
+  health_insurance?: number;
+  employment_insurance?: number;
+  industrial_accident_insurance?: number;
+  total_insurance?: number;
   tax_amount: number;
   net_salary: number;
   status: string;
@@ -66,6 +72,7 @@ interface PayslipData {
     hours: number;
     daily_wage: number;
     hourly_rate: number;
+    note?: string;
   }>;
 }
 
@@ -311,8 +318,13 @@ export default function PayslipGenerator() {
       } else {
         // 월 단위 생성
         if (employee.employment_type === 'part_time') {
-          // 시간제 급여 계산
-          payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
+          // 나수진은 일당제, 나머지는 시간제
+          if (employee.name === '나수진') {
+            payslip = await generateNaManagerPayslip(employee, selectedYear, selectedMonth);
+          } else {
+            // 시간제 급여 계산
+            payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
+          }
         } else {
           // 월급제 급여 계산
           payslip = await generateMonthlyPayslip(employee, selectedYear, selectedMonth);
@@ -326,6 +338,155 @@ export default function PayslipGenerator() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  // 나수진 전용 일당제 급여명세서 생성 함수
+  const generateNaManagerPayslip = async (employee: Employee, year: number, month: number) => {
+    // 해당 월의 스케줄 조회
+    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+    
+    // 계약서에서 식대 정보 조회
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .select('meal_allowance, salary_history, probation_period')
+      .eq('employee_id', employee.id)
+      .lte('start_date', endDate)
+      .or(`end_date.is.null,end_date.gte.${startDate}`)
+      .eq('status', 'active')
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    const mealAllowance = contract?.meal_allowance || 0;
+    
+    // 해당 기간의 스케줄 조회
+    const { data: schedules, error: scheduleError } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('employee_id', employee.id)
+      .gte('schedule_date', startDate)
+      .lte('schedule_date', endDate)
+      .order('schedule_date');
+
+    if (scheduleError) {
+      throw new Error('스케줄 조회에 실패했습니다.');
+    }
+
+    if (!schedules || schedules.length === 0) {
+      throw new Error('해당 기간에 스케줄이 없습니다.');
+    }
+
+    // 나수진의 급여 구성 요소 계산
+    const workDays = schedules.length;
+    const isNewSystem = month >= 10; // 10월부터 주 3회
+    
+    // 기본급 계산 (10월부터 120만원, 이전은 80만원)
+    const baseSalary = isNewSystem ? 1200000 : 800000;
+    
+    // 식대 계산 (근무일수 × 일일 식대)
+    const totalMealAllowance = workDays * mealAllowance;
+    
+    // 주유대 (고정 20만원)
+    const fuelAllowance = 200000;
+    
+    // 추가근무 (고정 20만원)
+    const additionalWork = 200000;
+    
+    // 총 지급액 계산
+    const totalEarnings = baseSalary + totalMealAllowance + fuelAllowance + additionalWork;
+    
+    // 4대보험 계산 (나수진은 60세 미만이므로 국민연금 포함)
+    const nationalPension = Math.round(totalEarnings * 0.045); // 4.5%
+    const healthInsurance = Math.round(totalEarnings * 0.03597); // 3.597%
+    const employmentInsurance = Math.round(totalEarnings * 0.008); // 0.8%
+    const industrialAccidentInsurance = Math.round(totalEarnings * 0.0065); // 0.65%
+    const totalInsurance = nationalPension + healthInsurance + employmentInsurance + industrialAccidentInsurance;
+    
+    // 세금 계산 (3.3% 사업소득세)
+    const taxAmount = Math.round(totalEarnings * 0.033);
+    
+    // 실수령액 계산
+    const netSalary = totalEarnings - totalInsurance - taxAmount;
+    
+    // 일별 상세 내역 생성 (실제 스케줄 기반)
+    const dailyDetails = schedules.map(schedule => {
+      const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
+      const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      
+      // 일당제이므로 일급은 고정 (기본급 / 근무일수)
+      const dailyWage = baseSalary / workDays;
+      
+      return {
+        date: schedule.schedule_date,
+        hours: hours,
+        hourly_rate: dailyWage / hours, // 시급은 일급/근무시간으로 계산
+        daily_wage: dailyWage,
+        note: '월 정규근무'
+      };
+    });
+    
+    // 총 근무시간 계산
+    const totalHours = dailyDetails.reduce((sum, detail) => sum + detail.hours, 0);
+    
+    // 주휴수당 계산 (주 15시간 이상 근무 시)
+    const weeklyHolidayPay = totalHours >= 15 ? Math.round(totalHours * 0.2) : 0;
+    
+    // 주휴수당 산출 식
+    const weeklyHolidayCalculation = totalHours >= 15 ? 
+      `주 15시간 이상 근무 (${totalHours}시간) → 주휴수당 ${weeklyHolidayPay.toLocaleString()}원` : 
+      `주 15시간 미만 근무 (${totalHours}시간) → 주휴수당 없음`;
+
+    const payslip: PayslipData = {
+      employee_id: employee.id,
+      employee_name: employee.name,
+      employee_nickname: employee.nickname,
+      payment_date: new Date().toISOString().split('T')[0],
+      salary_period: `${year}-${month.toString().padStart(2, '0')}`,
+      employment_type: 'part_time',
+      base_salary: baseSalary,
+      overtime_pay: 0,
+      incentive: 0,
+      point_bonus: 0,
+      meal_allowance: totalMealAllowance,
+      fuel_allowance: fuelAllowance,
+      additional_work: additionalWork,
+      weekly_holiday_pay: weeklyHolidayPay,
+      total_earnings: totalEarnings,
+      national_pension: nationalPension,
+      health_insurance: healthInsurance,
+      employment_insurance: employmentInsurance,
+      industrial_accident_insurance: industrialAccidentInsurance,
+      total_insurance: totalInsurance,
+      tax_amount: taxAmount,
+      net_salary: netSalary,
+      status: 'generated',
+      total_hours: totalHours,
+      hourly_rate: totalEarnings / totalHours, // 평균 시급
+      weeklyHolidayCalculation: weeklyHolidayCalculation,
+      daily_details: dailyDetails
+    };
+
+    // payslips 테이블에 저장
+    try {
+      const { error: saveError } = await supabase
+        .from('payslips')
+        .insert([payslip]);
+
+      if (saveError) {
+        console.error('급여명세서 저장 실패:', saveError);
+        throw new Error('급여명세서 저장에 실패했습니다.');
+      }
+      
+      console.log('✅ 나수진 급여명세서 저장 성공');
+    } catch (saveError) {
+      console.error('급여명세서 저장 중 오류:', saveError);
+      // 저장 실패해도 화면에는 표시
+    }
+
+    return payslip;
   };
 
   const generateHourlyPayslip = async (employee: Employee, year: number, month: number) => {
@@ -4175,6 +4336,31 @@ export default function PayslipGenerator() {
                   <span className="font-medium text-gray-900">총 지급액</span>
                   <span className="font-bold text-lg">{payslipData.total_earnings.toLocaleString()}원</span>
                 </div>
+                {/* 4대보험 상세 내역 */}
+                {payslipData.national_pension !== undefined && (
+                  <>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-gray-600">국민연금 (4.5%)</span>
+                      <span className="font-medium text-red-600">-{payslipData.national_pension?.toLocaleString()}원</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-gray-600">건강보험 (3.597%)</span>
+                      <span className="font-medium text-red-600">-{payslipData.health_insurance?.toLocaleString()}원</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-gray-600">고용보험 (0.8%)</span>
+                      <span className="font-medium text-red-600">-{payslipData.employment_insurance?.toLocaleString()}원</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-gray-600">산재보험 (0.65%)</span>
+                      <span className="font-medium text-red-600">-{payslipData.industrial_accident_insurance?.toLocaleString()}원</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-400">
+                      <span className="text-gray-600 font-medium">4대보험 총액</span>
+                      <span className="font-medium text-red-600">-{payslipData.total_insurance?.toLocaleString()}원</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-gray-600">세금 (3.3%)</span>
                   <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
