@@ -100,12 +100,22 @@ async function autoGenerateNaManagerPayslips() {
       // 급여 계산
       const workDays = schedules.length;
       const isNewSystem = monthInfo.month >= 10; // 10월부터 주 3회
-      const expectedWorkDays = isNewSystem ? NA_MANAGER_CONFIG.workDaysPerWeekNew * 4 : NA_MANAGER_CONFIG.workDaysPerWeek * 4;
       
       // 기본급 계산
       const baseSalary = isNewSystem ? 1200000 : 800000; // 10월부터 120만원
       const mealAllowance = workDays * NA_MANAGER_CONFIG.mealAllowanceRate;
-      const additionalWork = 0; // 추가 근무는 별도 계산 필요
+      
+      // 추가 근무 계산 (특정 날짜별 추가 근무)
+      let additionalWork = 0;
+      if (monthInfo.month === 7) {
+        // 7월 7일, 21일 추가 근무
+        const additionalDates = ['2025-07-07', '2025-07-21'];
+        additionalWork = additionalDates.length * 100000; // 10만원씩
+      } else if (monthInfo.month === 9) {
+        // 9월 26일 추가 근무
+        const additionalDates = ['2025-09-26'];
+        additionalWork = additionalDates.length * 100000; // 10만원씩
+      }
       
       const totalEarnings = baseSalary + NA_MANAGER_CONFIG.fuelAllowance + additionalWork + mealAllowance;
       const taxAmount = Math.round(totalEarnings * 0.033);
@@ -126,8 +136,8 @@ async function autoGenerateNaManagerPayslips() {
         period: monthInfo.period,
         employment_type: 'part_time',
         base_salary: baseSalary,
-        overtime_pay: additionalWork,
-        incentive: NA_MANAGER_CONFIG.fuelAllowance,
+        overtime_pay: additionalWork,  // 추가 근무 (주휴수당 아님)
+        incentive: NA_MANAGER_CONFIG.fuelAllowance,  // 주유대
         point_bonus: 0,
         meal_allowance: mealAllowance,
         total_earnings: totalEarnings,

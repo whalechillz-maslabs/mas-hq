@@ -118,7 +118,17 @@ async function generateNaManagerPayslip(employee, year, month, period, schedules
   const fuelAllowance = 200000;
   const mealAllowance = workDays * 7000;
   
-  const totalEarnings = baseSalary + fuelAllowance + mealAllowance;
+  // 추가 근무 계산 (특정 날짜별 추가 근무)
+  let additionalWork = 0;
+  if (month === 7) {
+    // 7월 7일, 21일 추가 근무
+    additionalWork = 200000; // 10만원씩 2회
+  } else if (month === 9) {
+    // 9월 26일 추가 근무
+    additionalWork = 100000; // 10만원 1회
+  }
+  
+  const totalEarnings = baseSalary + fuelAllowance + additionalWork + mealAllowance;
   const taxAmount = Math.round(totalEarnings * 0.033);
   const netSalary = totalEarnings - taxAmount;
   
@@ -135,8 +145,8 @@ async function generateNaManagerPayslip(employee, year, month, period, schedules
     period: period,
     employment_type: 'part_time',
     base_salary: baseSalary,
-    overtime_pay: 0,
-    incentive: fuelAllowance,
+    overtime_pay: additionalWork,  // 추가 근무 (주휴수당 아님)
+    incentive: fuelAllowance,      // 주유대
     point_bonus: 0,
     meal_allowance: mealAllowance,
     total_earnings: totalEarnings,
