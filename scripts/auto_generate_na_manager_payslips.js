@@ -130,14 +130,21 @@ async function autoGenerateNaManagerPayslips() {
         note: `${monthInfo.month}월 정규근무`
       }));
       
-      // 급여 명세서 생성
+      // 급여 명세서 생성 (새로운 필드 구조)
       const payslip = {
         employee_id: naManager.id,
         period: monthInfo.period,
         employment_type: 'part_time',
         base_salary: baseSalary,
-        overtime_pay: additionalWork,  // 추가 근무 (주휴수당 아님)
-        incentive: NA_MANAGER_CONFIG.fuelAllowance,  // 주유대
+        // 새로운 필드 구조
+        fuel_allowance: NA_MANAGER_CONFIG.fuelAllowance,  // 주유대
+        additional_work: additionalWork,                  // 추가 근무
+        weekly_holiday_pay: 0,                           // 주휴수당 없음
+        transportation_allowance: 0,
+        performance_bonus: 0,
+        // 기존 필드 (하위 호환성)
+        overtime_pay: 0,
+        incentive: 0,
         point_bonus: 0,
         meal_allowance: mealAllowance,
         total_earnings: totalEarnings,

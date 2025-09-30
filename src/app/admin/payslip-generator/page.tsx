@@ -47,6 +47,12 @@ interface PayslipData {
   incentive: number;
   point_bonus: number;
   meal_allowance: number; // 식대
+  // 새로운 필드 구조
+  fuel_allowance?: number; // 주유대
+  additional_work?: number; // 추가 근무 수당
+  weekly_holiday_pay?: number; // 주휴수당
+  transportation_allowance?: number; // 교통비
+  performance_bonus?: number; // 성과급/보너스
   total_earnings: number;
   tax_amount: number;
   net_salary: number;
@@ -3991,22 +3997,52 @@ export default function PayslipGenerator() {
                   <span className="text-gray-600">기본급</span>
                   <span className="font-medium">{payslipData.base_salary.toLocaleString()}원</span>
                 </div>
-                {payslipData.overtime_pay > 0 && (
+                {/* 새로운 필드 구조로 표시 */}
+                {payslipData.fuel_allowance && payslipData.fuel_allowance > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">주유대</span>
+                    <span className="font-medium">{payslipData.fuel_allowance.toLocaleString()}원</span>
+                  </div>
+                )}
+                {payslipData.additional_work && payslipData.additional_work > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">추가근무</span>
+                    <span className="font-medium">{payslipData.additional_work.toLocaleString()}원</span>
+                  </div>
+                )}
+                {payslipData.weekly_holiday_pay && payslipData.weekly_holiday_pay > 0 && (
                   <div className="py-2 border-b">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">
-                        {payslipData.employment_type === 'part_time' && payslipData.employee_name === '나수진' 
-                          ? '추가근무' 
-                          : '주휴수당'}
-                      </span>
-                      <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
+                      <span className="text-gray-600">주휴수당</span>
+                      <span className="font-medium">{payslipData.weekly_holiday_pay.toLocaleString()}원</span>
                     </div>
-                    {payslipData.weeklyHolidayCalculation && payslipData.employee_name !== '나수진' && (
+                    {payslipData.weeklyHolidayCalculation && (
                       <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
                         <div className="font-medium mb-1">산출 식:</div>
                         <pre className="whitespace-pre-wrap">{payslipData.weeklyHolidayCalculation}</pre>
                       </div>
                     )}
+                  </div>
+                )}
+                {payslipData.transportation_allowance && payslipData.transportation_allowance > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">교통비</span>
+                    <span className="font-medium">{payslipData.transportation_allowance.toLocaleString()}원</span>
+                  </div>
+                )}
+                {payslipData.performance_bonus && payslipData.performance_bonus > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">성과급</span>
+                    <span className="font-medium">{payslipData.performance_bonus.toLocaleString()}원</span>
+                  </div>
+                )}
+                {/* 기존 필드 (하위 호환성) */}
+                {payslipData.overtime_pay > 0 && !payslipData.additional_work && !payslipData.weekly_holiday_pay && (
+                  <div className="py-2 border-b">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">시간외 근무</span>
+                      <span className="font-medium">{payslipData.overtime_pay.toLocaleString()}원</span>
+                    </div>
                   </div>
                 )}
                 {payslipData.meal_allowance > 0 && (
@@ -4015,13 +4051,9 @@ export default function PayslipGenerator() {
                     <span className="font-medium">{payslipData.meal_allowance.toLocaleString()}원</span>
                   </div>
                 )}
-                {payslipData.incentive > 0 && (
+                {payslipData.incentive > 0 && !payslipData.fuel_allowance && !payslipData.performance_bonus && (
                   <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">
-                      {payslipData.employment_type === 'part_time' && payslipData.employee_name === '나수진' 
-                        ? '주유대' 
-                        : '인센티브'}
-                    </span>
+                    <span className="text-gray-600">인센티브</span>
                     <span className="font-medium">{payslipData.incentive.toLocaleString()}원</span>
                   </div>
                 )}
