@@ -1350,22 +1350,46 @@ export default function PayslipGenerator() {
                 <span>기본급</span>
                 <span>${payslip.base_salary?.toLocaleString() || 0}원</span>
               </div>
-              ${payslip.overtime_pay > 0 ? `
+              ${(payslip.fuel_allowance || 0) > 0 ? `
+              <div class="salary-item">
+                <span>주유대</span>
+                <span>${payslip.fuel_allowance.toLocaleString()}원</span>
+              </div>
+              ` : ''}
+              ${(payslip.additional_work || 0) > 0 ? `
+              <div class="salary-item">
+                <span>추가근무</span>
+                <span>${payslip.additional_work.toLocaleString()}원</span>
+              </div>
+              ` : ''}
+              ${(payslip.weekly_holiday_pay || 0) > 0 ? `
+              <div class="salary-item">
+                <span>주휴수당</span>
+                <span>${payslip.weekly_holiday_pay.toLocaleString()}원</span>
+              </div>
+              ` : ''}
+              ${(payslip.overtime_pay || 0) > 0 && !payslip.weekly_holiday_pay ? `
               <div class="salary-item">
                 <span>주휴수당</span>
                 <span>${payslip.overtime_pay.toLocaleString()}원</span>
               </div>
               ` : ''}
-              ${payslip.meal_allowance > 0 ? `
+              ${(payslip.meal_allowance || 0) > 0 ? `
               <div class="salary-item">
                 <span>식대</span>
                 <span>${payslip.meal_allowance.toLocaleString()}원</span>
               </div>
               ` : ''}
-              ${payslip.incentive > 0 ? `
+              ${(payslip.incentive || 0) > 0 ? `
               <div class="salary-item">
                 <span>인센티브</span>
                 <span>${payslip.incentive.toLocaleString()}원</span>
+              </div>
+              ` : ''}
+              ${(payslip.performance_bonus || 0) > 0 ? `
+              <div class="salary-item">
+                <span>성과급</span>
+                <span>${payslip.performance_bonus.toLocaleString()}원</span>
               </div>
               ` : ''}
               <div class="salary-item total">
