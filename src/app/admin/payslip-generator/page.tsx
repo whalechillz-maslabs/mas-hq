@@ -4335,18 +4335,54 @@ export default function PayslipGenerator() {
                         <span>기본급</span>
                         <span>{(selectedPayslipForDetails.base_salary || 0).toLocaleString()}원</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>주휴수당</span>
-                        <span>{(selectedPayslipForDetails.overtime_pay || 0).toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>인센티브</span>
-                        <span>{(selectedPayslipForDetails.incentive || 0).toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>포인트 보너스</span>
-                        <span>{(selectedPayslipForDetails.point_bonus || 0).toLocaleString()}원</span>
-                      </div>
+                      {(selectedPayslipForDetails.fuel_allowance || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>주유대</span>
+                          <span>{(selectedPayslipForDetails.fuel_allowance || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.additional_work || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>추가근무</span>
+                          <span>{(selectedPayslipForDetails.additional_work || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.weekly_holiday_pay || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>주휴수당</span>
+                          <span>{(selectedPayslipForDetails.weekly_holiday_pay || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.overtime_pay || 0) > 0 && !selectedPayslipForDetails.weekly_holiday_pay && (
+                        <div className="flex justify-between">
+                          <span>주휴수당</span>
+                          <span>{(selectedPayslipForDetails.overtime_pay || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.meal_allowance || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>식대</span>
+                          <span>{(selectedPayslipForDetails.meal_allowance || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.incentive || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>인센티브</span>
+                          <span>{(selectedPayslipForDetails.incentive || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.point_bonus || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>포인트 보너스</span>
+                          <span>{(selectedPayslipForDetails.point_bonus || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.performance_bonus || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>성과급</span>
+                          <span>{(selectedPayslipForDetails.performance_bonus || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
                       <div className="border-t pt-2 font-semibold flex justify-between">
                         <span>총 지급액</span>
                         <span>{(selectedPayslipForDetails.total_earnings || 0).toLocaleString()}원</span>
