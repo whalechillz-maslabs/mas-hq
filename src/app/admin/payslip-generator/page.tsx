@@ -226,7 +226,7 @@ export default function PayslipGenerator() {
 
     // 월 단위 생성 시 중복 체크
     if (!showCustomPeriod) {
-      const period = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+      let period = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
       
       // 기존 급여명세서가 있는지 확인
       const { data: existingPayslip, error: checkError } = await supabase
@@ -645,8 +645,16 @@ export default function PayslipGenerator() {
       const [year, month] = period.split('-');
       const monthNum = parseInt(month);
       
-      // daily_details가 있으면 실제 근무 기간 계산
+      // 나수진(일당제)의 경우 매월 전체 기간으로 표시
       if (dailyDetails && dailyDetails.length > 0) {
+        // daily_details의 첫 번째 항목에서 직원 정보 확인
+        const firstDetail = dailyDetails[0];
+        if (firstDetail && firstDetail.note && firstDetail.note.includes('월 정규근무')) {
+          // 일당제 직원은 매월 전체 기간으로 표시
+          return `${monthNum}월`;
+        }
+        
+        // 기존 로직: 실제 근무 기간 계산
         const dates = dailyDetails.map(d => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
         const startDate = dates[0];
         const endDate = dates[dates.length - 1];
