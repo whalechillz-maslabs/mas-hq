@@ -109,6 +109,10 @@ export default function PayslipGenerator() {
   const [editIssuedDate, setEditIssuedDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
   
+  // 나수진 추가근무 관련 상태
+  const [additionalWorkDays, setAdditionalWorkDays] = useState<number>(0);
+  const [additionalWorkAmount, setAdditionalWorkAmount] = useState<number>(100000); // 일일 10만원
+  
   // 연봉계약 전환 관련 상태
   const [showContractChangeModal, setShowContractChangeModal] = useState(false);
   const [contractChangeData, setContractChangeData] = useState({
@@ -320,7 +324,7 @@ export default function PayslipGenerator() {
         if (employee.employment_type === 'part_time') {
           // 나수진은 일당제, 나머지는 시간제
           if (employee.name === '나수진') {
-            payslip = await generateNaManagerPayslip(employee, selectedYear, selectedMonth);
+            payslip = await generateNaManagerPayslip(employee, selectedYear, selectedMonth, additionalWorkDays, additionalWorkAmount);
           } else {
             // 시간제 급여 계산
             payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
@@ -341,7 +345,7 @@ export default function PayslipGenerator() {
   };
 
   // 나수진 전용 일당제 급여명세서 생성 함수
-  const generateNaManagerPayslip = async (employee: Employee, year: number, month: number) => {
+  const generateNaManagerPayslip = async (employee: Employee, year: number, month: number, overtimeDays: number = 0, overtimeAmount: number = 100000) => {
     // 해당 월의 스케줄 조회
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
@@ -391,24 +395,24 @@ export default function PayslipGenerator() {
     // 주유대 (고정 20만원)
     const fuelAllowance = 200000;
     
-    // 추가근무 (고정 20만원)
-    const additionalWork = 200000;
+    // 추가근무 (일수 × 일일 금액)
+    const additionalWork = overtimeDays * overtimeAmount;
     
     // 총 지급액 계산
     const totalEarnings = baseSalary + totalMealAllowance + fuelAllowance + additionalWork;
     
-    // 4대보험 계산 (나수진은 60세 미만이므로 국민연금 포함)
-    const nationalPension = Math.round(totalEarnings * 0.045); // 4.5%
-    const healthInsurance = Math.round(totalEarnings * 0.03597); // 3.597%
-    const employmentInsurance = Math.round(totalEarnings * 0.008); // 0.8%
-    const industrialAccidentInsurance = Math.round(totalEarnings * 0.0065); // 0.65%
-    const totalInsurance = nationalPension + healthInsurance + employmentInsurance + industrialAccidentInsurance;
+    // 나수진은 현금 지급 (4대보험 및 세금 없음)
+    const nationalPension = 0;
+    const healthInsurance = 0;
+    const employmentInsurance = 0;
+    const industrialAccidentInsurance = 0;
+    const totalInsurance = 0;
     
-    // 세금 계산 (3.3% 사업소득세)
-    const taxAmount = Math.round(totalEarnings * 0.033);
+    // 세금 없음 (현금 지급)
+    const taxAmount = 0;
     
-    // 실수령액 계산
-    const netSalary = totalEarnings - totalInsurance - taxAmount;
+    // 실수령액 = 총 지급액 (공제 없음)
+    const netSalary = totalEarnings;
     
     // 일별 상세 내역 생성 (실제 스케줄 기반)
     const dailyDetails = schedules.map(schedule => {
@@ -3820,6 +3824,39 @@ export default function PayslipGenerator() {
                 </>
               )}
 
+              {/* 나수진 추가근무 입력 필드 */}
+              {selectedEmployee && employees.find(emp => emp.id === selectedEmployee)?.name === '나수진' && !showCustomPeriod && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      추가근무 일수
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={additionalWorkDays}
+                      onChange={(e) => setAdditionalWorkDays(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="추가근무 일수 입력"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      일일 추가근무 금액
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={additionalWorkAmount}
+                      onChange={(e) => setAdditionalWorkAmount(parseInt(e.target.value) || 100000)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="일일 추가근무 금액"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">기본값: 100,000원 (일일 10만원)</p>
+                  </div>
+                </>
+              )}
+
               {/* 분할 생성 - 기간 지정 */}
               {showCustomPeriod && (
                 <>
@@ -4275,7 +4312,14 @@ export default function PayslipGenerator() {
                 )}
                 {payslipData.additional_work && payslipData.additional_work > 0 && (
                   <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">추가근무</span>
+                    <span className="text-gray-600">
+                      추가근무 
+                      {payslipData.employee_name === '나수진' && additionalWorkDays > 0 && (
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({additionalWorkDays}일 × {additionalWorkAmount.toLocaleString()}원)
+                        </span>
+                      )}
+                    </span>
                     <span className="font-medium">{payslipData.additional_work.toLocaleString()}원</span>
                   </div>
                 )}
@@ -4336,8 +4380,8 @@ export default function PayslipGenerator() {
                   <span className="font-medium text-gray-900">총 지급액</span>
                   <span className="font-bold text-lg">{payslipData.total_earnings.toLocaleString()}원</span>
                 </div>
-                {/* 4대보험 상세 내역 */}
-                {payslipData.national_pension !== undefined && (
+                {/* 4대보험 상세 내역 (나수진이 아닌 경우만 표시) */}
+                {payslipData.employee_name !== '나수진' && payslipData.national_pension !== undefined && payslipData.national_pension > 0 && (
                   <>
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-gray-600">국민연금 (4.5%)</span>
@@ -4361,10 +4405,20 @@ export default function PayslipGenerator() {
                     </div>
                   </>
                 )}
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-gray-600">세금 (3.3%)</span>
-                  <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
-                </div>
+                {/* 세금 (나수진이 아닌 경우만 표시) */}
+                {payslipData.employee_name !== '나수진' && payslipData.tax_amount > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">세금 (3.3%)</span>
+                    <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
+                  </div>
+                )}
+                {/* 나수진 현금 지급 안내 */}
+                {payslipData.employee_name === '나수진' && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">지급 방식</span>
+                    <span className="font-medium text-green-600">현금 지급 (공제 없음)</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-3 bg-gray-50 rounded-lg px-4">
                   <span className="font-bold text-gray-900">실수령액</span>
                   <span className="font-bold text-xl text-blue-600">{payslipData.net_salary.toLocaleString()}원</span>
