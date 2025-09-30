@@ -1397,12 +1397,15 @@ export default function EmployeeSchedulesPage() {
                                           ? 'bg-green-100 text-green-800' 
                                           : schedule.status === 'pending'
                                           ? 'bg-yellow-100 text-yellow-800'
+                                          : schedule.status === 'in_progress'
+                                          ? 'bg-orange-100 text-orange-800'
                                           : schedule.status === 'completed'
                                           ? 'bg-blue-100 text-blue-800'
                                           : 'bg-red-100 text-red-800'
                                       }`}>
                                         {schedule.status === 'approved' ? '승인' : 
                                          schedule.status === 'pending' ? '대기' : 
+                                         schedule.status === 'in_progress' ? '진행중' :
                                          schedule.status === 'completed' ? (
                                            (() => {
                                              const attendance = attendanceRecords.find(record => 
@@ -1500,6 +1503,20 @@ export default function EmployeeSchedulesPage() {
                                       >
                                         <Trash2 className="h-4 w-4" />
                                         <span>삭제</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  {/* 진행중인 스케줄 취소 버튼 추가 */}
+                                  {schedule.status === 'in_progress' && (
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleScheduleApproval(schedule.id, 'cancelled')}
+                                        disabled={updating === schedule.id}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                                      >
+                                        <X className="h-4 w-4" />
+                                        <span>취소</span>
                                       </button>
                                     </div>
                                   )}
