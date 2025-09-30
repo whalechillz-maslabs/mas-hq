@@ -3146,6 +3146,71 @@ export default function PayslipGenerator() {
     printWindow.print();
   };
 
+  // 공통: 화면 임시상태가 아닌 저장된 명세서로 인쇄하기 위한 래퍼
+  const loadPayslipForPrint = async (): Promise<any | null> => {
+    // 우선 상세 모달에서 선택된 저장 레코드가 있으면 그것을 사용
+    if (selectedPayslipForDetails) return selectedPayslipForDetails;
+
+    if (!payslipData) return null;
+    try {
+      const period = payslipData.salary_period || payslipData.period;
+      if (!payslipData.employee_id || !period) return null;
+      const { data, error } = await supabase
+        .from('payslips')
+        .select('*')
+        .eq('employee_id', payslipData.employee_id)
+        .eq('period', period)
+        .limit(1)
+        .single();
+      if (error) {
+        console.error('저장된 급여명세서 조회 실패:', error);
+        return null;
+      }
+      return data;
+    } catch (e) {
+      console.error('loadPayslipForPrint 오류:', e);
+      return null;
+    }
+  };
+
+  // 기본/상세/4대보험/3.3% 인쇄 버튼용 래퍼 (저장 레코드 기반으로 출력)
+  const handlePrintBasic = async () => {
+    const saved = await loadPayslipForPrint();
+    if (saved) {
+      printSavedPayslip(saved);
+    } else if (payslipData) {
+      // 저장본이 없으면 기존 방식으로라도 출력
+      printPayslip();
+    }
+  };
+
+  const handlePrintDetailed = async () => {
+    const saved = await loadPayslipForPrint();
+    if (saved) {
+      printDetailedSavedPayslip(saved);
+    } else if (payslipData) {
+      printDetailedPayslip();
+    }
+  };
+
+  const handlePrintWithInsurance = async () => {
+    const saved = await loadPayslipForPrint();
+    if (saved) {
+      printSavedPayslipWithInsurance(saved);
+    } else if (payslipData) {
+      printPayslipWithInsurance();
+    }
+  };
+
+  const handlePrintBusinessIncomeOnly = async () => {
+    const saved = await loadPayslipForPrint();
+    if (saved) {
+      printSavedPayslipBusinessIncomeOnly(saved);
+    } else if (payslipData) {
+      printPayslipBusinessIncomeOnly();
+    }
+  };
+
   const printPayslip = () => {
     if (!payslipData) return;
     
@@ -3860,25 +3925,25 @@ export default function PayslipGenerator() {
               <h2 className="text-lg font-semibold text-gray-900">급여 명세서</h2>
               <div className="flex gap-2 flex-wrap">
                 <button
-                  onClick={printPayslip}
+                  onClick={handlePrintBasic}
                   className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
                 >
                   기본 출력/인쇄
                 </button>
                 <button
-                  onClick={printDetailedPayslip}
+                  onClick={handlePrintDetailed}
                   className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
                   상세 출력/인쇄
                 </button>
                 <button
-                  onClick={printPayslipWithInsurance}
+                  onClick={handlePrintWithInsurance}
                   className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                 >
                   4대보험 포함
                 </button>
                 <button
-                  onClick={printPayslipBusinessIncomeOnly}
+                  onClick={handlePrintBusinessIncomeOnly}
                   className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
                 >
                   사업소득세만
