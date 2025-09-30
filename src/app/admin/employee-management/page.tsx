@@ -14,6 +14,7 @@ interface Employee {
   name: string;
   phone: string;
   email?: string;
+  birth_date?: string;
   department_id?: string;
   department_name?: string;
   position_id?: string;
@@ -248,6 +249,7 @@ export default function EmployeeManagementPage() {
           position_id: editingEmployee.position_id,
           role_id: editingEmployee.role_id,
           status: editingEmployee.status,
+          birth_date: editingEmployee.birth_date,
           monthly_salary: editingEmployee.monthly_salary,
           hourly_rate: editingEmployee.hourly_rate,
           user_meta: editingEmployee.user_meta,
@@ -886,6 +888,18 @@ export default function EmployeeManagementPage() {
                     <option value="on_leave">휴직</option>
                     <option value="inactive">퇴직</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">생년월일</label>
+                  <input
+                    type="date"
+                    value={editingEmployee.birth_date || ''}
+                    onChange={(e) => setEditingEmployee({
+                      ...editingEmployee,
+                      birth_date: e.target.value
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">월급 (원)</label>
