@@ -1427,7 +1427,8 @@ export default function PayslipGenerator() {
 
   function printDetailedSavedPayslip(payslip: any) {
     // 4대보험 계산
-    const insurance = calculateInsurance(payslip.total_earnings);
+    const age = getAgeFromBirthDate(payslip.employees?.birth_date);
+    const insurance = calculateInsurance(payslip.total_earnings, age);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -1724,7 +1725,8 @@ export default function PayslipGenerator() {
   // 발행된 급여명세서용 4대보험 포함 출력/인쇄 함수
   function printSavedPayslipWithInsurance(payslip: any) {
     // 4대보험 계산
-    const insurance = calculateInsurance(payslip.total_earnings);
+    const age = getAgeFromBirthDate(payslip.employees?.birth_date);
+    const insurance = calculateInsurance(payslip.total_earnings, age);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -2273,9 +2275,22 @@ export default function PayslipGenerator() {
     printWindow.print();
   }
 
+  // 생년월일로 만 나이 계산
+  const getAgeFromBirthDate = (birthDate?: string | Date): number => {
+    if (!birthDate) return 30; // 정보가 없으면 일반 성인 기준으로 계산
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age -= 1;
+    }
+    return age;
+  };
+
   // 4대보험 계산 함수
-  const calculateInsurance = (totalEarnings: number, employeeAge: number = 65) => {
-    // 최형호는 60대이므로 연금 제외
+  const calculateInsurance = (totalEarnings: number, employeeAge: number = 30) => {
+    // 만 60세 이상은 국민연금 제외
     const nationalPension = employeeAge >= 60 ? 0 : Math.round(totalEarnings * 0.045); // 4.5%
     const healthInsurance = Math.round(totalEarnings * 0.03597); // 3.597%
     const employmentInsurance = Math.round(totalEarnings * 0.008); // 0.8%
@@ -2296,7 +2311,8 @@ export default function PayslipGenerator() {
     if (!payslipData) return;
     
     // 4대보험 계산
-    const insurance = calculateInsurance(payslipData.total_earnings);
+    const age = getAgeFromBirthDate(selectedPayslipForDetails?.employees?.birth_date || payslipData?.employee_birth_date);
+    const insurance = calculateInsurance(payslipData.total_earnings, age);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -2595,7 +2611,8 @@ export default function PayslipGenerator() {
     if (!payslipData) return;
     
     // 4대보험 계산 (모든 직원에게 적용)
-    const insurance = calculateInsurance(payslipData.total_earnings);
+    const age = getAgeFromBirthDate(selectedPayslipForDetails?.employees?.birth_date || payslipData?.employee_birth_date);
+    const insurance = calculateInsurance(payslipData.total_earnings, age);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
