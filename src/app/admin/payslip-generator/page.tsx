@@ -1725,8 +1725,16 @@ export default function PayslipGenerator() {
   // 발행된 급여명세서용 4대보험 포함 출력/인쇄 함수
   function printSavedPayslipWithInsurance(payslip: any) {
     // 4대보험 계산
+    console.log('🔍 printSavedPayslipWithInsurance 디버깅:');
+    console.log('  - payslip.employees:', payslip.employees);
+    console.log('  - payslip.employees?.birth_date:', payslip.employees?.birth_date);
+    console.log('  - payslip.total_earnings:', payslip.total_earnings);
+    
     const age = getAgeFromBirthDate(payslip.employees?.birth_date);
+    console.log('  - 계산된 나이:', age);
+    
     const insurance = calculateInsurance(payslip.total_earnings, age);
+    console.log('  - 4대보험 계산 결과:', insurance);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
