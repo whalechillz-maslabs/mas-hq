@@ -3799,8 +3799,9 @@ export default function PayslipGenerator() {
                       <div className="text-sm text-gray-600">총 지급액 (원)</div>
                     </div>
                   </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="relative">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -3827,7 +3828,7 @@ export default function PayslipGenerator() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         지급일
                       </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 z-10 bg-white shadow-[inset_1px_0_0_0_rgba(229,231,235,1)] w-[360px] min-w-[360px]">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 z-20 bg-gray-50 border-l border-gray-200 w-[400px] min-w-[400px]">
                         작업
                       </th>
                     </tr>
@@ -3867,41 +3868,41 @@ export default function PayslipGenerator() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 sticky right-0 z-10 bg-white w-[360px] min-w-[360px] shadow-[inset_1px_0_0_0_rgba(229,231,235,1)]">
-                          <div className="flex space-x-2">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 sticky right-0 z-20 bg-white border-l border-gray-200 w-[400px] min-w-[400px]">
+                          <div className="flex flex-wrap gap-1">
                             <button
                               onClick={() => printSavedPayslip(payslip)}
-                              className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                              className="px-1.5 py-0.5 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
                             >
                               기본
                             </button>
                             <button
                               onClick={() => printDetailedSavedPayslip(payslip)}
-                              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              className="px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
                             >
                               상세
                             </button>
                             <button
                               onClick={() => printSavedPayslipWithInsurance(payslip)}
-                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                              className="px-1.5 py-0.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                             >
                               4대보험
                             </button>
                             <button
                               onClick={() => printSavedPayslipBusinessIncomeOnly(payslip)}
-                              className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition-colors"
+                              className="px-1.5 py-0.5 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition-colors"
                             >
                               3.3%만
                             </button>
                             <button
                               onClick={() => viewPayslipDetails(payslip)}
-                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              className="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors"
                             >
-                              상세
+                              보기
                             </button>
                             <button
                               onClick={() => deletePayslip(payslip.id, payslip.employees.name, payslip.period)}
-                              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                              className="px-1.5 py-0.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
                             >
                               삭제
                             </button>
@@ -3910,7 +3911,8 @@ export default function PayslipGenerator() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
                 </>
               );
