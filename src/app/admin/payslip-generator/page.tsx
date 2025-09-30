@@ -454,8 +454,9 @@ export default function PayslipGenerator() {
     const dailyDetails = Object.keys(scheduleByDate).sort().map(date => {
       const daySchedules = scheduleByDate[date];
       let totalHours = 0;
+      let isOvertimeDay = false;
       
-      // 해당 날짜의 모든 스케줄 시간 합산
+      // 해당 날짜의 모든 스케줄 시간 합산 및 추가근무 판정
       daySchedules.forEach(schedule => {
         if (schedule.scheduled_start && schedule.scheduled_end) {
           const start = new Date(`${date} ${schedule.scheduled_start}`);
@@ -463,17 +464,31 @@ export default function PayslipGenerator() {
           const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
           totalHours += hours;
         }
+        if (schedule.is_overtime === true) {
+          isOvertimeDay = true;
+        } else {
+          const haystack = `${schedule.title || ''} ${schedule.memo || ''} ${schedule.notes || ''}`;
+          const keywordList = overtimeKeywords.split(',').map(k => k.trim()).filter(Boolean);
+          if (keywordList.some(kw => kw && haystack.includes(kw))) {
+            isOvertimeDay = true;
+          }
+        }
       });
       
       // 일당제이므로 일급은 고정 (기본급 / 근무일수)
       const dailyWage = baseSalary / workDays;
       
+      const badges = [
+        '식대',
+        ...(isOvertimeDay ? ['추가근무'] : [])
+      ];
+      
       return {
         date: date,
         hours: totalHours,
-        hourly_rate: totalHours > 0 ? dailyWage / totalHours : 0, // 시급은 일급/근무시간으로 계산
+        hourly_rate: totalHours > 0 ? Math.round(dailyWage / totalHours) : 0,
         daily_wage: dailyWage,
-        note: '월 정규근무'
+        note: badges.join(';') // 예: "식대;추가근무"
       };
     });
     
@@ -1615,12 +1630,39 @@ export default function PayslipGenerator() {
                 <span>${payslip.net_salary?.toLocaleString() || 0}원</span>
               </div>
             </div>
+
+            ${payslip.employees?.name === '나수진' && Array.isArray(payslip.daily_details) ? `
+            <div class="salary-section" style="margin-top:10px">
+              <div class="salary-title">일별 상세 내역</div>
+              <table style="width:100%; border-collapse:collapse; font-size:14px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">날짜</th>
+                    <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">근무시간</th>
+                    <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">표시</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${payslip.daily_details.map((d) => {
+                    try {
+                      const date = d.date ? new Date(d.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) : '날짜 없음';
+                      const hours = (d.hours || 0) + '시간';
+                      const tags = typeof d.note === 'string' ? d.note.split(';').filter(Boolean) : [];
+                      const tagHtml = tags.map(t => `<span style="display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};">${t}</span>`).join('');
+                      return `<tr>
+                        <td style="padding:8px 4px; border-bottom:1px solid #f0f0f0;">${date}</td>
+                        <td style="padding:8px 4px; border-bottom:1px solid #f0f0f0;">${hours}</td>
+                        <td style="padding:8px 4px; border-bottom:1px solid #f0f0f0;">${tagHtml}</td>
+                      </tr>`
+                    } catch { return ''}
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            ` : ''}
           </div>
           
-          <div class="footer">
-            <p>본 급여명세서는 ${new Date().toLocaleDateString('ko-KR')}에 생성되었습니다.</p>
-            <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락주세요.</p>
-          </div>
+          
         </div>
       </body>
       </html>
@@ -1917,10 +1959,37 @@ export default function PayslipGenerator() {
             </div>
           </div>
 
-          <div class="footer">
-            <p>본 급여명세서는 MASLABS 급여관리시스템에서 자동 생성되었습니다.</p>
-            <p>문의사항이 있으시면 인사팀으로 연락해주세요.</p>
+          ${payslip.employees?.name === '나수진' && Array.isArray(payslip.daily_details) ? `
+          <div class="salary-section" style="margin-top:10px">
+            <div class="section-title">일별 상세 내역</div>
+            <table style="width:100%; border-collapse:collapse; font-size:14px">
+              <thead>
+                <tr>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">날짜</th>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">근무시간</th>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">표시</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${payslip.daily_details.map((d) => {
+                  try {
+                    const date = d.date ? new Date(d.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) : '날짜 없음';
+                    const hours = (d.hours || 0) + '시간';
+                    const tags = typeof d.note === 'string' ? d.note.split(';').filter(Boolean) : [];
+                    const tagHtml = tags.map(t => `<span style=\"display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};\">${t}</span>`).join('');
+                    return `<tr>
+                      <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${date}</td>
+                      <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${hours}</td>
+                      <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${tagHtml}</td>
+                    </tr>`
+                  } catch { return ''}
+                }).join('')}
+              </tbody>
+            </table>
           </div>
+          ` : ''}
+
+          
         </div>
       </body>
       </html>
@@ -2204,10 +2273,7 @@ export default function PayslipGenerator() {
             </div>
           </div>
 
-          <div class="footer">
-            <p><strong>※ 본 급여명세서는 4대보험이 적용된 버전입니다.</strong></p>
-            <p>MASLABS 급여관리시스템 | 문의: 인사팀</p>
-          </div>
+          
         </div>
       </body>
       </html>
@@ -2470,10 +2536,7 @@ export default function PayslipGenerator() {
             </div>
           </div>
 
-          <div class="footer">
-            <p><strong>※ 본 급여명세서는 사업소득세(3.3%)만 적용된 버전입니다.</strong></p>
-            <p>MASLABS 급여관리시스템 | 문의: 인사팀</p>
-          </div>
+          
         </div>
       </body>
       </html>
@@ -4856,10 +4919,11 @@ export default function PayslipGenerator() {
                   </div>
                 </div>
 
-                {/* 시급별 계산 상세 */}
-                {selectedPayslipForDetails.daily_details && selectedPayslipForDetails.daily_details.length > 0 && (
+                {/* 시급별 계산 상세 (나수진은 기본 OFF) */}
+                {selectedPayslipForDetails.employee_name !== '나수진' && selectedPayslipForDetails.daily_details && selectedPayslipForDetails.daily_details.length > 0 && (
                   <div className="bg-white border rounded-lg p-4 mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">시급별 계산 상세</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">시급별 계산 상세</h3>
+                    <p className="text-xs text-gray-500 mb-3">(기본급 기준 환산 시급 기준)</p>
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="text-sm text-gray-700">
                         {(() => {
@@ -4880,7 +4944,7 @@ export default function PayslipGenerator() {
                             }, {} as { [key: string]: { hours: number; wage: number } });
 
                             return Object.entries(hourlyDetails || {}).map(([rate, data]: [string, any]) =>
-                              `${parseInt(rate).toLocaleString()}원: ${data.hours}시간 = ${data.wage.toLocaleString()}원`
+                              `${Math.round(parseInt(rate)).toLocaleString()}원: ${data.hours}시간 = ${Math.round(data.wage).toLocaleString()}원`
                             ).join(', ');
                           } catch (error) {
                             console.error('시급별 계산 오류:', error);
@@ -4902,8 +4966,13 @@ export default function PayslipGenerator() {
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">근무시간</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시급</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일급</th>
+                      {selectedPayslipForDetails.employee_name !== '나수진' && (
+                        <>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시급</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일급</th>
+                        </>
+                      )}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">표시</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -4921,12 +4990,26 @@ export default function PayslipGenerator() {
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {detail.hours || 0}시간
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {(detail.hourly_rate || detail.hourly_wage || 0).toLocaleString()}원
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {(detail.daily_wage || 0).toLocaleString()}원
-                                  </td>
+                            {selectedPayslipForDetails.employee_name !== '나수진' && (
+                              <>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {(detail.hourly_rate || detail.hourly_wage || 0).toLocaleString()}원
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {(detail.daily_wage || 0).toLocaleString()}원
+                                </td>
+                              </>
+                            )}
+                            <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-700 space-x-2">
+                              {(() => {
+                                const tags = typeof detail.note === 'string' ? detail.note.split(';').filter(Boolean) : [];
+                                return tags.length > 0 ? tags.map((t: string, i: number) => (
+                                  <span key={i} className={`inline-flex items-center px-2 py-0.5 rounded border text-[11px] ${t === '추가근무' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                    {t}
+                                  </span>
+                                )) : null;
+                              })()}
+                            </td>
                                 </tr>
                               );
                             } catch (error) {
