@@ -1443,7 +1443,7 @@ export default function PayslipGenerator() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>상세 급여명세서 - ${payslip.employee_name}</title>
+        <title>상세 급여명세서 - ${payslip.employees?.name || 'N/A'}</title>
         <style>
           * {
             margin: 0;
@@ -1599,22 +1599,22 @@ export default function PayslipGenerator() {
           <div class="header">
             <div class="company-name">MASLABS</div>
             <div class="payslip-title">상세 급여명세서</div>
-            <div class="period">${payslip.period} (${payslip.payment_date})</div>
+            <div class="period">${payslip.period} (${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'})</div>
           </div>
           
           <div class="employee-info">
             <div>
               <div class="info-item">
                 <span class="info-label">직원명:</span>
-                <span class="info-value">${payslip.employee_name}</span>
+                <span class="info-value">${payslip.employees?.name || 'N/A'}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">직원코드:</span>
-                <span class="info-value">${payslip.employee_code || 'N/A'}</span>
+                <span class="info-value">${payslip.employees?.employee_code || 'N/A'}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">닉네임:</span>
-                <span class="info-value">${payslip.employee_nickname || payslip.employee_name}</span>
+                <span class="info-value">${payslip.employees?.nickname || payslip.employees?.name || 'N/A'}</span>
               </div>
             </div>
             <div>
@@ -1624,7 +1624,7 @@ export default function PayslipGenerator() {
               </div>
               <div class="info-item">
                 <span class="info-label">지급일:</span>
-                <span class="info-value">${payslip.payment_date}</span>
+                <span class="info-value">${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">상태:</span>
@@ -1740,7 +1740,7 @@ export default function PayslipGenerator() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>4대보험 포함 급여명세서 - ${payslip.employee_name}</title>
+        <title>4대보험 포함 급여명세서 - ${payslip.employees?.name || 'N/A'}</title>
         <style>
           * {
             margin: 0;
@@ -1893,7 +1893,7 @@ export default function PayslipGenerator() {
           <div class="header">
             <h1>MASLABS</h1>
             <p>4대보험 포함 급여명세서</p>
-            <p>${payslip.period} (${payslip.payment_date})</p>
+            <p>${payslip.period} (${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'})</p>
           </div>
           
           <div class="employee-info">
@@ -1901,11 +1901,11 @@ export default function PayslipGenerator() {
               <div>
                 <div class="info-item">
                   <span class="info-label">직원명:</span>
-                  <span class="info-value">${payslip.employee_name}</span>
+                  <span class="info-value">${payslip.employees?.name || 'N/A'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">직원코드:</span>
-                  <span class="info-value">${payslip.employee_code || 'N/A'}</span>
+                  <span class="info-value">${payslip.employees?.employee_code || 'N/A'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">고용 형태:</span>
@@ -1919,7 +1919,7 @@ export default function PayslipGenerator() {
                 </div>
                 <div class="info-item">
                   <span class="info-label">지급일:</span>
-                  <span class="info-value">${payslip.payment_date}</span>
+                  <span class="info-value">${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">상태:</span>
@@ -2027,7 +2027,7 @@ export default function PayslipGenerator() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>사업소득세 급여명세서 - ${payslip.employee_name}</title>
+        <title>사업소득세 급여명세서 - ${payslip.employees?.name || 'N/A'}</title>
         <style>
           * {
             margin: 0;
@@ -2175,7 +2175,7 @@ export default function PayslipGenerator() {
           <div class="header">
             <h1>MASLABS</h1>
             <p>사업소득세 급여명세서</p>
-            <p>${payslip.period} (${payslip.payment_date})</p>
+            <p>${payslip.period} (${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'})</p>
           </div>
           
           <div class="employee-info">
@@ -2183,11 +2183,11 @@ export default function PayslipGenerator() {
               <div>
                 <div class="info-item">
                   <span class="info-label">직원명:</span>
-                  <span class="info-value">${payslip.employee_name}</span>
+                  <span class="info-value">${payslip.employees?.name || 'N/A'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">직원코드:</span>
-                  <span class="info-value">${payslip.employee_code || 'N/A'}</span>
+                  <span class="info-value">${payslip.employees?.employee_code || 'N/A'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">고용 형태:</span>
@@ -2201,7 +2201,7 @@ export default function PayslipGenerator() {
                 </div>
                 <div class="info-item">
                   <span class="info-label">지급일:</span>
-                  <span class="info-value">${payslip.payment_date}</span>
+                  <span class="info-value">${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">상태:</span>
