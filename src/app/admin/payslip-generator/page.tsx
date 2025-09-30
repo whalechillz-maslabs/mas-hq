@@ -112,6 +112,9 @@ export default function PayslipGenerator() {
   // 나수진 추가근무 관련 상태
   const [additionalWorkDays, setAdditionalWorkDays] = useState<number>(0);
   const [additionalWorkAmount, setAdditionalWorkAmount] = useState<number>(100000); // 일일 10만원
+  // 스케줄 기반 자동 계산 옵션
+  const [autoOvertimeFromSchedule, setAutoOvertimeFromSchedule] = useState<boolean>(false);
+  const [overtimeKeywords, setOvertimeKeywords] = useState<string>('추가근무,OT,오버타임');
   
   // 연봉계약 전환 관련 상태
   const [showContractChangeModal, setShowContractChangeModal] = useState(false);
@@ -324,7 +327,13 @@ export default function PayslipGenerator() {
         if (employee.employment_type === 'part_time') {
           // 나수진은 일당제, 나머지는 시간제
           if (employee.name === '나수진') {
-            payslip = await generateNaManagerPayslip(employee, selectedYear, selectedMonth, additionalWorkDays, additionalWorkAmount);
+            payslip = await generateNaManagerPayslip(
+              employee,
+              selectedYear,
+              selectedMonth,
+              additionalWorkDays,
+              additionalWorkAmount
+            );
           } else {
             // 시간제 급여 계산
             payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
@@ -384,6 +393,24 @@ export default function PayslipGenerator() {
 
     // 나수진의 급여 구성 요소 계산
     const workDays = schedules.length;
+
+    // 스케줄 기반 추가근무 자동 계산 (옵션이 켜진 경우에만)
+    let computedOvertimeDays = overtimeDays;
+    if (autoOvertimeFromSchedule) {
+      const keywordList = overtimeKeywords
+        .split(',')
+        .map(k => k.trim())
+        .filter(Boolean);
+
+      computedOvertimeDays = schedules.reduce((count, s) => {
+        // 명시 필드 우선: is_overtime === true
+        if (s.is_overtime === true) return count + 1;
+        // 제목/메모 키워드 검색 (title, memo, notes 등 가정)
+        const haystack = `${s.title || ''} ${s.memo || ''} ${s.notes || ''}`;
+        const matched = keywordList.some(kw => kw && haystack.includes(kw));
+        return matched ? count + 1 : count;
+      }, 0);
+    }
     const isNewSystem = month >= 10; // 10월부터 주 3회
     
     // 기본급 계산 (10월부터 120만원, 이전은 80만원)
@@ -396,7 +423,7 @@ export default function PayslipGenerator() {
     const fuelAllowance = 200000;
     
     // 추가근무 (일수 × 일일 금액)
-    const additionalWork = overtimeDays * overtimeAmount;
+    const additionalWork = computedOvertimeDays * overtimeAmount;
     
     // 총 지급액 계산
     const totalEarnings = baseSalary + totalMealAllowance + fuelAllowance + additionalWork;
@@ -414,19 +441,37 @@ export default function PayslipGenerator() {
     // 실수령액 = 총 지급액 (공제 없음)
     const netSalary = totalEarnings;
     
-    // 일별 상세 내역 생성 (실제 스케줄 기반)
-    const dailyDetails = schedules.map(schedule => {
-      const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
-      const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
-      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    // 일별 상세 내역 생성 (실제 스케줄 기반 - 날짜별로 그룹화)
+    const scheduleByDate: { [date: string]: any[] } = {};
+    schedules.forEach(schedule => {
+      const date = schedule.schedule_date;
+      if (!scheduleByDate[date]) {
+        scheduleByDate[date] = [];
+      }
+      scheduleByDate[date].push(schedule);
+    });
+    
+    const dailyDetails = Object.keys(scheduleByDate).sort().map(date => {
+      const daySchedules = scheduleByDate[date];
+      let totalHours = 0;
+      
+      // 해당 날짜의 모든 스케줄 시간 합산
+      daySchedules.forEach(schedule => {
+        if (schedule.scheduled_start && schedule.scheduled_end) {
+          const start = new Date(`${date} ${schedule.scheduled_start}`);
+          const end = new Date(`${date} ${schedule.scheduled_end}`);
+          const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+          totalHours += hours;
+        }
+      });
       
       // 일당제이므로 일급은 고정 (기본급 / 근무일수)
       const dailyWage = baseSalary / workDays;
       
       return {
-        date: schedule.schedule_date,
-        hours: hours,
-        hourly_rate: dailyWage / hours, // 시급은 일급/근무시간으로 계산
+        date: date,
+        hours: totalHours,
+        hourly_rate: totalHours > 0 ? dailyWage / totalHours : 0, // 시급은 일급/근무시간으로 계산
         daily_wage: dailyWage,
         note: '월 정규근무'
       };
@@ -3823,6 +3868,34 @@ export default function PayslipGenerator() {
                   </div>
                 </>
               )}
+
+              {/* 추가근무 자동 계산 옵션 */}
+              <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    id="auto-overtime"
+                    type="checkbox"
+                    checked={autoOvertimeFromSchedule}
+                    onChange={(e) => setAutoOvertimeFromSchedule(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="auto-overtime" className="text-sm text-gray-700">
+                    스케줄 기반 추가근무 자동 계산 (저장된 명세서는 미적용)
+                  </label>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    추가근무 키워드 (쉼표로 구분)
+                  </label>
+                  <input
+                    type="text"
+                    value={overtimeKeywords}
+                    onChange={(e) => setOvertimeKeywords(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="예: 추가근무,OT,오버타임"
+                  />
+                </div>
+              </div>
 
               {/* 나수진 추가근무 입력 필드 */}
               {selectedEmployee && employees.find(emp => emp.id === selectedEmployee)?.name === '나수진' && !showCustomPeriod && (
