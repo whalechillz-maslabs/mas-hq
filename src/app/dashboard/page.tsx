@@ -840,14 +840,27 @@ export default function DashboardPage() {
 
   // 관리자 권한 확인 함수
   const isAdmin = () => {
-     // 임시로 테스트를 위해 true 반환
-    return true;
+    if (!data?.employee) return false;
     
-    // if (!data?.employee) return false;
+    // 관리자 권한 확인 (role_id 또는 role.name으로 확인)
+    const userRole = data.employee.role?.name || data.employee.role_id;
+    return userRole === 'admin';
+  };
+
+  // 매니저 권한 확인 함수
+  const isManager = () => {
+    if (!data?.employee) return false;
     
-    // // 관리자 권한 확인 (role_id 또는 role.name으로 확인)
-    // const userRole = data.employee.role?.name || data.employee.role_id;
-    // return userRole === 'admin';
+    const userRole = data.employee.role?.name || data.employee.role_id;
+    return userRole === 'manager' || userRole === 'admin';
+  };
+
+  // 팀 리더 권한 확인 함수
+  const isTeamLead = () => {
+    if (!data?.employee) return false;
+    
+    const userRole = data.employee.role?.name || data.employee.role_id;
+    return userRole === 'team_lead' || userRole === 'manager' || userRole === 'admin';
   };
 
   // 업무 수정 권한 확인 함수
@@ -2068,8 +2081,8 @@ export default function DashboardPage() {
         </div>
           )}
 
-          {/* 관리자 전용 메뉴 (기존 관리자 + 매니저 기능) */}
-          {isAdmin() && (
+          {/* 관리자 + 매니저 기능 */}
+          {isManager() && (
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Award className="h-6 w-6 mr-3 text-blue-600" />
@@ -2130,8 +2143,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-          {/* 관리자 전용 메뉴 (기존 팀 관리 기능) */}
-          {isAdmin() && (
+          {/* 팀 관리 기능 */}
+          {isTeamLead() && (
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Users className="h-6 w-6 mr-3 text-green-600" />
