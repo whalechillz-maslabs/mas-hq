@@ -989,7 +989,6 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white">MASLABS</h1>
-                <p className="text-blue-100 text-sm font-medium">Human Resources Management System</p>
               </div>
             </div>
             
@@ -1018,7 +1017,7 @@ export default function DashboardPage() {
               
               {/* 사용자 정보 - 모바일에서 축약 */}
               <div className="hidden sm:block text-right">
-                <p className="text-xs md:text-sm text-blue-200">Welcome,</p>
+                <p className="text-xs md:text-sm text-blue-200">안녕하세요,</p>
                 <p className="text-sm md:text-base font-semibold text-white truncate max-w-24 md:max-w-32">
                   {data?.employee?.name || 'User'}
                 </p>
