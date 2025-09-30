@@ -395,34 +395,21 @@ export default function SalaryPage() {
               
               <div class="salary-section">
                 <h3 style="margin-top: 0; color: #333;">급여 내역</h3>
-                <div class="salary-item">
-                  <span>기본급</span>
-                  <span>${payslip.base_salary.toLocaleString()}원</span>
-                </div>
-                ${payslip.overtime_pay > 0 ? `
-                <div class="salary-item">
-                  <span>연장수당</span>
-                  <span>${payslip.overtime_pay.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                ${payslip.incentive > 0 ? `
-                <div class="salary-item">
-                  <span>인센티브</span>
-                  <span>${payslip.incentive.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                <div class="salary-item total">
-                  <span>총 지급액</span>
-                  <span>${payslip.total_earnings.toLocaleString()}원</span>
-                </div>
-                <div class="salary-item deduction">
-                  <span>세금 (3.3%)</span>
-                  <span>-${payslip.tax_amount.toLocaleString()}원</span>
-                </div>
-                <div class="salary-item net total">
-                  <span>실수령액</span>
-                  <span>${payslip.net_salary.toLocaleString()}원</span>
-                </div>
+                ${payslip.employee_name === '나수진' ? `
+                  <div class=\"salary-item\"><span>기본급</span><span>${payslip.base_salary.toLocaleString()}원</span></div>
+                  ${payslip.fuel_allowance ? `<div class=\"salary-item\"><span>주유대</span><span>${payslip.fuel_allowance.toLocaleString()}원</span></div>` : ''}
+                  ${payslip.additional_work ? `<div class=\"salary-item\"><span>추가근무</span><span>${payslip.additional_work.toLocaleString()}원</span></div>` : ''}
+                  ${payslip.meal_allowance ? `<div class=\"salary-item\"><span>식대</span><span>${payslip.meal_allowance.toLocaleString()}원</span></div>` : ''}
+                  <div class=\"salary-item total\"><span>총 지급액</span><span>${payslip.total_earnings.toLocaleString()}원</span></div>
+                  <div class=\"salary-item net total\"><span>실수령액</span><span>${payslip.net_salary.toLocaleString()}원</span></div>
+                ` : `
+                  <div class=\"salary-item\"><span>기본급</span><span>${payslip.base_salary.toLocaleString()}원</span></div>
+                  ${payslip.overtime_pay > 0 ? `<div class=\"salary-item\"><span>연장수당</span><span>${payslip.overtime_pay.toLocaleString()}원</span></div>` : ''}
+                  ${payslip.incentive > 0 ? `<div class=\"salary-item\"><span>인센티브</span><span>${payslip.incentive.toLocaleString()}원</span></div>` : ''}
+                  <div class=\"salary-item total\"><span>총 지급액</span><span>${payslip.total_earnings.toLocaleString()}원</span></div>
+                  <div class=\"salary-item deduction\"><span>세금 (3.3%)</span><span>-${payslip.tax_amount.toLocaleString()}원</span></div>
+                  <div class=\"salary-item net total\"><span>실수령액</span><span>${payslip.net_salary.toLocaleString()}원</span></div>
+                `}
               </div>
             </div>
             
@@ -846,45 +833,41 @@ export default function SalaryPage() {
               </div>
 
               {/* 급여 요약 */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
+                  <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold text-blue-900 mb-3">지급 내역</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>기본급</span>
-                      <span>{formatCurrency(selectedPayslip.base_salary || 0)}원</span>
+                  {selectedPayslip.employee_name === '나수진' ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between"><span>기본급</span><span>{formatCurrency(selectedPayslip.base_salary || 0)}원</span></div>
+                      {selectedPayslip.fuel_allowance ? (<div className="flex justify-between"><span>주유대</span><span>{formatCurrency(selectedPayslip.fuel_allowance)}원</span></div>) : null}
+                      {selectedPayslip.additional_work ? (<div className="flex justify-between"><span>추가근무</span><span>{formatCurrency(selectedPayslip.additional_work)}원</span></div>) : null}
+                      {selectedPayslip.meal_allowance ? (<div className="flex justify-between"><span>식대</span><span>{formatCurrency(selectedPayslip.meal_allowance)}원</span></div>) : null}
+                      <div className="border-t pt-2 font-semibold flex justify-between"><span>총 지급액</span><span>{formatCurrency(selectedPayslip.total_earnings || 0)}원</span></div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>연장근무수당</span>
-                      <span>{formatCurrency(selectedPayslip.overtime_pay || 0)}원</span>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between"><span>기본급</span><span>{formatCurrency(selectedPayslip.base_salary || 0)}원</span></div>
+                      <div className="flex justify-between"><span>연장근무수당</span><span>{formatCurrency(selectedPayslip.overtime_pay || 0)}원</span></div>
+                      <div className="flex justify-between"><span>인센티브</span><span>{formatCurrency(selectedPayslip.incentive || 0)}원</span></div>
+                      <div className="flex justify-between"><span>포인트 보너스</span><span>{formatCurrency(selectedPayslip.point_bonus || 0)}원</span></div>
+                      <div className="border-t pt-2 font-semibold flex justify-between"><span>총 지급액</span><span>{formatCurrency(selectedPayslip.total_earnings || 0)}원</span></div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>인센티브</span>
-                      <span>{formatCurrency(selectedPayslip.incentive || 0)}원</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>포인트 보너스</span>
-                      <span>{formatCurrency(selectedPayslip.point_bonus || 0)}원</span>
-                    </div>
-                    <div className="border-t pt-2 font-semibold flex justify-between">
-                      <span>총 지급액</span>
-                      <span>{formatCurrency(selectedPayslip.total_earnings || 0)}원</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold text-green-900 mb-3">공제 내역</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>세금 (3.3%)</span>
-                      <span>{formatCurrency(selectedPayslip.tax_amount || 0)}원</span>
+                  {selectedPayslip.employee_name === '나수진' ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between"><span>공제</span><span>0원 (현금 지급)</span></div>
+                      <div className="border-t pt-2 font-semibold flex justify-between text-green-700"><span>실수령액</span><span>{formatCurrency(selectedPayslip.net_salary || 0)}원</span></div>
                     </div>
-                    <div className="border-t pt-2 font-semibold flex justify-between text-green-700">
-                      <span>실수령액</span>
-                      <span>{formatCurrency(selectedPayslip.net_salary || 0)}원</span>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between"><span>세금 (3.3%)</span><span>{formatCurrency(selectedPayslip.tax_amount || 0)}원</span></div>
+                      <div className="border-t pt-2 font-semibold flex justify-between text-green-700"><span>실수령액</span><span>{formatCurrency(selectedPayslip.net_salary || 0)}원</span></div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
