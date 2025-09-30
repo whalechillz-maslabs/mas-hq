@@ -29,10 +29,10 @@ DECLARE
   period_start_val DATE;
   period_end_val DATE;
 BEGIN
-  -- 급여 지급일 계산 (매월 25일)
-  payment_date_val := DATE(current_year_val || '-' || current_month_val || '-25');
+  -- 급여 지급일 계산 (매월 말일)
+  payment_date_val := DATE(current_year_val || '-' || current_month_val || '-01') + INTERVAL '1 month' - INTERVAL '1 day';
   
-  -- 이번 달 25일이 아직 안 지났으면 지난 달 25일로 설정
+  -- 이번 달 말일이 아직 안 지났으면 지난 달 말일로 설정
   IF payment_date_val > current_date_val THEN
     payment_date_val := payment_date_val - INTERVAL '1 month';
   END IF;
@@ -107,10 +107,10 @@ DECLARE
   period_start_val DATE;
   period_end_val DATE;
 BEGIN
-  -- 급여 지급일 계산 (매월 25일)
-  payment_date_val := DATE(current_year_val || '-' || current_month_val || '-25');
+  -- 급여 지급일 계산 (매월 말일)
+  payment_date_val := DATE(current_year_val || '-' || current_month_val || '-01') + INTERVAL '1 month' - INTERVAL '1 day';
   
-  -- 이번 달 25일이 아직 안 지났으면 지난 달 25일로 설정
+  -- 이번 달 말일이 아직 안 지났으면 지난 달 말일로 설정
   IF payment_date_val > current_date_val THEN
     payment_date_val := payment_date_val - INTERVAL '1 month';
   END IF;
