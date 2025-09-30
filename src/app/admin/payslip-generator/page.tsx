@@ -3827,7 +3827,7 @@ export default function PayslipGenerator() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         지급일
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 z-10 bg-white shadow-[inset_1px_0_0_0_rgba(229,231,235,1)] w-[360px] min-w-[360px]">
                         작업
                       </th>
                     </tr>
@@ -3867,7 +3867,7 @@ export default function PayslipGenerator() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 sticky right-0 z-10 bg-white w-[360px] min-w-[360px] shadow-[inset_1px_0_0_0_rgba(229,231,235,1)]">
                           <div className="flex space-x-2">
                             <button
                               onClick={() => printSavedPayslip(payslip)}
