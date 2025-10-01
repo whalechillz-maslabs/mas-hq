@@ -90,56 +90,6 @@ interface DashboardData {
       sitaBookings: number; // 시타 예약 건수 추가
     };
   };
-  marketingInflow: {
-    masgolf: {
-      new: {
-        phone: number;
-        kakao: number;
-        smartstore: number;
-        official_website: number;
-        total: number;
-      };
-      existing: {
-        phone: number;
-        kakao: number;
-        smartstore: number;
-        official_website: number;
-        total: number;
-      };
-    };
-    singsingolf: {
-      new: {
-        phone: number;
-        kakao: number;
-        smartstore: number;
-        official_website: number;
-        total: number;
-      };
-      existing: {
-        phone: number;
-        kakao: number;
-        smartstore: number;
-        official_website: number;
-        total: number;
-      };
-    };
-    total: {
-      new: {
-        phone: number;
-        kakao: number;
-        smartstore: number;
-        official_website: number;
-        total: number;
-      };
-      existing: {
-        phone: number;
-        kakao: number;
-        smartstore: number;
-        official_website: number;
-        total: number;
-      };
-    };
-  };
   recentSharedTasks: SharedTask[]; // 최근 공유 업무 추가
   myTasks: SharedTask[]; // 내 업무 추가
   teamRankings?: {
@@ -147,11 +97,6 @@ interface DashboardData {
     points: { name: string; sales: number; points: number; tasks: number }[];
     tasks: { name: string; sales: number; points: number; tasks: number }[];
   } | null;
-  todayMission: {
-    positiveThinking: boolean;
-    creativePassion: boolean;
-    dedication: boolean;
-  };
   todaySales: number;
 }
 
@@ -178,6 +123,11 @@ export default function DashboardPage() {
   const [editingTask, setEditingTask] = useState<SharedTask | null>(null);
   const [readTasks, setReadTasks] = useState<Set<string>>(new Set());
   const [showUrgentTasks, setShowUrgentTasks] = useState(false);
+  const [showSalesDetailModal, setShowSalesDetailModal] = useState(false);
+  const [showMarketingDetailModal, setShowMarketingDetailModal] = useState(false);
+  const [salesDetailData, setSalesDetailData] = useState<any>(null);
+  const [marketingDetailData, setMarketingDetailData] = useState<any>(null);
+  const [selectedMarketingBrand, setSelectedMarketingBrand] = useState<'masgolf' | 'singsingolf' | 'all'>('all');
 
   useEffect(() => {
     console.log('=== useEffect 훅 실행 ===');
@@ -194,6 +144,244 @@ export default function DashboardPage() {
       clearInterval(timer);
     };
   }, []);
+
+  // 매출 상세 데이터 가져오기
+  const loadSalesDetailData = async (period: 'month' | 'quarter' | 'year' = 'month') => {
+    try {
+      let startDate, endDate;
+      const today = new Date();
+      
+      if (period === 'month') {
+        // 한국 시간 기준으로 이번 달 1일부터 마지막 날까지 계산
+        const koreaOffset = 9 * 60; // UTC+9 (분 단위)
+        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+        const year = koreaTime.getUTCFullYear();
+        const month = koreaTime.getUTCMonth();
+        startDate = new Date(Date.UTC(year, month, 1));
+        endDate = new Date(Date.UTC(year, month + 1, 0));
+      } else if (period === 'quarter') {
+        const koreaOffset = 9 * 60;
+        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+        const quarter = Math.floor(koreaTime.getUTCMonth() / 3);
+        startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3, 1));
+        endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3 + 3, 0));
+      } else {
+        const koreaOffset = 9 * 60;
+        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+        startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 0, 1));
+        endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 11, 31));
+      }
+
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      // 모든 팀원의 매출 데이터 가져오기
+      const { data: allTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points),
+          employee:employees(name, employee_id)
+        `)
+        .gte('task_date', startDateStr)
+        .lte('task_date', endDateStr)
+        .not('sales_amount', 'is', null)
+        .gt('sales_amount', 0);
+
+      if (!allTasks) return null;
+
+      // 고객별 매출 분석
+      const customerSales: { [key: string]: { name: string, total: number, count: number, tasks: any[] } } = {};
+      
+      // 업무 유형별 매출 분석
+      const operationSales: { [key: string]: { code: string, name: string, total: number, count: number } } = {};
+      
+      // 직원별 매출 분석
+      const employeeSales: { [key: string]: { name: string, total: number, count: number } } = {};
+
+      allTasks.forEach(task => {
+        const customerName = task.customer_name || '고객명 없음';
+        const operationCode = task.operation_type?.code || 'Unknown';
+        const operationName = task.operation_type?.name || 'Unknown';
+        const employeeName = task.employee?.name || '알 수 없음';
+        const salesAmount = task.sales_amount || 0;
+
+        // 고객별 집계
+        if (!customerSales[customerName]) {
+          customerSales[customerName] = { name: customerName, total: 0, count: 0, tasks: [] };
+        }
+        customerSales[customerName].total += salesAmount;
+        customerSales[customerName].count += 1;
+        customerSales[customerName].tasks.push(task);
+
+        // 업무 유형별 집계
+        if (!operationSales[operationCode]) {
+          operationSales[operationCode] = { code: operationCode, name: operationName, total: 0, count: 0 };
+        }
+        operationSales[operationCode].total += salesAmount;
+        operationSales[operationCode].count += 1;
+
+        // 직원별 집계
+        if (!employeeSales[employeeName]) {
+          employeeSales[employeeName] = { name: employeeName, total: 0, count: 0 };
+        }
+        employeeSales[employeeName].total += salesAmount;
+        employeeSales[employeeName].count += 1;
+      });
+
+      // 정렬
+      const sortedCustomerSales = Object.values(customerSales)
+        .sort((a, b) => b.total - a.total);
+      
+      const sortedOperationSales = Object.values(operationSales)
+        .sort((a, b) => b.total - a.total);
+      
+      const sortedEmployeeSales = Object.values(employeeSales)
+        .sort((a, b) => b.total - a.total);
+
+      return {
+        period,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        totalSales: allTasks.reduce((sum, task) => sum + (task.sales_amount || 0), 0),
+        totalTasks: allTasks.length,
+        customerSales: sortedCustomerSales,
+        operationSales: sortedOperationSales,
+        employeeSales: sortedEmployeeSales,
+        rawTasks: allTasks
+      };
+    } catch (error) {
+      console.error('매출 상세 데이터 로딩 오류:', error);
+      return null;
+    }
+  };
+
+  // 마케팅 유입 상세 데이터 가져오기
+  const loadMarketingDetailData = async (period: 'month' | 'quarter' | 'year' = 'month', brand: 'masgolf' | 'singsingolf' | 'all' = 'all') => {
+    try {
+      let startDate, endDate;
+      const today = new Date();
+      
+      if (period === 'month') {
+        // 한국 시간 기준으로 이번 달 1일부터 마지막 날까지 계산
+        const koreaOffset = 9 * 60; // UTC+9 (분 단위)
+        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+        const year = koreaTime.getUTCFullYear();
+        const month = koreaTime.getUTCMonth();
+        startDate = new Date(Date.UTC(year, month, 1));
+        endDate = new Date(Date.UTC(year, month + 1, 0));
+      } else if (period === 'quarter') {
+        const koreaOffset = 9 * 60;
+        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+        const quarter = Math.floor(koreaTime.getUTCMonth() / 3);
+        startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3, 1));
+        endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3 + 3, 0));
+      } else {
+        const koreaOffset = 9 * 60;
+        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
+        startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 0, 1));
+        endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 11, 31));
+      }
+
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      console.log('마케팅 상세 데이터 날짜 계산:', {
+        today: today.toISOString().split('T')[0],
+        period,
+        startDate: startDateStr,
+        endDate: endDateStr
+      });
+
+      // 브랜드별 업무 코드 결정
+      let operationCodes = [];
+      if (brand === 'masgolf') {
+        operationCodes = ['OP5']; // 마스골프 마케팅
+      } else if (brand === 'singsingolf') {
+        operationCodes = ['OP12']; // 싱싱골프 마케팅
+      } else {
+        operationCodes = ['OP5', 'OP12']; // 전체
+      }
+
+      // 해당 브랜드의 마케팅 업무 가져오기
+      const { data: marketingTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points),
+          employee:employees(name, employee_id)
+        `)
+        .in('operation_type_id', 
+          (await supabase.from('operation_types').select('id').in('code', operationCodes)).data?.map(op => op.id) || []
+        )
+        .gte('task_date', startDateStr)
+        .lte('task_date', endDateStr);
+
+      if (!marketingTasks) return null;
+
+      // 채널별 분석
+      const channelAnalysis: { [key: string]: { new: number, existing: number, total: number } } = {
+        phone: { new: 0, existing: 0, total: 0 },
+        kakao: { new: 0, existing: 0, total: 0 },
+        smartstore: { new: 0, existing: 0, total: 0 },
+        official_website: { new: 0, existing: 0, total: 0 }
+      };
+
+      // 고객 유형별 분석
+      const customerTypeAnalysis = {
+        new: { total: 0, sales: 0, tasks: [] as any[] },
+        existing: { total: 0, sales: 0, tasks: [] as any[] }
+      };
+
+      marketingTasks.forEach(task => {
+        const channel = task.consultation_channel || 'unknown';
+        const customerType = task.customer_type || 'unknown';
+        const salesAmount = task.sales_amount || 0;
+
+        // 채널별 분석
+        if (channelAnalysis[channel]) {
+          channelAnalysis[channel].total += 1;
+          if (customerType === 'new') {
+            channelAnalysis[channel].new += 1;
+          } else if (customerType === 'existing') {
+            channelAnalysis[channel].existing += 1;
+          }
+        }
+
+        // 고객 유형별 분석
+        if (customerType === 'new') {
+          customerTypeAnalysis.new.total += 1;
+          customerTypeAnalysis.new.sales += salesAmount;
+          customerTypeAnalysis.new.tasks.push(task);
+        } else if (customerType === 'existing') {
+          customerTypeAnalysis.existing.total += 1;
+          customerTypeAnalysis.existing.sales += salesAmount;
+          customerTypeAnalysis.existing.tasks.push(task);
+        }
+      });
+
+      // 전환율 계산 (매출이 있는 업무 / 전체 업무)
+      const totalTasks = marketingTasks.length;
+      const convertedTasks = marketingTasks.filter(task => (task.sales_amount || 0) > 0).length;
+      const conversionRate = totalTasks > 0 ? (convertedTasks / totalTasks * 100) : 0;
+
+      return {
+        period,
+        brand,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        totalTasks,
+        convertedTasks,
+        conversionRate,
+        channelAnalysis,
+        customerTypeAnalysis,
+        rawTasks: marketingTasks
+      };
+    } catch (error) {
+      console.error('마케팅 상세 데이터 로딩 오류:', error);
+      return null;
+    }
+  };
 
   // 팀원 순위 계산 함수
   const calculateTeamRankings = async (startDate: string, endDate: string) => {
@@ -475,27 +663,6 @@ export default function DashboardPage() {
         task.sita_booking === true
       ).length;
 
-      // 마스골프 마케팅 유입 분석 (OP5 기준)
-      const masgolfMarketingTasks = masgolfTasks.filter(task => 
-        task?.operation_type?.code === 'OP5'
-      );
-      
-      const masgolfMarketingInflow = {
-        new: {
-          phone: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'phone').length,
-          kakao: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'kakao').length,
-          smartstore: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'smartstore').length,
-          official_website: masgolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'official_website').length,
-          total: masgolfMarketingTasks.filter(task => task?.customer_type === 'new').length
-        },
-        existing: {
-          phone: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'phone').length,
-          kakao: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'kakao').length,
-          smartstore: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'smartstore').length,
-          official_website: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'official_website').length,
-          total: masgolfMarketingTasks.filter(task => task?.customer_type === 'existing').length
-        }
-      };
 
       // 싱싱골프 성과 계산 (OP11-OP12)
       const singsingolfTasks = allTeamTasks?.filter(task => {
@@ -517,27 +684,6 @@ export default function DashboardPage() {
       // 싱싱골프는 방문 예약이 없음 (OP12는 시타 예약 없음)
       const singsingolfSitaBookings = 0;
 
-      // 싱싱골프 마케팅 유입 분석 (OP12 기준)
-      const singsingolfMarketingTasks = singsingolfTasks.filter(task => 
-        task?.operation_type?.code === 'OP12'
-      );
-      
-      const singsingolfMarketingInflow = {
-        new: {
-          phone: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'phone').length,
-          kakao: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'kakao').length,
-          smartstore: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'smartstore').length,
-          official_website: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new' && task?.consultation_channel === 'official_website').length,
-          total: singsingolfMarketingTasks.filter(task => task?.customer_type === 'new').length
-        },
-        existing: {
-          phone: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'phone').length,
-          kakao: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'kakao').length,
-          smartstore: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'smartstore').length,
-          official_website: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing' && task?.consultation_channel === 'official_website').length,
-          total: singsingolfMarketingTasks.filter(task => task?.customer_type === 'existing').length
-        }
-      };
 
       // 전체 성과 계산
       const totalSales = masgolfSales + singsingolfSales;
@@ -546,23 +692,6 @@ export default function DashboardPage() {
       const totalNewConsultations = masgolfNewConsultations + singsingolfNewConsultations;
       const totalSitaBookings = masgolfSitaBookings + singsingolfSitaBookings;
 
-      // 전체 마케팅 유입 계산
-      const totalMarketingInflow = {
-        new: {
-          phone: (masgolfMarketingInflow?.new?.phone || 0) + (singsingolfMarketingInflow?.new?.phone || 0),
-          kakao: (masgolfMarketingInflow?.new?.kakao || 0) + (singsingolfMarketingInflow?.new?.kakao || 0),
-          smartstore: (masgolfMarketingInflow?.new?.smartstore || 0) + (singsingolfMarketingInflow?.new?.smartstore || 0),
-          official_website: (masgolfMarketingInflow?.new?.official_website || 0) + (singsingolfMarketingInflow?.new?.official_website || 0),
-          total: (masgolfMarketingInflow?.new?.total || 0) + (singsingolfMarketingInflow?.new?.total || 0)
-        },
-        existing: {
-          phone: (masgolfMarketingInflow?.existing?.phone || 0) + (singsingolfMarketingInflow?.existing?.phone || 0),
-          kakao: (masgolfMarketingInflow?.existing?.kakao || 0) + (singsingolfMarketingInflow?.existing?.kakao || 0),
-          smartstore: (masgolfMarketingInflow?.existing?.smartstore || 0) + (singsingolfMarketingInflow?.existing?.smartstore || 0),
-          official_website: (masgolfMarketingInflow?.existing?.official_website || 0) + (singsingolfMarketingInflow?.existing?.official_website || 0),
-          total: (masgolfMarketingInflow?.existing?.total || 0) + (singsingolfMarketingInflow?.existing?.total || 0)
-        }
-      };
 
       // 협업 성과 데이터
       const collaborationStats = {
@@ -599,12 +728,6 @@ export default function DashboardPage() {
         teamMembers: totalEmployees || 8
       };
 
-      // 오늘의 미션 (도널드 밀러식 핵심 행동)
-      const todayMission = {
-        positiveThinking: Math.random() > 0.3,
-        creativePassion: Math.random() > 0.4,
-        dedication: Math.random() > 0.2
-      };
 
       // 최근 공유 업무 (모든 업무 유형) 가져오기
       console.log('operation_types 조회 시작');
@@ -708,15 +831,9 @@ export default function DashboardPage() {
         personalKPI,
         teamKPI,
         collaborationStats,
-        marketingInflow: {
-          masgolf: masgolfMarketingInflow,
-          singsingolf: singsingolfMarketingInflow,
-          total: totalMarketingInflow
-        },
         recentSharedTasks,
         myTasks,
         teamRankings,
-        todayMission,
         todaySales: todaySales
       });
 
@@ -778,27 +895,8 @@ export default function DashboardPage() {
             sitaBookings: 0
           }
         },
-        marketingInflow: {
-          masgolf: {
-            new: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 },
-            existing: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 }
-          },
-          singsingolf: {
-            new: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 },
-            existing: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 }
-          },
-          total: {
-            new: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 },
-            existing: { phone: 0, kakao: 0, smartstore: 0, official_website: 0, total: 0 }
-          }
-        },
         recentSharedTasks: [],
         myTasks: [],
-        todayMission: {
-          positiveThinking: true,
-          creativePassion: true,
-          dedication: true
-        },
         todaySales: 0
       });
     } finally {
@@ -878,6 +976,21 @@ export default function DashboardPage() {
   const handleEditTask = (task: SharedTask) => {
     setEditingTask(task);
     setShowEditModal(true);
+  };
+
+  // 매출 상세 모달 열기
+  const handleOpenSalesDetail = async (period: 'month' | 'quarter' | 'year' = 'month') => {
+    setShowSalesDetailModal(true);
+    const detailData = await loadSalesDetailData(period);
+    setSalesDetailData(detailData);
+  };
+
+  // 마케팅 상세 모달 열기
+  const handleOpenMarketingDetail = async (period: 'month' | 'quarter' | 'year' = 'month', brand: 'masgolf' | 'singsingolf' | 'all' = 'all') => {
+    setShowMarketingDetailModal(true);
+    setSelectedMarketingBrand(brand);
+    const detailData = await loadMarketingDetailData(period, brand);
+    setMarketingDetailData(detailData);
   };
 
   // 긴급 업무 읽음 처리 함수
@@ -1278,61 +1391,21 @@ export default function DashboardPage() {
           );
         })()}
 
-        {/* 오늘의 미션 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <Trophy className="h-6 w-6 mr-3 text-yellow-600" />
-            오늘의 미션
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.positiveThinking ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">긍정적 사고</h3>
-                  <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
-                </div>
-                {data?.todayMission?.positiveThinking ? (
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
-            </div>
-            <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.creativePassion ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">창의적 열정</h3>
-                  <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
-              </div>
-                {data?.todayMission?.creativePassion ? (
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
-            </div>
-            <div className={`p-4 rounded-xl border-2 ${data?.todayMission?.dedication ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-          <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">헌신</h3>
-                  <p className="text-sm text-gray-600">도널드 밀러식 핵심 행동</p>
-                </div>
-                {data?.todayMission?.dedication ? (
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-              ) : (
-                  <AlertCircle className="h-6 w-6 text-gray-400" />
-              )}
-            </div>
-            </div>
-          </div>
-        </div>
 
         {/* KPI 하이라이트 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <BarChart3 className="h-6 w-6 mr-3 text-blue-600" />
-            KPI 하이라이트
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <BarChart3 className="h-6 w-6 mr-3 text-blue-600" />
+              KPI 하이라이트
+            </h2>
+            <button
+              onClick={() => handleOpenSalesDetail('month')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              매출 상세보기
+            </button>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
@@ -1545,10 +1618,18 @@ export default function DashboardPage() {
 
           {/* 협업 성과 */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <Users className="h-6 w-6 mr-3 text-green-600" />
-            협업 성과
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <Users className="h-6 w-6 mr-3 text-green-600" />
+              협업 성과
+            </h2>
+            <button
+              onClick={() => handleOpenMarketingDetail('month')}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            >
+              마케팅 상세보기
+            </button>
+          </div>
           
           {/* 마스골프 성과 */}
           <div className="mb-8">
@@ -1596,6 +1677,18 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-purple-600 font-medium">전체 방문 예약</p>
+                    <p className="text-3xl font-bold text-purple-900">{data?.collaborationStats?.total?.sitaBookings || 0}건</p>
+                  </div>
+                  <Calendar className="h-10 w-10 text-purple-600" />
+                </div>
+                <div className="text-xs text-purple-500">
+                  OP5 방문 예약 건수
+                </div>
+              </div>
 
             </div>
           </div>
@@ -1650,80 +1743,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 전체 성과 요약 */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-              <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-              전체 성과 요약
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">전체 매출</p>
-                    <p className="text-3xl font-bold text-green-900">{formatCurrency(data?.collaborationStats?.total?.sales || 0)}</p>
-                  </div>
-                  <DollarSign className="h-10 w-10 text-green-600" />
-                </div>
-                <div className="text-xs text-green-500">
-                  마스골프 + 싱싱골프
-                </div>
-              </div>
-              
-              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">전체 포인트</p>
-                    <p className="text-3xl font-bold text-green-900">{data?.collaborationStats?.total?.points?.toLocaleString() || 0}점</p>
-                  </div>
-                  <Award className="h-10 w-10 text-green-600" />
-                </div>
-                <div className="text-xs text-green-500">
-                  마스골프 + 싱싱골프
-                </div>
-              </div>
-              
-              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-green-600 font-medium">전체 업무</p>
-                    <p className="text-3xl font-bold text-green-900">{data?.collaborationStats?.total?.tasks || 0}건</p>
-                  </div>
-                  <Target className="h-10 w-10 text-green-600" />
-                </div>
-                <div className="text-xs text-green-500">
-                  마스골프 + 싱싱골프
-                </div>
-              </div>
-
-
-              <div className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-teal-600 font-medium">전체 방문 예약</p>
-                    <p className="text-3xl font-bold text-teal-900">{data?.collaborationStats?.total?.sitaBookings || 0}건</p>
-                  </div>
-                  <Calendar className="h-10 w-10 text-teal-600" />
-                </div>
-                <div className="text-xs text-teal-500">
-                  OP5 방문 예약 건수
-                </div>
-              </div>
-              
-              <div className="p-6 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl border border-orange-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-orange-600 font-medium">참여 인원</p>
-                    <p className="text-3xl font-bold text-orange-900">{data?.teamKPI?.teamMembers || 0}명</p>
-                  </div>
-                  <Users className="h-10 w-10 text-orange-600" />
-                </div>
-                <div className="text-xs text-orange-500">
-                  이번 달 업무 참여자
-                </div>
-              </div>
-            </div>
-          </div>
           
           {/* 업무 유형별 참여 현황 */}
           <div className="mt-8 pt-6 border-t border-gray-200">
@@ -1761,202 +1780,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 마케팅 유입 분석 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-            <TrendingUp className="h-6 w-6 mr-3 text-purple-600" />
-            마케팅 유입 분석
-          </h2>
-          
-          {/* 신규상담 요약 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* 마스골프 신규상담 */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">마스골프 신규상담</p>
-                  <p className="text-3xl font-bold text-blue-900">{data?.collaborationStats?.masgolf?.newConsultations || 0}건</p>
-                </div>
-                <Phone className="h-10 w-10 text-blue-600" />
-              </div>
-              <div className="text-xs text-blue-500">
-                OP5 신규 고객 상담
-              </div>
-            </div>
-
-            {/* 싱싱골프 신규상담 */}
-            <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-pink-600 font-medium">싱싱골프 신규상담</p>
-                  <p className="text-3xl font-bold text-pink-900">{data?.collaborationStats?.singsingolf?.newConsultations || 0}건</p>
-                </div>
-                <Phone className="h-10 w-10 text-pink-600" />
-              </div>
-              <div className="text-xs text-pink-500">
-                OP12 신규 고객 상담
-              </div>
-            </div>
-
-            {/* 전체 신규상담 */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-emerald-600 font-medium">전체 신규상담</p>
-                  <p className="text-3xl font-bold text-emerald-900">{data?.collaborationStats?.total?.newConsultations || 0}건</p>
-                </div>
-                <Phone className="h-10 w-10 text-emerald-600" />
-              </div>
-              <div className="text-xs text-emerald-500">
-                마스골프 + 싱싱골프
-              </div>
-            </div>
-          </div>
-          
-          {/* 간소화된 마케팅 유입 분석 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* 마스골프 유입 분석 */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-blue-800 flex items-center">
-                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                  마스골프 유입
-                </h3>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {(data?.marketingInflow?.masgolf?.new?.total || 0) + (data?.marketingInflow?.masgolf?.existing?.total || 0)}
-                  </p>
-                  <p className="text-xs text-blue-500">총 유입</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {/* 신규 고객 */}
-                <div className="bg-white/70 rounded-lg p-4">
-                  <div className="text-center mb-3">
-                    <span className="text-sm font-medium text-green-700">신규 고객</span>
-                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.masgolf?.new?.total || 0}</p>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>📞 전화</span>
-                      <span className="font-bold">0/{data?.marketingInflow?.masgolf?.new?.phone || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>💬 카카오</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.kakao || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🛒 스마트스토어</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.smartstore || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🌐 공홈</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.new?.official_website || 0}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 기존 고객 */}
-                <div className="bg-white/70 rounded-lg p-4">
-                  <div className="text-center mb-3">
-                    <span className="text-sm font-medium text-blue-700">기존 고객</span>
-                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.masgolf?.existing?.total || 0}</p>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>📞 전화</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.phone || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>💬 카카오</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.kakao || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🛒 스마트스토어</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.smartstore || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🌐 공홈</span>
-                      <span className="font-bold">{data?.marketingInflow?.masgolf?.existing?.official_website || 0}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 싱싱골프 유입 분석 */}
-            <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-6 border border-pink-200">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-pink-800 flex items-center">
-                  <span className="w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
-                  싱싱골프 유입
-                </h3>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-pink-600">
-                    {(data?.marketingInflow?.singsingolf?.new?.total || 0) + (data?.marketingInflow?.singsingolf?.existing?.total || 0)}
-                  </p>
-                  <p className="text-xs text-pink-500">총 유입</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {/* 신규 고객 */}
-                <div className="bg-white/70 rounded-lg p-4">
-                  <div className="text-center mb-3">
-                    <span className="text-sm font-medium text-green-700">신규 고객</span>
-                    <p className="text-2xl font-bold text-green-600">{data?.marketingInflow?.singsingolf?.new?.total || 0}</p>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>📞 전화</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.phone || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>💬 카카오</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.kakao || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🛒 스마트스토어</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.smartstore || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🌐 공홈</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.new?.official_website || 0}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 기존 고객 */}
-                <div className="bg-white/70 rounded-lg p-4">
-                  <div className="text-center mb-3">
-                    <span className="text-sm font-medium text-blue-700">기존 고객</span>
-                    <p className="text-2xl font-bold text-blue-600">{data?.marketingInflow?.singsingolf?.existing?.total || 0}</p>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>📞 전화</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.phone || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>💬 카카오</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.kakao || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🛒 스마트스토어</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.smartstore || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>🌐 공홈</span>
-                      <span className="font-bold">{data?.marketingInflow?.singsingolf?.existing?.official_website || 0}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 빠른 메뉴 */}
         <div className="mb-6">
@@ -2260,6 +2083,394 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+        {/* 매출 상세 모달 */}
+        {showSalesDetailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-2xl font-bold text-gray-800">매출 상세 분석</h3>
+                <div className="flex items-center space-x-2">
+                  <select
+                    onChange={(e) => handleOpenSalesDetail(e.target.value as 'month' | 'quarter' | 'year')}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    defaultValue="month"
+                  >
+                    <option value="month">이번 달</option>
+                    <option value="quarter">이번 분기</option>
+                    <option value="year">올해</option>
+                  </select>
+                  <button
+                    onClick={() => setShowSalesDetailModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="h-6 w-6 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {salesDetailData ? (
+                  <div className="space-y-8">
+                    {/* 요약 정보 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-blue-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-blue-800 mb-2">총 매출</h4>
+                        <p className="text-3xl font-bold text-blue-900">
+                          {formatCurrency(salesDetailData.totalSales)}
+                        </p>
+                        <p className="text-sm text-blue-600 mt-1">
+                          {salesDetailData.startDate} ~ {salesDetailData.endDate}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-green-800 mb-2">총 업무 건수</h4>
+                        <p className="text-3xl font-bold text-green-900">
+                          {salesDetailData.totalTasks}건
+                        </p>
+                        <p className="text-sm text-green-600 mt-1">
+                          평균 {formatCurrency(salesDetailData.totalSales / salesDetailData.totalTasks)}/건
+                        </p>
+                      </div>
+                      <div className="bg-purple-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-purple-800 mb-2">고객 수</h4>
+                        <p className="text-3xl font-bold text-purple-900">
+                          {salesDetailData.customerSales.length}명
+                        </p>
+                        <p className="text-sm text-purple-600 mt-1">
+                          평균 {formatCurrency(salesDetailData.totalSales / salesDetailData.customerSales.length)}/고객
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 고객별 매출 TOP 10 */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4">고객별 매출 TOP 10</h4>
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">순위</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">매출액</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">업무 건수</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">평균 단가</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {salesDetailData.customerSales.slice(0, 10).map((customer: any, index: number) => (
+                                <tr key={customer.name} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {index + 1}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {customer.name}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                                    {formatCurrency(customer.total)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {customer.count}건
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {formatCurrency(customer.total / customer.count)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 업무 유형별 매출 */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4">업무 유형별 매출</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {salesDetailData.operationSales.map((operation: any) => (
+                          <div key={operation.code} className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <h5 className="text-lg font-semibold text-gray-800">
+                                {operation.code} - {operation.name}
+                              </h5>
+                              <span className="text-sm text-gray-500">{operation.count}건</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">총 매출</span>
+                                <span className="font-semibold text-green-600">
+                                  {formatCurrency(operation.total)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">평균 단가</span>
+                                <span className="text-sm text-gray-900">
+                                  {formatCurrency(operation.total / operation.count)}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full" 
+                                  style={{ 
+                                    width: `${(operation.total / salesDetailData.totalSales) * 100}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 직원별 매출 */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4">직원별 매출</h4>
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">직원명</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">매출액</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">업무 건수</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">평균 단가</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">비율</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {salesDetailData.employeeSales.map((employee: any) => (
+                                <tr key={employee.name} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {employee.name}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                                    {formatCurrency(employee.total)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {employee.count}건
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {formatCurrency(employee.total / employee.count)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {((employee.total / salesDetailData.totalSales) * 100).toFixed(1)}%
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-500">데이터를 불러오는 중...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 마케팅 상세 모달 */}
+        {showMarketingDetailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-2xl font-bold text-gray-800">
+                  마케팅 유입 분석 {selectedMarketingBrand === 'masgolf' ? '(마스골프)' : selectedMarketingBrand === 'singsingolf' ? '(싱싱골프)' : '(전체)'}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={selectedMarketingBrand}
+                    onChange={(e) => {
+                      const brand = e.target.value as 'masgolf' | 'singsingolf' | 'all';
+                      setSelectedMarketingBrand(brand);
+                      handleOpenMarketingDetail('month', brand);
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="all">전체</option>
+                    <option value="masgolf">마스골프</option>
+                    <option value="singsingolf">싱싱골프</option>
+                  </select>
+                  <select
+                    onChange={(e) => handleOpenMarketingDetail(e.target.value as 'month' | 'quarter' | 'year', selectedMarketingBrand)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    defaultValue="month"
+                  >
+                    <option value="month">이번 달</option>
+                    <option value="quarter">이번 분기</option>
+                    <option value="year">올해</option>
+                  </select>
+                  <button
+                    onClick={() => setShowMarketingDetailModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="h-6 w-6 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {marketingDetailData ? (
+                  <div className="space-y-8">
+                    {/* 요약 정보 */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div className="bg-blue-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-blue-800 mb-2">총 상담 건수</h4>
+                        <p className="text-3xl font-bold text-blue-900">
+                          {marketingDetailData.totalTasks}건
+                        </p>
+                        <p className="text-sm text-blue-600 mt-1">
+                          {marketingDetailData.startDate} ~ {marketingDetailData.endDate}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-green-800 mb-2">전환 건수</h4>
+                        <p className="text-3xl font-bold text-green-900">
+                          {marketingDetailData.convertedTasks}건
+                        </p>
+                        <p className="text-sm text-green-600 mt-1">
+                          매출 발생 업무
+                        </p>
+                      </div>
+                      <div className="bg-purple-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-purple-800 mb-2">전환율</h4>
+                        <p className="text-3xl font-bold text-purple-900">
+                          {marketingDetailData.conversionRate.toFixed(1)}%
+                        </p>
+                        <p className="text-sm text-purple-600 mt-1">
+                          상담 → 매출 전환
+                        </p>
+                      </div>
+                      <div className="bg-orange-50 p-6 rounded-xl">
+                        <h4 className="text-lg font-semibold text-orange-800 mb-2">신규 고객</h4>
+                        <p className="text-3xl font-bold text-orange-900">
+                          {marketingDetailData.customerTypeAnalysis.new.total}건
+                        </p>
+                        <p className="text-sm text-orange-600 mt-1">
+                          {((marketingDetailData.customerTypeAnalysis.new.total / marketingDetailData.totalTasks) * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 채널별 분석 */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4">채널별 유입 분석</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {Object.entries(marketingDetailData.channelAnalysis).map(([channel, data]: [string, any]) => (
+                          <div key={channel} className="bg-white border border-gray-200 rounded-xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <h5 className="text-lg font-semibold text-gray-800 capitalize">
+                                {channel === 'phone' ? '전화' : 
+                                 channel === 'kakao' ? '카카오톡' :
+                                 channel === 'smartstore' ? '스마트스토어' :
+                                 channel === 'official_website' ? '공식 웹사이트' : channel}
+                              </h5>
+                              <span className="text-sm text-gray-500">{data.total}건</span>
+                            </div>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">신규 고객</span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-semibold text-blue-600">{data.new}건</span>
+                                  <div className="w-16 bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className="bg-blue-600 h-2 rounded-full" 
+                                      style={{ width: `${data.total > 0 ? (data.new / data.total) * 100 : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">기존 고객</span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-semibold text-green-600">{data.existing}건</span>
+                                  <div className="w-16 bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className="bg-green-600 h-2 rounded-full" 
+                                      style={{ width: `${data.total > 0 ? (data.existing / data.total) * 100 : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 고객 유형별 분석 */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4">고객 유형별 분석</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                          <h5 className="text-lg font-semibold text-blue-800 mb-4">신규 고객</h5>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-blue-600">상담 건수</span>
+                              <span className="font-semibold text-blue-800">
+                                {marketingDetailData.customerTypeAnalysis.new.total}건
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-blue-600">매출액</span>
+                              <span className="font-semibold text-blue-800">
+                                {formatCurrency(marketingDetailData.customerTypeAnalysis.new.sales)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-blue-600">비율</span>
+                              <span className="font-semibold text-blue-800">
+                                {((marketingDetailData.customerTypeAnalysis.new.total / marketingDetailData.totalTasks) * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                          <h5 className="text-lg font-semibold text-green-800 mb-4">기존 고객</h5>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-green-600">상담 건수</span>
+                              <span className="font-semibold text-green-800">
+                                {marketingDetailData.customerTypeAnalysis.existing.total}건
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-green-600">매출액</span>
+                              <span className="font-semibold text-green-800">
+                                {formatCurrency(marketingDetailData.customerTypeAnalysis.existing.sales)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-green-600">비율</span>
+                              <span className="font-semibold text-green-800">
+                                {((marketingDetailData.customerTypeAnalysis.existing.total / marketingDetailData.totalTasks) * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                      <p className="text-gray-500">데이터를 불러오는 중...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
     </div>
   );

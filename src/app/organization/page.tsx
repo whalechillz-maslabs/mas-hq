@@ -50,13 +50,72 @@ export default function OrganizationPage() {
     loadOrganizationData();
   }, []);
 
+  // 부서별 통계 계산 함수
+  const calculateDepartmentStats = async (departmentId: string, employees: any[]) => {
+    try {
+      if (employees.length === 0) {
+        return {
+          totalSales: 0,
+          targetAchievement: 0,
+          avgPerformance: 0
+        };
+      }
+
+      const employeeIds = employees.map(emp => emp.id);
+      
+      // 이번 달 매출 데이터 가져오기
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      const startDateStr = startOfMonth.toISOString().split('T')[0];
+      const endDateStr = endOfMonth.toISOString().split('T')[0];
+
+      const { data: tasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points)
+        `)
+        .in('employee_id', employeeIds)
+        .gte('task_date', startDateStr)
+        .lte('task_date', endDateStr)
+        .not('sales_amount', 'is', null)
+        .gt('sales_amount', 0);
+
+      // 총 매출 계산
+      const totalSales = tasks?.reduce((sum, task) => sum + (task.sales_amount || 0), 0) || 0;
+      
+      // 총 포인트 계산
+      const totalPoints = tasks?.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0) || 0;
+      
+      // 평균 성과 (포인트 기반)
+      const avgPerformance = employees.length > 0 ? Math.round(totalPoints / employees.length) : 0;
+      
+      // 목표 달성률 (임시로 80% 고정, 실제 목표 데이터가 있으면 수정)
+      const targetAchievement = 80;
+
+      return {
+        totalSales,
+        targetAchievement,
+        avgPerformance
+      };
+    } catch (error) {
+      console.error('부서 통계 계산 오류:', error);
+      return {
+        totalSales: 0,
+        targetAchievement: 0,
+        avgPerformance: 0
+      };
+    }
+  };
+
   const loadOrganizationData = async () => {
     try {
       // 부서 목록 가져오기
       const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select('*')
-        .eq('is_active', true)
         .order('name');
 
       if (deptError) throw deptError;
@@ -70,28 +129,26 @@ export default function OrganizationPage() {
           role:roles(name, description),
           department:departments(name, code)
         `)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .order('position(level)', { ascending: true });
 
       if (empError) throw empError;
 
       // 부서별로 직원 그룹화
-      const departmentsWithEmployees = deptData.map(dept => {
-        const deptEmployees = empData.filter(emp => emp.department_id === dept.id);
-        
-        // 부서 통계 계산 (더미 데이터)
-        const stats = {
-          totalSales: Math.floor(Math.random() * 50000000) + 10000000,
-          targetAchievement: Math.floor(Math.random() * 30) + 70,
-          avgPerformance: Math.floor(Math.random() * 20) + 80
-        };
+      const departmentsWithEmployees = await Promise.all(
+        deptData.map(async (dept) => {
+          const deptEmployees = empData.filter(emp => emp.department_id === dept.id);
+          
+          // 부서 통계 계산 (실제 데이터)
+          const stats = await calculateDepartmentStats(dept.id, deptEmployees);
 
-        return {
-          ...dept,
-          employees: deptEmployees,
-          stats
-        };
-      });
+          return {
+            ...dept,
+            employees: deptEmployees,
+            stats
+          };
+        })
+      );
 
       setDepartments(departmentsWithEmployees);
     } catch (error) {
@@ -170,7 +227,7 @@ export default function OrganizationPage() {
           
           <div className="grid grid-cols-3 gap-4 mt-6">
             <div className="bg-white/20 rounded-lg p-3">
-              <p className="text-sm text-indigo-100">총 매출</p>
+              <p className="text-sm text-indigo-100">이번 달 총 매출</p>
               <p className="text-xl font-bold">
                 {formatCurrency(departments.reduce((sum, dept) => sum + (dept.stats?.totalSales || 0), 0))}
               </p>
@@ -178,13 +235,13 @@ export default function OrganizationPage() {
             <div className="bg-white/20 rounded-lg p-3">
               <p className="text-sm text-indigo-100">목표 달성률</p>
               <p className="text-xl font-bold">
-                {Math.round(departments.reduce((sum, dept) => sum + (dept.stats?.targetAchievement || 0), 0) / departments.length)}%
+                {departments.length > 0 ? Math.round(departments.reduce((sum, dept) => sum + (dept.stats?.targetAchievement || 0), 0) / departments.length) : 0}%
               </p>
             </div>
             <div className="bg-white/20 rounded-lg p-3">
               <p className="text-sm text-indigo-100">평균 성과</p>
               <p className="text-xl font-bold">
-                {Math.round(departments.reduce((sum, dept) => sum + (dept.stats?.avgPerformance || 0), 0) / departments.length)}점
+                {departments.length > 0 ? Math.round(departments.reduce((sum, dept) => sum + (dept.stats?.avgPerformance || 0), 0) / departments.length) : 0}점
               </p>
             </div>
           </div>
@@ -218,7 +275,7 @@ export default function OrganizationPage() {
                       <p className="text-xl font-bold">{dept.employees.length}명</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">매출</p>
+                      <p className="text-sm text-gray-600">이번 달 매출</p>
                       <p className="text-xl font-bold text-green-600">
                         {formatCurrency(dept.stats?.totalSales || 0)}
                       </p>

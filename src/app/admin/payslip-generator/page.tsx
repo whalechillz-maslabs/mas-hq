@@ -116,6 +116,10 @@ export default function PayslipGenerator() {
   const [autoOvertimeFromSchedule, setAutoOvertimeFromSchedule] = useState<boolean>(false);
   const [overtimeKeywords, setOvertimeKeywords] = useState<string>('추가근무,OT,오버타임');
   
+  // 포인트 보너스 옵션
+  const [includePointBonus, setIncludePointBonus] = useState<boolean>(true);
+  const [pointBonusAmount, setPointBonusAmount] = useState<number>(0);
+  
   // 연봉계약 전환 관련 상태
   const [showContractChangeModal, setShowContractChangeModal] = useState(false);
   const [contractChangeData, setContractChangeData] = useState({
@@ -360,19 +364,8 @@ export default function PayslipGenerator() {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
-    // 계약서에서 식대 정보 조회
-    const { data: contract, error: contractError } = await supabase
-      .from('contracts')
-      .select('meal_allowance, salary_history, probation_period')
-      .eq('employee_id', employee.id)
-      .lte('start_date', endDate)
-      .or(`end_date.is.null,end_date.gte.${startDate}`)
-      .eq('status', 'active')
-      .order('start_date', { ascending: false })
-      .limit(1)
-      .single();
-
-    const mealAllowance = contract?.meal_allowance || 0;
+    // 식대: 근무일 기준 7,000원 고정
+    const MEAL_PER_DAY = 7000;
     
     // 해당 기간의 스케줄 조회
     const { data: schedules, error: scheduleError } = await supabase
@@ -391,8 +384,14 @@ export default function PayslipGenerator() {
       throw new Error('해당 기간에 스케줄이 없습니다.');
     }
 
-    // 나수진의 급여 구성 요소 계산
-    const workDays = schedules.length;
+    // 나수진의 급여 구성 요소 계산 (근무일 = 유효 스케줄이 있는 날짜 수)
+    const byDateForMeal: { [date: string]: true } = {};
+    schedules.forEach(s => {
+      if (s.scheduled_start && s.scheduled_end) {
+        byDateForMeal[s.schedule_date] = true;
+      }
+    });
+    const workDays = Object.keys(byDateForMeal).length;
 
     // 스케줄 기반 추가근무 자동 계산 (옵션이 켜진 경우에만)
     let computedOvertimeDays = overtimeDays;
@@ -416,8 +415,8 @@ export default function PayslipGenerator() {
     // 기본급 계산 (10월부터 120만원, 이전은 80만원)
     const baseSalary = isNewSystem ? 1200000 : 800000;
     
-    // 식대 계산 (근무일수 × 일일 식대)
-    const totalMealAllowance = workDays * mealAllowance;
+    // 식대 계산 (근무일수 × 7,000원)
+    const totalMealAllowance = workDays * MEAL_PER_DAY;
     
     // 주유대 (고정 20만원)
     const fuelAllowance = 200000;
@@ -503,6 +502,9 @@ export default function PayslipGenerator() {
       `주 15시간 이상 근무 (${totalHours}시간) → 주휴수당 ${weeklyHolidayPay.toLocaleString()}원` : 
       `주 15시간 미만 근무 (${totalHours}시간) → 주휴수당 없음`;
 
+    // 포인트 보너스 적용
+    const pointBonus = includePointBonus ? pointBonusAmount : 0;
+
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
@@ -513,7 +515,7 @@ export default function PayslipGenerator() {
       base_salary: baseSalary,
       overtime_pay: 0,
       incentive: 0,
-      point_bonus: 0,
+      point_bonus: pointBonus,
       meal_allowance: totalMealAllowance,
       fuel_allowance: fuelAllowance,
       additional_work: additionalWork,
@@ -560,20 +562,6 @@ export default function PayslipGenerator() {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
-    // 계약서에서 식대 정보 조회
-    const { data: contract, error: contractError } = await supabase
-      .from('contracts')
-      .select('meal_allowance, salary_history, probation_period')
-      .eq('employee_id', employee.id)
-      .lte('start_date', endDate)
-      .or(`end_date.is.null,end_date.gte.${startDate}`)
-      .eq('status', 'active')
-      .order('start_date', { ascending: false })
-      .limit(1)
-      .single();
-
-    const mealAllowance = contract?.meal_allowance || 0;
-    
     const { data: schedules, error: scheduleError } = await supabase
       .from('schedules')
       .select('*')
@@ -606,15 +594,13 @@ export default function PayslipGenerator() {
       throw new Error('시급 정보가 없습니다.');
     }
 
-    // 일별 근무시간 계산 (스케줄 자체가 점심시간 제외된 상태)
+    // 식대 계산 (하루 3시간 이상 근무한 날 × 7,000원)
     const dailyHours: { [key: string]: number } = {};
     schedules.forEach(schedule => {
       const date = schedule.schedule_date;
       const start = new Date(`${date} ${schedule.scheduled_start}`);
       const end = new Date(`${date} ${schedule.scheduled_end}`);
-      const rawHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // 스케줄 자체가 점심시간 제외된 순 근무시간
-      
-      // 근무시간을 그대로 사용 (정규화하지 않음)
+      const rawHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       const hours = rawHours;
       
       if (!dailyHours[date]) {
@@ -622,6 +608,12 @@ export default function PayslipGenerator() {
       }
       dailyHours[date] += hours;
     });
+
+    // 식대 대상일수 계산 (하루 3시간 이상 근무한 날)
+    const mealAllowanceDays = Object.values(dailyHours).filter(hours => hours >= 3).length;
+    const mealAllowance = mealAllowanceDays * 7000;
+
+    // dailyHours는 이미 위에서 계산됨
     
     let totalHours = 0;
     let totalWage = 0;
@@ -666,7 +658,7 @@ export default function PayslipGenerator() {
       });
     });
 
-    // 주휴수당 계산 (주별로 15시간 이상 근무 시)
+    // 주휴수당 계산 (주별로 5일 이상 근무 시)
     let weeklyHolidayPay = 0;
     const latestHourlyRate = wages[wages.length - 1].base_wage;
     let weeklyHolidayCalculation = ''; // 산출 식 저장
@@ -686,9 +678,9 @@ export default function PayslipGenerator() {
       weeklyData[weekKey].days += 1;
     });
     
-    // 주별로 15시간 이상인 주에 대해 주휴수당 지급
+    // 주별로 5일 이상 근무한 주에 대해 주휴수당 지급
     Object.entries(weeklyData).forEach(([weekKey, data]) => {
-      if (data.hours >= 15) {
+      if (data.days >= 5) {
         // 주 5일 근무 기준으로 1일치 임금 지급 (7시간 × 시급)
         const weeklyHolidayAmount = 7 * latestHourlyRate; // 7시간 × 시급 = 1일치 임금
         weeklyHolidayPay += weeklyHolidayAmount;
@@ -699,8 +691,11 @@ export default function PayslipGenerator() {
       }
     });
 
-    // 총 급여 계산 (기본급 + 주휴수당 + 식대)
-    const totalEarnings = totalWage + weeklyHolidayPay + mealAllowance;
+    // 포인트 보너스 적용
+    const pointBonus = includePointBonus ? pointBonusAmount : 0;
+    
+    // 총 급여 계산 (기본급 + 주휴수당 + 식대 + 포인트 보너스)
+    const totalEarnings = totalWage + weeklyHolidayPay + mealAllowance + pointBonus;
     
     // 세금 계산 (3.3% 사업소득세 - 식대는 비과세)
     const taxableAmount = totalWage + weeklyHolidayPay;
@@ -718,7 +713,7 @@ export default function PayslipGenerator() {
       base_salary: totalWage,
       overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
       incentive: 0,
-      point_bonus: 0,
+      point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
@@ -1022,7 +1017,7 @@ export default function PayslipGenerator() {
       });
     });
 
-    // 주휴수당 계산 (주별로 15시간 이상 근무 시)
+    // 주휴수당 계산 (주별로 5일 이상 근무 시)
     let weeklyHolidayPay = 0;
     const latestHourlyRate = wages[wages.length - 1].base_wage;
     let weeklyHolidayCalculation = ''; // 산출 식 저장
@@ -1042,9 +1037,9 @@ export default function PayslipGenerator() {
       weeklyData[weekKey].days += 1;
     });
     
-    // 주별로 15시간 이상인 주에 대해 주휴수당 지급
+    // 주별로 5일 이상 근무한 주에 대해 주휴수당 지급
     Object.entries(weeklyData).forEach(([weekKey, data]) => {
-      if (data.hours >= 15) {
+      if (data.days >= 5) {
         // 주 5일 근무 기준으로 1일치 임금 지급 (7시간 × 시급)
         const weeklyHolidayAmount = 7 * latestHourlyRate; // 7시간 × 시급 = 1일치 임금
         weeklyHolidayPay += weeklyHolidayAmount;
@@ -1055,8 +1050,11 @@ export default function PayslipGenerator() {
       }
     });
 
-    // 총 급여 계산 (기본급 + 주휴수당 + 식대)
-    const totalEarnings = totalWage + weeklyHolidayPay + mealAllowance;
+    // 포인트 보너스 적용
+    const pointBonus = includePointBonus ? pointBonusAmount : 0;
+    
+    // 총 급여 계산 (기본급 + 주휴수당 + 식대 + 포인트 보너스)
+    const totalEarnings = totalWage + weeklyHolidayPay + mealAllowance + pointBonus;
     
     // 세금 계산 (3.3% 사업소득세 - 식대는 비과세)
     const taxableAmount = totalWage + weeklyHolidayPay;
@@ -1074,7 +1072,7 @@ export default function PayslipGenerator() {
       base_salary: totalWage,
       overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
       incentive: 0,
-      point_bonus: 0,
+      point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
@@ -3960,6 +3958,36 @@ export default function PayslipGenerator() {
                 </div>
               </div>
 
+              {/* 포인트 보너스 옵션 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="include-point-bonus"
+                    checked={includePointBonus}
+                    onChange={(e) => setIncludePointBonus(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="include-point-bonus" className="ml-2 text-sm text-gray-700">
+                    포인트 보너스 포함
+                  </label>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    포인트 보너스 금액 (원)
+                  </label>
+                  <input
+                    type="number"
+                    value={pointBonusAmount}
+                    onChange={(e) => setPointBonusAmount(Number(e.target.value))}
+                    disabled={!includePointBonus}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+              </div>
+
               {/* 나수진 추가근무 입력 필드 */}
               {selectedEmployee && employees.find(emp => emp.id === selectedEmployee)?.name === '나수진' && !showCustomPeriod && (
                 <>
@@ -4500,6 +4528,12 @@ export default function PayslipGenerator() {
                     <span className="font-medium">{payslipData.meal_allowance.toLocaleString()}원</span>
                   </div>
                 )}
+                {payslipData.point_bonus > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">포인트 보너스</span>
+                    <span className="font-medium">{payslipData.point_bonus.toLocaleString()}원</span>
+                  </div>
+                )}
                 {payslipData.incentive > 0 && !payslipData.fuel_allowance && !payslipData.performance_bonus && (
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-gray-600">인센티브</span>
@@ -4849,16 +4883,16 @@ export default function PayslipGenerator() {
                           <span>{(selectedPayslipForDetails.meal_allowance || 0).toLocaleString()}원</span>
                         </div>
                       )}
-                      {(selectedPayslipForDetails.incentive || 0) > 0 && (
-                        <div className="flex justify-between">
-                          <span>인센티브</span>
-                          <span>{(selectedPayslipForDetails.incentive || 0).toLocaleString()}원</span>
-                        </div>
-                      )}
                       {(selectedPayslipForDetails.point_bonus || 0) > 0 && (
                         <div className="flex justify-between">
                           <span>포인트 보너스</span>
                           <span>{(selectedPayslipForDetails.point_bonus || 0).toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {(selectedPayslipForDetails.incentive || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>인센티브</span>
+                          <span>{(selectedPayslipForDetails.incentive || 0).toLocaleString()}원</span>
                         </div>
                       )}
                       {(selectedPayslipForDetails.performance_bonus || 0) > 0 && (
