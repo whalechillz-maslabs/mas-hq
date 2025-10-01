@@ -686,13 +686,14 @@ export default function PayslipGenerator() {
     // 주별로 5일 이상 근무한 주에 대해 주휴수당 지급
     Object.entries(weeklyData).forEach(([weekKey, data]) => {
       if (data.days >= 5) {
-        // 주 5일 근무 기준으로 1일치 임금 지급 (7시간 × 시급)
-        const weeklyHolidayAmount = 7 * latestHourlyRate; // 7시간 × 시급 = 1일치 임금
+        // 해당 주의 평균 일일 임금 계산
+        const averageDailyWage = data.hours / data.days * latestHourlyRate;
+        const weeklyHolidayAmount = Math.round(averageDailyWage); // 평균 일일 임금을 주휴수당으로 지급
         weeklyHolidayPay += weeklyHolidayAmount;
         
         // 산출 식 추가
         const weekNumber = Object.keys(weeklyData).indexOf(weekKey) + 1;
-        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 (15시간 이상) → 7시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
+        weeklyHolidayCalculation += `${weekNumber}주차: ${data.days}일 근무, 평균 ${(data.hours/data.days).toFixed(1)}시간/일 → ${averageDailyWage.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
       }
     });
 
@@ -1053,13 +1054,14 @@ export default function PayslipGenerator() {
     // 주별로 5일 이상 근무한 주에 대해 주휴수당 지급
     Object.entries(weeklyData).forEach(([weekKey, data]) => {
       if (data.days >= 5) {
-        // 주 5일 근무 기준으로 1일치 임금 지급 (7시간 × 시급)
-        const weeklyHolidayAmount = 7 * latestHourlyRate; // 7시간 × 시급 = 1일치 임금
+        // 해당 주의 평균 일일 임금 계산
+        const averageDailyWage = data.hours / data.days * latestHourlyRate;
+        const weeklyHolidayAmount = Math.round(averageDailyWage); // 평균 일일 임금을 주휴수당으로 지급
         weeklyHolidayPay += weeklyHolidayAmount;
         
         // 산출 식 추가
         const weekNumber = Object.keys(weeklyData).indexOf(weekKey) + 1;
-        weeklyHolidayCalculation += `${weekNumber}주차: ${data.hours}시간 (15시간 이상) → 7시간 × ${latestHourlyRate.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
+        weeklyHolidayCalculation += `${weekNumber}주차: ${data.days}일 근무, 평균 ${(data.hours/data.days).toFixed(1)}시간/일 → ${averageDailyWage.toLocaleString()}원 = ${weeklyHolidayAmount.toLocaleString()}원\n`;
       }
     });
 
