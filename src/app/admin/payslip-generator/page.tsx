@@ -117,7 +117,7 @@ export default function PayslipGenerator() {
   const [overtimeKeywords, setOvertimeKeywords] = useState<string>('추가근무,OT,오버타임');
   
   // 포인트 보너스 옵션
-  const [includePointBonus, setIncludePointBonus] = useState<boolean>(true);
+  const [includePointBonus, setIncludePointBonus] = useState<boolean>(false);
   const [pointBonusAmount, setPointBonusAmount] = useState<number>(0);
   
   // 연봉계약 전환 관련 상태
