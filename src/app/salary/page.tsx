@@ -8,7 +8,7 @@ import { formatDateKR } from '@/utils/dateUtils';
 import { 
   DollarSign, FileText, Download, Eye, Lock, Calendar,
   ChevronLeft, CreditCard, TrendingUp, PieChart, Shield,
-  Clock, User, Building, Coffee, Printer
+  Clock, User, Building, Coffee, Printer, Plus, Edit, Save, X
 } from 'lucide-react';
 
 interface SalaryData {
@@ -35,6 +35,12 @@ export default function SalaryPage() {
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [currentDateInfo, setCurrentDateInfo] = useState<any>(null);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
+  const [showBankAccountModal, setShowBankAccountModal] = useState(false);
+  const [bankAccountData, setBankAccountData] = useState({
+    bank_name: '',
+    account_number: '',
+    account_holder: ''
+  });
 
   // 급여 기간을 더 구체적으로 표시하는 함수
   const formatSalaryPeriod = (period: string, dailyDetails?: any[]) => {
@@ -815,6 +821,58 @@ export default function SalaryPage() {
     setSelectedPayslip(payslip);
   };
 
+  const handleSaveBankAccount = async () => {
+    if (!bankAccountData.bank_name || !bankAccountData.account_number || !bankAccountData.account_holder) {
+      alert('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
+      // 기존 계좌 정보가 있으면 업데이트, 없으면 새로 생성
+      const { error } = await supabase
+        .from('bank_accounts')
+        .upsert({
+          employee_id: user.id,
+          bank_name: bankAccountData.bank_name,
+          account_number: bankAccountData.account_number,
+          account_holder: bankAccountData.account_holder,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'employee_id'
+        });
+
+      if (error) {
+        console.error('계좌 정보 저장 실패:', error);
+        alert('계좌 정보 저장에 실패했습니다.');
+        return;
+      }
+
+      alert('계좌 정보가 저장되었습니다.');
+      setShowBankAccountModal(false);
+      loadData(); // 데이터 다시 로드
+    } catch (error) {
+      console.error('계좌 정보 저장 중 오류:', error);
+      alert('계좌 정보 저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleEditBankAccount = () => {
+    if (data?.bankAccount) {
+      setBankAccountData({
+        bank_name: data.bankAccount.bank_name || '',
+        account_number: data.bankAccount.account_number || '',
+        account_holder: data.bankAccount.account_holder || ''
+      });
+    }
+    setShowBankAccountModal(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -965,10 +1023,19 @@ export default function SalaryPage() {
 
         {/* 계좌 정보 */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <CreditCard className="h-5 w-5 mr-2" />
-            급여 계좌
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center">
+              <CreditCard className="h-5 w-5 mr-2" />
+              급여 계좌
+            </h3>
+            <button
+              onClick={handleEditBankAccount}
+              className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {data?.bankAccount ? <Edit className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+              {data?.bankAccount ? '수정' : '등록'}
+            </button>
+          </div>
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-2">등록된 계좌</p>
             <p className="text-lg font-medium">
@@ -1300,6 +1367,78 @@ export default function SalaryPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 계좌 등록/수정 모달 */}
+      {showBankAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {data?.bankAccount ? '계좌 정보 수정' : '계좌 정보 등록'}
+                </h3>
+                <button
+                  onClick={() => setShowBankAccountModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">은행명</label>
+                <input
+                  type="text"
+                  value={bankAccountData.bank_name}
+                  onChange={(e) => setBankAccountData({ ...bankAccountData, bank_name: e.target.value })}
+                  placeholder="예: 기업은행"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">계좌번호</label>
+                <input
+                  type="text"
+                  value={bankAccountData.account_number}
+                  onChange={(e) => setBankAccountData({ ...bankAccountData, account_number: e.target.value })}
+                  placeholder="예: 165-043559-02-028"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">예금주</label>
+                <input
+                  type="text"
+                  value={bankAccountData.account_holder}
+                  onChange={(e) => setBankAccountData({ ...bankAccountData, account_holder: e.target.value })}
+                  placeholder="예: 최형호"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowBankAccountModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSaveBankAccount}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>저장</span>
+              </button>
             </div>
           </div>
         </div>
