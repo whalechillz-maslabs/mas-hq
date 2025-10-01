@@ -5,8 +5,8 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnc2NidHh0Z3VhbGtmYWxvdXdoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDkwNjczNiwiZXhwIjoyMDcwNDgyNzM2fQ.EKXlFrz2tLsAa-B4h-OGct2O1zODSMGuGp8nMZta4go'
 );
 
-async function regeneratePayslipWithDailyDetails() {
-  console.log('=== 최형호 8월 급여명세서 daily_details 포함하여 재생성 ===');
+async function regenerateSeptemberPayslip() {
+  console.log('=== 최형호 9월 급여명세서 daily_details 포함하여 재생성 ===');
   
   // 최형호 직원 정보 조회
   const { data: employee } = await supabase
@@ -22,30 +22,30 @@ async function regeneratePayslipWithDailyDetails() {
   
   console.log('직원 정보:', employee.name, employee.employee_id);
   
-  // 기존 8월 급여명세서 삭제
+  // 기존 9월 급여명세서 삭제
   const { error: deleteError } = await supabase
     .from('payslips')
     .delete()
     .eq('employee_id', employee.id)
-    .eq('period', '2025-08');
+    .eq('period', '2025-09');
     
   if (deleteError) {
     console.log('기존 급여명세서 삭제 오류:', deleteError);
     return;
   }
   
-  console.log('기존 8월 급여명세서 삭제 완료');
+  console.log('기존 9월 급여명세서 삭제 완료');
   
-  // 8월 스케줄 조회
+  // 9월 스케줄 조회
   const { data: schedules } = await supabase
     .from('schedules')
     .select('*')
     .eq('employee_id', employee.id)
-    .gte('schedule_date', '2025-08-01')
-    .lte('schedule_date', '2025-08-31')
+    .gte('schedule_date', '2025-09-01')
+    .lte('schedule_date', '2025-09-30')
     .order('schedule_date');
     
-  console.log('8월 스케줄 건수:', schedules?.length || 0);
+  console.log('9월 스케줄 건수:', schedules?.length || 0);
   
   // 시급 정보 조회
   const { data: wages } = await supabase
@@ -57,15 +57,16 @@ async function regeneratePayslipWithDailyDetails() {
   console.log('시급 정보 건수:', wages?.length || 0);
   
   if (!schedules || schedules.length === 0) {
-    console.log('8월 스케줄이 없습니다.');
+    console.log('9월 스케줄이 없습니다.');
     return;
   }
   
-  // 일별 근무시간 계산
+  // 일별 근무시간 계산 (중복 스케줄 합산)
   const dailyHours = {};
   schedules.forEach(schedule => {
     const date = schedule.schedule_date;
-    dailyHours[date] = (dailyHours[date] || 0) + (schedule.total_hours || 0);
+    const hours = schedule.total_hours || 0;
+    dailyHours[date] = (dailyHours[date] || 0) + hours;
   });
   
   console.log('일별 근무시간:', dailyHours);
@@ -178,12 +179,13 @@ async function regeneratePayslipWithDailyDetails() {
     };
   });
   
-  console.log('일별 상세 내역:', dailyDetails);
+  console.log('일별 상세 내역 건수:', dailyDetails.length);
+  console.log('일별 상세 내역 샘플:', dailyDetails.slice(0, 3));
   
   // 급여명세서 생성
   const payslip = {
     employee_id: employee.id,
-    period: '2025-08',
+    period: '2025-09',
     employment_type: 'part_time',
     base_salary: totalWage,
     overtime_pay: 0,
@@ -200,7 +202,14 @@ async function regeneratePayslipWithDailyDetails() {
     daily_details: dailyDetails
   };
   
-  console.log('생성할 급여명세서:', payslip);
+  console.log('생성할 급여명세서 요약:');
+  console.log('- 기본급:', payslip.base_salary);
+  console.log('- 주휴수당:', payslip.weekly_holiday_pay);
+  console.log('- 식대:', payslip.meal_allowance);
+  console.log('- 총 지급액:', payslip.total_earnings);
+  console.log('- 총 근무시간:', payslip.total_hours);
+  console.log('- 시급:', payslip.hourly_rate);
+  console.log('- 일별 상세 내역 건수:', payslip.daily_details.length);
   
   // 데이터베이스에 저장
   const { data: newPayslip, error: insertError } = await supabase
@@ -214,7 +223,7 @@ async function regeneratePayslipWithDailyDetails() {
     return;
   }
   
-  console.log('✅ 최형호 8월 급여명세서 재생성 완료!');
+  console.log('✅ 최형호 9월 급여명세서 재생성 완료!');
   console.log('ID:', newPayslip.id);
   console.log('주휴수당:', newPayslip.weekly_holiday_pay);
   console.log('식대:', newPayslip.meal_allowance);
@@ -224,4 +233,4 @@ async function regeneratePayslipWithDailyDetails() {
   console.log('일별 상세 내역 건수:', newPayslip.daily_details?.length || 0);
 }
 
-regeneratePayslipWithDailyDetails().catch(console.error);
+regenerateSeptemberPayslip().catch(console.error);
