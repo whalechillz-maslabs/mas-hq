@@ -405,7 +405,7 @@ export default function SalaryPage() {
                   <div class=\"salary-item net total\"><span>실수령액</span><span>${payslip.net_salary.toLocaleString()}원</span></div>
                 ` : `
                   <div class=\"salary-item\"><span>기본급</span><span>${payslip.base_salary.toLocaleString()}원</span></div>
-                  ${payslip.overtime_pay > 0 ? `<div class=\"salary-item\"><span>주휴수당</span><span>${payslip.overtime_pay.toLocaleString()}원</span></div>` : ''}
+                  ${payslip.weekly_holiday_pay > 0 ? `<div class=\"salary-item\"><span>주휴수당</span><span>${payslip.weekly_holiday_pay.toLocaleString()}원</span></div>` : ''}
                   ${payslip.meal_allowance > 0 ? `<div class=\"salary-item\"><span>식대</span><span>${payslip.meal_allowance.toLocaleString()}원</span></div>` : ''}
                   ${payslip.point_bonus > 0 ? `<div class=\"salary-item\"><span>보너스포인트</span><span>${payslip.point_bonus.toLocaleString()}원</span></div>` : ''}
                   <div class=\"salary-item total\"><span>총 지급액</span><span>${payslip.total_earnings.toLocaleString()}원</span></div>
@@ -672,7 +672,7 @@ export default function SalaryPage() {
                       </>
                     ) : (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(payslip.overtime_pay || 0)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(payslip.weekly_holiday_pay || 0)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(payslip.meal_allowance || 0)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(payslip.point_bonus || 0)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">-{formatCurrency(payslip.tax_amount || 0)}</td>
@@ -834,7 +834,7 @@ export default function SalaryPage() {
                   ) : (
                     <div className="space-y-2">
                       <div className="flex justify-between"><span>기본급</span><span>{formatCurrency(selectedPayslip.base_salary || 0)}원</span></div>
-                      <div className="flex justify-between"><span>주휴수당</span><span>{formatCurrency(selectedPayslip.overtime_pay || 0)}원</span></div>
+                      <div className="flex justify-between"><span>주휴수당</span><span>{formatCurrency(selectedPayslip.weekly_holiday_pay || 0)}원</span></div>
                       {selectedPayslip.meal_allowance ? (<div className="flex justify-between"><span>식대</span><span>{formatCurrency(selectedPayslip.meal_allowance)}원</span></div>) : null}
                       {selectedPayslip.point_bonus ? (<div className="flex justify-between"><span>보너스포인트</span><span>{formatCurrency(selectedPayslip.point_bonus)}원</span></div>) : null}
                       <div className="border-t pt-2 font-semibold flex justify-between"><span>총 지급액</span><span>{formatCurrency(selectedPayslip.total_earnings || 0)}원</span></div>
