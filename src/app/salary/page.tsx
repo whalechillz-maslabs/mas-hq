@@ -8,7 +8,7 @@ import { formatDateKR } from '@/utils/dateUtils';
 import { 
   DollarSign, FileText, Download, Eye, Lock, Calendar,
   ChevronLeft, CreditCard, TrendingUp, PieChart, Shield,
-  Clock, User, Building, Coffee
+  Clock, User, Building, Coffee, Printer
 } from 'lucide-react';
 
 interface SalaryData {
@@ -443,6 +443,235 @@ export default function SalaryPage() {
     }
   };
 
+  const handlePrintPayslip = async (payslip: any) => {
+    try {
+      // 급여명세서 HTML 생성 (다운로드와 동일한 HTML 사용)
+      const payslipHTML = `
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>MASLABS 급여명세서 - ${payslip.period}</title>
+          <style>
+            body {
+              font-family: 'Malgun Gothic', sans-serif;
+              margin: 0;
+              padding: 20px;
+              background-color: white;
+            }
+            .payslip-container {
+              max-width: 800px;
+              margin: 0 auto;
+              background: white;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              overflow: hidden;
+            }
+            .header {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 30px;
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: bold;
+            }
+            .header p {
+              margin: 10px 0 0 0;
+              font-size: 16px;
+              opacity: 0.9;
+            }
+            .content {
+              padding: 30px;
+            }
+            .employee-info {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 30px;
+              padding: 20px;
+              background: #f8f9fa;
+              border-radius: 8px;
+            }
+            .info-item {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 10px 0;
+              border-bottom: 1px solid #e9ecef;
+            }
+            .info-item:last-child {
+              border-bottom: none;
+            }
+            .info-label {
+              font-weight: 600;
+              color: #495057;
+            }
+            .info-value {
+              color: #212529;
+              font-weight: 500;
+            }
+            .salary-section {
+              margin-bottom: 30px;
+            }
+            .section-title {
+              font-size: 20px;
+              font-weight: bold;
+              color: #495057;
+              margin-bottom: 20px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #dee2e6;
+            }
+            .salary-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+            }
+            .salary-item {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 15px;
+              background: #f8f9fa;
+              border-radius: 6px;
+              border-left: 4px solid #007bff;
+            }
+            .salary-label {
+              font-weight: 600;
+              color: #495057;
+            }
+            .salary-amount {
+              font-size: 18px;
+              font-weight: bold;
+              color: #007bff;
+            }
+            .total-section {
+              background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+              color: white;
+              padding: 20px;
+              border-radius: 8px;
+              text-align: center;
+            }
+            .total-amount {
+              font-size: 24px;
+              font-weight: bold;
+              margin: 10px 0;
+            }
+            .footer {
+              margin-top: 30px;
+              padding: 20px;
+              background: #f8f9fa;
+              border-radius: 8px;
+              text-align: center;
+              color: #6c757d;
+              font-size: 14px;
+            }
+            @media print {
+              body { margin: 0; padding: 0; }
+              .payslip-container { border: none; box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="payslip-container">
+            <div class="header">
+              <h1>MASLABS 급여명세서</h1>
+              <p>${payslip.period} 급여 지급 내역</p>
+            </div>
+            
+            <div class="content">
+              <div class="employee-info">
+                <div class="info-item">
+                  <span class="info-label">직원명</span>
+                  <span class="info-value">${currentUser?.name || '정보 없음'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">직원 코드</span>
+                  <span class="info-value">${currentUser?.employee_id || '정보 없음'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">급여 기간</span>
+                  <span class="info-value">${payslip.period}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">지급일</span>
+                  <span class="info-value">${payslip.payment_date || '미지급'}</span>
+                </div>
+              </div>
+
+              <div class="salary-section">
+                <h2 class="section-title">급여 내역</h2>
+                <div class="salary-grid">
+                  <div class="salary-item">
+                    <span class="salary-label">기본급</span>
+                    <span class="salary-amount">${payslip.base_salary?.toLocaleString() || 0}원</span>
+                  </div>
+                  ${payslip.weekly_holiday_pay > 0 ? `
+                  <div class="salary-item">
+                    <span class="salary-label">주휴수당</span>
+                    <span class="salary-amount">${payslip.weekly_holiday_pay.toLocaleString()}원</span>
+                  </div>
+                  ` : ''}
+                  ${payslip.meal_allowance > 0 ? `
+                  <div class="salary-item">
+                    <span class="salary-label">식대</span>
+                    <span class="salary-amount">${payslip.meal_allowance.toLocaleString()}원</span>
+                  </div>
+                  ` : ''}
+                  ${payslip.point_bonus > 0 ? `
+                  <div class="salary-item">
+                    <span class="salary-label">포인트 보너스</span>
+                    <span class="salary-amount">${payslip.point_bonus.toLocaleString()}원</span>
+                  </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <div class="salary-section">
+                <h2 class="section-title">공제 내역</h2>
+                <div class="salary-grid">
+                  <div class="salary-item">
+                    <span class="salary-label">세금 (3.3%)</span>
+                    <span class="salary-amount">${payslip.tax_amount?.toLocaleString() || 0}원</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="total-section">
+                <h3>실수령액</h3>
+                <div class="total-amount">${payslip.net_salary?.toLocaleString() || 0}원</div>
+              </div>
+
+              <div class="footer">
+                <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
+                <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // 새 창에서 HTML 열기
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(payslipHTML);
+        printWindow.document.close();
+        
+        // 인쇄 대화상자 열기
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      }
+    } catch (error) {
+      console.error('급여명세서 인쇄 실패:', error);
+      alert('급여명세서 인쇄에 실패했습니다.');
+    }
+  };
+
   const handleViewPayslipDetails = (payslip: any) => {
     // 세부 내역서 모달 표시
     setSelectedPayslip(payslip);
@@ -695,13 +924,20 @@ export default function SalaryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">
-                      <button
+                        <button
                           onClick={() => handleDownloadPayslip(payslip)}
                         className="text-indigo-600 hover:text-indigo-900"
                           title="다운로드"
                       >
                         <Download className="h-4 w-4" />
                       </button>
+                        <button
+                          onClick={() => handlePrintPayslip(payslip)}
+                          className="text-green-600 hover:text-green-900"
+                          title="인쇄"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => handleViewPayslipDetails(payslip)}
                           className="text-blue-600 hover:text-blue-900"
