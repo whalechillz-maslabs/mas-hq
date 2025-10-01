@@ -755,7 +755,10 @@ export default function PayslipGenerator() {
           total_earnings: payslip.total_earnings,
           tax_amount: payslip.tax_amount,
           net_salary: payslip.net_salary,
-          status: payslip.status
+          status: payslip.status,
+          total_hours: payslip.total_hours,
+          hourly_rate: payslip.hourly_rate,
+          daily_details: payslip.daily_details
         }], {
           onConflict: 'employee_id,period'
         });

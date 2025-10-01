@@ -5,8 +5,8 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnc2NidHh0Z3VhbGtmYWxvdXdoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDkwNjczNiwiZXhwIjoyMDcwNDgyNzM2fQ.EKXlFrz2tLsAa-B4h-OGct2O1zODSMGuGp8nMZta4go'
 );
 
-async function deleteAndRegeneratePayslip() {
-  console.log('=== 최형호 8월 급여명세서 삭제 및 재생성 ===');
+async function regeneratePayslipWithDailyDetails() {
+  console.log('=== 최형호 8월 급여명세서 daily_details 포함하여 재생성 ===');
   
   // 최형호 직원 정보 조회
   const { data: employee } = await supabase
@@ -178,6 +178,8 @@ async function deleteAndRegeneratePayslip() {
     };
   });
   
+  console.log('일별 상세 내역:', dailyDetails);
+  
   // 급여명세서 생성
   const payslip = {
     employee_id: employee.id,
@@ -192,7 +194,7 @@ async function deleteAndRegeneratePayslip() {
     total_earnings: totalEarnings,
     tax_amount: taxAmount,
     net_salary: netSalary,
-    status: 'generated',
+    status: 'issued',
     total_hours: totalHours,
     hourly_rate: latestHourlyRate,
     daily_details: dailyDetails
@@ -217,6 +219,9 @@ async function deleteAndRegeneratePayslip() {
   console.log('주휴수당:', newPayslip.weekly_holiday_pay);
   console.log('식대:', newPayslip.meal_allowance);
   console.log('총 지급액:', newPayslip.total_earnings);
+  console.log('총 근무시간:', newPayslip.total_hours);
+  console.log('시급:', newPayslip.hourly_rate);
+  console.log('일별 상세 내역 건수:', newPayslip.daily_details?.length || 0);
 }
 
-deleteAndRegeneratePayslip().catch(console.error);
+regeneratePayslipWithDailyDetails().catch(console.error);
