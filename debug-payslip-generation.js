@@ -23,6 +23,12 @@ async function debugPayslipGeneration() {
     }
   });
   
+  // 다이얼로그 자동 처리
+  page.on('dialog', async dialog => {
+    console.log('다이얼로그 감지:', dialog.message());
+    await dialog.accept();
+  });
+  
   try {
     // 로그인
     console.log('1. 로그인...');

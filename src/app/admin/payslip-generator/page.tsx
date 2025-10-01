@@ -743,8 +743,19 @@ export default function PayslipGenerator() {
       const { error: saveError } = await supabase
         .from('payslips')
         .upsert([{
-          ...payslip,
-          period: `${year}-${month.toString().padStart(2, '0')}` // period 필드 직접 설정
+          employee_id: payslip.employee_id,
+          period: `${year}-${month.toString().padStart(2, '0')}`,
+          employment_type: payslip.employment_type,
+          base_salary: payslip.base_salary,
+          overtime_pay: payslip.overtime_pay,
+          weekly_holiday_pay: payslip.weekly_holiday_pay,
+          incentive: payslip.incentive,
+          point_bonus: payslip.point_bonus,
+          meal_allowance: payslip.meal_allowance,
+          total_earnings: payslip.total_earnings,
+          tax_amount: payslip.tax_amount,
+          net_salary: payslip.net_salary,
+          status: payslip.status
         }], {
           onConflict: 'employee_id,period'
         });
