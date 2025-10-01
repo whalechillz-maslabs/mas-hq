@@ -478,16 +478,11 @@ export default function DashboardPage() {
         return;
       }
 
-      // 직원 정보와 관련 데이터 가져오기
+      // 직원 정보 가져오기 (기본 정보만)
       console.log('직원 정보 조회 시작, 사용자 ID:', currentUser.id);
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
-        .select(`
-          *,
-          department:departments(name),
-          position:positions(name),
-          role:roles(name)
-        `)
+        .select('*')
         .eq('id', currentUser.id)
         .single();
 
@@ -940,17 +935,20 @@ export default function DashboardPage() {
   const isAdmin = () => {
     if (!data?.employee) return false;
     
-    // 관리자 권한 확인 (role_id 또는 role.name으로 확인)
-    const userRole = data.employee.role?.name || data.employee.role_id;
-    return userRole === 'admin';
+    // 관리자 권한 확인 (role_id로 확인)
+    // 김탁수의 role_id: 559a26b3-e977-43b3-92d1-21e9d610217c (admin)
+    const adminRoleId = '559a26b3-e977-43b3-92d1-21e9d610217c';
+    return data.employee.role_id === adminRoleId;
   };
 
   // 매니저 권한 확인 함수
   const isManager = () => {
     if (!data?.employee) return false;
     
-    const userRole = data.employee.role?.name || data.employee.role_id;
-    return userRole === 'manager' || userRole === 'admin';
+    // 매니저 권한 확인 (role_id로 확인)
+    const adminRoleId = '559a26b3-e977-43b3-92d1-21e9d610217c'; // admin
+    const managerRoleId = 'c0676341-e5d6-4b64-b03d-7cb37b2e70ab'; // manager
+    return data.employee.role_id === adminRoleId || data.employee.role_id === managerRoleId;
   };
 
   // 팀 리더 권한 확인 함수

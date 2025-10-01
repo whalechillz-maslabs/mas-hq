@@ -40,7 +40,7 @@ interface PayslipData {
   employee_code?: string; // MASLABS-004
   employee_nickname?: string; // 최형호
   payment_date: string;
-  salary_period: string;
+  period: string;
   employment_type: string;
   base_salary: number;
   overtime_pay: number;
@@ -339,8 +339,8 @@ export default function PayslipGenerator() {
               additionalWorkAmount
             );
           } else {
-            // 시간제 급여 계산
-            payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
+          // 시간제 급여 계산
+          payslip = await generateHourlyPayslip(employee, selectedYear, selectedMonth);
           }
         } else {
           // 월급제 급여 계산
@@ -510,7 +510,7 @@ export default function PayslipGenerator() {
       employee_name: employee.name,
       employee_nickname: employee.nickname,
       payment_date: new Date().toISOString().split('T')[0],
-      salary_period: `${year}-${month.toString().padStart(2, '0')}`,
+      period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'part_time',
       base_salary: baseSalary,
       overtime_pay: 0,
@@ -704,14 +704,15 @@ export default function PayslipGenerator() {
 
     const payslip: PayslipData = {
       employee_id: employee.id,
-      employee_name: employee.name,
-      employee_code: employee.employee_id, // MASLABS-004
-      employee_nickname: employee.nickname || employee.name, // 닉네임 또는 이름
-      payment_date: new Date().toISOString().split('T')[0],
-      salary_period: `${year}-${month.toString().padStart(2, '0')}`,
+      // employee_name: employee.name, // 컬럼이 없음
+      // employee_code: employee.employee_id, // MASLABS-004 - 컬럼이 없음
+      // employee_nickname: employee.nickname || employee.name, // 컬럼이 없음
+      // payment_date: new Date().toISOString().split('T')[0], // 컬럼이 없음
+      // salary_period: `${year}-${month.toString().padStart(2, '0')}`, // 컬럼이 없음
       employment_type: 'part_time',
       base_salary: totalWage,
-      overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
+      overtime_pay: 0, // 시간외 근무는 별도 계산
+      weekly_holiday_pay: weeklyHolidayPay, // 주휴수당
       incentive: 0,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
@@ -721,7 +722,7 @@ export default function PayslipGenerator() {
       status: 'generated',
       total_hours: totalHours,
       hourly_rate: wages[wages.length - 1].base_wage, // 최신 시급
-      weeklyHolidayCalculation: weeklyHolidayCalculation, // 주휴수당 산출 식
+      // weeklyHolidayCalculation: weeklyHolidayCalculation, // 주휴수당 산출 식 - 컬럼이 없음
       daily_details: dailyDetails.map(detail => ({
         date: detail.date,
         hours: detail.hours,
@@ -736,7 +737,7 @@ export default function PayslipGenerator() {
         .from('payslips')
         .upsert([{
           ...payslip,
-          period: payslip.salary_period // salary_period를 period로 매핑
+          period: `${year}-${month.toString().padStart(2, '0')}` // period 필드 직접 설정
         }], {
           onConflict: 'employee_id,period'
         });
@@ -786,10 +787,10 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
-      employee_code: employee.employee_id, // MASLABS-004
+      // employee_code: employee.employee_id, // MASLABS-004 - 컬럼이 없음
       employee_nickname: employee.nickname || employee.name, // 닉네임 또는 이름
       payment_date: new Date().toISOString().split('T')[0],
-      salary_period: `${year}-${month.toString().padStart(2, '0')}`,
+      period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'full_time',
       base_salary: baseSalary,
       overtime_pay: overtimePay,
@@ -853,6 +854,8 @@ export default function PayslipGenerator() {
 
   // 급여 기간을 더 구체적으로 표시하는 함수
   const formatSalaryPeriod = (period: string, dailyDetails?: any[]) => {
+    if (!period) return '기간 미지정';
+    
     // 버전 번호가 있는 경우 표시
     if (period.includes('-v')) {
       const [basePeriod, version] = period.split('-v');
@@ -1063,14 +1066,15 @@ export default function PayslipGenerator() {
 
     const payslip: PayslipData = {
       employee_id: employee.id,
-      employee_name: employee.name,
-      employee_code: employee.employee_id,
-      employee_nickname: employee.nickname || employee.name,
-      payment_date: new Date().toISOString().split('T')[0],
-      salary_period: periodName, // 사용자가 입력한 정산서명 사용
+      // employee_name: employee.name, // 컬럼이 없음
+      // employee_code: employee.employee_id, // 컬럼이 없음
+      // employee_nickname: employee.nickname || employee.name, // 컬럼이 없음
+      // payment_date: new Date().toISOString().split('T')[0], // 컬럼이 없음
+      // salary_period: periodName, // 사용자가 입력한 정산서명 사용 - 컬럼이 없음
       employment_type: 'part_time',
       base_salary: totalWage,
-      overtime_pay: weeklyHolidayPay, // 주휴수당을 overtime_pay 필드에 저장
+      overtime_pay: 0, // 시간외 근무는 별도 계산
+      weekly_holiday_pay: weeklyHolidayPay, // 주휴수당
       incentive: 0,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
@@ -1143,7 +1147,7 @@ export default function PayslipGenerator() {
         .from('payslips')
         .insert([{
           employee_id: payslip.employee_id,
-          period: periodName,
+          period: periodName, // 분할 생성 시 사용자 입력 기간명 사용
           employment_type: payslip.employment_type,
           base_salary: payslip.base_salary,
           overtime_pay: payslip.overtime_pay,
@@ -1188,7 +1192,7 @@ export default function PayslipGenerator() {
         .from('payslips')
         .select('id')
         .eq('employee_id', payslipData.employee_id)
-        .eq('period', payslipData.salary_period)
+        .eq('period', payslipData.period)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -1215,7 +1219,7 @@ export default function PayslipGenerator() {
           .from('payslips')
           .insert([{
             employee_id: payslipData.employee_id,
-            period: payslipData.salary_period,
+            period: payslipData.period,
             employment_type: payslipData.employment_type,
             base_salary: payslipData.base_salary,
             overtime_pay: payslipData.overtime_pay,
@@ -1256,7 +1260,7 @@ export default function PayslipGenerator() {
           paid_at: new Date().toISOString()
         })
         .eq('employee_id', payslipData.employee_id)
-        .eq('period', payslipData.salary_period);
+        .eq('period', payslipData.period);
 
       if (error) {
         throw error;
@@ -1626,9 +1630,9 @@ export default function PayslipGenerator() {
               <div class="salary-item net">
                 <span>실수령액</span>
                 <span>${payslip.net_salary?.toLocaleString() || 0}원</span>
-              </div>
             </div>
-
+          </div>
+          
             ${payslip.employees?.name === '나수진' && Array.isArray(payslip.daily_details) ? `
             <div class="salary-section" style="margin-top:10px">
               <div class="salary-title">일별 상세 내역</div>
@@ -1656,7 +1660,7 @@ export default function PayslipGenerator() {
                   }).join('')}
                 </tbody>
               </table>
-            </div>
+          </div>
             ` : ''}
           </div>
           
@@ -2755,7 +2759,7 @@ export default function PayslipGenerator() {
           <div class="header">
             <div class="company-name">MASLABS</div>
             <div class="payslip-title">상세 급여명세서</div>
-            <div class="period">${payslipData.salary_period} (${payslipData.payment_date})</div>
+            <div class="period">${payslipData.period} (${payslipData.payment_date || '미지정'})</div>
           </div>
           
           <div class="employee-info">
@@ -3052,7 +3056,7 @@ export default function PayslipGenerator() {
           <div class="header">
             <h1>MASLABS</h1>
             <p>4대보험 포함 급여명세서</p>
-            <p>${payslipData.salary_period} (${payslipData.payment_date})</p>
+            <p>${payslipData.period} (${payslipData.payment_date || '미지정'})</p>
           </div>
           
           <div class="employee-info">
@@ -3074,7 +3078,7 @@ export default function PayslipGenerator() {
               <div>
                 <div class="info-item">
                   <span class="info-label">지급 기간:</span>
-                  <span class="info-value">${payslipData.salary_period}</span>
+                  <span class="info-value">${payslipData.period}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">지급일:</span>
@@ -3336,7 +3340,7 @@ export default function PayslipGenerator() {
           <div class="header">
             <h1>MASLABS</h1>
             <p>사업소득세 급여명세서</p>
-            <p>${payslipData.salary_period} (${payslipData.payment_date})</p>
+            <p>${payslipData.period} (${payslipData.payment_date || '미지정'})</p>
           </div>
           
           <div class="employee-info">
@@ -3358,7 +3362,7 @@ export default function PayslipGenerator() {
               <div>
                 <div class="info-item">
                   <span class="info-label">지급 기간:</span>
-                  <span class="info-value">${payslipData.salary_period}</span>
+                  <span class="info-value">${payslipData.period}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">지급일:</span>
@@ -3441,7 +3445,7 @@ export default function PayslipGenerator() {
 
     if (!payslipData) return null;
     try {
-      const period = payslipData.salary_period || payslipData.period;
+      const period = payslipData.period;
       if (!payslipData.employee_id || !period) return null;
       const { data, error } = await supabase
         .from('payslips')
@@ -3687,7 +3691,7 @@ export default function PayslipGenerator() {
         <div class="payslip-container">
           <div class="header">
             <h1>MASLABS</h1>
-            <div class="period">급여명세서 ${formatSalaryPeriod(payslipData.salary_period, payslipData.daily_details)}</div>
+            <div class="period">급여명세서 ${formatSalaryPeriod(payslipData.period, payslipData.daily_details)}</div>
           </div>
 
           <div class="content">
@@ -3709,7 +3713,7 @@ export default function PayslipGenerator() {
                   </div>
                 <div class="info-item">
                   <span class="info-label">급여 기간:</span>
-                  <span class="info-value">${formatSalaryPeriod(payslipData.salary_period, payslipData.daily_details)}</span>
+                  <span class="info-value">${formatSalaryPeriod(payslipData.period, payslipData.daily_details)}</span>
                 </div>
                 </div>
                 <div>
@@ -4179,8 +4183,8 @@ export default function PayslipGenerator() {
                     </div>
                   </div>
               <div className="relative">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -4290,7 +4294,7 @@ export default function PayslipGenerator() {
                       </tr>
                     ))}
                   </tbody>
-                  </table>
+                </table>
                 </div>
               </div>
                 </>
@@ -4355,19 +4359,19 @@ export default function PayslipGenerator() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">직원명:</span>
-                    <span className="font-medium">{payslipData.employee_name}</span>
+                    <span className="font-medium">{payslipData.employees?.name || '정보 없음'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">직원 코드:</span>
-                    <span className="font-medium">{payslipData.employee_code || payslipData.employee_id}</span>
+                    <span className="font-medium">{payslipData.employees?.employee_id || payslipData.employee_id}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">닉네임:</span>
-                    <span className="font-medium">{payslipData.employee_nickname || payslipData.employee_name}</span>
+                    <span className="font-medium">{payslipData.employees?.name || '정보 없음'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">급여 기간:</span>
-                    <span className="font-medium">{formatSalaryPeriod(payslipData.salary_period, payslipData.daily_details)}</span>
+                    <span className="font-medium">{formatSalaryPeriod(payslipData.period, payslipData.daily_details)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">고용 형태:</span>
@@ -4577,10 +4581,10 @@ export default function PayslipGenerator() {
                 )}
                 {/* 세금 (나수진이 아닌 경우만 표시) */}
                 {payslipData.employee_name !== '나수진' && payslipData.tax_amount > 0 && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">세금 (3.3%)</span>
-                    <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
-                  </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">세금 (3.3%)</span>
+                  <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
+                </div>
                 )}
                 {/* 나수진 현금 지급 안내 */}
                 {payslipData.employee_name === '나수진' && (
@@ -4872,22 +4876,22 @@ export default function PayslipGenerator() {
                         </div>
                       )}
                       {(selectedPayslipForDetails.overtime_pay || 0) > 0 && !selectedPayslipForDetails.weekly_holiday_pay && (
-                        <div className="flex justify-between">
-                          <span>주휴수당</span>
-                          <span>{(selectedPayslipForDetails.overtime_pay || 0).toLocaleString()}원</span>
-                        </div>
+                      <div className="flex justify-between">
+                        <span>주휴수당</span>
+                        <span>{(selectedPayslipForDetails.overtime_pay || 0).toLocaleString()}원</span>
+                      </div>
                       )}
                       {(selectedPayslipForDetails.meal_allowance || 0) > 0 && (
-                        <div className="flex justify-between">
+                      <div className="flex justify-between">
                           <span>식대</span>
                           <span>{(selectedPayslipForDetails.meal_allowance || 0).toLocaleString()}원</span>
-                        </div>
+                      </div>
                       )}
                       {(selectedPayslipForDetails.point_bonus || 0) > 0 && (
-                        <div className="flex justify-between">
-                          <span>포인트 보너스</span>
-                          <span>{(selectedPayslipForDetails.point_bonus || 0).toLocaleString()}원</span>
-                        </div>
+                      <div className="flex justify-between">
+                        <span>포인트 보너스</span>
+                        <span>{(selectedPayslipForDetails.point_bonus || 0).toLocaleString()}원</span>
+                      </div>
                       )}
                       {(selectedPayslipForDetails.incentive || 0) > 0 && (
                         <div className="flex justify-between">
@@ -4931,7 +4935,7 @@ export default function PayslipGenerator() {
                       <span className="text-sm text-gray-500">총 근무시간</span>
                       <div className="font-medium">{selectedPayslipForDetails.total_hours || 0}시간</div>
                     </div>
-                    {selectedPayslipForDetails.employee_name !== '나수진' && (
+                    {selectedPayslipForDetails.employees?.name !== '나수진' && (
                       <div>
                         <span className="text-sm text-gray-500">시급</span>
                         <div className="font-medium">{(selectedPayslipForDetails.hourly_rate || 0).toLocaleString()}원/시간</div>
@@ -5000,10 +5004,10 @@ export default function PayslipGenerator() {
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">근무시간</th>
-                      {selectedPayslipForDetails.employee_name !== '나수진' && (
+                      {selectedPayslipForDetails.employees?.name !== '나수진' && (
                         <>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시급</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일급</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시급</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일급</th>
                         </>
                       )}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">표시</th>
@@ -5024,13 +5028,13 @@ export default function PayslipGenerator() {
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {detail.hours || 0}시간
                                   </td>
-                            {selectedPayslipForDetails.employee_name !== '나수진' && (
+                            {selectedPayslipForDetails.employees?.name !== '나수진' && (
                               <>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {(detail.hourly_rate || detail.hourly_wage || 0).toLocaleString()}원
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {(detail.daily_wage || 0).toLocaleString()}원
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {(detail.hourly_rate || detail.hourly_wage || 0).toLocaleString()}원
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {(detail.daily_wage || 0).toLocaleString()}원
                                 </td>
                               </>
                             )}
@@ -5043,7 +5047,7 @@ export default function PayslipGenerator() {
                                   </span>
                                 )) : null;
                               })()}
-                            </td>
+                                  </td>
                                 </tr>
                               );
                             } catch (error) {
