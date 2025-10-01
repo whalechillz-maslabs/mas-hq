@@ -711,10 +711,10 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       period: `${year}-${month.toString().padStart(2, '0')}`,
-      // employee_name: employee.name, // 컬럼이 없음
-      // employee_code: employee.employee_id, // MASLABS-004 - 컬럼이 없음
-      // employee_nickname: employee.nickname || employee.name, // 컬럼이 없음
-      // payment_date: new Date().toISOString().split('T')[0], // 컬럼이 없음
+      employee_name: employee.name,
+      employee_code: employee.employee_id,
+      employee_nickname: employee.nickname || employee.name,
+      payment_date: new Date().toISOString().split('T')[0],
       // salary_period: `${year}-${month.toString().padStart(2, '0')}`, // 컬럼이 없음
       employment_type: 'part_time',
       base_salary: totalWage,
@@ -794,7 +794,7 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
-      // employee_code: employee.employee_id, // MASLABS-004 - 컬럼이 없음
+      employee_code: employee.employee_id,
       employee_nickname: employee.nickname || employee.name, // 닉네임 또는 이름
       payment_date: new Date().toISOString().split('T')[0],
       period: `${year}-${month.toString().padStart(2, '0')}`,
@@ -1080,10 +1080,10 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       period: `${year}-${month.toString().padStart(2, '0')}`,
-      // employee_name: employee.name, // 컬럼이 없음
-      // employee_code: employee.employee_id, // 컬럼이 없음
-      // employee_nickname: employee.nickname || employee.name, // 컬럼이 없음
-      // payment_date: new Date().toISOString().split('T')[0], // 컬럼이 없음
+      employee_name: employee.name,
+      employee_code: employee.employee_id,
+      employee_nickname: employee.nickname || employee.name,
+      payment_date: new Date().toISOString().split('T')[0],
       // salary_period: periodName, // 사용자가 입력한 정산서명 사용 - 컬럼이 없음
       employment_type: 'part_time',
       base_salary: totalWage,
