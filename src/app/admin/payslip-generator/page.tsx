@@ -663,8 +663,8 @@ export default function PayslipGenerator() {
     const latestHourlyRate = wages[wages.length - 1].base_wage;
     let weeklyHolidayCalculation = ''; // 산출 식 저장
     
-    // 주별 근무시간 및 근무일수 계산
-    const weeklyData: { [key: string]: { hours: number, days: number } } = {};
+    // 주별 근무시간 및 근무일수 계산 (고유한 날짜만 카운트)
+    const weeklyData: { [key: string]: { hours: number, days: number, dates: string[] } } = {};
     Object.keys(dailyHours).forEach(date => {
       const dateObj = new Date(date);
       const weekStart = new Date(dateObj);
@@ -672,10 +672,15 @@ export default function PayslipGenerator() {
       const weekKey = weekStart.toISOString().split('T')[0];
       
       if (!weeklyData[weekKey]) {
-        weeklyData[weekKey] = { hours: 0, days: 0 };
+        weeklyData[weekKey] = { hours: 0, days: 0, dates: [] };
       }
       weeklyData[weekKey].hours += dailyHours[date];
-      weeklyData[weekKey].days += 1;
+      
+      // 고유한 날짜만 카운트 (중복 방지)
+      if (!weeklyData[weekKey].dates.includes(date)) {
+        weeklyData[weekKey].dates.push(date);
+        weeklyData[weekKey].days += 1;
+      }
     });
     
     // 주별로 5일 이상 근무한 주에 대해 주휴수당 지급
@@ -1025,8 +1030,8 @@ export default function PayslipGenerator() {
     const latestHourlyRate = wages[wages.length - 1].base_wage;
     let weeklyHolidayCalculation = ''; // 산출 식 저장
     
-    // 주별 근무시간 및 근무일수 계산
-    const weeklyData: { [key: string]: { hours: number, days: number } } = {};
+    // 주별 근무시간 및 근무일수 계산 (고유한 날짜만 카운트)
+    const weeklyData: { [key: string]: { hours: number, days: number, dates: string[] } } = {};
     Object.keys(dailyHours).forEach(date => {
       const dateObj = new Date(date);
       const weekStart = new Date(dateObj);
@@ -1034,10 +1039,15 @@ export default function PayslipGenerator() {
       const weekKey = weekStart.toISOString().split('T')[0];
       
       if (!weeklyData[weekKey]) {
-        weeklyData[weekKey] = { hours: 0, days: 0 };
+        weeklyData[weekKey] = { hours: 0, days: 0, dates: [] };
       }
       weeklyData[weekKey].hours += dailyHours[date];
-      weeklyData[weekKey].days += 1;
+      
+      // 고유한 날짜만 카운트 (중복 방지)
+      if (!weeklyData[weekKey].dates.includes(date)) {
+        weeklyData[weekKey].dates.push(date);
+        weeklyData[weekKey].days += 1;
+      }
     });
     
     // 주별로 5일 이상 근무한 주에 대해 주휴수당 지급
