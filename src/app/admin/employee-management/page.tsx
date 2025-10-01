@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, auth } from '@/lib/supabase';
 import { 
   Users, UserPlus, UserCheck, Settings, Save, 
-  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw, ExternalLink, CreditCard
+ㅈ  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw, ExternalLink, CreditCard
 } from 'lucide-react';
 
 interface Employee {
@@ -313,11 +313,26 @@ export default function EmployeeManagementPage() {
 
   const handleEditBankAccount = (employee: Employee) => {
     setSelectedEmployee(employee);
-    setBankAccountData({
-      bank_name: employee.bank_account?.bank_name || '',
-      account_number: employee.bank_account?.account_number || '',
-      account_holder: employee.bank_account?.account_holder || ''
-    });
+    
+    // bank_account 필드 파싱 (형식: "은행명|계좌번호|예금주")
+    let bankAccountInfo = {
+      bank_name: '',
+      account_number: '',
+      account_holder: ''
+    };
+    
+    if (employee.bank_account && typeof employee.bank_account === 'string') {
+      const parts = employee.bank_account.split('|');
+      if (parts.length === 3) {
+        bankAccountInfo = {
+          bank_name: parts[0],
+          account_number: parts[1],
+          account_holder: parts[2]
+        };
+      }
+    }
+    
+    setBankAccountData(bankAccountInfo);
     setShowBankAccountModal(true);
   };
 
@@ -493,6 +508,9 @@ export default function EmployeeManagementPage() {
                     급여
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    계좌
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     액션
                   </th>
                 </tr>
@@ -538,6 +556,16 @@ export default function EmployeeManagementPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {employee.monthly_salary ? `${employee.monthly_salary.toLocaleString()}원` : 
                        employee.hourly_rate ? `${employee.hourly_rate.toLocaleString()}원/시` : '미지정'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {employee.bank_account && employee.bank_account.includes('|') ? (
+                        <div className="text-xs">
+                          <div className="font-medium">{employee.bank_account.split('|')[0]}</div>
+                          <div className="text-gray-500">{employee.bank_account.split('|')[1]}</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">미등록</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button 
@@ -1088,7 +1116,7 @@ export default function EmployeeManagementPage() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-gray-900">
-                  {selectedEmployee.name}님 계좌 정보 {selectedEmployee.bank_account ? '수정' : '등록'}
+                  {selectedEmployee.name}님 계좌 정보 {selectedEmployee.bank_account && selectedEmployee.bank_account.includes('|') ? '수정' : '등록'}
                 </h3>
                 <button
                   onClick={() => setShowBankAccountModal(false)}
