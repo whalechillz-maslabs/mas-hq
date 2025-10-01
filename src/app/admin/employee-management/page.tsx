@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, auth } from '@/lib/supabase';
 import { 
   Users, UserPlus, UserCheck, Settings, Save, 
-ㅈ  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw, ExternalLink, CreditCard
+  Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, X, Key, RefreshCw, ExternalLink, CreditCard
 } from 'lucide-react';
 
 interface Employee {
