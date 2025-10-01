@@ -710,6 +710,7 @@ export default function PayslipGenerator() {
 
     const payslip: PayslipData = {
       employee_id: employee.id,
+      period: `${year}-${month.toString().padStart(2, '0')}`,
       // employee_name: employee.name, // 컬럼이 없음
       // employee_code: employee.employee_id, // MASLABS-004 - 컬럼이 없음
       // employee_nickname: employee.nickname || employee.name, // 컬럼이 없음
@@ -1078,6 +1079,7 @@ export default function PayslipGenerator() {
 
     const payslip: PayslipData = {
       employee_id: employee.id,
+      period: `${year}-${month.toString().padStart(2, '0')}`,
       // employee_name: employee.name, // 컬럼이 없음
       // employee_code: employee.employee_id, // 컬럼이 없음
       // employee_nickname: employee.nickname || employee.name, // 컬럼이 없음
@@ -1199,12 +1201,15 @@ export default function PayslipGenerator() {
     if (!payslipData) return;
 
     try {
+      // period가 없으면 현재 선택된 년월로 계산
+      const period = payslipData.period || `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+      
       // 먼저 기존 레코드가 있는지 확인
       const { data: existingPayslip, error: checkError } = await supabase
         .from('payslips')
         .select('id')
         .eq('employee_id', payslipData.employee_id)
-        .eq('period', payslipData.period)
+        .eq('period', period)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -1265,6 +1270,9 @@ export default function PayslipGenerator() {
     if (!payslipData) return;
 
     try {
+      // period가 없으면 현재 선택된 년월로 계산
+      const period = payslipData.period || `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+      
       const { error } = await supabase
         .from('payslips')
         .update({ 
@@ -1272,7 +1280,7 @@ export default function PayslipGenerator() {
           paid_at: new Date().toISOString()
         })
         .eq('employee_id', payslipData.employee_id)
-        .eq('period', payslipData.period);
+        .eq('period', period);
 
       if (error) {
         throw error;
