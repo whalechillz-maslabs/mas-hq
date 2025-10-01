@@ -91,6 +91,8 @@ export default function ContractManagementPage() {
       end_date: '',
       minimum_wage: false,
     },
+    // 생성일 수정 기능
+    created_at: new Date().toISOString().split('T')[0], // 기본값은 오늘 날짜
   });
 
   // 서명 데이터
@@ -165,6 +167,8 @@ export default function ContractManagementPage() {
             meal_allowance: newContract.meal_allowance,
             includes_weekly_holiday: newContract.includes_weekly_holiday,
             insurance_4major: newContract.insurance_4major,
+            // 생성일 수정 기능
+            created_at: newContract.created_at,
             // 급여 변동 이력 저장
             salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
             // 수습기간 설정 저장
@@ -194,6 +198,8 @@ export default function ContractManagementPage() {
             includes_weekly_holiday: newContract.includes_weekly_holiday,
             insurance_4major: newContract.insurance_4major,
             status: 'draft',
+            // 생성일 수정 기능
+            created_at: newContract.created_at,
             // 급여 변동 이력 저장
             salary_history: newContract.salary_history.length > 0 ? newContract.salary_history : null,
             // 수습기간 설정 저장
@@ -697,6 +703,7 @@ export default function ContractManagementPage() {
                                 end_date: '',
                                 minimum_wage: false,
                               },
+                              created_at: new Date(contract.created_at).toISOString().split('T')[0], // 기존 생성일 포함
                             });
                             setShowCreateModal(true);
                           }}
@@ -779,6 +786,19 @@ export default function ContractManagementPage() {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">계약서 생성일</label>
+                  <input
+                    type="date"
+                    value={newContract.created_at}
+                    onChange={(e) => setNewContract({ ...newContract, created_at: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    계약서가 실제로 작성된 날짜를 입력하세요. (기본값: 오늘 날짜)
+                  </p>
                 </div>
 
                 <div>

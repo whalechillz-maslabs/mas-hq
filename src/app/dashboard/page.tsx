@@ -1838,6 +1838,15 @@ export default function DashboardPage() {
               <h3 className="font-bold text-lg text-pink-900 mb-2">개인정보 관리</h3>
               <p className="text-sm text-pink-700">프로필 및 설정 관리</p>
                   </button>
+
+            <button 
+              onClick={() => router.push('/contracts')}
+              className="p-6 bg-orange-50 border-2 border-orange-200 rounded-2xl hover:bg-orange-100 transition-all duration-200 text-left"
+            >
+              <FileText className="h-10 w-10 text-orange-600 mb-3" />
+              <h3 className="font-bold text-lg text-orange-900 mb-2">계약서 조회</h3>
+              <p className="text-sm text-orange-700">근로계약서 확인 및 다운로드</p>
+            </button>
           </div>
 
           {/* 관리자 전용 메뉴 */}
