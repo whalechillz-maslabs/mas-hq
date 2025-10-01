@@ -766,12 +766,38 @@ export default function PayslipGenerator() {
       }
       
       console.log('✅ 급여명세서 저장 성공');
+      
+      // 저장된 급여명세서를 다시 조회하여 직원 정보 포함
+      const { data: savedPayslip, error: fetchError } = await supabase
+        .from('payslips')
+        .select(`
+          *,
+          employees!inner(name, employee_id, birth_date)
+        `)
+        .eq('employee_id', employee.id)
+        .eq('period', `${year}-${month.toString().padStart(2, '0')}`)
+        .single();
+        
+      if (fetchError) {
+        console.error('저장된 급여명세서 조회 실패:', fetchError);
+        // 조회 실패해도 원본 payslip 반환
+        return payslip;
+      }
+      
+      // 직원 정보를 포함한 payslip 객체 생성
+      const payslipWithEmployeeInfo = {
+        ...savedPayslip,
+        employee_name: savedPayslip.employees?.name || employee.name,
+        employee_code: savedPayslip.employees?.employee_id || employee.employee_id,
+        employee_nickname: employee.nickname || employee.name,
+        payment_date: new Date().toISOString().split('T')[0]
+      };
+      
+      return payslipWithEmployeeInfo;
     } catch (saveError) {
       console.error('급여명세서 저장 중 오류:', saveError);
       // 저장 실패해도 화면에는 표시
     }
-
-    return payslip;
   };
 
   const generateMonthlyPayslip = async (employee: Employee, year: number, month: number) => {
