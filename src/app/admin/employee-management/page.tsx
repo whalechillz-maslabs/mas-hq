@@ -328,17 +328,16 @@ export default function EmployeeManagementPage() {
     }
 
     try {
+      // 임시로 employees 테이블의 bank_account 필드에 저장
+      const bankAccountInfo = `${bankAccountData.bank_name}|${bankAccountData.account_number}|${bankAccountData.account_holder}`;
+      
       const { error } = await supabase
-        .from('bank_accounts')
-        .upsert({
-          employee_id: selectedEmployee.id,
-          bank_name: bankAccountData.bank_name,
-          account_number: bankAccountData.account_number,
-          account_holder: bankAccountData.account_holder,
+        .from('employees')
+        .update({
+          bank_account: bankAccountInfo,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'employee_id'
-        });
+        })
+        .eq('id', selectedEmployee.id);
 
       if (error) {
         console.error('계좌 정보 저장 실패:', error);

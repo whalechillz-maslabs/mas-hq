@@ -197,15 +197,17 @@ export default function SalaryPage() {
         .eq('employee_id', user.id)
         .order('contract_date', { ascending: false });
 
-      // 계좌 정보 조회
-      const { data: bankAccount, error: bankAccountError } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('employee_id', user.id)
-        .single();
-
-      if (bankAccountError && bankAccountError.code !== 'PGRST116') {
-        console.error('계좌 정보 조회 오류:', bankAccountError);
+      // 계좌 정보 조회 (임시로 employees 테이블에서)
+      let bankAccount = null;
+      if (employee.bank_account) {
+        const parts = employee.bank_account.split('|');
+        if (parts.length === 3) {
+          bankAccount = {
+            bank_name: parts[0],
+            account_number: parts[1],
+            account_holder: parts[2]
+          };
+        }
       }
 
       // 통계 계산
@@ -216,7 +218,7 @@ export default function SalaryPage() {
       setData({
         salaries: payslips || [], // payslips 데이터를 salaries로 매핑
         contracts: contracts || [],
-        bankAccount: bankAccount || employee.bank_account, // bank_accounts 테이블에서 조회한 정보 우선 사용
+        bankAccount: bankAccount, // 파싱된 계좌 정보 사용
         totalEarnings,
         averageMonthly,
         wageType,
@@ -844,18 +846,16 @@ export default function SalaryPage() {
         return;
       }
 
-      // 기존 계좌 정보가 있으면 업데이트, 없으면 새로 생성
+      // 임시로 employees 테이블의 bank_account 필드에 저장
+      const bankAccountInfo = `${bankAccountData.bank_name}|${bankAccountData.account_number}|${bankAccountData.account_holder}`;
+      
       const { error } = await supabase
-        .from('bank_accounts')
-        .upsert({
-          employee_id: currentUser.id,
-          bank_name: bankAccountData.bank_name,
-          account_number: bankAccountData.account_number,
-          account_holder: bankAccountData.account_holder,
+        .from('employees')
+        .update({
+          bank_account: bankAccountInfo,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'employee_id'
-        });
+        })
+        .eq('id', currentUser.id);
 
       if (error) {
         console.error('계좌 정보 저장 실패:', error);
