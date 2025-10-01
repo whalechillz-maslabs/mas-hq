@@ -197,6 +197,17 @@ export default function SalaryPage() {
         .eq('employee_id', user.id)
         .order('contract_date', { ascending: false });
 
+      // 계좌 정보 조회
+      const { data: bankAccount, error: bankAccountError } = await supabase
+        .from('bank_accounts')
+        .select('*')
+        .eq('employee_id', user.id)
+        .single();
+
+      if (bankAccountError && bankAccountError.code !== 'PGRST116') {
+        console.error('계좌 정보 조회 오류:', bankAccountError);
+      }
+
       // 통계 계산
       const totalEarnings = (payslips || []).reduce((sum: number, p: any) => sum + (p.net_salary || 0), 0);
       const averageMonthly = (payslips || []).length > 0 ? totalEarnings / (payslips || []).length : 0;
@@ -205,7 +216,7 @@ export default function SalaryPage() {
       setData({
         salaries: payslips || [], // payslips 데이터를 salaries로 매핑
         contracts: contracts || [],
-        bankAccount: employee.bank_account,
+        bankAccount: bankAccount || employee.bank_account, // bank_accounts 테이블에서 조회한 정보 우선 사용
         totalEarnings,
         averageMonthly,
         wageType,
@@ -828,8 +839,7 @@ export default function SalaryPage() {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!currentUser) {
         alert('로그인이 필요합니다.');
         return;
       }
@@ -838,7 +848,7 @@ export default function SalaryPage() {
       const { error } = await supabase
         .from('bank_accounts')
         .upsert({
-          employee_id: user.id,
+          employee_id: currentUser.id,
           bank_name: bankAccountData.bank_name,
           account_number: bankAccountData.account_number,
           account_holder: bankAccountData.account_holder,
@@ -849,16 +859,16 @@ export default function SalaryPage() {
 
       if (error) {
         console.error('계좌 정보 저장 실패:', error);
-        alert('계좌 정보 저장에 실패했습니다.');
+        alert(`계좌 정보 저장에 실패했습니다.\n오류: ${error.message}`);
         return;
       }
 
       alert('계좌 정보가 저장되었습니다.');
       setShowBankAccountModal(false);
-      loadData(); // 데이터 다시 로드
+      loadSalaryData(); // 데이터 다시 로드
     } catch (error) {
       console.error('계좌 정보 저장 중 오류:', error);
-      alert('계좌 정보 저장 중 오류가 발생했습니다.');
+      alert(`계좌 정보 저장 중 오류가 발생했습니다.\n오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     }
   };
 
