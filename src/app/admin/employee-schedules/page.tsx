@@ -502,7 +502,17 @@ export default function EmployeeSchedulesPage() {
             generateTimeSlotsExcludingLunch(bulkStartTime, bulkEndTime, '12:00', '13:00', 30) :
             generateTimeSlotsIncludingLunch(bulkStartTime, bulkEndTime, 30);
           
+          console.log(`⏰ ${format(day, 'yyyy-MM-dd (EEE)', { locale: ko })} 시간 슬롯:`, {
+            bulkStartTime,
+            bulkEndTime,
+            excludeLunch,
+            timeSlots,
+            timeSlotsCount: timeSlots.length
+          });
+          
           const optimizedSchedules = mergeConsecutiveTimeSlots(timeSlots, '12:00', '13:00', excludeLunch);
+          
+          console.log(`📋 ${format(day, 'yyyy-MM-dd (EEE)', { locale: ko })} 최적화된 스케줄:`, optimizedSchedules);
           
           optimizedSchedules.forEach(optimizedSchedule => {
             schedulesToAdd.push({
