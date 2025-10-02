@@ -91,6 +91,12 @@ export default function ContractManagementPage() {
       end_date: '',
       minimum_wage: false,
     },
+    // 휴가 관련 조항
+    vacation_policy: {
+      substitute_holidays: false, // 대체 공휴일 휴무 없음
+      sick_leave_deducts_annual: true, // 병가는 연차에서 차감
+      family_events_days: 3, // 가족 경조사 (배우자, 자식, 부모) 3일
+    },
     // 생성일 수정 기능
     created_at: new Date().toISOString().split('T')[0], // 기본값은 오늘 날짜
   });
@@ -174,7 +180,9 @@ export default function ContractManagementPage() {
             // 수습기간 설정 저장
             probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
               ? newContract.probation_period 
-              : null
+              : null,
+            // 휴가 관련 조항 저장
+            vacation_policy: newContract.vacation_policy
           })
           .eq('id', selectedContract.id);
 
@@ -205,7 +213,9 @@ export default function ContractManagementPage() {
             // 수습기간 설정 저장
             probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
               ? newContract.probation_period 
-              : null
+              : null,
+            // 휴가 관련 조항 저장
+            vacation_policy: newContract.vacation_policy
           })
           .select()
           .single();
@@ -236,6 +246,12 @@ export default function ContractManagementPage() {
           end_date: '',
           minimum_wage: false,
         },
+        vacation_policy: {
+          substitute_holidays: false,
+          sick_leave_deducts_annual: true,
+          family_events_days: 3,
+        },
+        created_at: new Date().toISOString().split('T')[0],
       });
       loadData();
     } catch (error) {
@@ -703,6 +719,11 @@ export default function ContractManagementPage() {
                                 end_date: '',
                                 minimum_wage: false,
                               },
+                              vacation_policy: contract.vacation_policy || {
+                                substitute_holidays: false,
+                                sick_leave_deducts_annual: true,
+                                family_events_days: 3,
+                              },
                               created_at: new Date(contract.created_at).toISOString().split('T')[0], // 기존 생성일 포함
                             });
                             setShowCreateModal(true);
@@ -962,6 +983,80 @@ export default function ContractManagementPage() {
                     <label htmlFor="minimum_wage" className="ml-2 block text-sm text-gray-900">
                       수습기간 중 최저임금 적용 (10,030원/시간)
                     </label>
+                  </div>
+                </div>
+
+                {/* 휴가 관련 조항 */}
+                <div className="border-t pt-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">휴가 관련 조항</h4>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="substitute_holidays"
+                        checked={newContract.vacation_policy.substitute_holidays}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          vacation_policy: { 
+                            ...newContract.vacation_policy, 
+                            substitute_holidays: e.target.checked 
+                          } 
+                        })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="substitute_holidays" className="ml-2 block text-sm text-gray-900">
+                        대체 공휴일 휴무 없음
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 ml-6">
+                      체크 시 대체 공휴일에도 정상 근무합니다.
+                    </p>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="sick_leave_deducts_annual"
+                        checked={newContract.vacation_policy.sick_leave_deducts_annual}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          vacation_policy: { 
+                            ...newContract.vacation_policy, 
+                            sick_leave_deducts_annual: e.target.checked 
+                          } 
+                        })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="sick_leave_deducts_annual" className="ml-2 block text-sm text-gray-900">
+                        병가는 연차에서 차감
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 ml-6">
+                      체크 시 병가 사용 시 연차가 차감됩니다.
+                    </p>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        가족 경조사 휴가 (일)
+                      </label>
+                      <input
+                        type="number"
+                        value={newContract.vacation_policy.family_events_days}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          vacation_policy: { 
+                            ...newContract.vacation_policy, 
+                            family_events_days: parseInt(e.target.value) || 0 
+                          } 
+                        })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min="0"
+                        max="10"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        배우자, 자식, 부모의 경조사 시 제공되는 휴가 일수입니다.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
