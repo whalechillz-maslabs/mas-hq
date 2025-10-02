@@ -477,6 +477,18 @@ export default function EmployeeSchedulesPage() {
       return;
     }
 
+    // 시간 입력 검증
+    if (bulkStartTime >= bulkEndTime) {
+      alert('종료 시간은 시작 시간보다 늦어야 합니다.');
+      return;
+    }
+
+    // 점심시간 제외 옵션과 시간 범위 검증
+    if (excludeLunch && bulkStartTime < '12:00' && bulkEndTime > '12:00' && bulkEndTime <= '13:00') {
+      alert('점심시간 제외 옵션이 활성화된 상태에서 종료 시간이 12:00-13:00 사이에 있으면 스케줄이 생성되지 않습니다.\n\n해결 방법:\n1. 종료 시간을 13:00 이후로 설정하거나\n2. 점심시간 제외 옵션을 해제하세요.');
+      return;
+    }
+
     setUpdating('bulk');
 
     try {
@@ -974,22 +986,34 @@ export default function EmployeeSchedulesPage() {
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">시작 시간</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          시작 시간
+                          <span className="text-gray-500 ml-1">(24시간제)</span>
+                        </label>
                         <input
                           type="time"
                           value={bulkStartTime}
                           onChange={(e) => setBulkStartTime(e.target.value)}
                           className="w-full p-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
                         />
+                        <div className="text-xs text-gray-500 mt-1">
+                          예: 09:00 (오전 9시)
+                        </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">종료 시간</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          종료 시간
+                          <span className="text-gray-500 ml-1">(24시간제)</span>
+                        </label>
                         <input
                           type="time"
                           value={bulkEndTime}
                           onChange={(e) => setBulkEndTime(e.target.value)}
                           className="w-full p-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
                         />
+                        <div className="text-xs text-gray-500 mt-1">
+                          예: 12:00 (정오), 13:00 (오후 1시)
+                        </div>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">요일 선택</label>
@@ -1017,9 +1041,14 @@ export default function EmployeeSchedulesPage() {
                             onChange={(e) => setExcludeLunch(e.target.checked)}
                             className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                           />
-                          <span className="text-xs text-gray-700">
-                            점심시간(12:00-13:00) 제외
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-700">
+                              점심시간(12:00-13:00) 제외
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              체크 시 12:00-13:00 시간대는 스케줄에서 제외됩니다
+                            </span>
+                          </div>
                         </label>
                       </div>
                     </div>
