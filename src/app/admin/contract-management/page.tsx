@@ -181,8 +181,8 @@ export default function ContractManagementPage() {
             probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
               ? newContract.probation_period 
               : null,
-            // 휴가 관련 조항 저장
-            vacation_policy: newContract.vacation_policy
+            // 휴가 관련 조항 저장 (임시로 주석 처리)
+            // vacation_policy: newContract.vacation_policy
           })
           .eq('id', selectedContract.id);
 
@@ -214,8 +214,8 @@ export default function ContractManagementPage() {
             probation_period: (newContract.probation_period.start_date && newContract.probation_period.end_date) 
               ? newContract.probation_period 
               : null,
-            // 휴가 관련 조항 저장
-            vacation_policy: newContract.vacation_policy
+            // 휴가 관련 조항 저장 (임시로 주석 처리)
+            // vacation_policy: newContract.vacation_policy
           })
           .select()
           .single();
