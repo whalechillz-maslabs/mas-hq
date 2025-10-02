@@ -146,7 +146,7 @@ export function generateTimeSlots(
   
   let current = new Date(start);
   
-  while (current <= end) {
+  while (current < end) {
     const timeStr = current.toTimeString().substring(0, 5);
     slots.push(timeStr);
     
