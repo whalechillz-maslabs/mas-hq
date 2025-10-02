@@ -382,7 +382,18 @@ export default function ContractManagementPage() {
     </div>
 
     <div class="section">
-        <div class="section-title">4. 기타 조건</div>
+        <div class="section-title">4. 휴가 관련 조항</div>
+        <div class="terms">
+            <ol>
+                <li>대체 공휴일: ${contract.vacation_policy?.substitute_holidays ? '정상 근무' : '휴무'}</li>
+                <li>병가: ${contract.vacation_policy?.sick_leave_deducts_annual ? '연차에서 차감' : '연차와 별도 처리'}</li>
+                <li>가족 경조사 휴가: ${contract.vacation_policy?.family_events_days || 3}일 (배우자, 자식, 부모)</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">5. 기타 조건</div>
         <div class="terms">
             <ol>
                 <li>본 계약서는 근로기준법에 따라 작성되었습니다.</li>
