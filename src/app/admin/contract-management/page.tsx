@@ -97,6 +97,18 @@ export default function ContractManagementPage() {
       sick_leave_deducts_annual: true, // 병가는 연차에서 차감
       family_events_days: 3, // 가족 경조사 (배우자, 자식, 부모) 3일
     },
+    // 식대 정책
+    meal_policy: 'per_day' as 'per_day' | 'fixed_with_reconcile',
+    meal_rate: 7000,
+    meal_fixed_days_per_month: 20,
+    meal_settlement_carryover: 0,
+    // 보험 표시 제어
+    insurance_display: {
+      national_pension: true,
+      health: true,
+      employment: true,
+      industrial_accident: true,
+    },
     // 생성일 수정 기능
     created_at: new Date().toISOString().split('T')[0], // 기본값은 오늘 날짜
   });
@@ -182,7 +194,14 @@ export default function ContractManagementPage() {
               ? newContract.probation_period 
               : null,
             // 휴가 관련 조항 저장
-            vacation_policy: newContract.vacation_policy
+            vacation_policy: newContract.vacation_policy,
+            // 식대 정책 저장
+            meal_policy: newContract.meal_policy,
+            meal_rate: newContract.meal_rate,
+            meal_fixed_days_per_month: newContract.meal_fixed_days_per_month,
+            meal_settlement_carryover: newContract.meal_settlement_carryover,
+            // 보험 표시 제어 저장
+            insurance_display: newContract.insurance_display
           })
           .eq('id', selectedContract.id);
 
@@ -215,7 +234,14 @@ export default function ContractManagementPage() {
               ? newContract.probation_period 
               : null,
             // 휴가 관련 조항 저장
-            vacation_policy: newContract.vacation_policy
+            vacation_policy: newContract.vacation_policy,
+            // 식대 정책 저장
+            meal_policy: newContract.meal_policy,
+            meal_rate: newContract.meal_rate,
+            meal_fixed_days_per_month: newContract.meal_fixed_days_per_month,
+            meal_settlement_carryover: newContract.meal_settlement_carryover,
+            // 보험 표시 제어 저장
+            insurance_display: newContract.insurance_display
           })
           .select()
           .single();
@@ -250,6 +276,16 @@ export default function ContractManagementPage() {
           substitute_holidays: false,
           sick_leave_deducts_annual: true,
           family_events_days: 3,
+        },
+        meal_policy: 'per_day',
+        meal_rate: 7000,
+        meal_fixed_days_per_month: 20,
+        meal_settlement_carryover: 0,
+        insurance_display: {
+          national_pension: true,
+          health: true,
+          employment: true,
+          industrial_accident: true,
         },
         created_at: new Date().toISOString().split('T')[0],
       });
@@ -297,6 +333,17 @@ export default function ContractManagementPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // 나이 계산 함수
+  const calculateAge = (birthDate: string, referenceDate: Date = new Date()): number => {
+    const birth = new Date(birthDate);
+    let age = referenceDate.getFullYear() - birth.getFullYear();
+    const monthDiff = referenceDate.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   };
 
   const generateContractHTML = (contract: Contract, employee: Employee) => {
@@ -363,7 +410,10 @@ export default function ContractManagementPage() {
             </tr>
             <tr>
                 <th>급여</th>
-                <td>${contract.salary.toLocaleString()}원 ${contract.contract_type === 'part_time' ? '(시급)' : contract.contract_type === 'full_time' ? '(월급)' : contract.contract_type === 'annual' ? '(연봉)' : '(월급)'}</td>
+                <td>${contract.contract_type === 'annual' ? 
+                    `${contract.salary.toLocaleString()}원 (연봉) - 월 환산 ${Math.round(contract.salary / 12).toLocaleString()}원` : 
+                    `${contract.salary.toLocaleString()}원 ${contract.contract_type === 'part_time' ? '(시급)' : contract.contract_type === 'full_time' ? '(월급)' : '(월급)'}`
+                }</td>
             </tr>
         </table>
     </div>
@@ -374,8 +424,18 @@ export default function ContractManagementPage() {
             <ol>
                 <li>근무시간: ${contract.work_time} (점심시간 ${contract.lunch_break}시간)</li>
                 <li>주휴수당: ${contract.includes_weekly_holiday ? '포함' : '별도 지급'}</li>
-                <li>식대: ${contract.meal_allowance ? contract.meal_allowance.toLocaleString() + '원' : '0원'}</li>
-                <li>4대보험: ${contract.insurance_4major ? '가입' : '해당없음'}</li>
+                <li>식대: ${contract.meal_policy === 'per_day' ? 
+                    `${contract.meal_rate ? contract.meal_rate.toLocaleString() : '7,000'}원/일 (3시간 이상 근무일)` : 
+                    `월 ${((contract.meal_fixed_days_per_month || 20) * (contract.meal_rate || 7000)).toLocaleString()}원 선지급 (${contract.meal_fixed_days_per_month || 20}일×${contract.meal_rate ? contract.meal_rate.toLocaleString() : '7,000'}원), 익월 실제 사용분 정산`
+                }</li>
+                <li>4대보험: ${contract.insurance_4major ? 
+                    (() => {
+                      const age = employee.birth_date ? calculateAge(employee.birth_date) : null;
+                      const nationalPension = age !== null ? (age >= 18 && age < 60) : (contract.insurance_display?.national_pension ?? true);
+                      return `${nationalPension ? '국민연금(가입), ' : '국민연금(미가입), '}건강보험(가입), 고용보험(가입), 산재보험(가입)`;
+                    })() : 
+                    '해당없음'
+                }</li>
                 <li>연차: ${contract.contract_type === 'part_time' ? '해당없음' : '근로기준법에 따라 지급'}</li>
             </ol>
         </div>
@@ -735,6 +795,16 @@ export default function ContractManagementPage() {
                                 sick_leave_deducts_annual: true,
                                 family_events_days: 3,
                               },
+                              meal_policy: contract.meal_policy || 'per_day',
+                              meal_rate: contract.meal_rate || 7000,
+                              meal_fixed_days_per_month: contract.meal_fixed_days_per_month || 20,
+                              meal_settlement_carryover: contract.meal_settlement_carryover || 0,
+                              insurance_display: contract.insurance_display || {
+                                national_pension: true,
+                                health: true,
+                                employment: true,
+                                industrial_accident: true,
+                              },
                               created_at: new Date(contract.created_at).toISOString().split('T')[0], // 기존 생성일 포함
                             });
                             setShowCreateModal(true);
@@ -894,21 +964,69 @@ export default function ContractManagementPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">식대 (원)</label>
-                  <input
-                    type="number"
-                    value={newContract.meal_allowance}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewContract({ 
-                        ...newContract, 
-                        meal_allowance: value === '' ? 0 : parseInt(value) || 0 
-                      });
-                    }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="식대를 입력하세요"
-                  />
+                {/* 식대 정책 설정 */}
+                <div className="border-t pt-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">식대 정책</h4>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">식대 정책 선택</label>
+                      <select
+                        value={newContract.meal_policy}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          meal_policy: e.target.value as 'per_day' | 'fixed_with_reconcile' 
+                        })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="per_day">일별 지급 (3시간 이상 근무일 × 단가)</option>
+                        <option value="fixed_with_reconcile">고정 선지급 + 익월 정산</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">식대 단가 (원/일)</label>
+                      <input
+                        type="number"
+                        value={newContract.meal_rate}
+                        onChange={(e) => setNewContract({ 
+                          ...newContract, 
+                          meal_rate: parseInt(e.target.value) || 0 
+                        })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="7000"
+                      />
+                    </div>
+
+                    {newContract.meal_policy === 'fixed_with_reconcile' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">월 고정 지급일수</label>
+                        <input
+                          type="number"
+                          value={newContract.meal_fixed_days_per_month}
+                          onChange={(e) => setNewContract({ 
+                            ...newContract, 
+                            meal_fixed_days_per_month: parseInt(e.target.value) || 0 
+                          })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="20"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          월 {newContract.meal_fixed_days_per_month}일 × {newContract.meal_rate.toLocaleString()}원 = {(newContract.meal_fixed_days_per_month * newContract.meal_rate).toLocaleString()}원 선지급
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        {newContract.meal_policy === 'per_day' ? (
+                          <>일별 지급: 3시간 이상 근무일 × {newContract.meal_rate.toLocaleString()}원</>
+                        ) : (
+                          <>고정 선지급: 월 {(newContract.meal_fixed_days_per_month * newContract.meal_rate).toLocaleString()}원 선지급 후, 익월에 실제 사용분과 정산</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

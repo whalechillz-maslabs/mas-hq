@@ -555,6 +555,48 @@ export default function PayslipGenerator() {
     return payslip;
   };
 
+  // 식대 정책 계산 함수
+  const calculateMealAllowance = (contract: any, eligibleDays: number, month: number, year: number) => {
+    if (!contract || !contract.meal_policy) {
+      // 기존 방식 (일별 지급)
+      return {
+        currentMonth: eligibleDays * 7000,
+        carryover: 0,
+        policy: 'per_day'
+      };
+    }
+
+    if (contract.meal_policy === 'per_day') {
+      // 일별 지급 방식
+      return {
+        currentMonth: eligibleDays * (contract.meal_rate || 7000),
+        carryover: 0,
+        policy: 'per_day'
+      };
+    } else if (contract.meal_policy === 'fixed_with_reconcile') {
+      // 고정 선지급 + 익월 정산 방식
+      const fixedDays = contract.meal_fixed_days_per_month || 20;
+      const rate = contract.meal_rate || 7000;
+      const fixedAmount = fixedDays * rate;
+      const actualAmount = eligibleDays * rate;
+      const carryover = fixedAmount - actualAmount; // (+)면 다음달에 더 지급, (-)면 공제
+
+      return {
+        currentMonth: fixedAmount, // 이번 달에는 고정액만 지급
+        carryover: carryover, // 다음 달에 반영할 정산금
+        policy: 'fixed_with_reconcile',
+        actualAmount: actualAmount,
+        fixedAmount: fixedAmount
+      };
+    }
+
+    return {
+      currentMonth: eligibleDays * 7000,
+      carryover: 0,
+      policy: 'per_day'
+    };
+  };
+
   const generateHourlyPayslip = async (employee: Employee, year: number, month: number) => {
     // 해당 월의 스케줄 조회
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
@@ -594,6 +636,17 @@ export default function PayslipGenerator() {
       throw new Error('시급 정보가 없습니다.');
     }
 
+    // 계약서 정보 조회 (식대 정책 확인용)
+    const { data: contracts, error: contractError } = await supabase
+      .from('contracts')
+      .select('*')
+      .eq('employee_id', employee.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const contract = contracts && contracts.length > 0 ? contracts[0] : null;
+
     // 식대 계산 (하루 3시간 이상 근무한 날 × 7,000원)
     const dailyHours: { [key: string]: number } = {};
     schedules.forEach(schedule => {
@@ -611,7 +664,10 @@ export default function PayslipGenerator() {
 
     // 식대 대상일수 계산 (하루 3시간 이상 근무한 날)
     const mealAllowanceDays = Object.values(dailyHours).filter(hours => hours >= 3).length;
-    const mealAllowance = mealAllowanceDays * 7000;
+    
+    // 식대 정책에 따른 계산
+    const mealCalculation = calculateMealAllowance(contract, mealAllowanceDays, month, year);
+    const mealAllowance = mealCalculation.currentMonth;
 
     // dailyHours는 이미 위에서 계산됨
     
@@ -679,7 +735,7 @@ export default function PayslipGenerator() {
       // 고유한 날짜만 카운트 (중복 방지)
       if (!weeklyData[weekKey].dates.includes(date)) {
         weeklyData[weekKey].dates.push(date);
-        weeklyData[weekKey].days += 1;
+      weeklyData[weekKey].days += 1;
       }
     });
     
@@ -723,6 +779,7 @@ export default function PayslipGenerator() {
       incentive: 0,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
+      meal_settlement_carryover: mealCalculation.carryover, // 식대 정산 이월금
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -844,6 +901,7 @@ export default function PayslipGenerator() {
       incentive: incentive,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
+      meal_settlement_carryover: mealCalculation.carryover, // 식대 정산 이월금
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -1114,7 +1172,7 @@ export default function PayslipGenerator() {
       // 고유한 날짜만 카운트 (중복 방지)
       if (!weeklyData[weekKey].dates.includes(date)) {
         weeklyData[weekKey].dates.push(date);
-        weeklyData[weekKey].days += 1;
+      weeklyData[weekKey].days += 1;
       }
     });
     
@@ -1158,6 +1216,7 @@ export default function PayslipGenerator() {
       incentive: 0,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
+      meal_settlement_carryover: mealCalculation.carryover, // 식대 정산 이월금
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
