@@ -384,7 +384,7 @@ export default function ContractManagementPage() {
         <table class="info-table">
             <tr>
                 <th>사업주</th>
-                <td>MASLABS (대표: 김탁수)</td>
+                <td>마스골프 (대표: 김탁수)</td>
             </tr>
             <tr>
                 <th>근로자</th>
@@ -468,7 +468,7 @@ export default function ContractManagementPage() {
         <div class="signature-box">
             <div>사업주</div>
             <div class="signature-line"></div>
-            <div>MASLABS 대표 김탁수</div>
+            <div>마스골프 대표 김탁수</div>
             <div>${new Date().toLocaleDateString()}</div>
         </div>
         <div class="signature-box">
