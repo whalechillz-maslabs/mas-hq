@@ -513,6 +513,34 @@ export default function ContractManagementPage() {
     }
   };
 
+  // 서류 조회 기능
+  const handleDocumentView = async (contractId: string, documentType: 'id_card' | 'family_register' | 'bank_account') => {
+    try {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract || !contract.documents || !contract.documents[documentType]) {
+        alert('조회할 서류가 없습니다.');
+        return;
+      }
+
+      const filePath = contract.documents[documentType];
+      const { data, error } = await supabase.storage
+        .from('contract-documents')
+        .download(filePath);
+
+      if (error) throw error;
+
+      // 파일을 새 창에서 열기
+      const url = URL.createObjectURL(data);
+      window.open(url, '_blank');
+      
+      // 메모리 정리
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('서류 조회 실패:', error);
+      alert('서류 조회에 실패했습니다.');
+    }
+  };
+
   const handleDocumentUpload = async (contractId: string, documentType: 'id_card' | 'family_register' | 'bank_account', file: File) => {
     try {
       // 파일을 Supabase Storage에 업로드
@@ -1359,47 +1387,77 @@ export default function ContractManagementPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">주민등록증</label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleDocumentUpload(selectedContract.id, 'id_card', file);
-                      }
-                    }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex space-x-2">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleDocumentUpload(selectedContract.id, 'id_card', file);
+                        }
+                      }}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {selectedContract.documents?.id_card && (
+                      <button
+                        onClick={() => handleDocumentView(selectedContract.id, 'id_card')}
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        조회
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">가족관계증명서</label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleDocumentUpload(selectedContract.id, 'family_register', file);
-                      }
-                    }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex space-x-2">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleDocumentUpload(selectedContract.id, 'family_register', file);
+                        }
+                      }}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {selectedContract.documents?.family_register && (
+                      <button
+                        onClick={() => handleDocumentView(selectedContract.id, 'family_register')}
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        조회
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">통장사본</label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleDocumentUpload(selectedContract.id, 'bank_account', file);
-                      }
-                    }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex space-x-2">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleDocumentUpload(selectedContract.id, 'bank_account', file);
+                        }
+                      }}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {selectedContract.documents?.bank_account && (
+                      <button
+                        onClick={() => handleDocumentView(selectedContract.id, 'bank_account')}
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        조회
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
