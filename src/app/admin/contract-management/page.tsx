@@ -469,13 +469,13 @@ export default function ContractManagementPage() {
             <div>사업주</div>
             <div class="signature-line"></div>
             <div>마스골프 대표 김탁수</div>
-            <div>${new Date().toLocaleDateString()}</div>
+            <div>${new Date(contract.created_at).toLocaleDateString()}</div>
         </div>
         <div class="signature-box">
             <div>근로자</div>
             <div class="signature-line"></div>
             <div>${employee.name}</div>
-            <div>${new Date().toLocaleDateString()}</div>
+            <div>${new Date(contract.created_at).toLocaleDateString()}</div>
         </div>
     </div>
 </body>
