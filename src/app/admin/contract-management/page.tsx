@@ -64,6 +64,7 @@ export default function ContractManagementPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [documentThumbnails, setDocumentThumbnails] = useState<{[key: string]: string}>({});
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -513,6 +514,41 @@ export default function ContractManagementPage() {
     }
   };
 
+  // 이미지 썸네일 URL 생성
+  const getDocumentThumbnailUrl = async (contractId: string, documentType: 'id_card' | 'family_register' | 'bank_account') => {
+    try {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract || !contract.documents || !contract.documents[documentType]) {
+        return null;
+      }
+
+      const filePath = contract.documents[documentType];
+      const { data } = await supabase.storage
+        .from('contract-documents')
+        .createSignedUrl(filePath, 60 * 60 * 24); // 24시간 유효
+
+      return data?.signedUrl || null;
+    } catch (error) {
+      console.error('썸네일 URL 생성 실패:', error);
+      return null;
+    }
+  };
+
+  // 썸네일 로드
+  const loadDocumentThumbnails = async (contractId: string) => {
+    const documentTypes: ('id_card' | 'family_register' | 'bank_account')[] = ['id_card', 'family_register', 'bank_account'];
+    const thumbnails: {[key: string]: string} = {};
+
+    for (const docType of documentTypes) {
+      const thumbnailUrl = await getDocumentThumbnailUrl(contractId, docType);
+      if (thumbnailUrl) {
+        thumbnails[`${contractId}_${docType}`] = thumbnailUrl;
+      }
+    }
+
+    setDocumentThumbnails(prev => ({ ...prev, ...thumbnails }));
+  };
+
   // 서류 조회 기능
   const handleDocumentView = async (contractId: string, documentType: 'id_card' | 'family_register' | 'bank_account') => {
     try {
@@ -789,6 +825,7 @@ export default function ContractManagementPage() {
                           onClick={() => {
                             setSelectedContract(contract);
                             setShowDocumentModal(true);
+                            loadDocumentThumbnails(contract.id);
                           }}
                           className="text-purple-600 hover:text-purple-900 flex items-center space-x-1"
                         >
@@ -1411,8 +1448,21 @@ export default function ContractManagementPage() {
                     </div>
                     {selectedContract.documents?.id_card && (
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <span className="text-blue-600 font-bold text-sm">ID</span>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+                          {documentThumbnails[`${selectedContract.id}_id_card`] ? (
+                            <img 
+                              src={documentThumbnails[`${selectedContract.id}_id_card`]} 
+                              alt="주민등록증 썸네일"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full bg-blue-100 rounded-lg flex items-center justify-center ${documentThumbnails[`${selectedContract.id}_id_card`] ? 'hidden' : ''}`}>
+                            <span className="text-blue-600 font-bold text-sm">ID</span>
+                          </div>
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">주민등록증</p>
@@ -1455,8 +1505,21 @@ export default function ContractManagementPage() {
                     </div>
                     {selectedContract.documents?.family_register && (
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                          <span className="text-green-600 font-bold text-sm">가족</span>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+                          {documentThumbnails[`${selectedContract.id}_family_register`] ? (
+                            <img 
+                              src={documentThumbnails[`${selectedContract.id}_family_register`]} 
+                              alt="가족관계증명서 썸네일"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full bg-green-100 rounded-lg flex items-center justify-center ${documentThumbnails[`${selectedContract.id}_family_register`] ? 'hidden' : ''}`}>
+                            <span className="text-green-600 font-bold text-sm">가족</span>
+                          </div>
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">가족관계증명서</p>
@@ -1499,8 +1562,21 @@ export default function ContractManagementPage() {
                     </div>
                     {selectedContract.documents?.bank_account && (
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                          <span className="text-yellow-600 font-bold text-sm">통장</span>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+                          {documentThumbnails[`${selectedContract.id}_bank_account`] ? (
+                            <img 
+                              src={documentThumbnails[`${selectedContract.id}_bank_account`]} 
+                              alt="통장사본 썸네일"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full bg-yellow-100 rounded-lg flex items-center justify-center ${documentThumbnails[`${selectedContract.id}_bank_account`] ? 'hidden' : ''}`}>
+                            <span className="text-yellow-600 font-bold text-sm">통장</span>
+                          </div>
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">통장사본</p>
