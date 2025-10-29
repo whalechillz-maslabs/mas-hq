@@ -476,7 +476,7 @@ export default function ContractManagementPage() {
             <div>근로자</div>
             <div class="signature-line"></div>
             <div>${employee.name}</div>
-            <div>${new Date(contract.created_at).toLocaleDateString()}</div>
+            <div>${contract.start_date === contract.created_at ? '' : new Date(contract.created_at).toLocaleDateString()}</div>
         </div>
     </div>
 </body>
@@ -965,6 +965,24 @@ export default function ContractManagementPage() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     계약서가 실제로 작성된 날짜를 입력하세요. (기본값: 오늘 날짜)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">계약서 상태</label>
+                  <select
+                    value={newContract.status}
+                    onChange={(e) => setNewContract({ ...newContract, status: e.target.value as any })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="draft">초안</option>
+                    <option value="pending_signature">서명 대기</option>
+                    <option value="signed">서명 완료</option>
+                    <option value="active">활성</option>
+                    <option value="expired">만료</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    계약서의 현재 상태를 선택하세요.
                   </p>
                 </div>
 
