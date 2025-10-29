@@ -202,7 +202,9 @@ export default function ContractManagementPage() {
             meal_fixed_days_per_month: newContract.meal_fixed_days_per_month,
             meal_settlement_carryover: newContract.meal_settlement_carryover,
             // 보험 표시 제어 저장
-            insurance_display: newContract.insurance_display
+            insurance_display: newContract.insurance_display,
+            // 계약서 상태 저장
+            status: newContract.status
           })
           .eq('id', selectedContract.id);
 
