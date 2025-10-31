@@ -794,11 +794,11 @@ export default function PayslipGenerator() {
       }))
     };
 
-    // payslips 테이블에 저장 (upsert 사용)
+    // payslips 테이블에 저장 (단순 insert 사용 - upsert는 유니크 제약 필요)
     try {
       const { error: saveError } = await supabase
         .from('payslips')
-        .upsert([{
+        .insert([{
           employee_id: payslip.employee_id,
           period: `${year}-${month.toString().padStart(2, '0')}`,
           employment_type: payslip.employment_type,
@@ -815,9 +815,7 @@ export default function PayslipGenerator() {
           total_hours: payslip.total_hours,
           hourly_rate: payslip.hourly_rate,
           daily_details: payslip.daily_details
-        }], {
-          onConflict: 'employee_id,period'
-        });
+        }]);
 
       if (saveError) {
         console.error('급여명세서 저장 실패:', saveError);
