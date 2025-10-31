@@ -14,6 +14,7 @@ interface Employee {
   name: string;
   employee_id: string;
   nickname?: string;
+  birth_date?: string;
   employment_type: string;
   monthly_salary?: number;
   hourly_rate?: number;
@@ -39,6 +40,7 @@ interface PayslipData {
   employee_name: string;
   employee_code?: string; // MASLABS-004
   employee_nickname?: string; // 최형호
+  employee_birth_date?: string; // 만 나이 계산용
   payment_date: string;
   period: string;
   employment_type: string;
@@ -191,6 +193,7 @@ export default function PayslipGenerator() {
           name,
           employee_id,
           nickname,
+          birth_date,
           employment_type,
           monthly_salary,
           hourly_rate
@@ -508,6 +511,7 @@ export default function PayslipGenerator() {
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
+      employee_birth_date: employee.birth_date,
       employee_nickname: employee.nickname,
       payment_date: new Date().toISOString().split('T')[0],
       period: `${year}-${month.toString().padStart(2, '0')}`,
@@ -904,6 +908,7 @@ export default function PayslipGenerator() {
       employee_name: employee.name,
       employee_code: employee.employee_id,
       employee_nickname: employee.nickname || employee.name, // 닉네임 또는 이름
+      employee_birth_date: employee.birth_date,
       payment_date: new Date().toISOString().split('T')[0],
       period: `${year}-${month.toString().padStart(2, '0')}`,
       employment_type: 'full_time',
@@ -1230,7 +1235,7 @@ export default function PayslipGenerator() {
 
     const payslip: PayslipData = {
       employee_id: employee.id,
-      period: `${year}-${month.toString().padStart(2, '0')}`,
+      period: periodName,
       employee_name: employee.name,
       employee_code: employee.employee_id,
       employee_nickname: employee.nickname || employee.name,
@@ -1844,12 +1849,12 @@ export default function PayslipGenerator() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${payslip.daily_details.map((d) => {
+                  ${payslip.daily_details.map((d: any) => {
                     try {
                       const date = d.date ? new Date(d.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) : '날짜 없음';
                       const hours = (d.hours || 0) + '시간';
                       const tags = typeof d.note === 'string' ? d.note.split(';').filter(Boolean) : [];
-                      const tagHtml = tags.map(t => `<span style="display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};">${t}</span>`).join('');
+                      const tagHtml = tags.map((t: string) => `<span style="display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};">${t}</span>`).join('');
                       return `<tr>
                         <td style="padding:8px 4px; border-bottom:1px solid #f0f0f0;">${date}</td>
                         <td style="padding:8px 4px; border-bottom:1px solid #f0f0f0;">${hours}</td>
@@ -2172,12 +2177,12 @@ export default function PayslipGenerator() {
                 </tr>
               </thead>
               <tbody>
-                ${payslip.daily_details.map((d) => {
+                ${payslip.daily_details.map((d: any) => {
                   try {
                     const date = d.date ? new Date(d.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) : '날짜 없음';
                     const hours = (d.hours || 0) + '시간';
                     const tags = typeof d.note === 'string' ? d.note.split(';').filter(Boolean) : [];
-                    const tagHtml = tags.map(t => `<span style=\"display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};\">${t}</span>`).join('');
+                    const tagHtml = tags.map((t: string) => `<span style=\"display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};\">${t}</span>`).join('');
                     return `<tr>
                       <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${date}</td>
                       <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${hours}</td>
@@ -4558,15 +4563,15 @@ export default function PayslipGenerator() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">직원명:</span>
-                    <span className="font-medium">{payslipData.employees?.name || '정보 없음'}</span>
+                    <span className="font-medium">{payslipData.employee_name || '정보 없음'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">직원 코드:</span>
-                    <span className="font-medium">{payslipData.employees?.employee_id || payslipData.employee_id}</span>
+                    <span className="font-medium">{payslipData.employee_code || payslipData.employee_id}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">닉네임:</span>
-                    <span className="font-medium">{payslipData.employees?.name || '정보 없음'}</span>
+                    <span className="font-medium">{payslipData.employee_nickname || payslipData.employee_name || '정보 없음'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">급여 기간:</span>
