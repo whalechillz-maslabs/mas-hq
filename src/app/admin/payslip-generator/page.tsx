@@ -918,11 +918,28 @@ export default function PayslipGenerator() {
       status: 'generated'
     };
 
-    // payslips 테이블에 저장
+    // payslips 테이블에 저장 (스키마 존재 컬럼만 저장)
     try {
       const { error: saveError } = await supabase
         .from('payslips')
-        .insert([payslip]);
+        .insert([{
+          employee_id: payslip.employee_id,
+          period: payslip.period,
+          employment_type: payslip.employment_type,
+          base_salary: payslip.base_salary,
+          overtime_pay: payslip.overtime_pay,
+          weekly_holiday_pay: payslip.weekly_holiday_pay,
+          incentive: payslip.incentive,
+          point_bonus: payslip.point_bonus,
+          meal_allowance: payslip.meal_allowance,
+          total_earnings: payslip.total_earnings,
+          tax_amount: payslip.tax_amount,
+          net_salary: payslip.net_salary,
+          status: payslip.status,
+          total_hours: payslip.total_hours,
+          hourly_rate: payslip.hourly_rate,
+          daily_details: payslip.daily_details
+        }]);
 
       if (saveError) {
         console.error('급여명세서 저장 실패:', saveError);
