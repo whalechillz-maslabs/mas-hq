@@ -121,6 +121,9 @@ export default function PayslipGenerator() {
   // 포인트 보너스 옵션
   const [includePointBonus, setIncludePointBonus] = useState<boolean>(false);
   const [pointBonusAmount, setPointBonusAmount] = useState<number>(0);
+  // 식대 처리 옵션: 계약대로/제외/수동입력
+  const [mealOption, setMealOption] = useState<'contract' | 'exclude' | 'manual'>('contract');
+  const [mealManualAmount, setMealManualAmount] = useState<number>(0);
   
   // 연봉계약 전환 관련 상태
   const [showContractChangeModal, setShowContractChangeModal] = useState(false);
@@ -684,8 +687,15 @@ export default function PayslipGenerator() {
     const mealAllowanceDays = Object.values(dailyHours).filter(hours => hours >= 3).length;
     
     // 식대 정책에 따른 계산
-    const mealCalculation = calculateMealAllowance(contract, mealAllowanceDays, month, year);
-    const mealAllowance = mealCalculation.currentMonth;
+    let mealAllowance = 0;
+    if (mealOption === 'exclude') {
+      mealAllowance = 0;
+    } else if (mealOption === 'manual') {
+      mealAllowance = Math.max(0, mealManualAmount || 0);
+    } else {
+      const mealCalculation = calculateMealAllowance(contract, mealAllowanceDays, month, year);
+      mealAllowance = mealCalculation.currentMonth;
+    }
 
     // dailyHours는 이미 위에서 계산됨
     
@@ -892,7 +902,12 @@ export default function PayslipGenerator() {
       .limit(1)
       .single();
 
-    const mealAllowance = contract?.meal_allowance || 0;
+    // 월급제: 식대 옵션 적용 (계약 기본값, 제외, 수동)
+    const mealAllowance = mealOption === 'exclude'
+      ? 0
+      : mealOption === 'manual'
+        ? Math.max(0, mealManualAmount || 0)
+        : (contract?.meal_allowance || 0);
     
     const baseSalary = employee.monthly_salary || 0;
     const overtimePay = 0; // 추후 구현
@@ -1088,7 +1103,11 @@ export default function PayslipGenerator() {
       .limit(1)
       .single();
 
-    const mealAllowance = contract?.meal_allowance || 0;
+    const mealAllowance = mealOption === 'exclude'
+      ? 0
+      : mealOption === 'manual'
+        ? Math.max(0, mealManualAmount || 0)
+        : (contract?.meal_allowance || 0);
 
     // 해당 기간의 스케줄 조회
     const { data: schedules, error: scheduleError } = await supabase
@@ -4274,6 +4293,69 @@ export default function PayslipGenerator() {
                 />
               </div>
             )}
+
+            {/* 식대 처리 옵션 */}
+            <div className="mt-6 border-t pt-4">
+              <h3 className="text-md font-medium text-gray-900 mb-3">식대 처리</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    id="meal-contract"
+                    name="meal-option"
+                    checked={mealOption === 'contract'}
+                    onChange={() => setMealOption('contract')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="meal-contract" className="text-sm text-gray-700">
+                    계약대로 자동 계산
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    id="meal-exclude"
+                    name="meal-option"
+                    checked={mealOption === 'exclude'}
+                    onChange={() => setMealOption('exclude')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="meal-exclude" className="text-sm text-gray-700">
+                    이번 달 식대 제외(0원)
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    id="meal-manual"
+                    name="meal-option"
+                    checked={mealOption === 'manual'}
+                    onChange={() => setMealOption('manual')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="meal-manual" className="text-sm text-gray-700">
+                    수동 입력
+                  </label>
+                </div>
+              </div>
+              <div className="mt-3 max-w-sm">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  수동 입력 금액 (원)
+                </label>
+                <input
+                  type="number"
+                  value={mealManualAmount}
+                  onChange={(e) => setMealManualAmount(parseInt(e.target.value) || 0)}
+                  disabled={mealOption !== 'manual'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  placeholder="0"
+                  min="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  계약이 일별 지급인 경우: 3시간 이상 근무일 × 단가로 자동 산정됩니다.
+                </p>
+              </div>
+            </div>
 
             {/* 생성 버튼 */}
             <div className="flex justify-center gap-4 pt-4">
