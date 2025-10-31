@@ -1843,9 +1843,15 @@ export default function PayslipGenerator() {
               </div>
               ` : ''}
               <div class="salary-item total">
-                <span>총 지급액</span>
-                <span>${payslip.total_earnings?.toLocaleString() || 0}원</span>
+                <span>총 지급액(과세)</span>
+                <span>${((payslip.total_earnings || 0) - (payslip.meal_allowance || 0)).toLocaleString()}원</span>
               </div>
+              ${(payslip.meal_allowance || 0) > 0 ? `
+              <div class="salary-item">
+                <span>비과세(식대)</span>
+                <span>${payslip.meal_allowance.toLocaleString()}원</span>
+              </div>
+              ` : ''}
               <div class="salary-item deduction">
                 <span>세금 (3.3%)</span>
                 <span>-${payslip.tax_amount?.toLocaleString() || 0}원</span>
@@ -2167,9 +2173,15 @@ export default function PayslipGenerator() {
 
           <div class="total-section">
             <div class="total-item">
-              <span>총 지급액:</span>
-              <span>${payslip.total_earnings.toLocaleString()}원</span>
+              <span>총 지급액(과세):</span>
+              <span>${(payslip.total_earnings - (payslip.meal_allowance || 0)).toLocaleString()}원</span>
             </div>
+            ${(payslip.meal_allowance || 0) > 0 ? `
+            <div class="total-item">
+              <span>비과세(식대):</span>
+              <span>${(payslip.meal_allowance || 0).toLocaleString()}원</span>
+            </div>
+            ` : ''}
             <div class="total-item">
               <span>4대보험:</span>
               <span>-${insurance.totalInsurance.toLocaleString()}원</span>
@@ -3998,9 +4010,15 @@ export default function PayslipGenerator() {
               </div>
               ` : ''}
               <div class="salary-item total">
-                <span>총 지급액</span>
-                <span>${payslipData.total_earnings.toLocaleString()}원</span>
+                <span>총 지급액(과세)</span>
+                <span>${(payslipData.total_earnings - (payslipData.meal_allowance || 0)).toLocaleString()}원</span>
               </div>
+              ${(payslipData.meal_allowance || 0) > 0 ? `
+              <div class="salary-item">
+                <span>비과세(식대)</span>
+                <span>${(payslipData.meal_allowance || 0).toLocaleString()}원</span>
+              </div>
+              ` : ''}
               <div class="salary-item deduction">
                 <span>세금 (3.3%)</span>
                 <span>-${payslipData.tax_amount.toLocaleString()}원</span>
