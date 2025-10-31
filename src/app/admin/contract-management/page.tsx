@@ -15,6 +15,7 @@ interface Employee {
   employee_id: string;
   hire_date: string;
   employment_type: string;
+  birth_date?: string;
   monthly_salary?: number;
   hourly_rate?: number;
   phone?: string;
@@ -31,11 +32,26 @@ interface Contract {
   salary: number;
   work_hours: number;
   work_days: number;
+  work_time?: string;
+  lunch_break?: number;
+  includes_weekly_holiday?: boolean;
+  meal_allowance?: number;
+  meal_policy?: 'per_day' | 'fixed_with_reconcile';
+  meal_rate?: number;
+  meal_fixed_days_per_month?: number;
+  meal_settlement_carryover?: number;
+  insurance_4major?: boolean;
   status: 'draft' | 'pending_signature' | 'signed' | 'active' | 'expired';
   created_at: string;
   signed_at?: string;
   employee_signature?: string;
   employer_signature?: string;
+  insurance_display?: {
+    national_pension: boolean;
+    health: boolean;
+    employment: boolean;
+    industrial_accident: boolean;
+  };
   documents?: {
     id_card?: string;
     family_register?: string;
@@ -53,6 +69,12 @@ interface Contract {
     start_date: string;
     end_date: string;
     minimum_wage: boolean; // 최저임금 적용 여부
+  };
+  // 휴가 관련 조항
+  vacation_policy?: {
+    substitute_holidays: boolean;
+    sick_leave_deducts_annual: boolean;
+    family_events_days: number;
   };
   employees?: Employee;
 }
@@ -82,6 +104,7 @@ export default function ContractManagementPage() {
     lunch_break: 1,
     meal_allowance: 140000,
     includes_weekly_holiday: true,
+    status: 'draft' as 'draft' | 'pending_signature' | 'signed' | 'active' | 'expired',
     // 4대보험 설정 (간단한 방식)
     insurance_4major: true, // 4대보험 가입 여부
     // 급여 변동 이력
@@ -268,6 +291,7 @@ export default function ContractManagementPage() {
         lunch_break: 1,
         meal_allowance: 140000,
         includes_weekly_holiday: true,
+        status: 'draft',
         insurance_4major: true,
         salary_history: [],
         probation_period: {
@@ -639,6 +663,18 @@ export default function ContractManagementPage() {
     );
   };
 
+  // 최신 활성 계약 기준으로 직원 라벨 표기 지원
+  const getLatestActiveContractType = (employeeId: string): 'part_time' | 'full_time' | 'annual' | undefined => {
+    const active = contracts.filter(c => c.employee_id === employeeId && c.status === 'active');
+    if (active.length === 0) return undefined;
+    // 가장 최근 시작일 기준 정렬
+    const sorted = [...active].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    return sorted[0].contract_type;
+  };
+
+  const toKoreanContractType = (t?: string) =>
+    t === 'annual' ? '연봉제' : t === 'full_time' ? '정규직' : t === 'part_time' ? '파트타임' : '계약없음';
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -850,6 +886,7 @@ export default function ContractManagementPage() {
                               lunch_break: 1,
                               meal_allowance: contract.meal_allowance || 140000,
                               includes_weekly_holiday: contract.includes_weekly_holiday || true,
+                            status: contract.status,
                               insurance_4major: contract.insurance_4major || true,
                               salary_history: contract.salary_history || [],
                               probation_period: contract.probation_period || {
@@ -909,7 +946,7 @@ export default function ContractManagementPage() {
                     <option value="">직원을 선택하세요</option>
                     {employees.map(employee => (
                       <option key={employee.id} value={employee.id}>
-                        {employee.name} ({employee.employee_id}) - {employee.employment_type}
+                        {employee.name} ({employee.employee_id}) - {toKoreanContractType(getLatestActiveContractType(employee.id))}
                       </option>
                     ))}
                   </select>
