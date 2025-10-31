@@ -667,8 +667,20 @@ export default function ContractManagementPage() {
   const getLatestActiveContractType = (employeeId: string): 'part_time' | 'full_time' | 'annual' | undefined => {
     const active = contracts.filter(c => c.employee_id === employeeId && c.status === 'active');
     if (active.length === 0) return undefined;
-    // 가장 최근 시작일 기준 정렬
-    const sorted = [...active].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    // 가장 최근 계약 선택: 시작일 내림차순 -> 만료일 내림차순 -> 생성일 내림차순
+    const sorted = [...active].sort((a, b) => {
+      const startDiff = new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+      if (startDiff !== 0) return startDiff;
+      
+      // 시작일이 같으면 만료일 기준 (만료일이 더 늦은 것이 더 최신)
+      const aEnd = a.end_date ? new Date(a.end_date).getTime() : Infinity;
+      const bEnd = b.end_date ? new Date(b.end_date).getTime() : Infinity;
+      const endDiff = bEnd - aEnd;
+      if (endDiff !== 0) return endDiff;
+      
+      // 만료일도 같으면 생성일 기준 (더 최근에 생성된 것이 더 최신)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
     return sorted[0].contract_type;
   };
 
