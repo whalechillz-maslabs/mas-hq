@@ -779,7 +779,6 @@ export default function PayslipGenerator() {
       incentive: 0,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
-      meal_settlement_carryover: 0, // 식대 정산 이월금 (연봉/월급제는 기본 0)
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -901,7 +900,6 @@ export default function PayslipGenerator() {
       incentive: incentive,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
-      meal_settlement_carryover: 0, // 식대 정산 이월금 (연봉/월급제는 기본 0)
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
@@ -1216,7 +1214,6 @@ export default function PayslipGenerator() {
       incentive: 0,
       point_bonus: pointBonus,
       meal_allowance: mealAllowance, // 식대
-      meal_settlement_carryover: mealCalculation.carryover, // 식대 정산 이월금
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
