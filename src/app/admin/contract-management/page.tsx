@@ -688,8 +688,31 @@ export default function ContractManagementPage() {
 
       if (updateError) throw updateError;
 
+      // 모달이 열려있는 경우 selectedContract 상태 즉시 업데이트
+      if (selectedContract && selectedContract.id === contractId) {
+        const updatedSelectedContract = {
+          ...selectedContract,
+          documents: finalDocuments
+        };
+        setSelectedContract(updatedSelectedContract);
+        
+        // 썸네일도 제거
+        const thumbnailKey = `${contractId}_${documentType}`;
+        const updatedThumbnails = { ...documentThumbnails };
+        delete updatedThumbnails[thumbnailKey];
+        setDocumentThumbnails(updatedThumbnails);
+      }
+
+      // contracts 리스트도 업데이트
+      const updatedContracts = contracts.map(c => {
+        if (c.id === contractId) {
+          return { ...c, documents: finalDocuments };
+        }
+        return c;
+      });
+      setContracts(updatedContracts);
+
       alert('서류가 삭제되었습니다.');
-      loadData();
     } catch (error) {
       console.error('서류 삭제 실패:', error);
       console.error('오류 상세:', JSON.stringify(error, null, 2));
