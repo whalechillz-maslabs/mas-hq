@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { FileText, Download, Eye, ArrowLeft, Calendar, User, DollarSign, Clock } from 'lucide-react';
+import { FileText, Download, Eye, ArrowLeft, Calendar, User, DollarSign, Clock, X } from 'lucide-react';
 
 interface Contract {
   id: string;
@@ -128,8 +128,189 @@ export default function ContractsPage() {
   };
 
   const handleDownloadContract = async (contract: Contract) => {
-    // 계약서 PDF 다운로드 기능 (향후 구현)
-    alert('계약서 다운로드 기능은 준비 중입니다.');
+    try {
+      // 현재 직원 정보 가져오기
+      let currentEmployee = null;
+      if (typeof window !== 'undefined') {
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        const employeeData = localStorage.getItem('currentEmployee');
+        
+        if (isLoggedIn === 'true' && employeeData) {
+          currentEmployee = JSON.parse(employeeData);
+        }
+      }
+
+      if (!currentEmployee) {
+        alert('직원 정보를 불러올 수 없습니다.');
+        return;
+      }
+
+      // 계약서 HTML 생성
+      const contractHTML = generateContractHTML(contract, currentEmployee);
+      
+      const blob = new Blob([contractHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `근로계약서_${currentEmployee.name}_${contract.start_date}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('계약서 다운로드 실패:', error);
+      alert('계약서 다운로드에 실패했습니다.');
+    }
+  };
+
+  const generateContractHTML = (contract: Contract, employee: any) => {
+    const calculateAge = (birthDate: string, referenceDate: Date = new Date()): number => {
+      if (!birthDate) return 0;
+      const birth = new Date(birthDate);
+      let age = referenceDate.getFullYear() - birth.getFullYear();
+      const monthDiff = referenceDate.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birth.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    const age = employee.birth_date ? calculateAge(employee.birth_date) : null;
+    const nationalPension = contract.insurance_4major && age !== null ? (age >= 18 && age < 60) : (contract.insurance_4major ? true : false);
+
+    return `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>근로계약서 - ${employee.name}</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; margin: 40px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .subtitle { font-size: 18px; color: #666; }
+        .section { margin: 20px 0; }
+        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
+        .info-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .info-table th, .info-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .info-table th { background-color: #f5f5f5; font-weight: bold; }
+        .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
+        .signature-box { width: 45%; text-align: center; }
+        .signature-line { border-bottom: 1px solid #333; height: 50px; margin: 20px 0; }
+        .terms { margin: 20px 0; }
+        .terms ol { padding-left: 20px; }
+        .terms li { margin: 10px 0; }
+        @media print { body { margin: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">근로계약서</div>
+        <div class="subtitle">Employment Contract</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">1. 당사자</div>
+        <table class="info-table">
+            <tr>
+                <th>사업주</th>
+                <td>마스골프 (대표: 김탁수)</td>
+            </tr>
+            <tr>
+                <th>근로자</th>
+                <td>${employee.name} (${employee.employee_id})</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">2. 근로조건</div>
+        <table class="info-table">
+            <tr>
+                <th>계약 유형</th>
+                <td>${contract.contract_type === 'part_time' ? '파트타임 (시급제)' : contract.contract_type === 'full_time' ? '정규직 (월급제)' : contract.contract_type === 'annual' ? '연봉제' : '정규직'}</td>
+            </tr>
+            <tr>
+                <th>계약 기간</th>
+                <td>${contract.start_date} ~ ${contract.end_date || '무기한'}</td>
+            </tr>
+            <tr>
+                <th>근무 시간</th>
+                <td>주 ${contract.work_days}일, 일 ${contract.work_hours}시간</td>
+            </tr>
+            <tr>
+                <th>급여</th>
+                <td>${contract.contract_type === 'annual' ? 
+                    `${contract.salary.toLocaleString()}원 (연봉) - 월 환산 ${Math.round(contract.salary / 12).toLocaleString()}원` : 
+                    `${contract.salary.toLocaleString()}원 ${contract.contract_type === 'part_time' ? '(시급)' : contract.contract_type === 'full_time' ? '(월급)' : '(월급)'}`
+                }</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">3. 근로조건 세부사항</div>
+        <div class="terms">
+            <ol>
+                <li>근무시간: ${contract.work_time || '09:00-17:00'} (점심시간 ${contract.lunch_break || 1}시간)</li>
+                <li>주휴수당: ${contract.includes_weekly_holiday ? '포함' : '별도 지급'}</li>
+                <li>식대: ${contract.meal_policy === 'per_day' ? 
+                    `${contract.meal_rate ? contract.meal_rate.toLocaleString() : '7,000'}원/일 (3시간 이상 근무일)` : 
+                    contract.meal_policy === 'fixed_with_reconcile' ?
+                    `월 ${((contract.meal_fixed_days_per_month || 20) * (contract.meal_rate || 7000)).toLocaleString()}원 선지급 (${contract.meal_fixed_days_per_month || 20}일×${contract.meal_rate ? contract.meal_rate.toLocaleString() : '7,000'}원), 익월 실제 사용분 정산` :
+                    `${contract.meal_allowance ? contract.meal_allowance.toLocaleString() : '0'}원`
+                }</li>
+                <li>4대보험: ${contract.insurance_4major ? 
+                    `${nationalPension ? '국민연금(가입), ' : '국민연금(미가입), '}건강보험(가입), 고용보험(가입), 산재보험(가입)` : 
+                    '해당없음'
+                }</li>
+                <li>연차: ${contract.contract_type === 'part_time' ? '해당없음' : '근로기준법에 따라 지급'}</li>
+            </ol>
+        </div>
+    </div>
+
+    ${contract.vacation_policy ? `
+    <div class="section">
+        <div class="section-title">4. 휴가 관련 조항</div>
+        <div class="terms">
+            <ol>
+                <li>대체 공휴일: ${contract.vacation_policy.substitute_holidays ? '정상 근무' : '휴무'}</li>
+                <li>병가: ${contract.vacation_policy.sick_leave_deducts_annual ? '연차에서 차감' : '연차와 별도 처리'}</li>
+                <li>가족 경조사 휴가: ${contract.vacation_policy.family_events_days || 3}일 (배우자, 자식, 부모)</li>
+            </ol>
+        </div>
+    </div>
+    ` : ''}
+
+    <div class="section">
+        <div class="section-title">${contract.vacation_policy ? '5' : '4'}. 기타 조건</div>
+        <div class="terms">
+            <ol>
+                <li>본 계약서는 근로기준법에 따라 작성되었습니다.</li>
+                <li>계약 조건 변경 시에는 서면으로 합의해야 합니다.</li>
+                <li>해고 시에는 30일 전 통보 또는 30일분의 통상임금을 지급합니다.</li>
+                <li>기타 근로조건은 근로기준법 및 관련 법령에 따릅니다.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <div>사업주</div>
+            <div class="signature-line"></div>
+            <div>마스골프 대표 김탁수</div>
+            <div>${new Date(contract.created_at).toLocaleDateString('ko-KR')}</div>
+        </div>
+        <div class="signature-box">
+            <div>근로자</div>
+            <div class="signature-line"></div>
+            <div>${employee.name}</div>
+            <div>${new Date(contract.created_at).toLocaleDateString('ko-KR')}</div>
+        </div>
+    </div>
+</body>
+</html>`;
   };
 
   if (loading) {
@@ -303,19 +484,19 @@ export default function ContractsPage() {
                       {selectedContract.contract_type === 'part_time' ? '시급' : 
                        selectedContract.contract_type === 'full_time' ? '월급' : '연봉'}
                     </label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedContract.salary.toLocaleString()}원</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedContract.salary ? selectedContract.salary.toLocaleString() : '0'}원</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">식대</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedContract.meal_allowance.toLocaleString()}원</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedContract.meal_allowance ? selectedContract.meal_allowance.toLocaleString() : '0'}원</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">근무 시간</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedContract.work_hours}시간/일</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedContract.work_hours || 0}시간/일</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">근무 일수</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedContract.work_days}일/주</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedContract.work_days || 0}일/주</p>
                   </div>
                 </div>
               </div>
