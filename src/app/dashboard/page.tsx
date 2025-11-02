@@ -98,6 +98,9 @@ interface DashboardData {
     tasks: { name: string; sales: number; points: number; tasks: number }[];
   } | null;
   todaySales: number;
+  weeklySales: number;
+  weeklyPoints: number;
+  weeklyTaskCount: number;
 }
 
 export default function DashboardPage() {
@@ -146,28 +149,41 @@ export default function DashboardPage() {
   }, []);
 
   // 매출 상세 데이터 가져오기
-  const loadSalesDetailData = async (period: 'month' | 'quarter' | 'year' = 'month') => {
+  const loadSalesDetailData = async (period: 'today' | 'week' | 'month' | 'quarter' | 'year' = 'month') => {
     try {
       let startDate, endDate;
       const today = new Date();
+      const koreaOffset = 9 * 60; // UTC+9 (분 단위)
+      const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
       
-      if (period === 'month') {
+      if (period === 'today') {
+        // 오늘 날짜만
+        const year = koreaTime.getUTCFullYear();
+        const month = koreaTime.getUTCMonth();
+        const day = koreaTime.getUTCDate();
+        startDate = new Date(Date.UTC(year, month, day));
+        endDate = new Date(Date.UTC(year, month, day));
+      } else if (period === 'week') {
+        // 이번 주 (월요일 ~ 일요일)
+        const dayOfWeek = koreaTime.getUTCDay(); // 0 (일요일) ~ 6 (토요일)
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 월요일까지의 일수
+        const year = koreaTime.getUTCFullYear();
+        const month = koreaTime.getUTCMonth();
+        const day = koreaTime.getUTCDate();
+        const monday = new Date(Date.UTC(year, month, day + mondayOffset));
+        startDate = monday;
+        endDate = new Date(Date.UTC(year, month, day)); // 오늘까지
+      } else if (period === 'month') {
         // 한국 시간 기준으로 이번 달 1일부터 마지막 날까지 계산
-        const koreaOffset = 9 * 60; // UTC+9 (분 단위)
-        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
         const year = koreaTime.getUTCFullYear();
         const month = koreaTime.getUTCMonth();
         startDate = new Date(Date.UTC(year, month, 1));
         endDate = new Date(Date.UTC(year, month + 1, 0));
       } else if (period === 'quarter') {
-        const koreaOffset = 9 * 60;
-        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
         const quarter = Math.floor(koreaTime.getUTCMonth() / 3);
         startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3, 1));
         endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3 + 3, 0));
       } else {
-        const koreaOffset = 9 * 60;
-        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
         startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 0, 1));
         endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 11, 31));
       }
@@ -257,28 +273,41 @@ export default function DashboardPage() {
   };
 
   // 마케팅 유입 상세 데이터 가져오기
-  const loadMarketingDetailData = async (period: 'month' | 'quarter' | 'year' = 'month', brand: 'masgolf' | 'singsingolf' | 'all' = 'all') => {
+  const loadMarketingDetailData = async (period: 'today' | 'week' | 'month' | 'quarter' | 'year' = 'month', brand: 'masgolf' | 'singsingolf' | 'all' = 'all') => {
     try {
       let startDate, endDate;
       const today = new Date();
+      const koreaOffset = 9 * 60; // UTC+9 (분 단위)
+      const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
       
-      if (period === 'month') {
+      if (period === 'today') {
+        // 오늘 날짜만
+        const year = koreaTime.getUTCFullYear();
+        const month = koreaTime.getUTCMonth();
+        const day = koreaTime.getUTCDate();
+        startDate = new Date(Date.UTC(year, month, day));
+        endDate = new Date(Date.UTC(year, month, day));
+      } else if (period === 'week') {
+        // 이번 주 (월요일 ~ 일요일)
+        const dayOfWeek = koreaTime.getUTCDay(); // 0 (일요일) ~ 6 (토요일)
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 월요일까지의 일수
+        const year = koreaTime.getUTCFullYear();
+        const month = koreaTime.getUTCMonth();
+        const day = koreaTime.getUTCDate();
+        const monday = new Date(Date.UTC(year, month, day + mondayOffset));
+        startDate = monday;
+        endDate = new Date(Date.UTC(year, month, day)); // 오늘까지
+      } else if (period === 'month') {
         // 한국 시간 기준으로 이번 달 1일부터 마지막 날까지 계산
-        const koreaOffset = 9 * 60; // UTC+9 (분 단위)
-        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
         const year = koreaTime.getUTCFullYear();
         const month = koreaTime.getUTCMonth();
         startDate = new Date(Date.UTC(year, month, 1));
         endDate = new Date(Date.UTC(year, month + 1, 0));
       } else if (period === 'quarter') {
-        const koreaOffset = 9 * 60;
-        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
         const quarter = Math.floor(koreaTime.getUTCMonth() / 3);
         startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3, 1));
         endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), quarter * 3 + 3, 0));
       } else {
-        const koreaOffset = 9 * 60;
-        const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
         startDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 0, 1));
         endDate = new Date(Date.UTC(koreaTime.getUTCFullYear(), 11, 31));
       }
@@ -493,12 +522,26 @@ export default function DashboardPage() {
 
       // 오늘 날짜와 이번 달 날짜 범위 계산
       const today = new Date();
+      const koreaOffset = 9 * 60; // UTC+9 (분 단위)
+      const koreaTime = new Date(today.getTime() + (koreaOffset * 60 * 1000));
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      // 이번 주 계산 (월요일 ~ 일요일)
+      // 한국 시간 기준으로 날짜 계산
+      const koreaYear = koreaTime.getUTCFullYear();
+      const koreaMonth = koreaTime.getUTCMonth();
+      const koreaDate = koreaTime.getUTCDate();
+      const koreaDayOfWeek = koreaTime.getUTCDay(); // 0 (일요일) ~ 6 (토요일)
+      const mondayOffset = koreaDayOfWeek === 0 ? -6 : 1 - koreaDayOfWeek; // 월요일까지의 일수
+      
+      const mondayDate = new Date(Date.UTC(koreaYear, koreaMonth, koreaDate + mondayOffset));
+      mondayDate.setUTCHours(0, 0, 0, 0);
       
       const todayStr = today.toISOString().split('T')[0];
       const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
       const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
+      const startOfWeekStr = mondayDate.toISOString().split('T')[0];
 
       // 오늘의 스케줄 가져오기
       const { data: scheduleData } = await supabase
@@ -524,6 +567,17 @@ export default function DashboardPage() {
         .eq('task_date', todayStr)
         .eq('employee_id', currentUser.id);
 
+      // 이번 주 업무 데이터 가져오기 (task_date 기준)
+      const { data: weeklyTasks } = await supabase
+        .from('employee_tasks')
+        .select(`
+          *,
+          operation_type:operation_types(code, name, points)
+        `)
+        .gte('task_date', startOfWeekStr)
+        .lte('task_date', todayStr)
+        .eq('employee_id', currentUser.id);
+
       // 이번 달 업무 데이터 가져오기 (task_date 기준)
       const { data: monthlyTasks } = await supabase
         .from('employee_tasks')
@@ -543,6 +597,21 @@ export default function DashboardPage() {
         }
         return sum + (task.sales_amount || 0);
       }, 0) || 0;
+
+      // 이번 주 매출 계산 (OP5 제외)
+      const weeklySales = weeklyTasks?.reduce((sum, task) => {
+        // OP5는 개인매출에서 제외
+        if (task.operation_type?.code === 'OP5') {
+          return sum;
+        }
+        return sum + (task.sales_amount || 0);
+      }, 0) || 0;
+
+      // 이번 주 포인트 계산
+      const weeklyPoints = weeklyTasks?.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0) || 0;
+
+      // 이번 주 업무 건수
+      const weeklyTaskCount = weeklyTasks?.length || 0;
 
       // 이번 달 매출 계산 (OP5 제외)
       const monthlySales = monthlyTasks?.reduce((sum, task) => {
@@ -829,7 +898,10 @@ export default function DashboardPage() {
         recentSharedTasks,
         myTasks,
         teamRankings,
-        todaySales: todaySales
+        todaySales: todaySales,
+        weeklySales: weeklySales,
+        weeklyPoints: weeklyPoints,
+        weeklyTaskCount: weeklyTaskCount
       });
 
     } catch (error) {
@@ -892,7 +964,10 @@ export default function DashboardPage() {
         },
         recentSharedTasks: [],
         myTasks: [],
-        todaySales: 0
+        todaySales: 0,
+        weeklySales: 0,
+        weeklyPoints: 0,
+        weeklyTaskCount: 0
       });
     } finally {
       console.log('=== loadDashboardData 함수 완료 ===');
@@ -977,14 +1052,14 @@ export default function DashboardPage() {
   };
 
   // 매출 상세 모달 열기
-  const handleOpenSalesDetail = async (period: 'month' | 'quarter' | 'year' = 'month') => {
+  const handleOpenSalesDetail = async (period: 'today' | 'week' | 'month' | 'quarter' | 'year' = 'month') => {
     setShowSalesDetailModal(true);
     const detailData = await loadSalesDetailData(period);
     setSalesDetailData(detailData);
   };
 
   // 마케팅 상세 모달 열기
-  const handleOpenMarketingDetail = async (period: 'month' | 'quarter' | 'year' = 'month', brand: 'masgolf' | 'singsingolf' | 'all' = 'all') => {
+  const handleOpenMarketingDetail = async (period: 'today' | 'week' | 'month' | 'quarter' | 'year' = 'month', brand: 'masgolf' | 'singsingolf' | 'all' = 'all') => {
     setShowMarketingDetailModal(true);
     setSelectedMarketingBrand(brand);
     const detailData = await loadMarketingDetailData(period, brand);
@@ -1404,7 +1479,7 @@ export default function DashboardPage() {
               매출 상세보기
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
@@ -1412,6 +1487,15 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{formatCurrency(data?.todaySales || 0)}</p>
                 </div>
                 <DollarSign className="h-8 w-8 text-blue-200" />
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-cyan-100 text-sm">이번 주 매출</p>
+                  <p className="text-2xl font-bold">{formatCurrency(data?.weeklySales || 0)}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-cyan-200" />
               </div>
             </div>
             <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl">
@@ -1432,11 +1516,20 @@ export default function DashboardPage() {
                 <Target className="h-8 w-8 text-purple-200" />
               </div>
             </div>
+            <div className="bg-gradient-to-r from-pink-500 to-pink-600 text-white p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-pink-100 text-sm">이번 주 포인트</p>
+                  <p className="text-2xl font-bold">{data?.weeklyPoints || 0}점</p>
+                </div>
+                <Target className="h-8 w-8 text-pink-200" />
+              </div>
+            </div>
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 text-sm">업무 건수</p>
-                  <p className="text-2xl font-bold">{data?.personalKPI?.totalTasks || 0}건</p>
+                  <p className="text-orange-100 text-sm">이번 주 업무 건수</p>
+                  <p className="text-2xl font-bold">{data?.weeklyTaskCount || 0}건</p>
                 </div>
                 <Phone className="h-8 w-8 text-orange-200" />
               </div>
@@ -2099,10 +2192,12 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">매출 상세 분석</h3>
                 <div className="flex items-center space-x-2">
                   <select
-                    onChange={(e) => handleOpenSalesDetail(e.target.value as 'month' | 'quarter' | 'year')}
+                    onChange={(e) => handleOpenSalesDetail(e.target.value as 'today' | 'week' | 'month' | 'quarter' | 'year')}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     defaultValue="month"
                   >
+                    <option value="today">오늘</option>
+                    <option value="week">이번 주</option>
                     <option value="month">이번 달</option>
                     <option value="quarter">이번 분기</option>
                     <option value="year">올해</option>
@@ -2307,10 +2402,12 @@ export default function DashboardPage() {
                     <option value="singsingolf">싱싱골프</option>
                   </select>
                   <select
-                    onChange={(e) => handleOpenMarketingDetail(e.target.value as 'month' | 'quarter' | 'year', selectedMarketingBrand)}
+                    onChange={(e) => handleOpenMarketingDetail(e.target.value as 'today' | 'week' | 'month' | 'quarter' | 'year', selectedMarketingBrand)}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     defaultValue="month"
                   >
+                    <option value="today">오늘</option>
+                    <option value="week">이번 주</option>
                     <option value="month">이번 달</option>
                     <option value="quarter">이번 분기</option>
                     <option value="year">올해</option>
