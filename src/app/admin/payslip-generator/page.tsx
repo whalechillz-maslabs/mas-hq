@@ -393,6 +393,21 @@ export default function PayslipGenerator() {
       throw new Error('해당 기간에 스케줄이 없습니다.');
     }
 
+    // 계약서 정보 조회 (주휴수당 포함 여부 확인)
+    const { data: contracts, error: contractError } = await supabase
+      .from('contracts')
+      .select('includes_weekly_holiday')
+      .eq('employee_id', employee.id)
+      .eq('status', 'active')
+      .lte('start_date', endDate)
+      .or(`end_date.is.null,end_date.gte.${startDate}`)
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    const contract = contracts || null;
+    const includesWeeklyHoliday = contract?.includes_weekly_holiday || false;
+
     // 스케줄 기반 자동 계산 옵션이 켜져 있는지 확인
     let workDays: number;
     let additionalWork = 0;
@@ -444,8 +459,11 @@ export default function PayslipGenerator() {
     // 주유대: 제외 옵션이 체크되면 0, 아니면 20만원
     const fuelAllowance = excludeFuel ? 0 : 200000;
     
-    // 총 지급액 계산
-    const totalEarnings = baseSalary + totalMealAllowance + fuelAllowance + additionalWork;
+    // 총 지급액 계산 (주휴수당 포함 여부에 따라)
+    // 주휴수당이 포함된 경우: 기본급 + 식대 + 주유대 + 추가근무
+    // 주휴수당이 별도 계산인 경우: 기본급 + 식대 + 주유대 + 추가근무 + 주휴수당 (나중에 계산됨)
+    // 여기서는 일단 기본급만 포함하고, 주휴수당은 아래에서 계산 후 추가
+    let totalEarnings = baseSalary + totalMealAllowance + fuelAllowance + additionalWork;
     
     // 나수진은 현금 지급 (4대보험 및 세금 없음)
     const nationalPension = 0;
@@ -514,16 +532,29 @@ export default function PayslipGenerator() {
     // 총 근무시간 계산
     const totalHours = dailyDetails.reduce((sum, detail) => sum + detail.hours, 0);
     
-    // 주휴수당 계산 (주 15시간 이상 근무 시)
-    const weeklyHolidayPay = totalHours >= 15 ? Math.round(totalHours * 0.2) : 0;
+    // 주휴수당 계산: 계약서에 "주휴수당 포함"이 체크되어 있으면 별도 계산하지 않음
+    let weeklyHolidayPay = 0;
+    let weeklyHolidayCalculation = '';
     
-    // 주휴수당 산출 식
-    const weeklyHolidayCalculation = totalHours >= 15 ? 
-      `주 15시간 이상 근무 (${totalHours}시간) → 주휴수당 ${weeklyHolidayPay.toLocaleString()}원` : 
-      `주 15시간 미만 근무 (${totalHours}시간) → 주휴수당 없음`;
+    if (includesWeeklyHoliday) {
+      // 주휴수당이 기본급에 이미 포함되어 있음
+      weeklyHolidayPay = 0;
+      weeklyHolidayCalculation = '주휴수당 포함 (기본급에 포함)';
+    } else {
+      // 주휴수당 별도 계산 (주 15시간 이상 근무 시)
+      weeklyHolidayPay = totalHours >= 15 ? Math.round(totalHours * 0.2) : 0;
+      weeklyHolidayCalculation = totalHours >= 15 ? 
+        `주 15시간 이상 근무 (${totalHours}시간) → 주휴수당 ${weeklyHolidayPay.toLocaleString()}원` : 
+        `주 15시간 미만 근무 (${totalHours}시간) → 주휴수당 없음`;
+    }
 
     // 포인트 보너스 적용
     const pointBonus = includePointBonus ? pointBonusAmount : 0;
+
+    // 총 지급액에 주휴수당 추가 (주휴수당이 포함되지 않은 경우만)
+    if (!includesWeeklyHoliday) {
+      totalEarnings += weeklyHolidayPay;
+    }
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -551,7 +582,7 @@ export default function PayslipGenerator() {
       net_salary: netSalary,
       status: 'generated',
       total_hours: totalHours,
-      hourly_rate: totalEarnings / totalHours, // 평균 시급
+      hourly_rate: totalHours > 0 ? totalEarnings / totalHours : 0, // 평균 시급 (0으로 나누기 방지)
       weeklyHolidayCalculation: weeklyHolidayCalculation,
       daily_details: dailyDetails
     };
@@ -573,7 +604,9 @@ export default function PayslipGenerator() {
           total_earnings: payslip.total_earnings,
           tax_amount: payslip.tax_amount,
           net_salary: payslip.net_salary,
-          status: payslip.status
+          status: payslip.status,
+          total_hours: payslip.total_hours || 0,
+          daily_details: payslip.daily_details || []
         }]);
 
       if (saveError) {
