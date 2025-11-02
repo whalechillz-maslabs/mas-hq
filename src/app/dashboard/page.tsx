@@ -98,6 +98,7 @@ interface DashboardData {
     tasks: { name: string; sales: number; points: number; tasks: number }[];
   } | null;
   todaySales: number;
+  todayPoints: number;
   weeklySales: number;
   weeklyPoints: number;
   weeklyTaskCount: number;
@@ -607,6 +608,9 @@ export default function DashboardPage() {
         return sum + (task.sales_amount || 0);
       }, 0) || 0;
 
+      // 오늘의 포인트 계산
+      const todayPoints = todayTasks?.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0) || 0;
+
       // 이번 주 포인트 계산
       const weeklyPoints = weeklyTasks?.reduce((sum, task) => sum + (task.operation_type?.points || 0), 0) || 0;
 
@@ -899,6 +903,7 @@ export default function DashboardPage() {
         myTasks,
         teamRankings,
         todaySales: todaySales,
+        todayPoints: todayPoints,
         weeklySales: weeklySales,
         weeklyPoints: weeklyPoints,
         weeklyTaskCount: weeklyTaskCount
@@ -965,6 +970,7 @@ export default function DashboardPage() {
         recentSharedTasks: [],
         myTasks: [],
         todaySales: 0,
+        todayPoints: 0,
         weeklySales: 0,
         weeklyPoints: 0,
         weeklyTaskCount: 0
@@ -1511,7 +1517,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100 text-sm">오늘 포인트</p>
-                  <p className="text-2xl font-bold">{data?.personalKPI?.totalPoints || 0}점</p>
+                  <p className="text-2xl font-bold">{data?.todayPoints || 0}점</p>
                 </div>
                 <Target className="h-8 w-8 text-purple-200" />
               </div>
