@@ -393,24 +393,28 @@ export default function PayslipGenerator() {
       throw new Error('해당 기간에 스케줄이 없습니다.');
     }
 
-    // 나수진의 급여 구성 요소 계산 (근무일 = 유효 스케줄이 있는 날짜 수)
-    const byDateForMeal: { [date: string]: true } = {};
-    schedules.forEach(s => {
-      if (s.scheduled_start && s.scheduled_end) {
-        byDateForMeal[s.schedule_date] = true;
-      }
-    });
-    const workDays = Object.keys(byDateForMeal).length;
-
-    // 스케줄 기반 추가근무 자동 계산 (옵션이 켜진 경우에만)
-    let computedOvertimeDays = overtimeDays;
+    // 스케줄 기반 자동 계산 옵션이 켜져 있는지 확인
+    let workDays: number;
+    let additionalWork = 0;
+    
     if (autoOvertimeFromSchedule) {
+      // 스케줄 기반 자동 계산 모드
+      // 나수진의 급여 구성 요소 계산 (근무일 = 유효 스케줄이 있는 날짜 수)
+      const byDateForMeal: { [date: string]: true } = {};
+      schedules.forEach(s => {
+        if (s.scheduled_start && s.scheduled_end) {
+          byDateForMeal[s.schedule_date] = true;
+        }
+      });
+      workDays = Object.keys(byDateForMeal).length;
+
+      // 스케줄 기반 추가근무 자동 계산
       const keywordList = overtimeKeywords
         .split(',')
         .map(k => k.trim())
         .filter(Boolean);
 
-      computedOvertimeDays = schedules.reduce((count, s) => {
+      const computedOvertimeDays = schedules.reduce((count, s) => {
         // 명시 필드 우선: is_overtime === true
         if (s.is_overtime === true) return count + 1;
         // 제목/메모 키워드 검색 (title, memo, notes 등 가정)
@@ -418,7 +422,15 @@ export default function PayslipGenerator() {
         const matched = keywordList.some(kw => kw && haystack.includes(kw));
         return matched ? count + 1 : count;
       }, 0);
+      
+      additionalWork = computedOvertimeDays * overtimeAmount;
+    } else {
+      // 수동 입력 모드: "추가근무 일수" 필드에 입력된 값이 실제로는 기본근무 일수
+      workDays = overtimeDays; // 수동 입력된 근무 일수
+      // 추가근무는 없음 (0일)
+      additionalWork = 0;
     }
+    
     const isNewSystem = month >= 10; // 10월부터 주 3회
     
     // 기본급 계산: 일당제 방식 (근무일수 × 일당)
@@ -431,9 +443,6 @@ export default function PayslipGenerator() {
     
     // 주유대: 제외 옵션이 체크되면 0, 아니면 20만원
     const fuelAllowance = excludeFuel ? 0 : 200000;
-    
-    // 추가근무 (일수 × 일일 금액)
-    const additionalWork = computedOvertimeDays * overtimeAmount;
     
     // 총 지급액 계산
     const totalEarnings = baseSalary + totalMealAllowance + fuelAllowance + additionalWork;
@@ -4243,16 +4252,22 @@ export default function PayslipGenerator() {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      추가근무 일수
+                      근무 일수 {!autoOvertimeFromSchedule && <span className="text-xs text-gray-500">(수동 입력)</span>}
                     </label>
                     <input
                       type="number"
                       min="0"
                       value={additionalWorkDays}
                       onChange={(e) => setAdditionalWorkDays(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="추가근무 일수 입력"
+                      disabled={autoOvertimeFromSchedule}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="근무 일수 입력"
                     />
+                    {!autoOvertimeFromSchedule && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        스케줄 기반 자동 계산이 해제되어 있으면 수동으로 입력한 값이 기본근무 일수로 사용됩니다.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
