@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { FileText, Download, Upload, User, Calendar, DollarSign, Clock, CheckCircle, XCircle, Eye, Edit } from 'lucide-react';
+import { FileText, Download, Upload, User, Calendar, DollarSign, Clock, CheckCircle, XCircle, Eye, Edit, Trash2 } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -637,6 +637,64 @@ export default function ContractManagementPage() {
       
       // 더 자세한 오류 메시지 표시
       let errorMessage = '서류 업로드에 실패했습니다.';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage += `\n오류: ${error.message}`;
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
+  const handleDocumentDelete = async (contractId: string, documentType: 'id_card' | 'family_register' | 'bank_account') => {
+    try {
+      if (!confirm('정말로 이 서류를 삭제하시겠습니까?')) {
+        return;
+      }
+
+      // 현재 계약서 정보 가져오기
+      const currentContract = contracts.find(c => c.id === contractId);
+      if (!currentContract || !currentContract.documents || !currentContract.documents[documentType]) {
+        alert('삭제할 서류가 없습니다.');
+        return;
+      }
+
+      const filePath = currentContract.documents[documentType];
+
+      // Storage에서 파일 삭제
+      const { error: deleteError } = await supabase.storage
+        .from('contract-documents')
+        .remove([filePath]);
+
+      if (deleteError) {
+        console.error('Storage 파일 삭제 실패:', deleteError);
+        // Storage 삭제 실패해도 계약서 정보는 업데이트 진행
+      }
+
+      // 계약서에서 서류 정보 제거
+      const updatedDocuments: { [key: string]: string | undefined } = {
+        ...currentContract.documents
+      };
+      
+      // 해당 문서 타입 필드 삭제
+      delete updatedDocuments[documentType];
+      
+      // 모든 필드가 삭제된 경우 null로 설정
+      const finalDocuments = Object.keys(updatedDocuments).length > 0 ? updatedDocuments : null;
+
+      const { error: updateError } = await supabase
+        .from('contracts')
+        .update({ documents: finalDocuments })
+        .eq('id', contractId);
+
+      if (updateError) throw updateError;
+
+      alert('서류가 삭제되었습니다.');
+      loadData();
+    } catch (error) {
+      console.error('서류 삭제 실패:', error);
+      console.error('오류 상세:', JSON.stringify(error, null, 2));
+      
+      let errorMessage = '서류 삭제에 실패했습니다.';
       if (error && typeof error === 'object' && 'message' in error) {
         errorMessage += `\n오류: ${error.message}`;
       }
@@ -1537,12 +1595,21 @@ export default function ContractManagementPage() {
                           <p className="text-sm font-medium text-gray-900">주민등록증</p>
                           <p className="text-xs text-gray-500">{selectedContract.documents.id_card}</p>
                         </div>
-                        <button
-                          onClick={() => handleDocumentView(selectedContract.id, 'id_card')}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        >
-                          미리보기
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDocumentView(selectedContract.id, 'id_card')}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            미리보기
+                          </button>
+                          <button
+                            onClick={() => handleDocumentDelete(selectedContract.id, 'id_card')}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center space-x-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>삭제</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1594,12 +1661,21 @@ export default function ContractManagementPage() {
                           <p className="text-sm font-medium text-gray-900">가족관계증명서</p>
                           <p className="text-xs text-gray-500">{selectedContract.documents.family_register}</p>
                         </div>
-                        <button
-                          onClick={() => handleDocumentView(selectedContract.id, 'family_register')}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        >
-                          미리보기
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDocumentView(selectedContract.id, 'family_register')}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            미리보기
+                          </button>
+                          <button
+                            onClick={() => handleDocumentDelete(selectedContract.id, 'family_register')}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center space-x-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>삭제</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1651,12 +1727,21 @@ export default function ContractManagementPage() {
                           <p className="text-sm font-medium text-gray-900">통장사본</p>
                           <p className="text-xs text-gray-500">{selectedContract.documents.bank_account}</p>
                         </div>
-                        <button
-                          onClick={() => handleDocumentView(selectedContract.id, 'bank_account')}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        >
-                          미리보기
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDocumentView(selectedContract.id, 'bank_account')}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            미리보기
+                          </button>
+                          <button
+                            onClick={() => handleDocumentDelete(selectedContract.id, 'bank_account')}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center space-x-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>삭제</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -55,17 +55,27 @@ export default function ContractsPage() {
 
   const loadContracts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // localStorage에서 현재 로그인한 직원 정보 가져오기
+      let currentEmployee = null;
+      if (typeof window !== 'undefined') {
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        const employeeData = localStorage.getItem('currentEmployee');
+        
+        if (isLoggedIn === 'true' && employeeData) {
+          currentEmployee = JSON.parse(employeeData);
+        }
+      }
+
+      if (!currentEmployee) {
         router.push('/login');
         return;
       }
 
-      // 현재 사용자의 계약서만 조회
+      // 현재 직원의 계약서만 조회 (employees 테이블의 ID 사용)
       const { data: contracts, error } = await supabase
         .from('contracts')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', currentEmployee.id) // employees 테이블의 ID 사용
         .order('created_at', { ascending: false });
 
       if (error) {
