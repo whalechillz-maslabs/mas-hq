@@ -124,6 +124,8 @@ export default function PayslipGenerator() {
   // 식대 처리 옵션: 계약대로/제외/수동입력
   const [mealOption, setMealOption] = useState<'contract' | 'exclude' | 'manual'>('contract');
   const [mealManualAmount, setMealManualAmount] = useState<number>(0);
+  // 주유대 제외 옵션 (나수진 전용)
+  const [excludeFuelAllowance, setExcludeFuelAllowance] = useState<boolean>(false);
   
   // 연봉계약 전환 관련 상태
   const [showContractChangeModal, setShowContractChangeModal] = useState(false);
@@ -342,7 +344,8 @@ export default function PayslipGenerator() {
               selectedYear,
               selectedMonth,
               additionalWorkDays,
-              additionalWorkAmount
+              additionalWorkAmount,
+              excludeFuelAllowance
             );
           } else {
           // 시간제 급여 계산
@@ -364,7 +367,7 @@ export default function PayslipGenerator() {
   };
 
   // 나수진 전용 일당제 급여명세서 생성 함수
-  const generateNaManagerPayslip = async (employee: Employee, year: number, month: number, overtimeDays: number = 0, overtimeAmount: number = 100000) => {
+  const generateNaManagerPayslip = async (employee: Employee, year: number, month: number, overtimeDays: number = 0, overtimeAmount: number = 100000, excludeFuel: boolean = false) => {
     // 해당 월의 스케줄 조회
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
@@ -418,14 +421,16 @@ export default function PayslipGenerator() {
     }
     const isNewSystem = month >= 10; // 10월부터 주 3회
     
-    // 기본급 계산 (10월부터 120만원, 이전은 80만원)
-    const baseSalary = isNewSystem ? 1200000 : 800000;
+    // 기본급 계산: 일당제 방식 (근무일수 × 일당)
+    // 일당은 additionalWorkAmount를 사용 (기본 10만원)
+    const dailyWage = overtimeAmount; // 일당
+    const baseSalary = workDays * dailyWage;
     
     // 식대 계산 (근무일수 × 7,000원)
     const totalMealAllowance = workDays * MEAL_PER_DAY;
     
-    // 주유대 (고정 20만원)
-    const fuelAllowance = 200000;
+    // 주유대: 제외 옵션이 체크되면 0, 아니면 20만원
+    const fuelAllowance = excludeFuel ? 0 : 200000;
     
     // 추가근무 (일수 × 일일 금액)
     const additionalWork = computedOvertimeDays * overtimeAmount;
@@ -480,8 +485,8 @@ export default function PayslipGenerator() {
         }
       });
       
-      // 일당제이므로 일급은 고정 (기본급 / 근무일수)
-      const dailyWage = baseSalary / workDays;
+      // 일당제이므로 일급은 일당으로 고정 (이미 위에서 계산된 dailyWage 변수 사용)
+      const dayWage = dailyWage; // 일당 (additionalWorkAmount)
       
       const badges = [
         '식대',
@@ -491,8 +496,8 @@ export default function PayslipGenerator() {
       return {
         date: date,
         hours: totalHours,
-        hourly_rate: totalHours > 0 ? Math.round(dailyWage / totalHours) : 0,
-        daily_wage: dailyWage,
+        hourly_rate: totalHours > 0 ? Math.round(dayWage / totalHours) : 0,
+        daily_wage: dayWage,
         note: badges.join(';') // 예: "식대;추가근무"
       };
     });
@@ -4251,7 +4256,7 @@ export default function PayslipGenerator() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      일일 추가근무 금액
+                      일당 (원)
                     </label>
                     <input
                       type="number"
@@ -4259,9 +4264,21 @@ export default function PayslipGenerator() {
                       value={additionalWorkAmount}
                       onChange={(e) => setAdditionalWorkAmount(parseInt(e.target.value) || 100000)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="일일 추가근무 금액"
+                      placeholder="일당 금액"
                     />
-                    <p className="text-xs text-gray-500 mt-1">기본값: 100,000원 (일일 10만원)</p>
+                    <p className="text-xs text-gray-500 mt-1">기본값: 100,000원 (일일 10만원) - 기본급 계산에 사용됩니다</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="exclude-fuel-allowance"
+                      checked={excludeFuelAllowance}
+                      onChange={(e) => setExcludeFuelAllowance(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="exclude-fuel-allowance" className="text-sm text-gray-700">
+                      이번 달 주유대 제외
+                    </label>
                   </div>
                 </>
               )}
