@@ -187,6 +187,11 @@ export default function TasksPage() {
             title: taskData.title,
             notes: taskData.notes,
             customer_name: taskData.customer_name,
+            customer_type: taskData.customer_type,
+            consultation_channel: taskData.consultation_channel,
+            sita_booking: taskData.sita_booking,
+            visit_booking_date: taskData.visit_booking_date,
+            visit_booking_time: taskData.visit_booking_time,
             operation_type: {
               code: operationType.code,
               name: getOperationDisplayName(operationType.code, operationType.name),

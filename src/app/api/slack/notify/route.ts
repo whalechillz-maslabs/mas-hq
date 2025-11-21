@@ -41,12 +41,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Slack 설정이 필요합니다.' }, { status: 500 });
     }
 
-    // Slack 메시지 포맷 (다듬어진 양식)
+    // Slack 메시지 포맷 (정돈된 양식)
     const operationType = task.operation_type?.code || 'OP';
+    const operationTypeName = task.operation_type?.name || '-';
+    
+    // 고객 유형 라벨 (신규/기존)
+    const customerTypeLabel = task.customer_type === 'new' ? '신규' : task.customer_type === 'existing' ? '기존' : '';
+    const operationTypeWithCustomerType = customerTypeLabel 
+      ? `${operationTypeName} [${customerTypeLabel}]`
+      : operationTypeName;
+    
+    // 업무 내용 포맷팅 (줄바꿈 유지, 전체 표시)
+    let formattedNotes = task.notes || '내용 없음';
+    if (formattedNotes !== '내용 없음') {
+      // 줄바꿈을 유지하면서 정리
+      formattedNotes = formattedNotes.split('\n')
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0)
+        .join('\n');
+    }
+    
+    // 방문 예약 정보 추가 (OP5이고 sita_booking이 true인 경우)
+    if (task.sita_booking && task.visit_booking_date) {
+      const bookingDate = new Date(task.visit_booking_date);
+      const dateStr = `${bookingDate.getFullYear()}. ${bookingDate.getMonth() + 1}. ${bookingDate.getDate()}.`;
+      const timeStr = task.visit_booking_time ? ` ${task.visit_booking_time}` : '';
+      formattedNotes += `\n\n방문 예약: ${dateStr}${timeStr}`;
+    }
+    
     const message = {
-      username: 'MASLABS 업무봇',
+      username: 'MASLABS HQ 앱',
       icon_emoji: ':memo:',
-      text: `📋 ${isUpdate ? `${operationType} 업무 수정` : `새로운 ${operationType} 업무 등록`} - ${employee.name}`,
+      text: `${isUpdate ? `${operationType} 업무 수정` : `새로운 ${operationType} 업무 등록`} - ${employee.name}`,
       attachments: [
         {
           color: '#36a64f',
@@ -55,8 +81,8 @@ export async function POST(request: NextRequest) {
           fields: [
             {
               title: '업무 유형',
-              value: task.operation_type?.name || '-',
-              short: true
+              value: operationTypeWithCustomerType,
+              short: false
             },
             {
               title: '작성자',
@@ -69,14 +95,14 @@ export async function POST(request: NextRequest) {
               short: false
             },
             {
-              title: '업무 내용',
-              value: task.notes ? (task.notes.length > 200 ? task.notes.substring(0, 200) + '...' : task.notes) : '내용 없음',
-              short: false
-            },
-            {
               title: '고객명',
               value: task.customer_name || '없음',
               short: true
+            },
+            {
+              title: '업무 내용',
+              value: formattedNotes,
+              short: false
             }
           ],
           footer: 'MASLABS 업무 관리 시스템',

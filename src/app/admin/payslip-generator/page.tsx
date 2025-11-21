@@ -551,11 +551,6 @@ export default function PayslipGenerator() {
     // 포인트 보너스 적용
     const pointBonus = includePointBonus ? pointBonusAmount : 0;
 
-    // 총 지급액에 주휴수당 추가 (주휴수당이 포함되지 않은 경우만)
-    if (!includesWeeklyHoliday) {
-      totalEarnings += weeklyHolidayPay;
-    }
-
     const payslip: PayslipData = {
       employee_id: employee.id,
       employee_name: employee.name,
@@ -582,7 +577,7 @@ export default function PayslipGenerator() {
       net_salary: netSalary,
       status: 'generated',
       total_hours: totalHours,
-      hourly_rate: totalHours > 0 ? totalEarnings / totalHours : 0, // 평균 시급 (0으로 나누기 방지)
+      hourly_rate: totalEarnings / totalHours, // 평균 시급
       weeklyHolidayCalculation: weeklyHolidayCalculation,
       daily_details: dailyDetails
     };
