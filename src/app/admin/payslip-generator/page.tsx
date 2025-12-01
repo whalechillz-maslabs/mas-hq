@@ -930,6 +930,13 @@ export default function PayslipGenerator() {
     
     // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(employee.birth_date);
+    console.log('🔍 [시간제 명세서] 보험 계산 정보:', {
+      name: employee.name,
+      birth_date: employee.birth_date,
+      age: age,
+      contract_insurance_4major: contract?.insurance_4major,
+      contract_insurance_display: contract?.insurance_display
+    });
     const insurance = calculateInsurance(totalEarnings, mealAllowance, age, contract || undefined);
     const totalDeductions = insurance.totalInsurance + taxAmount;
     const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
@@ -1124,7 +1131,23 @@ export default function PayslipGenerator() {
     
     // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(employee.birth_date);
+    console.log('🔍 [월급제 명세서] 보험 계산 정보:', {
+      name: employee.name,
+      birth_date: employee.birth_date,
+      age: age,
+      contract_insurance_4major: contract?.insurance_4major,
+      contract_insurance_display: contract?.insurance_display,
+      national_pension_excluded: age >= 60 || contract?.insurance_display?.national_pension === false || contract?.insurance_4major === false
+    });
     const insurance = calculateInsurance(totalEarnings, mealAllowance, age, contract || undefined);
+    console.log('🔍 [월급제 명세서] 계산된 보험료:', {
+      national_pension: insurance.nationalPension,
+      health_insurance: insurance.healthInsurance,
+      employment_insurance: insurance.employmentInsurance,
+      industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      long_term_care_insurance: insurance.longTermCareInsurance,
+      total_insurance: insurance.totalInsurance
+    });
     const totalDeductions = insurance.totalInsurance + taxAmount;
     const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
 
@@ -1477,6 +1500,13 @@ export default function PayslipGenerator() {
     
     // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(employee.birth_date);
+    console.log('🔍 [분할 명세서] 보험 계산 정보:', {
+      name: employee.name,
+      birth_date: employee.birth_date,
+      age: age,
+      contract_insurance_4major: contract?.insurance_4major,
+      contract_insurance_display: contract?.insurance_display
+    });
     const insurance = calculateInsurance(totalEarnings, mealAllowance, age, contract || undefined);
     const totalDeductions = insurance.totalInsurance + taxAmount;
     const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
