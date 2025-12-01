@@ -61,6 +61,7 @@ interface PayslipData {
   health_insurance?: number;
   employment_insurance?: number;
   industrial_accident_insurance?: number;
+  long_term_care_insurance?: number;
   total_insurance?: number;
   tax_amount: number;
   net_salary: number;
@@ -966,6 +967,7 @@ export default function PayslipGenerator() {
       health_insurance: insurance.healthInsurance,
       employment_insurance: insurance.employmentInsurance,
       industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      long_term_care_insurance: insurance.longTermCareInsurance,
       total_insurance: insurance.totalInsurance
     };
 
@@ -995,6 +997,7 @@ export default function PayslipGenerator() {
           health_insurance: payslip.health_insurance,
           employment_insurance: payslip.employment_insurance,
           industrial_accident_insurance: payslip.industrial_accident_insurance,
+          long_term_care_insurance: payslip.long_term_care_insurance,
           total_insurance: payslip.total_insurance
         }]);
 
@@ -1148,6 +1151,7 @@ export default function PayslipGenerator() {
       health_insurance: insurance.healthInsurance,
       employment_insurance: insurance.employmentInsurance,
       industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      long_term_care_insurance: insurance.longTermCareInsurance,
       total_insurance: insurance.totalInsurance
     };
 
@@ -1177,6 +1181,7 @@ export default function PayslipGenerator() {
           health_insurance: payslip.health_insurance,
           employment_insurance: payslip.employment_insurance,
           industrial_accident_insurance: payslip.industrial_accident_insurance,
+          long_term_care_insurance: payslip.long_term_care_insurance,
           total_insurance: payslip.total_insurance
         }]);
 
@@ -1508,6 +1513,7 @@ export default function PayslipGenerator() {
       health_insurance: insurance.healthInsurance,
       employment_insurance: insurance.employmentInsurance,
       industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      long_term_care_insurance: insurance.longTermCareInsurance,
       total_insurance: insurance.totalInsurance
     };
 
@@ -1586,6 +1592,7 @@ export default function PayslipGenerator() {
           health_insurance: payslip.health_insurance,
           employment_insurance: payslip.employment_insurance,
           industrial_accident_insurance: payslip.industrial_accident_insurance,
+          long_term_care_insurance: payslip.long_term_care_insurance,
           total_insurance: payslip.total_insurance
         }]);
 
