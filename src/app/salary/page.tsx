@@ -535,45 +535,45 @@ export default function SalaryPage() {
               <h1>MASLABS</h1>
               <div class="period">급여명세서 ${payslip.period}</div>
             </div>
-
+            
             <div class="content">
               <div class="info-section">
                 <div class="section-title">기본 정보</div>
                 <div class="info-grid">
-                  <div>
-                    <div class="info-item">
-                      <span class="info-label">직원명:</span>
+                <div>
+                  <div class="info-item">
+                    <span class="info-label">직원명:</span>
                       <span class="info-value">${currentUser?.name || '정보 없음'}</span>
-                    </div>
-                    <div class="info-item">
+                  </div>
+                       <div class="info-item">
                       <span class="info-label">직원 코드:</span>
                       <span class="info-value">${currentUser?.employee_id || '정보 없음'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">급여 기간:</span>
+                       </div>
+                  <div class="info-item">
+                    <span class="info-label">급여 기간:</span>
                       <span class="info-value">${payslip.period}</span>
-                    </div>
+                  </div>
                   </div>
                   <div>
-                    <div class="info-item">
-                      <span class="info-label">고용 형태:</span>
+                  <div class="info-item">
+                    <span class="info-label">고용 형태:</span>
                       <span class="info-value">${payslip.employment_type === 'full_time' ? '정규직' : '시간제'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">지급일:</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">지급일:</span>
                       <span class="info-value">${payslip.payment_date || (payslip.status === 'paid' ? '지급완료' : '미지급')}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">상태:</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">상태:</span>
                       <span class="status-badge status-${payslip.status}">
                         ${payslip.status === 'generated' ? '생성됨' :
                           payslip.status === 'issued' ? '발행됨' : '지급완료'}
-                      </span>
-                    </div>
+                    </span>
+                  </div>
                   </div>
                 </div>
               </div>
-
+              
               <div class="salary-section">
                 <div class="salary-title">급여 내역</div>
                 <div class="salary-item">
@@ -613,10 +613,10 @@ export default function SalaryPage() {
                 <div class="salary-item net">
                   <span>실수령액</span>
                   <span>${payslip.net_salary?.toLocaleString() || 0}원</span>
-                </div>
               </div>
-
-              <div class="footer">
+            </div>
+            
+            <div class="footer">
                 <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
                 <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
               </div>
@@ -1141,9 +1141,9 @@ export default function SalaryPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center">
-              <CreditCard className="h-5 w-5 mr-2" />
-              급여 계좌
-            </h3>
+            <CreditCard className="h-5 w-5 mr-2" />
+            급여 계좌
+          </h3>
             <button
               onClick={handleEditBankAccount}
               className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -1241,7 +1241,7 @@ export default function SalaryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">
-                        <button
+                      <button
                           onClick={() => handleDownloadPayslip(payslip)}
                         className="text-indigo-600 hover:text-indigo-900"
                           title="다운로드"
@@ -1254,7 +1254,7 @@ export default function SalaryPage() {
                           title="인쇄"
                         >
                           <Printer className="h-4 w-4" />
-                        </button>
+                      </button>
                         <button
                           onClick={() => handleViewPayslipDetails(payslip)}
                           className="text-blue-600 hover:text-blue-900"
@@ -1306,45 +1306,45 @@ export default function SalaryPage() {
               };
 
               return (
-                <div
-                  key={contract.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-gray-900">
+              <div
+                key={contract.id}
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-medium text-gray-900">
                         {getContractTypeText(contract.contract_type)}
-                      </p>
-                      <p className="text-sm text-gray-500">
+                    </p>
+                    <p className="text-sm text-gray-500">
                         {formatDateKR(contract.created_at)}
-                      </p>
-                    </div>
-                    {getStatusBadge(contract.status)}
+                    </p>
                   </div>
-                  
+                    {getStatusBadge(contract.status)}
+                </div>
+                
                   <div className="text-sm text-gray-600 mb-3 space-y-1">
                     <p>계약기간: {contract.start_date} {contract.end_date ? `~ ${contract.end_date}` : '(무기한)'}</p>
                     <p>{contract.contract_type === 'part_time' ? '시급' : contract.contract_type === 'full_time' ? '월급' : '연봉'}: {contract.salary.toLocaleString()}원</p>
                     <p>근무: {contract.work_hours}시간/일, {contract.work_days}일/주</p>
                   </div>
-                  
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleViewContract(contract)}
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleViewContract(contract)}
                       className="flex-1 px-3 py-1 text-sm bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 flex items-center justify-center"
-                    >
+                  >
                       <Eye className="h-4 w-4 mr-1" />
-                      보기
-                    </button>
-                    <button
+                    보기
+                  </button>
+                  <button
                       onClick={() => handleDownloadContract(contract)}
                       className="flex-1 px-3 py-1 text-sm bg-gray-50 text-gray-600 rounded hover:bg-gray-100 flex items-center justify-center"
-                    >
+                  >
                       <Download className="h-4 w-4 mr-1" />
-                      다운로드
-                    </button>
-                  </div>
+                    다운로드
+                  </button>
                 </div>
+              </div>
               );
             })}
           </div>
@@ -1399,11 +1399,11 @@ export default function SalaryPage() {
               </div>
 
               {/* 급여 요약 */}
-                  <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold text-blue-900 mb-3">지급 내역</h3>
                   {currentUser?.name === '나수진' ? (
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <div className="flex justify-between"><span>기본급</span><span>{formatCurrency(selectedPayslip.base_salary || 0)}원</span></div>
                       {selectedPayslip.fuel_allowance ? (<div className="flex justify-between"><span>주유대</span><span>{formatCurrency(selectedPayslip.fuel_allowance)}원</span></div>) : null}
                       {selectedPayslip.additional_work ? (<div className="flex justify-between"><span>추가근무</span><span>{formatCurrency(selectedPayslip.additional_work)}원</span></div>) : null}
@@ -1423,7 +1423,7 @@ export default function SalaryPage() {
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold text-green-900 mb-3">공제 내역</h3>
                   {currentUser?.name === '나수진' ? (
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <div className="flex justify-between"><span>공제</span><span>0원 (현금 지급)</span></div>
                       <div className="border-t pt-2 font-semibold flex justify-between text-green-700"><span>실수령액</span><span>{formatCurrency(selectedPayslip.net_salary || 0)}원</span></div>
                     </div>

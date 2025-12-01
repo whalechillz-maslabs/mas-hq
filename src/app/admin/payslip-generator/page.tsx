@@ -479,7 +479,7 @@ export default function PayslipGenerator() {
     const netSalary = totalEarnings;
     
     // 일별 상세 내역 생성 (실제 스케줄 기반 - 날짜별로 그룹화)
-    const scheduleByDate: { [date: string]: any[] } = {};
+    const scheduleByDate: { [date: string]: any[] } = {};;
     schedules.forEach(schedule => {
       const date = schedule.schedule_date;
       if (!scheduleByDate[date]) {
@@ -619,29 +619,96 @@ export default function PayslipGenerator() {
   };
 
   // 식대 정책 계산 함수
-  const calculateMealAllowance = (contract: any, eligibleDays: number, month: number, year: number) => {
+  // eligibleDays는 숫자 또는 날짜별 정보 배열을 받을 수 있음
+  const calculateMealAllowance = (
+    contract: any, 
+    eligibleDays: number | Array<{ date: string, hours: number }>, 
+    month: number, 
+    year: number
+  ) => {
+    // 11월 10일 기준 단가 변경 (7,000원 → 8,000원)
+    const rateChangeDate = new Date(year, month - 1, 10); // 해당 월 10일
+    
     if (!contract || !contract.meal_policy) {
       // 기존 방식 (일별 지급)
-      return {
-        currentMonth: eligibleDays * 7000,
-        carryover: 0,
-        policy: 'per_day'
-      };
+      if (typeof eligibleDays === 'number') {
+        return {
+          currentMonth: eligibleDays * 7000,
+          carryover: 0,
+          policy: 'per_day',
+          dailyDetails: []
+        };
+      } else {
+        // 날짜별 정보가 있는 경우
+        let totalAmount = 0;
+        const dailyDetails: Array<{ date: string, rate: number, amount: number }> = [];
+        
+        eligibleDays.forEach(day => {
+          const dayDate = new Date(day.date);
+          const rate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? 8000 : 7000;
+          totalAmount += rate;
+          dailyDetails.push({ date: day.date, rate, amount: rate });
+        });
+        
+        return {
+          currentMonth: totalAmount,
+          carryover: 0,
+          policy: 'per_day',
+          dailyDetails
+        };
+      }
     }
 
     if (contract.meal_policy === 'per_day') {
       // 일별 지급 방식
-      return {
-        currentMonth: eligibleDays * (contract.meal_rate || 7000),
-        carryover: 0,
-        policy: 'per_day'
-      };
+      const baseRate = contract.meal_rate || 7000;
+      const newRate = 8000; // 11월 10일부터 인상
+      
+      if (typeof eligibleDays === 'number') {
+        // 숫자로 받은 경우 (기존 호환성)
+        return {
+          currentMonth: eligibleDays * baseRate,
+          carryover: 0,
+          policy: 'per_day',
+          dailyDetails: []
+        };
+      } else {
+        // 날짜별 정보가 있는 경우
+        let totalAmount = 0;
+        const dailyDetails: Array<{ date: string, rate: number, amount: number }> = [];
+        
+        eligibleDays.forEach(day => {
+          const dayDate = new Date(day.date);
+          // 11월 10일 기준 단가 변경
+          const rate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? newRate : baseRate;
+          totalAmount += rate;
+          dailyDetails.push({ date: day.date, rate, amount: rate });
+        });
+        
+        return {
+          currentMonth: totalAmount,
+          carryover: 0,
+          policy: 'per_day',
+          dailyDetails
+        };
+      }
     } else if (contract.meal_policy === 'fixed_with_reconcile') {
       // 고정 선지급 + 익월 정산 방식
       const fixedDays = contract.meal_fixed_days_per_month || 20;
       const rate = contract.meal_rate || 7000;
       const fixedAmount = fixedDays * rate;
-      const actualAmount = eligibleDays * rate;
+      
+      let actualAmount = 0;
+      if (typeof eligibleDays === 'number') {
+        actualAmount = eligibleDays * rate;
+      } else {
+        eligibleDays.forEach(day => {
+          const dayDate = new Date(day.date);
+          const dayRate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? 8000 : rate;
+          actualAmount += dayRate;
+        });
+      }
+      
       const carryover = fixedAmount - actualAmount; // (+)면 다음달에 더 지급, (-)면 공제
 
       return {
@@ -649,15 +716,37 @@ export default function PayslipGenerator() {
         carryover: carryover, // 다음 달에 반영할 정산금
         policy: 'fixed_with_reconcile',
         actualAmount: actualAmount,
-        fixedAmount: fixedAmount
+        fixedAmount: fixedAmount,
+        dailyDetails: []
       };
     }
 
-    return {
-      currentMonth: eligibleDays * 7000,
-      carryover: 0,
-      policy: 'per_day'
-    };
+    // 기본값
+    if (typeof eligibleDays === 'number') {
+      return {
+        currentMonth: eligibleDays * 7000,
+        carryover: 0,
+        policy: 'per_day',
+        dailyDetails: []
+      };
+    } else {
+      let totalAmount = 0;
+      const dailyDetails: Array<{ date: string, rate: number, amount: number }> = [];
+      
+      eligibleDays.forEach(day => {
+        const dayDate = new Date(day.date);
+        const rate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? 8000 : 7000;
+        totalAmount += rate;
+        dailyDetails.push({ date: day.date, rate, amount: rate });
+      });
+      
+      return {
+        currentMonth: totalAmount,
+        carryover: 0,
+        policy: 'per_day',
+        dailyDetails
+      };
+    }
   };
 
   const generateHourlyPayslip = async (employee: Employee, year: number, month: number) => {
@@ -725,18 +814,23 @@ export default function PayslipGenerator() {
       dailyHours[date] += hours;
     });
 
-    // 식대 대상일수 계산 (하루 3시간 이상 근무한 날)
-    const mealAllowanceDays = Object.values(dailyHours).filter(hours => hours >= 3).length;
+    // 식대 대상일수 계산 (하루 3시간 이상 근무한 날) - 날짜별 정보 포함
+    const mealAllowanceDaysList = Object.entries(dailyHours)
+      .filter(([_, hours]) => hours >= 3)
+      .map(([date, hours]) => ({ date, hours }));
+    const mealAllowanceDays = mealAllowanceDaysList.length;
     
     // 식대 정책에 따른 계산
     let mealAllowance = 0;
+    let mealDailyDetails: Array<{ date: string, rate: number, amount: number }> = [];
     if (mealOption === 'exclude') {
       mealAllowance = 0;
     } else if (mealOption === 'manual') {
       mealAllowance = Math.max(0, mealManualAmount || 0);
     } else {
-      const mealCalculation = calculateMealAllowance(contract, mealAllowanceDays, month, year);
+      const mealCalculation = calculateMealAllowance(contract, mealAllowanceDaysList, month, year);
       mealAllowance = mealCalculation.currentMonth;
+      mealDailyDetails = mealCalculation.dailyDetails || [];
     }
 
     // dailyHours는 이미 위에서 계산됨
@@ -832,7 +926,12 @@ export default function PayslipGenerator() {
     // 세금 계산 (3.3% 사업소득세 - 식대는 비과세)
     const taxableAmount = totalWage + weeklyHolidayPay;
     const taxAmount = Math.round(taxableAmount * 0.033);
-    const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
+    
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
+    const age = getAgeFromBirthDate(employee.birth_date);
+    const insurance = calculateInsurance(totalEarnings, mealAllowance, age, contract || undefined);
+    const totalDeductions = insurance.totalInsurance + taxAmount;
+    const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -861,7 +960,13 @@ export default function PayslipGenerator() {
         hours: detail.hours,
         daily_wage: detail.daily_wage,
         hourly_rate: detail.hourly_rate
-      }))
+      })),
+      // 4대보험 정보
+      national_pension: insurance.nationalPension,
+      health_insurance: insurance.healthInsurance,
+      employment_insurance: insurance.employmentInsurance,
+      industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      total_insurance: insurance.totalInsurance
     };
 
     // payslips 테이블에 저장 (단순 insert 사용 - upsert는 유니크 제약 필요)
@@ -884,7 +989,13 @@ export default function PayslipGenerator() {
           status: payslip.status,
           total_hours: payslip.total_hours,
           hourly_rate: payslip.hourly_rate,
-          daily_details: payslip.daily_details
+          daily_details: payslip.daily_details,
+          // 4대보험 정보
+          national_pension: payslip.national_pension,
+          health_insurance: payslip.health_insurance,
+          employment_insurance: payslip.employment_insurance,
+          industrial_accident_insurance: payslip.industrial_accident_insurance,
+          total_insurance: payslip.total_insurance
         }]);
 
       if (saveError) {
@@ -928,14 +1039,14 @@ export default function PayslipGenerator() {
   };
 
   const generateMonthlyPayslip = async (employee: Employee, year: number, month: number) => {
-    // 계약서에서 식대 정보 조회
+    // 계약서에서 식대 정보 및 4대보험 정보 조회
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
     const { data: contract, error: contractError } = await supabase
       .from('contracts')
-      .select('meal_allowance, salary_history, probation_period')
+      .select('meal_allowance, meal_policy, meal_rate, insurance_4major, insurance_display, salary_history, probation_period')
       .eq('employee_id', employee.id)
       .lte('start_date', endDate)
       .or(`end_date.is.null,end_date.gte.${startDate}`)
@@ -944,12 +1055,61 @@ export default function PayslipGenerator() {
       .limit(1)
       .single();
 
-    // 월급제: 식대 옵션 적용 (계약 기본값, 제외, 수동)
-    const mealAllowance = mealOption === 'exclude'
-      ? 0
-      : mealOption === 'manual'
-        ? Math.max(0, mealManualAmount || 0)
-        : (contract?.meal_allowance || 0);
+    // 식대 계산: 계약 정책에 따라 스케줄 기반 계산 또는 고정값 사용
+    let mealAllowance = 0;
+    let mealDailyDetails: Array<{ date: string, rate: number, amount: number }> = [];
+    
+    if (mealOption === 'exclude') {
+      mealAllowance = 0;
+    } else if (mealOption === 'manual') {
+      mealAllowance = Math.max(0, mealManualAmount || 0);
+    } else {
+      // 계약대로 자동 계산
+      if (contract?.meal_policy === 'per_day') {
+        // 일별 지급 방식: 스케줄 조회하여 실제 근무일수 계산
+        const { data: schedules, error: scheduleError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('employee_id', employee.id)
+          .gte('schedule_date', startDate)
+          .lte('schedule_date', endDate)
+          .neq('status', 'cancelled')
+          .order('schedule_date', { ascending: true });
+
+        if (!scheduleError && schedules && schedules.length > 0) {
+          // 일별 근무시간 계산
+          const dailyHours: { [key: string]: number } = {};
+          schedules.forEach(schedule => {
+            const date = schedule.schedule_date;
+            const start = new Date(`${date} ${schedule.scheduled_start}`);
+            const end = new Date(`${date} ${schedule.scheduled_end}`);
+            const rawHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+            const hours = rawHours;
+            
+            if (!dailyHours[date]) {
+              dailyHours[date] = 0;
+            }
+            dailyHours[date] += hours;
+          });
+
+          // 식대 대상일수 계산 (하루 3시간 이상 근무한 날) - 날짜별 정보 포함
+          const mealAllowanceDaysList = Object.entries(dailyHours)
+            .filter(([_, hours]) => hours >= 3)
+            .map(([date, hours]) => ({ date, hours }));
+          
+          // calculateMealAllowance 함수로 날짜별 단가 적용
+          const mealCalculation = calculateMealAllowance(contract, mealAllowanceDaysList, month, year);
+          mealAllowance = mealCalculation.currentMonth;
+          mealDailyDetails = mealCalculation.dailyDetails || [];
+        } else {
+          // 스케줄이 없으면 계약서 고정값 사용 (하위 호환성)
+          mealAllowance = contract?.meal_allowance || 0;
+        }
+      } else {
+        // 고정 선지급 방식 또는 계약서에 meal_policy가 없는 경우
+        mealAllowance = contract?.meal_allowance || 0;
+      }
+    }
     
     const baseSalary = employee.monthly_salary || 0;
     const overtimePay = 0; // 추후 구현
@@ -958,7 +1118,12 @@ export default function PayslipGenerator() {
     const totalEarnings = baseSalary + overtimePay + incentive + pointBonus + mealAllowance;
     const taxableAmount = baseSalary + overtimePay + incentive + pointBonus; // 식대는 비과세
     const taxAmount = Math.round(taxableAmount * 0.033); // 3.3% 사업소득세
-    const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
+    
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
+    const age = getAgeFromBirthDate(employee.birth_date);
+    const insurance = calculateInsurance(totalEarnings, mealAllowance, age, contract || undefined);
+    const totalDeductions = insurance.totalInsurance + taxAmount;
+    const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -977,7 +1142,13 @@ export default function PayslipGenerator() {
       total_earnings: totalEarnings,
       tax_amount: taxAmount,
       net_salary: netSalary,
-      status: 'generated'
+      status: 'generated',
+      // 4대보험 정보
+      national_pension: insurance.nationalPension,
+      health_insurance: insurance.healthInsurance,
+      employment_insurance: insurance.employmentInsurance,
+      industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      total_insurance: insurance.totalInsurance
     };
 
     // payslips 테이블에 저장 (스키마 존재 컬럼만 저장)
@@ -1000,7 +1171,13 @@ export default function PayslipGenerator() {
           status: payslip.status,
           total_hours: payslip.total_hours,
           hourly_rate: payslip.hourly_rate,
-          daily_details: payslip.daily_details
+          daily_details: payslip.daily_details,
+          // 4대보험 정보
+          national_pension: payslip.national_pension,
+          health_insurance: payslip.health_insurance,
+          employment_insurance: payslip.employment_insurance,
+          industrial_accident_insurance: payslip.industrial_accident_insurance,
+          total_insurance: payslip.total_insurance
         }]);
 
       if (saveError) {
@@ -1133,10 +1310,10 @@ export default function PayslipGenerator() {
       throw new Error('분할 생성은 시간제 직원만 가능합니다.');
     }
 
-    // 계약서에서 식대 정보 조회
+    // 계약서에서 식대 정보 및 4대보험 정보 조회
     const { data: contract, error: contractError } = await supabase
       .from('contracts')
-      .select('meal_allowance, salary_history, probation_period')
+      .select('meal_allowance, meal_policy, meal_rate, insurance_4major, insurance_display, salary_history, probation_period')
       .eq('employee_id', employee.id)
       .lte('start_date', endDate)
       .or(`end_date.is.null,end_date.gte.${startDate}`)
@@ -1292,7 +1469,12 @@ export default function PayslipGenerator() {
     // 세금 계산 (3.3% 사업소득세 - 식대는 비과세)
     const taxableAmount = totalWage + weeklyHolidayPay;
     const taxAmount = Math.round(taxableAmount * 0.033);
-    const netSalary = totalEarnings - taxAmount; // 총 급여에서 세금을 차감한 실수령액
+    
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
+    const age = getAgeFromBirthDate(employee.birth_date);
+    const insurance = calculateInsurance(totalEarnings, mealAllowance, age, contract || undefined);
+    const totalDeductions = insurance.totalInsurance + taxAmount;
+    const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
 
     const payslip: PayslipData = {
       employee_id: employee.id,
@@ -1320,7 +1502,13 @@ export default function PayslipGenerator() {
         hours: detail.hours,
         daily_wage: detail.daily_wage,
         hourly_rate: detail.hourly_rate
-      }))
+      })),
+      // 4대보험 정보
+      national_pension: insurance.nationalPension,
+      health_insurance: insurance.healthInsurance,
+      employment_insurance: insurance.employmentInsurance,
+      industrial_accident_insurance: insurance.industrialAccidentInsurance,
+      total_insurance: insurance.totalInsurance
     };
 
     // 중복 체크 후 저장
@@ -1392,7 +1580,13 @@ export default function PayslipGenerator() {
           total_hours: payslip.total_hours,
           hourly_rate: payslip.hourly_rate,
           daily_details: payslip.daily_details,
-          status: payslip.status
+          status: payslip.status,
+          // 4대보험 정보
+          national_pension: payslip.national_pension,
+          health_insurance: payslip.health_insurance,
+          employment_insurance: payslip.employment_insurance,
+          industrial_accident_insurance: payslip.industrial_accident_insurance,
+          total_insurance: payslip.total_insurance
         }]);
 
       if (saveError) {
@@ -1951,9 +2145,11 @@ export default function PayslipGenerator() {
   }
 
   function printDetailedSavedPayslip(payslip: any) {
-    // 4대보험 계산
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(payslip.employees?.birth_date);
-    const insurance = calculateInsurance(payslip.total_earnings, age);
+    const mealAllowance = payslip.meal_allowance || 0;
+    const contract = payslip.contracts || null;
+    const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -2190,25 +2386,33 @@ export default function PayslipGenerator() {
           </div>
 
           <div class="insurance-section">
-            <div class="insurance-title">4대보험 계산</div>
+            <div class="insurance-title">공제 내역 (4대보험)</div>
+            ${insurance.nationalPension > 0 ? `
             <div class="insurance-item">
               <span>국민연금 (4.5%)</span>
               <span>${insurance.nationalPension.toLocaleString()}원</span>
             </div>
+            ` : ''}
             <div class="insurance-item">
-              <span>건강보험 (3.597%)</span>
+              <span>건강보험</span>
               <span>${insurance.healthInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>장기요양보험료</span>
+              <span>${insurance.longTermCareInsurance.toLocaleString()}원</span>
             </div>
             <div class="insurance-item">
               <span>고용보험 (0.8%)</span>
               <span>${insurance.employmentInsurance.toLocaleString()}원</span>
             </div>
+            ${insurance.industrialAccidentInsurance > 0 ? `
             <div class="insurance-item">
               <span>산재보험 (0.65%)</span>
               <span>${insurance.industrialAccidentInsurance.toLocaleString()}원</span>
             </div>
+            ` : ''}
             <div class="insurance-item" style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 5px;">
-              <span>4대보험 총액</span>
+              <span>공제액계</span>
               <span>${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
           </div>
@@ -2218,24 +2422,28 @@ export default function PayslipGenerator() {
               <span>총 지급액(과세):</span>
               <span>${(payslip.total_earnings - (payslip.meal_allowance || 0)).toLocaleString()}원</span>
             </div>
-            ${(payslip.meal_allowance || 0) > 0 ? `
             <div class="total-item">
-              <span>비과세(식대):</span>
-              <span>${(payslip.meal_allowance || 0).toLocaleString()}원</span>
-            </div>
-            ` : ''}
-            <div class="total-item">
-              <span>4대보험:</span>
+              <span>공제액계:</span>
               <span>-${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
             <div class="total-item">
               <span>소득세 (3.3%):</span>
               <span>-${payslip.tax_amount.toLocaleString()}원</span>
             </div>
-            <div class="total-item final-amount">
-              <span>실수령액:</span>
+            <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+              <span>차인지급액 (이체 금액):</span>
               <span>${(payslip.net_salary - insurance.totalInsurance).toLocaleString()}원</span>
             </div>
+            ${(payslip.meal_allowance || 0) > 0 ? `
+            <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+              <span>식대 (별도 지급):</span>
+              <span>${(payslip.meal_allowance || 0).toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
+              <span>총 급여:</span>
+              <span>${((payslip.net_salary - insurance.totalInsurance) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            ` : ''}
           </div>
 
           ${payslip.employees?.name === '나수진' && Array.isArray(payslip.daily_details) ? `
@@ -2282,9 +2490,11 @@ export default function PayslipGenerator() {
 
   // 발행된 급여명세서용 4대보험 포함 출력/인쇄 함수
   function printSavedPayslipWithInsurance(payslip: any) {
-    // 4대보험 계산
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(payslip.employees?.birth_date);
-    const insurance = calculateInsurance(payslip.total_earnings, age);
+    const mealAllowance = payslip.meal_allowance || 0;
+    const contract = payslip.contracts || null;
+    const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -2514,42 +2724,64 @@ export default function PayslipGenerator() {
           </div>
 
           <div class="insurance-section">
-            <div class="insurance-title">4대보험 공제</div>
+            <div class="insurance-title">공제 내역 (4대보험)</div>
+            ${insurance.nationalPension > 0 ? `
             <div class="insurance-item">
               <span>국민연금 (4.5%)</span>
               <span>${insurance.nationalPension.toLocaleString()}원</span>
             </div>
+            ` : ''}
             <div class="insurance-item">
-              <span>건강보험 (3.597%)</span>
+              <span>건강보험</span>
               <span>${insurance.healthInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>장기요양보험료</span>
+              <span>${insurance.longTermCareInsurance.toLocaleString()}원</span>
             </div>
             <div class="insurance-item">
               <span>고용보험 (0.8%)</span>
               <span>${insurance.employmentInsurance.toLocaleString()}원</span>
             </div>
+            ${insurance.industrialAccidentInsurance > 0 ? `
             <div class="insurance-item">
               <span>산재보험 (0.65%)</span>
               <span>${insurance.industrialAccidentInsurance.toLocaleString()}원</span>
             </div>
+            ` : ''}
             <div class="insurance-item">
-              <span>4대보험 총액</span>
+              <span>공제액계</span>
               <span>${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
           </div>
 
           <div class="total-section">
             <div class="total-item">
-              <span>총 지급액:</span>
-              <span>${payslip.total_earnings.toLocaleString()}원</span>
+              <span>총 지급액(과세):</span>
+              <span>${(payslip.total_earnings - (payslip.meal_allowance || 0)).toLocaleString()}원</span>
             </div>
             <div class="total-item">
-              <span>4대보험 공제:</span>
+              <span>공제액계:</span>
               <span>-${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
-            <div class="total-item final-amount">
-              <span>실수령액:</span>
-              <span>${(payslip.total_earnings - insurance.totalInsurance).toLocaleString()}원</span>
+            <div class="total-item">
+              <span>소득세 (3.3%):</span>
+              <span>-${payslip.tax_amount?.toLocaleString() || 0}원</span>
             </div>
+            <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+              <span>차인지급액 (이체 금액):</span>
+              <span>${((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance - (payslip.tax_amount || 0)).toLocaleString()}원</span>
+            </div>
+            ${(payslip.meal_allowance || 0) > 0 ? `
+            <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+              <span>식대 (별도 지급):</span>
+              <span>${(payslip.meal_allowance || 0).toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
+              <span>총 급여:</span>
+              <span>${(((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance - (payslip.tax_amount || 0)) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            ` : ''}
           </div>
 
           
@@ -2840,19 +3072,46 @@ export default function PayslipGenerator() {
     return age;
   };
 
-  // 4대보험 계산 함수
-  const calculateInsurance = (totalEarnings: number, employeeAge: number = 30) => {
-    // 만 60세 이상은 국민연금 제외
-    const nationalPension = employeeAge >= 60 ? 0 : Math.round(totalEarnings * 0.045); // 4.5%
-    const healthInsurance = Math.round(totalEarnings * 0.03597); // 3.597%
-    const employmentInsurance = Math.round(totalEarnings * 0.008); // 0.8%
-    const industrialAccidentInsurance = Math.round(totalEarnings * 0.0065); // 0.65%
+  // 4대보험 계산 함수 (세무사 기준: 기본급만 기준, 식대 제외)
+  const calculateInsurance = (
+    totalEarnings: number, 
+    mealAllowance: number = 0,
+    employeeAge: number = 30,
+    contract?: { insurance_4major?: boolean, insurance_display?: any }
+  ) => {
+    // 계산 기준: 기본급만 (식대 제외) - 세무사 기준
+    const baseAmount = totalEarnings - mealAllowance;
     
-    const totalInsurance = nationalPension + healthInsurance + employmentInsurance + industrialAccidentInsurance;
+    // 국민연금: 60세 이상 또는 계약서 정보에 따라 제외
+    const nationalPension = (
+      employeeAge >= 60 || 
+      contract?.insurance_display?.national_pension === false ||
+      contract?.insurance_4major === false
+    ) ? 0 : Math.round(baseAmount * 0.045); // 4.5%
+    
+    // 건강보험 (장기요양보험료 포함)
+    // 건강보험료 = 기본급 × 3.597%
+    const healthInsuranceBase = Math.round(baseAmount * 0.03597);
+    // 장기요양보험료 = 건강보험료 × 12.27% (약)
+    const longTermCareInsurance = Math.round(healthInsuranceBase * 0.1227);
+    // 건강보험료 (장기요양 제외)
+    const healthInsurance = healthInsuranceBase - longTermCareInsurance;
+    
+    // 고용보험
+    const employmentInsurance = Math.round(baseAmount * 0.008); // 0.8%
+    
+    // 산재보험: 계약서 정보 확인
+    const industrialAccidentInsurance = (
+      contract?.insurance_4major === false || 
+      contract?.insurance_display?.industrial_accident === false
+    ) ? 0 : Math.round(baseAmount * 0.0065); // 0.65%
+    
+    const totalInsurance = nationalPension + healthInsuranceBase + employmentInsurance + industrialAccidentInsurance;
     
     return {
       nationalPension,
       healthInsurance,
+      longTermCareInsurance, // 장기요양보험료 별도 반환
       employmentInsurance,
       industrialAccidentInsurance,
       totalInsurance
@@ -2862,9 +3121,11 @@ export default function PayslipGenerator() {
   const printDetailedPayslip = () => {
     if (!payslipData) return;
     
-    // 4대보험 계산
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(selectedPayslipForDetails?.employees?.birth_date || payslipData?.employee_birth_date);
-    const insurance = calculateInsurance(payslipData.total_earnings, age);
+    const mealAllowance = payslipData.meal_allowance || 0;
+    const contract = selectedPayslipForDetails?.contracts || null;
+    const insurance = calculateInsurance(payslipData.total_earnings, mealAllowance, age, contract);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -3162,9 +3423,11 @@ export default function PayslipGenerator() {
   const printPayslipWithInsurance = () => {
     if (!payslipData) return;
     
-    // 4대보험 계산 (모든 직원에게 적용)
+    // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(selectedPayslipForDetails?.employees?.birth_date || payslipData?.employee_birth_date);
-    const insurance = calculateInsurance(payslipData.total_earnings, age);
+    const mealAllowance = payslipData.meal_allowance || 0;
+    const contract = selectedPayslipForDetails?.contracts || null;
+    const insurance = calculateInsurance(payslipData.total_earnings, mealAllowance, age, contract);
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -4918,49 +5181,86 @@ export default function PayslipGenerator() {
                   <span className="font-medium text-gray-900">총 지급액</span>
                   <span className="font-bold text-lg">{payslipData.total_earnings.toLocaleString()}원</span>
                 </div>
-                {/* 4대보험 상세 내역 (나수진이 아닌 경우만 표시) */}
-                {payslipData.employee_name !== '나수진' && payslipData.national_pension !== undefined && payslipData.national_pension > 0 && (
+                {/* 공제 내역 (4대보험) - 나수진이 아닌 경우만 표시 */}
+                {payslipData.employee_name !== '나수진' && (() => {
+                  const age = getAgeFromBirthDate(payslipData.employee_birth_date);
+                  const mealAllowance = payslipData.meal_allowance || 0;
+                  const contract = selectedPayslipForDetails?.contracts || null;
+                  const insurance = calculateInsurance(payslipData.total_earnings, mealAllowance, age, contract);
+                  const totalDeductions = insurance.totalInsurance + (payslipData.tax_amount || 0);
+                  const transferAmount = (payslipData.total_earnings - mealAllowance) - totalDeductions;
+                  
+                  return (
+                    <>
+                      <div className="mt-4 pt-4 border-t-2 border-gray-300">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">공제 내역</h4>
+                        {insurance.nationalPension > 0 && (
+                          <div className="flex justify-between items-center py-2 border-b">
+                            <span className="text-gray-600">국민연금 (4.5%)</span>
+                            <span className="font-medium text-red-600">-{insurance.nationalPension.toLocaleString()}원</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">건강보험</span>
+                          <span className="font-medium text-red-600">-{insurance.healthInsurance.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">장기요양보험료</span>
+                          <span className="font-medium text-red-600">-{insurance.longTermCareInsurance.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">고용보험 (0.8%)</span>
+                          <span className="font-medium text-red-600">-{insurance.employmentInsurance.toLocaleString()}원</span>
+                        </div>
+                        {insurance.industrialAccidentInsurance > 0 && (
+                          <div className="flex justify-between items-center py-2 border-b">
+                            <span className="text-gray-600">산재보험 (0.65%)</span>
+                            <span className="font-medium text-red-600">-{insurance.industrialAccidentInsurance.toLocaleString()}원</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center py-2 border-b border-gray-400">
+                          <span className="text-gray-600 font-medium">공제액계</span>
+                          <span className="font-medium text-red-600">-{insurance.totalInsurance.toLocaleString()}원</span>
+                        </div>
+                        {payslipData.tax_amount > 0 && (
+                          <div className="flex justify-between items-center py-2 border-b">
+                            <span className="text-gray-600">소득세 (3.3%)</span>
+                            <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-center py-3 bg-blue-50 rounded-lg px-4 mt-4 border-2 border-blue-200">
+                        <span className="font-bold text-gray-900">차인지급액 (이체 금액)</span>
+                        <span className="font-bold text-xl text-blue-600">{transferAmount.toLocaleString()}원</span>
+                      </div>
+                      {mealAllowance > 0 && (
+                        <>
+                          <div className="flex justify-between items-center py-3 bg-yellow-50 rounded-lg px-4 mt-2 border border-yellow-200">
+                            <span className="font-medium text-gray-900">식대 (별도 지급)</span>
+                            <span className="font-bold text-lg text-yellow-700">{mealAllowance.toLocaleString()}원</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 bg-green-50 rounded-lg px-4 mt-2 border-2 border-green-300">
+                            <span className="font-bold text-gray-900">총 급여</span>
+                            <span className="font-bold text-xl text-green-600">{(transferAmount + mealAllowance).toLocaleString()}원</span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+                {/* 나수진 현금 지급 안내 */}
+                {payslipData.employee_name === '나수진' && (
                   <>
                     <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-gray-600">국민연금 (4.5%)</span>
-                      <span className="font-medium text-red-600">-{payslipData.national_pension?.toLocaleString()}원</span>
+                      <span className="text-gray-600">지급 방식</span>
+                      <span className="font-medium text-green-600">현금 지급 (공제 없음)</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-gray-600">건강보험 (3.597%)</span>
-                      <span className="font-medium text-red-600">-{payslipData.health_insurance?.toLocaleString()}원</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-gray-600">고용보험 (0.8%)</span>
-                      <span className="font-medium text-red-600">-{payslipData.employment_insurance?.toLocaleString()}원</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-gray-600">산재보험 (0.65%)</span>
-                      <span className="font-medium text-red-600">-{payslipData.industrial_accident_insurance?.toLocaleString()}원</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-400">
-                      <span className="text-gray-600 font-medium">4대보험 총액</span>
-                      <span className="font-medium text-red-600">-{payslipData.total_insurance?.toLocaleString()}원</span>
+                    <div className="flex justify-between items-center py-3 bg-gray-50 rounded-lg px-4">
+                      <span className="font-bold text-gray-900">실수령액</span>
+                      <span className="font-bold text-xl text-blue-600">{payslipData.net_salary.toLocaleString()}원</span>
                     </div>
                   </>
                 )}
-                {/* 세금 (나수진이 아닌 경우만 표시) */}
-                {payslipData.employee_name !== '나수진' && payslipData.tax_amount > 0 && (
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-gray-600">세금 (3.3%)</span>
-                  <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
-                </div>
-                )}
-                {/* 나수진 현금 지급 안내 */}
-                {payslipData.employee_name === '나수진' && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-gray-600">지급 방식</span>
-                    <span className="font-medium text-green-600">현금 지급 (공제 없음)</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center py-3 bg-gray-50 rounded-lg px-4">
-                  <span className="font-bold text-gray-900">실수령액</span>
-                  <span className="font-bold text-xl text-blue-600">{payslipData.net_salary.toLocaleString()}원</span>
-                </div>
               </div>
             </div>
 

@@ -1184,7 +1184,7 @@ export default function ContractManagementPage() {
                   <h4 className="text-lg font-medium text-gray-900 mb-3">식대 정책</h4>
                   
                   <div className="space-y-3">
-                    <div>
+                <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">식대 정책 선택</label>
                       <select
                         value={newContract.meal_policy}
@@ -1201,14 +1201,14 @@ export default function ContractManagementPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">식대 단가 (원/일)</label>
-                      <input
-                        type="number"
+                  <input
+                    type="number"
                         value={newContract.meal_rate}
                         onChange={(e) => setNewContract({ 
-                          ...newContract, 
+                        ...newContract, 
                           meal_rate: parseInt(e.target.value) || 0 
                         })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="7000"
                       />
                     </div>
@@ -1225,7 +1225,7 @@ export default function ContractManagementPage() {
                           })}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="20"
-                        />
+                  />
                         <p className="text-xs text-gray-500 mt-1">
                           월 {newContract.meal_fixed_days_per_month}일 × {newContract.meal_rate.toLocaleString()}원 = {(newContract.meal_fixed_days_per_month * newContract.meal_rate).toLocaleString()}원 선지급
                         </p>
@@ -1576,17 +1576,17 @@ export default function ContractManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">주민등록증</label>
                   <div className="space-y-2">
                     <div className="flex space-x-2">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleDocumentUpload(selectedContract.id, 'id_card', file);
-                          }
-                        }}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleDocumentUpload(selectedContract.id, 'id_card', file);
+                      }
+                    }}
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                  />
                       {selectedContract.documents?.id_card && (
                         <button
                           onClick={() => handleDocumentView(selectedContract.id, 'id_card')}
@@ -1642,17 +1642,17 @@ export default function ContractManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">가족관계증명서</label>
                   <div className="space-y-2">
                     <div className="flex space-x-2">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleDocumentUpload(selectedContract.id, 'family_register', file);
-                          }
-                        }}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleDocumentUpload(selectedContract.id, 'family_register', file);
+                      }
+                    }}
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                  />
                       {selectedContract.documents?.family_register && (
                         <button
                           onClick={() => handleDocumentView(selectedContract.id, 'family_register')}
@@ -1708,17 +1708,17 @@ export default function ContractManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">통장사본</label>
                   <div className="space-y-2">
                     <div className="flex space-x-2">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleDocumentUpload(selectedContract.id, 'bank_account', file);
-                          }
-                        }}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleDocumentUpload(selectedContract.id, 'bank_account', file);
+                      }
+                    }}
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                  />
                       {selectedContract.documents?.bank_account && (
                         <button
                           onClick={() => handleDocumentView(selectedContract.id, 'bank_account')}
