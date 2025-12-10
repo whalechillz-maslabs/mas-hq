@@ -3126,24 +3126,25 @@ export default function PayslipGenerator() {
       contract?.insurance_4major === false
     ) ? 0 : Math.round(baseAmount * 0.045); // 4.5%
     
-    // 건강보험 (장기요양보험료 포함)
-    // 건강보험료 = 기본급 × 3.597%
-    const healthInsuranceBase = Math.round(baseAmount * 0.03597);
-    // 장기요양보험료 = 건강보험료 × 12.27% (약)
-    const longTermCareInsurance = Math.round(healthInsuranceBase * 0.1227);
-    // 건강보험료 (장기요양 제외)
-    const healthInsurance = healthInsuranceBase - longTermCareInsurance;
+    // 건강보험 (장기요양보험료 포함) - 2025년 세무사 기준
+    // 총 건강보험료 = 보수월액 × 7.09% (근로자+사업주)
+    // 근로자 부담분 = 총 건강보험료 × 50%
+    const healthInsuranceBase = Math.round(baseAmount * 0.0709);
+    const healthInsurance = Math.round(healthInsuranceBase * 0.5);
+    
+    // 장기요양보험료 = 건강보험료 × 0.9182 (총액)
+    // 근로자 부담분 = 총 장기요양보험료 × 50%
+    const longTermCareTotal = Math.round(healthInsuranceBase * 0.9182);
+    const longTermCareInsurance = Math.round(longTermCareTotal * 0.5);
     
     // 고용보험
-    const employmentInsurance = Math.round(baseAmount * 0.008); // 0.8%
+    // 근로자 부담 0.9%
+    const employmentInsurance = Math.round(baseAmount * 0.009); // 0.9%
     
-    // 산재보험: 계약서 정보 확인
-    const industrialAccidentInsurance = (
-      contract?.insurance_4major === false || 
-      contract?.insurance_display?.industrial_accident === false
-    ) ? 0 : Math.round(baseAmount * 0.0065); // 0.65%
+    // 산재보험: 전액 사업주 부담 → 근로자 공제 0원
+    const industrialAccidentInsurance = 0;
     
-    const totalInsurance = nationalPension + healthInsuranceBase + employmentInsurance + industrialAccidentInsurance;
+    const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance + industrialAccidentInsurance;
     
     return {
       nationalPension,

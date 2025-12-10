@@ -1202,7 +1202,7 @@ export default function DashboardPage() {
               <div className="text-sm text-white/90 whitespace-pre-line font-medium">
                 {formatDateTime(currentTime)}
               </div>
-            </div>
+              </div>
               
             {/* 우측 사용자 영역 */}
             <div className="flex items-center space-x-2 md:space-x-4">
@@ -1300,7 +1300,7 @@ export default function DashboardPage() {
           
 
           return (
-            <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center">
                   <Package className="h-6 w-6 mr-3 text-red-600" />
@@ -1310,7 +1310,7 @@ export default function DashboardPage() {
                       {urgentTasks.length}
                     </span>
                   )}
-                </h2>
+          </h2>
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => router.push('/tasks')}
@@ -1341,14 +1341,14 @@ export default function DashboardPage() {
                       <ChevronUp className="h-4 w-4 mr-2 text-red-600" />
                       <span className="text-red-600 font-medium">긴급 업무 숨기기</span>
                     </>
-                  ) : (
+                ) : (
                     <>
                       <ChevronDown className="h-4 w-4 mr-2 text-red-600" />
                       <span className="text-red-600 font-medium">
                         긴급 업무 보기 {hasUrgentTasks && `(${urgentTasks.length}건)`}
                       </span>
                     </>
-                  )}
+                )}
                 </button>
               </div>
 
@@ -1359,7 +1359,7 @@ export default function DashboardPage() {
                     <div className="text-center py-8 text-gray-500">
                       <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                       <p>긴급 업무가 없습니다.</p>
-                    </div>
+            </div>
                   ) : (
                     urgentTasks.map((task) => {
                       const isOverdue = new Date().getTime() - new Date(task.created_at).getTime() > 24 * 60 * 60 * 1000;
@@ -1405,15 +1405,15 @@ export default function DashboardPage() {
                                 })()}
                                 {isOverdue && (
                                   <Siren className="h-4 w-4 text-red-500 animate-pulse" />
-                                )}
-                              </div>
+                )}
+              </div>
                               <div className="flex items-center text-sm text-gray-500 mb-2">
                                 <User className="h-4 w-4 mr-1" />
                                 {task.employee?.name}
                                 <span className="mx-2">•</span>
                                 <Calendar className="h-4 w-4 mr-1" />
                                 {formatDateKR(new Date(task.task_date))}
-                              </div>
+            </div>
                               {task.notes && (
                                 <p className={`text-sm line-clamp-2 ${isRead ? 'text-gray-500' : 'text-gray-700'}`}>
                                   {task.notes}
@@ -1424,7 +1424,7 @@ export default function DashboardPage() {
                                   <span className="font-medium">고객:</span> {task.customer_name.trim().replace(/0/g, '')}
                                 </p>
                               )}
-                            </div>
+                </div>
                             <div className="ml-4 flex flex-col items-end space-y-2">
                               <div className="flex items-center space-x-2">
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -1456,11 +1456,11 @@ export default function DashboardPage() {
                                   >
                                     <Edit className="h-3 w-3" />
                                   </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+              )}
+            </div>
+            </div>
+          </div>
+        </div>
                       );
                     })
                   )}
@@ -1475,9 +1475,9 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-800 flex items-center">
-              <BarChart3 className="h-6 w-6 mr-3 text-blue-600" />
-              KPI 하이라이트
-            </h2>
+            <BarChart3 className="h-6 w-6 mr-3 text-blue-600" />
+            KPI 하이라이트
+          </h2>
             <button
               onClick={() => handleOpenSalesDetail('month')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -1511,7 +1511,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{formatCurrency(data?.monthlyStats?.totalSales || 0)}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-200" />
-              </div>
+          </div>
             </div>
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
@@ -1529,16 +1529,16 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{data?.weeklyPoints || 0}점</p>
                 </div>
                 <Target className="h-8 w-8 text-pink-200" />
-              </div>
+          </div>
             </div>
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-orange-100 text-sm">이번 주 업무 건수</p>
                   <p className="text-2xl font-bold">{data?.weeklyTaskCount || 0}건</p>
-                </div>
+          </div>
                 <Phone className="h-8 w-8 text-orange-200" />
-              </div>
+            </div>
             </div>
           </div>
         </div>
@@ -1554,23 +1554,23 @@ export default function DashboardPage() {
               <div className="flex items-center justify-center mb-2">
                 <Phone className="h-6 w-6 text-blue-600 mr-2" />
                 <span className="text-sm font-medium text-blue-800">전화 판매 건수</span>
-              </div>
+                </div>
               <p className="text-2xl font-bold text-blue-600">
                 {data?.personalKPI?.phoneSales || 0}건
               </p>
               <p className="text-xs text-blue-500 mt-1">OP1, OP2 합계</p>
-            </div>
+              </div>
             
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
                 <ShoppingCart className="h-6 w-6 text-green-600 mr-2" />
                 <span className="text-sm font-medium text-green-800">매장 판매 건수</span>
-              </div>
+            </div>
               <p className="text-2xl font-bold text-green-600">
                 {data?.personalKPI?.storeSales || 0}건
               </p>
               <p className="text-xs text-green-500 mt-1">OP3, OP4 합계</p>
-            </div>
+                </div>
             
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="flex items-center justify-center mb-2">
@@ -1634,21 +1634,21 @@ export default function DashboardPage() {
                   </div>
                   {data.teamRankings.sales.length > 0 ? (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-yellow-700">
                           🥇 {data.teamRankings.sales[0].name}
                         </span>
                         <span className="text-sm text-yellow-600">
                           {formatCurrency(data.teamRankings.sales[0].sales)}
                         </span>
-                      </div>
+                </div>
                       {data.teamRankings.sales[1] && (
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600">🥈 {data.teamRankings.sales[1].name}</span>
                           <span className="text-gray-500">{formatCurrency(data.teamRankings.sales[1].sales)}</span>
-                        </div>
+              </div>
                       )}
-                    </div>
+            </div>
                   ) : (
                     <p className="text-gray-500 text-sm">데이터 없음</p>
                   )}
@@ -1662,32 +1662,32 @@ export default function DashboardPage() {
                   </div>
                   {data.teamRankings.points.length > 0 ? (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-blue-700">
                           🥇 {data.teamRankings.points[0].name}
                         </span>
                         <span className="text-sm text-blue-600">
                           {data.teamRankings.points[0].points}점
                         </span>
-                      </div>
+                </div>
                       {data.teamRankings.points[1] && (
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600">🥈 {data.teamRankings.points[1].name}</span>
                           <span className="text-gray-500">{data.teamRankings.points[1].points}점</span>
-                        </div>
+              </div>
                       )}
-                    </div>
+              </div>
                   ) : (
                     <p className="text-gray-500 text-sm">데이터 없음</p>
                   )}
-                </div>
+            </div>
 
                 {/* 업무 건수 순위 */}
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
                   <div className="flex items-center mb-3">
                     <Target className="h-5 w-5 text-green-600 mr-2" />
                     <h3 className="font-semibold text-green-800">업무 건수 1위</h3>
-                  </div>
+          </div>
                   {data.teamRankings.tasks.length > 0 ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -1717,9 +1717,9 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-800 flex items-center">
-              <Users className="h-6 w-6 mr-3 text-green-600" />
-              협업 성과
-            </h2>
+            <Users className="h-6 w-6 mr-3 text-green-600" />
+            협업 성과
+          </h2>
             <button
               onClick={() => handleOpenMarketingDetail('month')}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
@@ -1833,13 +1833,13 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-xs text-pink-500">
                   OP11-12 업무 건수
-                </div>
-              </div>
-
-
             </div>
           </div>
 
+
+                </div>
+              </div>
+              
           
           {/* 업무 유형별 참여 현황 */}
           <div className="mt-8 pt-6 border-t border-gray-200">
@@ -1945,7 +1945,7 @@ export default function DashboardPage() {
               <FileText className="h-10 w-10 text-orange-600 mb-3" />
               <h3 className="font-bold text-lg text-orange-900 mb-2">계약서 조회</h3>
               <p className="text-sm text-orange-700">근로계약서 확인 및 다운로드</p>
-            </button>
+                  </button>
           </div>
 
           {/* 관리자 전용 메뉴 */}
