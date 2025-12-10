@@ -3116,30 +3116,26 @@ export default function PayslipGenerator() {
     employeeAge: number = 30,
     contract?: { insurance_4major?: boolean, insurance_display?: any }
   ) => {
-    // 계산 기준: 기본급만 (식대 제외) - 세무사 기준
+    // 계산 기준: 기본급만 (식대 제외) - 세무사 기준 (2025, 근로자 부담분)
     const baseAmount = totalEarnings - mealAllowance;
     
-    // 국민연금: 60세 이상 또는 계약서 정보에 따라 제외
+    const round = (v: number) => Math.round(v); // 원단위 절사(반올림) - 세무사 제공 금액과 일치 목적
+    
+    // 국민연금: 60세 이상 또는 계약서 정보에 따라 제외 (근로자 4.5%이지만 60세 이상은 0원)
     const nationalPension = (
       employeeAge >= 60 || 
       contract?.insurance_display?.national_pension === false ||
       contract?.insurance_4major === false
-    ) ? 0 : Math.round(baseAmount * 0.045); // 4.5%
+    ) ? 0 : round(baseAmount * 0.045); // 4.5%
     
-    // 건강보험 (장기요양보험료 포함) - 2025년 세무사 기준
-    // 총 건강보험료 = 보수월액 × 7.09% (근로자+사업주)
-    // 근로자 부담분 = 총 건강보험료 × 50%
-    const healthInsuranceBase = Math.round(baseAmount * 0.0709);
-    const healthInsurance = Math.round(healthInsuranceBase * 0.5);
+    // 건강보험: 근로자 부담 3.545% (세무사 목표: 82,950원 @ 2,340,000원)
+    const healthInsurance = round(baseAmount * 0.03545);
     
-    // 장기요양보험료 = 건강보험료 × 0.9182 (총액)
-    // 근로자 부담분 = 총 장기요양보험료 × 50%
-    const longTermCareTotal = Math.round(healthInsuranceBase * 0.9182);
-    const longTermCareInsurance = Math.round(longTermCareTotal * 0.5);
+    // 장기요양보험: 근로자 부담 0.459% (세무사 목표: 10,740원 @ 2,340,000원)
+    const longTermCareInsurance = round(baseAmount * 0.00459);
     
-    // 고용보험
-    // 근로자 부담 0.9%
-    const employmentInsurance = Math.round(baseAmount * 0.009); // 0.9%
+    // 고용보험: 근로자 부담 0.9% (세무사 목표: 21,060원 @ 2,340,000원)
+    const employmentInsurance = round(baseAmount * 0.009);
     
     // 산재보험: 전액 사업주 부담 → 근로자 공제 0원
     const industrialAccidentInsurance = 0;
