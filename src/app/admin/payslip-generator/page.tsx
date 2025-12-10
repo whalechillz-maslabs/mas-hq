@@ -2199,12 +2199,57 @@ export default function PayslipGenerator() {
     }, 500);
   }
 
-  function printDetailedSavedPayslip(payslip: any) {
+  async function printDetailedSavedPayslip(payslip: any) {
     // 4대보험 계산 (세무사 기준: 기본급만 기준)
     const age = getAgeFromBirthDate(payslip.employees?.birth_date);
     const mealAllowance = payslip.meal_allowance || 0;
     const contract = payslip.contracts || null;
     const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract);
+    
+    // daily_details가 없으면 스케줄 조회하여 생성
+    let dailyDetails = payslip.daily_details || [];
+    if (!dailyDetails || dailyDetails.length === 0) {
+      try {
+        // period에서 년월 추출 (예: '2025-11')
+        const [year, month] = payslip.period.split('-');
+        const startDate = `${year}-${month}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+        
+        // 스케줄 조회
+        const { data: schedules, error: scheduleError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('employee_id', payslip.employee_id)
+          .gte('schedule_date', startDate)
+          .lte('schedule_date', endDate)
+          .neq('status', 'cancelled')
+          .order('schedule_date', { ascending: true });
+        
+        if (!scheduleError && schedules && schedules.length > 0) {
+          // 스케줄 기반 일별 내역 생성 (시간만 표시, 금액은 월급제라 계산 안 함)
+          dailyDetails = schedules.map((schedule: any) => {
+            let hours = 0;
+            if (schedule.scheduled_start && schedule.scheduled_end) {
+              const start = new Date(`${schedule.schedule_date} ${schedule.scheduled_start}`);
+              const end = new Date(`${schedule.schedule_date} ${schedule.scheduled_end}`);
+              hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+            }
+            
+            return {
+              date: schedule.schedule_date,
+              hours: Math.round(hours * 10) / 10, // 소수점 1자리
+              daily_wage: 0, // 월급제는 일급 계산 안 함
+              hourly_rate: 0, // 월급제는 시급 계산 안 함
+              note: '정규근무'
+            };
+          });
+        }
+      } catch (error) {
+        console.error('스케줄 조회 실패:', error);
+        // 스케줄 조회 실패해도 계속 진행
+      }
+    }
     
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -2509,7 +2554,7 @@ export default function PayslipGenerator() {
             ` : ''}
           </div>
 
-          ${Array.isArray(payslip.daily_details) && payslip.daily_details.length > 0 ? `
+          ${Array.isArray(dailyDetails) && dailyDetails.length > 0 ? `
           <div class="salary-section" style="margin-top:10px">
             <div class="section-title">일별 근무 내역</div>
             <table style="width:100%; border-collapse:collapse; font-size:14px">
@@ -2523,12 +2568,12 @@ export default function PayslipGenerator() {
                 </tr>
               </thead>
               <tbody>
-                ${payslip.daily_details.map((d: any) => {
+                ${dailyDetails.map((d: any) => {
                   try {
                     const date = d.date ? new Date(d.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) : '날짜 없음';
-                    const hours = (d.hours || 0) + '시간';
-                    const hourlyRate = (d.hourly_rate || 0).toLocaleString() + '원';
-                    const dailyWage = (d.daily_wage || 0).toLocaleString() + '원';
+                    const hours = (d.hours || 0) > 0 ? (d.hours || 0) + '시간' : '-';
+                    const hourlyRate = (d.hourly_rate || 0) > 0 ? (d.hourly_rate || 0).toLocaleString() + '원' : '-';
+                    const dailyWage = (d.daily_wage || 0) > 0 ? (d.daily_wage || 0).toLocaleString() + '원' : '-';
                     const tags = typeof d.note === 'string' ? d.note.split(';').filter(Boolean) : [];
                     const tagHtml = tags.map((t: string) => `<span style=\"display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':t==='식대'?'#93C5FD':'#E0E0E0'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':t==='식대'?'#EFF6FF':'#F5F5F5'}; color:${t==='추가근무'?'#9A3412':t==='식대'?'#1D4ED8':'#666'};\">${t}</span>`).join('');
                     return `<tr>
@@ -2545,13 +2590,13 @@ export default function PayslipGenerator() {
           </div>
           ` : ''}
           
-          ${(payslip.meal_allowance || 0) > 0 && Array.isArray(payslip.daily_details) && payslip.daily_details.length > 0 ? (() => {
+          ${(payslip.meal_allowance || 0) > 0 && Array.isArray(dailyDetails) && dailyDetails.length > 0 ? (() => {
             // 식대 일별 계산 상세 추출 (3시간 이상 근무한 날 모두 포함)
             const mealDetails: Array<{ date: string, rate: number, hours: number }> = [];
             const rateChangeDate = new Date('2025-11-10');
             rateChangeDate.setHours(0, 0, 0, 0);
             
-            payslip.daily_details.forEach((d: any) => {
+            dailyDetails.forEach((d: any) => {
               const hours = d.hours || 0;
               // 3시간 이상 근무한 날에 식대 지급
               if (hours >= 3) {
