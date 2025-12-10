@@ -3121,7 +3121,8 @@ export default function PayslipGenerator() {
     ) ? 0 : round(baseAmount * 0.045); // 4.5%
     
     // 건강보험: 근로자 부담 3.545% (세무사 목표: 82,950원 @ 2,340,000원)
-    const healthInsurance = round(baseAmount * 0.03545);
+    // 계산 후 3원 추가 절사 (82,953 → 82,950)
+    const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
     
     // 장기요양보험: 근로자 부담 0.459% (세무사 목표: 10,740원 @ 2,340,000원)
     const longTermCareInsurance = round(baseAmount * 0.00459);
