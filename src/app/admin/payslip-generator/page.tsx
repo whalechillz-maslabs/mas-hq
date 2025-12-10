@@ -2251,6 +2251,43 @@ export default function PayslipGenerator() {
       }
     }
     
+    // 포인트 내역 조회 (해당 기간의 employee_tasks)
+    let pointDetails: Array<{ date: string, operation_type: string, points: number, title: string }> = [];
+    try {
+      const [year, month] = payslip.period.split('-');
+      const startDate = `${year}-${month}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      
+      const { data: tasks, error: tasksError } = await supabase
+        .from('employee_tasks')
+        .select(`
+          task_date,
+          title,
+          operation_types!inner(
+            code,
+            name,
+            points
+          )
+        `)
+        .eq('employee_id', payslip.employee_id)
+        .gte('task_date', startDate)
+        .lte('task_date', endDate)
+        .order('task_date', { ascending: true });
+      
+      if (!tasksError && tasks && tasks.length > 0) {
+        pointDetails = tasks.map((task: any) => ({
+          date: task.task_date,
+          operation_type: task.operation_types?.code || '',
+          points: task.operation_types?.points || 0,
+          title: task.title || ''
+        }));
+      }
+    } catch (error) {
+      console.error('포인트 내역 조회 실패:', error);
+      // 포인트 조회 실패해도 계속 진행
+    }
+    
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -2590,31 +2627,29 @@ export default function PayslipGenerator() {
           </div>
           ` : ''}
           
-          ${(payslip.meal_allowance || 0) > 0 && Array.isArray(dailyDetails) && dailyDetails.length > 0 ? (() => {
+          ${(() => {
             // 식대 일별 계산 상세 추출 (3시간 이상 근무한 날 모두 포함)
-            const mealDetails: Array<{ date: string, rate: number, hours: number }> = [];
-            const rateChangeDate = new Date('2025-11-10');
-            rateChangeDate.setHours(0, 0, 0, 0);
-            
-            dailyDetails.forEach((d: any) => {
-              const hours = d.hours || 0;
-              // 3시간 이상 근무한 날에 식대 지급
-              if (hours >= 3) {
-                const date = d.date ? new Date(d.date) : null;
-                if (date) {
-                  date.setHours(0, 0, 0, 0);
-                  // 11월 10일 기준 단가 변경 확인
-                  const rate = (date >= rateChangeDate) ? 8000 : 7000;
-                  mealDetails.push({ date: d.date, rate, hours });
+            if ((payslip.meal_allowance || 0) > 0 && Array.isArray(dailyDetails) && dailyDetails.length > 0) {
+              const mealDetails: Array<{ date: string, rate: number, hours: number }> = [];
+              const rateChangeDate = new Date('2025-11-10');
+              rateChangeDate.setHours(0, 0, 0, 0);
+              
+              dailyDetails.forEach((d: any) => {
+                const hours = d.hours || 0;
+                // 3시간 이상 근무한 날에 식대 지급
+                if (hours >= 3) {
+                  const date = d.date ? new Date(d.date) : null;
+                  if (date) {
+                    date.setHours(0, 0, 0, 0);
+                    // 11월 10일 기준 단가 변경 확인
+                    const rate = (date >= rateChangeDate) ? 8000 : 7000;
+                    mealDetails.push({ date: d.date, rate, hours });
+                  }
                 }
-              }
-            });
-            
-            // 식대가 일별 계산인 경우 상세 표시 (mealDetails가 있고 실제 식대 금액과 일치하는지 확인)
-            if (mealDetails.length > 0) {
-              const calculatedTotal = mealDetails.reduce((sum, m) => sum + m.rate, 0);
-              // 계산된 합계가 실제 식대 금액과 비슷하면 표시 (오차 10% 이내)
-              if (Math.abs(calculatedTotal - (payslip.meal_allowance || 0)) <= (payslip.meal_allowance || 0) * 0.1) {
+              });
+              
+              // 식대가 일별 계산인 경우 상세 표시 (항상 표시)
+              if (mealDetails.length > 0) {
                 return `
           <div class="salary-section" style="margin-top:10px">
             <div class="section-title">식대 일별 계산 상세</div>
@@ -2655,7 +2690,41 @@ export default function PayslipGenerator() {
               }
             }
             return '';
-          })() : ''}
+          })()}
+          
+          ${pointDetails.length > 0 ? `
+          <div class="salary-section" style="margin-top:10px">
+            <div class="section-title">포인트 내역</div>
+            <table style="width:100%; border-collapse:collapse; font-size:14px">
+              <thead>
+                <tr>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">날짜</th>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">업무명</th>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">업무 유형</th>
+                  <th style="text-align:right; padding:8px 4px; border-bottom:1px solid #ddd;">포인트</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${pointDetails.map((p: any) => {
+                  const date = new Date(p.date);
+                  const dateStr = date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+                  return `<tr>
+                    <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${dateStr}</td>
+                    <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${p.title || '-'}</td>
+                    <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${p.operation_type || '-'}</td>
+                    <td style=\"text-align:right; padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${p.points || 0}포인트</td>
+                  </tr>`
+                }).join('')}
+                <tr style=\"font-weight:bold; border-top:2px solid #333;\">
+                  <td style=\"padding:8px 4px;\">합계</td>
+                  <td style=\"padding:8px 4px;\">-</td>
+                  <td style=\"padding:8px 4px;\">-</td>
+                  <td style=\"text-align:right; padding:8px 4px;\">${pointDetails.reduce((sum, p) => sum + (p.points || 0), 0)}포인트</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
 
           
         </div>
