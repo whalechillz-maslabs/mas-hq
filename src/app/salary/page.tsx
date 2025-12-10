@@ -647,6 +647,73 @@ export default function SalaryPage() {
 
   const handlePrintPayslip = async (payslip: any) => {
     try {
+      // 직원 정보 조회 (생년월일 필요)
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('birth_date')
+        .eq('id', payslip.employee_id)
+        .single();
+      
+      // 계약서 정보 조회
+      const { data: contract } = await supabase
+        .from('contracts')
+        .select('insurance_4major, insurance_display')
+        .eq('employee_id', payslip.employee_id)
+        .eq('status', 'active')
+        .order('start_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      // 나이 계산 함수
+      const getAgeFromBirthDate = (birthDate?: string | Date): number => {
+        if (!birthDate) return 30;
+        const birth = new Date(birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          age -= 1;
+        }
+        return age;
+      };
+      
+      // 4대보험 계산 함수 (세무사 기준)
+      const calculateInsurance = (
+        totalEarnings: number, 
+        mealAllowance: number = 0,
+        employeeAge: number = 30,
+        contract?: { insurance_4major?: boolean, insurance_display?: any }
+      ) => {
+        const baseAmount = totalEarnings - mealAllowance;
+        const round = (v: number) => Math.floor(v);
+        
+        const nationalPension = (
+          employeeAge >= 60 || 
+          contract?.insurance_display?.national_pension === false ||
+          contract?.insurance_4major === false
+        ) ? 0 : round(baseAmount * 0.045);
+        
+        const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
+        const longTermCareInsurance = round(baseAmount * 0.00459);
+        const employmentInsurance = round(baseAmount * 0.009);
+        const industrialAccidentInsurance = 0;
+        
+        const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance + industrialAccidentInsurance;
+        
+        return {
+          nationalPension,
+          healthInsurance,
+          longTermCareInsurance,
+          employmentInsurance,
+          industrialAccidentInsurance,
+          totalInsurance
+        };
+      };
+      
+      const age = getAgeFromBirthDate(employee?.birth_date);
+      const mealAllowance = payslip.meal_allowance || 0;
+      const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract || undefined);
+      
       // 급여명세서 HTML 생성 (관리자용과 동일한 흑백 고급스러운 디자인)
       const payslipHTML = `
         <!DOCTYPE html>
@@ -896,16 +963,55 @@ export default function SalaryPage() {
                 </div>
               </div>
 
-              <div class="salary-section">
-                <div class="salary-title">공제 내역</div>
-                <div class="salary-item deduction">
-                  <span>세금 (3.3%)</span>
-                  <span>${payslip.tax_amount?.toLocaleString() || 0}원</span>
+              <div class="insurance-section">
+                <div class="insurance-title">공제 내역 (4대보험)</div>
+                ${insurance.nationalPension > 0 ? `
+                <div class="insurance-item">
+                  <span>국민연금 (4.5%)</span>
+                  <span>${insurance.nationalPension.toLocaleString()}원</span>
                 </div>
-                <div class="salary-item net">
-                  <span>실수령액</span>
-                  <span>${payslip.net_salary?.toLocaleString() || 0}원</span>
+                ` : ''}
+                <div class="insurance-item">
+                  <span>건강보험</span>
+                  <span>${insurance.healthInsurance.toLocaleString()}원</span>
                 </div>
+                <div class="insurance-item">
+                  <span>장기요양보험료</span>
+                  <span>${insurance.longTermCareInsurance.toLocaleString()}원</span>
+                </div>
+                <div class="insurance-item">
+                  <span>고용보험 (0.9%)</span>
+                  <span>${insurance.employmentInsurance.toLocaleString()}원</span>
+                </div>
+                <div class="insurance-item" style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 5px;">
+                  <span>공제액계</span>
+                  <span>${insurance.totalInsurance.toLocaleString()}원</span>
+                </div>
+              </div>
+
+              <div class="total-section">
+                <div class="total-item">
+                  <span>총 지급액(과세):</span>
+                  <span>${(payslip.total_earnings - mealAllowance).toLocaleString()}원</span>
+                </div>
+                <div class="total-item">
+                  <span>공제액계:</span>
+                  <span>-${insurance.totalInsurance.toLocaleString()}원</span>
+                </div>
+                <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+                  <span>차인지급액 (이체 금액):</span>
+                  <span>${((payslip.total_earnings - mealAllowance) - insurance.totalInsurance).toLocaleString()}원</span>
+                </div>
+                ${mealAllowance > 0 ? `
+                <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                  <span>식대 (별도 지급):</span>
+                  <span>${mealAllowance.toLocaleString()}원</span>
+                </div>
+                <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
+                  <span>총 급여:</span>
+                  <span>${(((payslip.total_earnings - mealAllowance) - insurance.totalInsurance) + mealAllowance).toLocaleString()}원</span>
+                </div>
+                ` : ''}
               </div>
 
               <div class="footer">
