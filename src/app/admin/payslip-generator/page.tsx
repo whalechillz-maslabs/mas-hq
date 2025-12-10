@@ -108,6 +108,7 @@ export default function PayslipGenerator() {
   const [savedPayslips, setSavedPayslips] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'generate' | 'list'>('generate');
   const [payslipFilter, setPayslipFilter] = useState<string>('all'); // 'all', '허상원', '최형호', etc.
+  const [yearFilter, setYearFilter] = useState<string>('all'); // 'all', '2025', '2026', etc.
   const [selectedPayslipForDetails, setSelectedPayslipForDetails] = useState<any>(null);
   const [editingDates, setEditingDates] = useState(false);
   const [editIssuedDate, setEditIssuedDate] = useState('');
@@ -5037,26 +5038,75 @@ export default function PayslipGenerator() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">발행된 급여명세서 목록</h2>
               
-              {/* 직원별 필터 */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">직원별 필터:</label>
-                <select
-                  value={payslipFilter}
-                  onChange={(e) => setPayslipFilter(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">전체</option>
-                  {Array.from(new Set(savedPayslips.map(p => p.employees.name))).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
+              {/* 필터 섹션 */}
+              <div className="flex items-center gap-4">
+                {/* 연도 필터 */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">연도:</label>
+                  <select
+                    value={yearFilter}
+                    onChange={(e) => setYearFilter(e.target.value)}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">전체</option>
+                    {Array.from(new Set(savedPayslips.map(p => {
+                      const yearMatch = p.period?.match(/^(\d{4})/);
+                      return yearMatch ? yearMatch[1] : null;
+                    }).filter(Boolean))).sort((a, b) => (b || '').localeCompare(a || '')).map(year => (
+                      <option key={year} value={year}>{year}년</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* 직원별 필터 */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">직원:</label>
+                  <select
+                    value={payslipFilter}
+                    onChange={(e) => setPayslipFilter(e.target.value)}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">전체</option>
+                    {Array.from(new Set(savedPayslips.map(p => p.employees.name))).map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             
             {(() => {
-              const filteredPayslips = payslipFilter === 'all' 
-                ? savedPayslips 
-                : savedPayslips.filter(p => p.employees.name === payslipFilter);
+              // 필터링: 연도 + 직원
+              let filteredPayslips = savedPayslips;
+              
+              // 연도 필터 적용
+              if (yearFilter !== 'all') {
+                filteredPayslips = filteredPayslips.filter(p => {
+                  const yearMatch = p.period?.match(/^(\d{4})/);
+                  return yearMatch && yearMatch[1] === yearFilter;
+                });
+              }
+              
+              // 직원 필터 적용
+              if (payslipFilter !== 'all') {
+                filteredPayslips = filteredPayslips.filter(p => p.employees.name === payslipFilter);
+              }
+              
+              // 정렬: 연도 내림차순 → 월 내림차순 → 직원명 오름차순
+              filteredPayslips = filteredPayslips.sort((a, b) => {
+                // 연도 내림차순
+                const yearA = a.period?.match(/^(\d{4})/)?.[1] || '0';
+                const yearB = b.period?.match(/^(\d{4})/)?.[1] || '0';
+                if (yearA !== yearB) return yearB.localeCompare(yearA);
+                
+                // 월 내림차순
+                const monthA = a.period?.match(/^\d{4}-(\d{2})/)?.[1] || '0';
+                const monthB = b.period?.match(/^\d{4}-(\d{2})/)?.[1] || '0';
+                if (monthA !== monthB) return monthB.localeCompare(monthA);
+                
+                // 직원명 오름차순
+                return (a.employees?.name || '').localeCompare(b.employees?.name || '');
+              });
               
               // 통계 계산
               const totalAmount = filteredPayslips.reduce((sum, p) => sum + (p.net_salary || 0), 0);
@@ -5065,7 +5115,9 @@ export default function PayslipGenerator() {
               
               return filteredPayslips.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {payslipFilter === 'all' ? '발행된 급여명세서가 없습니다.' : `${payslipFilter} 직원의 급여명세서가 없습니다.`}
+                  {yearFilter === 'all' && payslipFilter === 'all' 
+                    ? '발행된 급여명세서가 없습니다.' 
+                    : `조건에 맞는 급여명세서가 없습니다.`}
                 </div>
               ) : (
                 <>
@@ -5095,6 +5147,9 @@ export default function PayslipGenerator() {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         직원명
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        연도
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         급여 기간
@@ -5127,6 +5182,16 @@ export default function PayslipGenerator() {
                       <tr key={payslip.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {payslip.employees.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {(() => {
+                            if (payslip.period?.match(/^\d{4}-\d{2}$/)) {
+                              return payslip.period.split('-')[0] + '년';
+                            }
+                            // 분할 생성인 경우 (예: "2025-08-2차", "2025-08-1차")
+                            const yearMatch = payslip.period?.match(/^(\d{4})/);
+                            return yearMatch ? yearMatch[1] + '년' : '-';
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatSalaryPeriod(payslip.period, payslip.daily_details)}
