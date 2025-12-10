@@ -183,7 +183,8 @@ export default function SalaryPage() {
         return sum + (task.operation_types?.points || 0) * 100; // 1포인트 = 100원
       }, 0);
 
-      // 급여 내역 조회 (payslips 테이블에서, employees와 contracts 정보 포함)
+      // 급여 내역 조회 (payslips 테이블에서, employees 정보만 포함)
+      // contracts는 별도로 조회 (FK 관계가 없어서 직접 조인 불가)
       const { data: payslips, error: payslipError } = await supabase
         .from('payslips')
         .select(`
@@ -194,21 +195,46 @@ export default function SalaryPage() {
             employee_id,
             birth_date,
             nickname
-          ),
-          contracts:employee_id (
-            insurance_4major,
-            insurance_display
           )
         `)
         .eq('employee_id', user.id)
         .order('period', { ascending: false });
 
-      // 계약서 조회
+      if (payslipError) {
+        console.error('급여 내역 조회 오류:', payslipError);
+      }
+
+      // 계약서 조회 (별도로 조회)
       const { data: contracts, error: contractError } = await supabase
         .from('contracts')
         .select('*')
         .eq('employee_id', user.id)
         .order('created_at', { ascending: false });
+
+      if (contractError) {
+        console.error('계약서 조회 오류:', contractError);
+      }
+
+      // payslips에 contracts 정보 수동 매핑 (해당 기간의 활성 계약서 찾기)
+      const payslipsWithContracts = (payslips || []).map((payslip: any) => {
+        // 급여 기간에 해당하는 계약서 찾기
+        const payslipPeriod = payslip.period; // 예: '2025-11'
+        const [year, month] = payslipPeriod.split('-');
+        const payslipDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        
+        const activeContract = contracts?.find((contract: any) => {
+          const contractStart = new Date(contract.start_date);
+          const contractEnd = contract.end_date ? new Date(contract.end_date) : null;
+          
+          // 계약 시작일이 급여 기간 이전이고, 종료일이 없거나 급여 기간 이후인 경우
+          return contractStart <= payslipDate && (!contractEnd || contractEnd >= payslipDate);
+        });
+        
+        return {
+          ...payslip,
+          contracts: activeContract || null
+        };
+      });
 
       // 계좌 정보 조회 (임시로 employees 테이블에서)
       let bankAccount = null;
@@ -224,12 +250,12 @@ export default function SalaryPage() {
       }
 
       // 통계 계산
-      const totalEarnings = (payslips || []).reduce((sum: number, p: any) => sum + (p.net_salary || 0), 0);
-      const averageMonthly = (payslips || []).length > 0 ? totalEarnings / (payslips || []).length : 0;
+      const totalEarnings = (payslipsWithContracts || []).reduce((sum: number, p: any) => sum + (p.net_salary || 0), 0);
+      const averageMonthly = (payslipsWithContracts || []).length > 0 ? totalEarnings / (payslipsWithContracts || []).length : 0;
       const totalEarningsWithBonus = totalEarnings + pointBonus;
 
       setData({
-        salaries: payslips || [], // payslips 데이터를 salaries로 매핑
+        salaries: payslipsWithContracts || [], // contracts 정보가 포함된 payslips
         contracts: contracts || [],
         bankAccount: bankAccount, // 파싱된 계좌 정보 사용
         totalEarnings,
