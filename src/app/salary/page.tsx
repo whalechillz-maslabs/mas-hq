@@ -183,10 +183,23 @@ export default function SalaryPage() {
         return sum + (task.operation_types?.points || 0) * 100; // 1포인트 = 100원
       }, 0);
 
-      // 급여 내역 조회 (payslips 테이블에서)
+      // 급여 내역 조회 (payslips 테이블에서, employees와 contracts 정보 포함)
       const { data: payslips, error: payslipError } = await supabase
         .from('payslips')
-        .select('*')
+        .select(`
+          *,
+          employees:employee_id (
+            id,
+            name,
+            employee_id,
+            birth_date,
+            nickname
+          ),
+          contracts:employee_id (
+            insurance_4major,
+            insurance_display
+          )
+        `)
         .eq('employee_id', user.id)
         .order('period', { ascending: false });
 
@@ -353,381 +366,843 @@ export default function SalaryPage() {
 </html>`;
   };
 
-  const handleDownloadPayslip = async (payslip: any) => {
-    try {
-      // 급여명세서 HTML 생성 (관리자용과 동일한 흑백 고급스러운 디자인)
-      const payslipHTML = `
-        <!DOCTYPE html>
-        <html lang="ko">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>급여명세서 - ${currentUser?.name || '직원'}</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body {
-              font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-              background: white;
-              color: #000;
-              line-height: 1.6;
-            }
-            .payslip-container {
-              max-width: 800px;
-              margin: 0 auto;
-              background: white;
-              border: none;
-              padding: 0;
-            }
-            .header {
-              background: white;
-              color: #000;
-              padding: 40px 30px;
-              text-align: center;
-              border-bottom: 2px solid #000;
-            }
-            .header h1 {
-              font-size: 32px;
-              font-weight: 900;
-              letter-spacing: 2px;
-              margin-bottom: 10px;
-            }
-            .header .period {
-              font-size: 18px;
-              font-weight: 600;
-              letter-spacing: 1px;
-            }
-            .content {
-              padding: 40px 30px;
-            }
-            .info-section {
-              margin-bottom: 40px;
-            }
-            .section-title {
-              font-size: 20px;
-              font-weight: 900;
-              text-align: center;
-              margin-bottom: 25px;
-              padding-bottom: 10px;
-              border-bottom: 2px solid #000;
-            }
-            .info-grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 40px;
-            }
-            .info-item {
-              display: flex;
-              justify-content: space-between;
-              padding: 12px 0;
-              border-bottom: 1px solid #ccc;
-              font-size: 16px;
-            }
-            .info-label {
-              font-weight: 700;
-              color: #000;
-              min-width: 120px;
-            }
-            .info-value {
-              font-weight: 500;
-              text-align: right;
-            }
-            .salary-section {
-              border: none;
-              padding: 30px;
-              margin-bottom: 30px;
-              background: white;
-            }
-            .salary-title {
-              font-size: 20px;
-              font-weight: 900;
-              text-align: center;
-              margin-bottom: 25px;
-              padding-bottom: 10px;
-              border-bottom: 2px solid #000;
-            }
-            .salary-item {
-              display: flex;
-              justify-content: space-between;
-              padding: 15px 0;
-              font-size: 16px;
-              border-bottom: 1px solid #ddd;
-            }
-            .salary-item:last-child {
-              border-bottom: none;
-            }
-            .salary-item.total {
-              border-top: 2px solid #000;
-              border-bottom: 2px solid #000;
-              font-weight: 900;
-              font-size: 20px;
-              margin: 20px 0;
-              padding: 20px 0;
-              background: white;
-            }
-            .salary-item.deduction {
-              font-weight: 600;
-            }
-            .salary-item.net {
-              font-weight: 900;
-              font-size: 22px;
-              background: white;
-              padding: 20px;
-              margin-top: 15px;
-              border: none;
-            }
-            .footer {
-              background: white;
-              color: #000;
-              padding: 25px;
-              text-align: center;
-              font-size: 14px;
-              line-height: 1.8;
-            }
-            .status-badge {
-              display: inline-block;
-              padding: 6px 15px;
-              border: none;
-              font-size: 12px;
-              font-weight: 900;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            }
-            .status-issued {
-              background: white;
-              color: #000;
-            }
-            .status-paid {
-              background: white;
-              color: #000;
-            }
-            .status-generated {
-              background: white;
-              color: #000;
-            }
-            @media print {
-              body { 
-                background: white; 
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              .payslip-container { 
-                border: none;
-                box-shadow: none;
-              }
-              .header {
-                background: white !important;
-                color: black !important;
-              }
-              .footer {
-                background: white !important;
-                color: black !important;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="payslip-container">
-            <div class="header">
-              <h1>MASLABS</h1>
-              <div class="period">급여명세서 ${payslip.period}</div>
-            </div>
-            
-            <div class="content">
-              <div class="info-section">
-                <div class="section-title">기본 정보</div>
-                <div class="info-grid">
-                <div>
-                  <div class="info-item">
-                    <span class="info-label">직원명:</span>
-                      <span class="info-value">${currentUser?.name || '정보 없음'}</span>
-                  </div>
-                       <div class="info-item">
-                      <span class="info-label">직원 코드:</span>
-                      <span class="info-value">${currentUser?.employee_id || '정보 없음'}</span>
-                       </div>
-                  <div class="info-item">
-                    <span class="info-label">급여 기간:</span>
-                      <span class="info-value">${payslip.period}</span>
-                  </div>
-                  </div>
-                  <div>
-                  <div class="info-item">
-                    <span class="info-label">고용 형태:</span>
-                      <span class="info-value">${payslip.employment_type === 'full_time' ? '정규직' : '시간제'}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">지급일:</span>
-                      <span class="info-value">${payslip.payment_date || (payslip.status === 'paid' ? '지급완료' : '미지급')}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">상태:</span>
-                      <span class="status-badge status-${payslip.status}">
-                        ${payslip.status === 'generated' ? '생성됨' :
-                          payslip.status === 'issued' ? '발행됨' : '지급완료'}
-                    </span>
-                  </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="salary-section">
-                <div class="salary-title">급여 내역</div>
-                <div class="salary-item">
-                  <span>기본급</span>
-                  <span>${payslip.base_salary?.toLocaleString() || 0}원</span>
-                </div>
-                ${payslip.weekly_holiday_pay > 0 ? `
-                <div class="salary-item">
-                  <span>주휴수당</span>
-                  <span>${payslip.weekly_holiday_pay.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                ${payslip.meal_allowance > 0 ? `
-                <div class="salary-item">
-                  <span>식대</span>
-                  <span>${payslip.meal_allowance.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                ${payslip.point_bonus > 0 ? `
-                <div class="salary-item">
-                  <span>포인트 보너스</span>
-                  <span>${payslip.point_bonus.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                <div class="salary-item total">
-                  <span>총 지급액</span>
-                  <span>${payslip.total_earnings?.toLocaleString() || 0}원</span>
-                </div>
-              </div>
 
-              <div class="salary-section">
-                <div class="salary-title">공제 내역</div>
-                <div class="salary-item deduction">
-                  <span>세금 (3.3%)</span>
-                  <span>${payslip.tax_amount?.toLocaleString() || 0}원</span>
-                </div>
-                <div class="salary-item net">
-                  <span>실수령액</span>
-                  <span>${payslip.net_salary?.toLocaleString() || 0}원</span>
-              </div>
-            </div>
-            
-            <div class="footer">
-                <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
-                <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
+  // 나이 계산 함수
+  const getAgeFromBirthDate = (birthDate?: string | Date): number => {
+    if (!birthDate) return 30;
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age -= 1;
+    }
+    return age;
+  };
 
-      // 새 창에서 급여명세서 열기
-      const newWindow = window.open('', '_blank');
-      if (newWindow) {
-        newWindow.document.write(payslipHTML);
-        newWindow.document.close();
-        
-        // 인쇄 대화상자 열기
-        setTimeout(() => {
-          newWindow.print();
-        }, 500);
-      } else {
-        alert('팝업이 차단되었습니다. 팝업을 허용하고 다시 시도해주세요.');
-      }
-    } catch (error) {
-      console.error('급여명세서 다운로드 실패:', error);
-      alert('급여명세서 다운로드에 실패했습니다.');
+  // 4대보험 계산 함수 (세무사 기준)
+  const calculateInsurance = (
+    totalEarnings: number, 
+    mealAllowance: number = 0,
+    employeeAge: number = 30,
+    contract?: { insurance_4major?: boolean, insurance_display?: any }
+  ) => {
+    const baseAmount = totalEarnings - mealAllowance;
+    const round = (v: number) => Math.floor(v);
+    
+    const nationalPension = (
+      employeeAge >= 60 || 
+      contract?.insurance_display?.national_pension === false ||
+      contract?.insurance_4major === false
+    ) ? 0 : round(baseAmount * 0.045);
+    
+    const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
+    const longTermCareInsurance = round(baseAmount * 0.00459);
+    const employmentInsurance = round(baseAmount * 0.009);
+    const industrialAccidentInsurance = 0;
+    
+    const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance + industrialAccidentInsurance;
+    
+    return {
+      nationalPension,
+      healthInsurance,
+      longTermCareInsurance,
+      employmentInsurance,
+      industrialAccidentInsurance,
+      totalInsurance
+    };
+  };
+
+  // display_type에 따라 적절한 출력 함수 호출
+  const handlePrintPayslip = async (payslip: any) => {
+    const displayType = payslip.display_type || 'basic';
+    
+    // payslip에 employees와 contracts 정보가 이미 포함되어 있음 (loadSalaryData에서 조회)
+    if (displayType === 'detailed') {
+      printDetailedSavedPayslipForEmployee(payslip);
+    } else if (displayType === 'insurance') {
+      printSavedPayslipWithInsuranceForEmployee(payslip);
+    } else if (displayType === 'business_income') {
+      printSavedPayslipBusinessIncomeOnlyForEmployee(payslip);
+    } else {
+      printSavedPayslipBasicForEmployee(payslip);
     }
   };
 
-  const handlePrintPayslip = async (payslip: any) => {
+  // 기본 명세서 출력 함수
+  const printSavedPayslipBasicForEmployee = (payslip: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>급여명세서 - ${currentUser?.name || '직원'}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background: white;
+            color: #000;
+            line-height: 1.6;
+          }
+          .payslip-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border: none;
+            padding: 0;
+          }
+          .header {
+            background: white;
+            color: #000;
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 2px solid #000;
+          }
+          .header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+          }
+          .header .period {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+          }
+          .content {
+            padding: 40px 30px;
+          }
+          .info-section {
+            margin-bottom: 40px;
+          }
+          .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+          }
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #ccc;
+            font-size: 16px;
+          }
+          .info-label {
+            font-weight: 700;
+            color: #000;
+            min-width: 120px;
+          }
+          .info-value {
+            font-weight: 500;
+            text-align: right;
+          }
+          .salary-section {
+            border: none;
+            padding: 30px;
+            margin-bottom: 30px;
+            background: white;
+          }
+          .salary-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+          }
+          .salary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            font-size: 16px;
+            border-bottom: 1px solid #ddd;
+          }
+          .salary-item.total {
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            font-weight: 900;
+            font-size: 20px;
+            margin: 20px 0;
+            padding: 20px 0;
+          }
+          .salary-item.deduction {
+            font-weight: 600;
+          }
+          .salary-item.net {
+            font-weight: 900;
+            font-size: 22px;
+            background: white;
+            padding: 20px;
+            margin-top: 15px;
+            border: none;
+          }
+          .footer {
+            background: white;
+            color: #000;
+            padding: 25px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.8;
+          }
+          @media print {
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .payslip-container { border: none; box-shadow: none; }
+            .header { background: white !important; color: black !important; }
+            .footer { background: white !important; color: black !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="payslip-container">
+          <div class="header">
+            <h1>MASLABS</h1>
+            <div class="period">급여명세서 ${payslip.period}</div>
+          </div>
+          <div class="content">
+            <div class="info-section">
+              <div class="section-title">기본 정보</div>
+              <div class="info-grid">
+                <div>
+                  <div class="info-item">
+                    <span class="info-label">직원명:</span>
+                    <span class="info-value">${currentUser?.name || '정보 없음'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">직원 코드:</span>
+                    <span class="info-value">${currentUser?.employee_id || '정보 없음'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">급여 기간:</span>
+                    <span class="info-value">${payslip.period}</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="info-item">
+                    <span class="info-label">고용 형태:</span>
+                    <span class="info-value">${payslip.employment_type === 'full_time' ? '정규직' : '시간제'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">지급일:</span>
+                    <span class="info-value">${payslip.payment_date || (payslip.status === 'paid' ? '지급완료' : '미지급')}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">상태:</span>
+                    <span class="info-value">${payslip.status === 'generated' ? '생성됨' : payslip.status === 'issued' ? '발행됨' : '지급완료'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="salary-section">
+              <div class="salary-title">급여 내역</div>
+              <div class="salary-item">
+                <span>기본급</span>
+                <span>${payslip.base_salary?.toLocaleString() || 0}원</span>
+              </div>
+              ${payslip.weekly_holiday_pay > 0 ? `<div class="salary-item"><span>주휴수당</span><span>${payslip.weekly_holiday_pay.toLocaleString()}원</span></div>` : ''}
+              ${payslip.meal_allowance > 0 ? `<div class="salary-item"><span>식대</span><span>${payslip.meal_allowance.toLocaleString()}원</span></div>` : ''}
+              ${payslip.point_bonus > 0 ? `<div class="salary-item"><span>포인트 보너스</span><span>${payslip.point_bonus.toLocaleString()}원</span></div>` : ''}
+              <div class="salary-item total">
+                <span>총 지급액</span>
+                <span>${payslip.total_earnings?.toLocaleString() || 0}원</span>
+              </div>
+            </div>
+            <div class="salary-section">
+              <div class="salary-title">공제 내역</div>
+              <div class="salary-item deduction">
+                <span>세금 (3.3%)</span>
+                <span>${payslip.tax_amount?.toLocaleString() || 0}원</span>
+              </div>
+              <div class="salary-item net">
+                <span>실수령액</span>
+                <span>${payslip.net_salary?.toLocaleString() || 0}원</span>
+              </div>
+            </div>
+            <div class="footer">
+              <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
+              <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  // 상세 명세서 출력 함수 (관리자 페이지의 printDetailedSavedPayslip과 동일)
+  const printDetailedSavedPayslipForEmployee = (payslip: any) => {
+    const age = getAgeFromBirthDate(payslip.employees?.birth_date);
+    const mealAllowance = payslip.meal_allowance || 0;
+    const contract = Array.isArray(payslip.contracts) ? payslip.contracts[0] : payslip.contracts || null;
+    const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract);
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>상세 급여명세서 - ${currentUser?.name || '직원'}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Malgun Gothic', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 20px;
+          }
+          .payslip-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #333;
+            padding: 30px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+          .payslip-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .period {
+            font-size: 16px;
+            color: #666;
+          }
+          .employee-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+          }
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+          }
+          .info-label {
+            font-weight: bold;
+            color: #333;
+          }
+          .info-value {
+            color: #666;
+          }
+          .salary-section {
+            margin-bottom: 30px;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+          }
+          .salary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+          }
+          .salary-item:last-child {
+            border-bottom: 2px solid #333;
+            font-weight: bold;
+            font-size: 16px;
+          }
+          .insurance-section {
+            background: #fff3cd;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid #ffeaa7;
+          }
+          .insurance-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 10px;
+          }
+          .insurance-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+          }
+          .total-section {
+            background: #e8f5e8;
+            padding: 20px;
+            border: 2px solid #28a745;
+            margin-top: 20px;
+          }
+          .total-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+          }
+          .final-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #28a745;
+            border-top: 2px solid #28a745;
+            padding-top: 10px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 12px;
+          }
+          @media print {
+            body { padding: 0; }
+            .payslip-container { border: none; box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="payslip-container">
+          <div class="header">
+            <div class="company-name">MASLABS</div>
+            <div class="payslip-title">상세 급여명세서</div>
+            <div class="period">${payslip.period} (${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'})</div>
+          </div>
+          <div class="employee-info">
+            <div>
+              <div class="info-item">
+                <span class="info-label">직원명:</span>
+                <span class="info-value">${currentUser?.name || 'N/A'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">직원코드:</span>
+                <span class="info-value">${currentUser?.employee_id || 'N/A'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">고용형태:</span>
+                <span class="info-value">${payslip.employment_type === 'part_time' ? '시간제' : '정규직'}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-item">
+                <span class="info-label">지급일:</span>
+                <span class="info-value">${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">상태:</span>
+                <span class="info-value">${payslip.status === 'generated' ? '생성됨' : payslip.status === 'issued' ? '발행됨' : '지급완료'}</span>
+              </div>
+            </div>
+          </div>
+          <div class="salary-section">
+            <div class="section-title">급여 내역</div>
+            <div class="salary-item">
+              <span>기본급</span>
+              <span>${payslip.base_salary.toLocaleString()}원</span>
+            </div>
+            ${payslip.overtime_pay > 0 ? `<div class="salary-item"><span>주휴수당</span><span>${payslip.overtime_pay.toLocaleString()}원</span></div>` : ''}
+            ${payslip.incentive > 0 ? `<div class="salary-item"><span>인센티브</span><span>${payslip.incentive.toLocaleString()}원</span></div>` : ''}
+            <div class="salary-item">
+              <span>총 지급액</span>
+              <span>${payslip.total_earnings.toLocaleString()}원</span>
+            </div>
+          </div>
+          <div class="insurance-section">
+            <div class="insurance-title">공제 내역 (4대보험)</div>
+            ${insurance.nationalPension > 0 ? `<div class="insurance-item"><span>국민연금 (4.5%)</span><span>${insurance.nationalPension.toLocaleString()}원</span></div>` : ''}
+            <div class="insurance-item">
+              <span>건강보험</span>
+              <span>${insurance.healthInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>장기요양보험료</span>
+              <span>${insurance.longTermCareInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>고용보험 (0.9%)</span>
+              <span>${insurance.employmentInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item" style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 5px;">
+              <span>공제액계</span>
+              <span>${insurance.totalInsurance.toLocaleString()}원</span>
+            </div>
+          </div>
+          <div class="total-section">
+            <div class="total-item">
+              <span>총 지급액(과세):</span>
+              <span>${(payslip.total_earnings - (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            <div class="total-item">
+              <span>공제액계:</span>
+              <span>-${insurance.totalInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+              <span>차인지급액 (이체 금액):</span>
+              <span>${((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance).toLocaleString()}원</span>
+            </div>
+            ${(payslip.meal_allowance || 0) > 0 ? `
+            <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+              <span>식대 (별도 지급):</span>
+              <span>${(payslip.meal_allowance || 0).toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
+              <span>총 급여:</span>
+              <span>${(((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            ` : ''}
+          </div>
+          <div class="footer">
+            <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
+            <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  // 4대보험 포함 명세서 출력 함수
+  const printSavedPayslipWithInsuranceForEmployee = (payslip: any) => {
     try {
-      // 직원 정보 조회 (생년월일 필요)
-      const { data: employee } = await supabase
-        .from('employees')
-        .select('birth_date')
-        .eq('id', payslip.employee_id)
-        .single();
-      
-      // 계약서 정보 조회
-      const { data: contract } = await supabase
-        .from('contracts')
-        .select('insurance_4major, insurance_display')
-        .eq('employee_id', payslip.employee_id)
-        .eq('status', 'active')
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .single();
-      
-      // 나이 계산 함수
-      const getAgeFromBirthDate = (birthDate?: string | Date): number => {
-        if (!birthDate) return 30;
-        const birth = new Date(birthDate);
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const monthDiff = today.getMonth() - birth.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-          age -= 1;
-        }
-        return age;
-      };
-      
-      // 4대보험 계산 함수 (세무사 기준)
-      const calculateInsurance = (
-        totalEarnings: number, 
-        mealAllowance: number = 0,
-        employeeAge: number = 30,
-        contract?: { insurance_4major?: boolean, insurance_display?: any }
-      ) => {
-        const baseAmount = totalEarnings - mealAllowance;
-        const round = (v: number) => Math.floor(v);
-        
-        const nationalPension = (
-          employeeAge >= 60 || 
-          contract?.insurance_display?.national_pension === false ||
-          contract?.insurance_4major === false
-        ) ? 0 : round(baseAmount * 0.045);
-        
-        const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
-        const longTermCareInsurance = round(baseAmount * 0.00459);
-        const employmentInsurance = round(baseAmount * 0.009);
-        const industrialAccidentInsurance = 0;
-        
-        const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance + industrialAccidentInsurance;
-        
-        return {
-          nationalPension,
-          healthInsurance,
-          longTermCareInsurance,
-          employmentInsurance,
-          industrialAccidentInsurance,
-          totalInsurance
-        };
-      };
-      
-      const age = getAgeFromBirthDate(employee?.birth_date);
+      const age = getAgeFromBirthDate(payslip.employees?.birth_date);
       const mealAllowance = payslip.meal_allowance || 0;
-      const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract || undefined);
+      const contract = Array.isArray(payslip.contracts) ? payslip.contracts[0] : payslip.contracts || null;
+      const insurance = calculateInsurance(payslip.total_earnings, mealAllowance, age, contract);
       
-      // 급여명세서 HTML 생성 (관리자용과 동일한 흑백 고급스러운 디자인)
-      const payslipHTML = `
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+        return;
+      }
+
+      const printContent = `
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>4대보험 포함 급여명세서 - ${currentUser?.name || '직원'}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background: white;
+            color: #000;
+            line-height: 1.6;
+          }
+          .payslip-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border: none;
+            padding: 0;
+          }
+          .header {
+            background: white;
+            color: #000;
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 2px solid #000;
+          }
+          .header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+          }
+          .header p {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+          }
+          .employee-info {
+            padding: 30px;
+            border-bottom: 1px solid #ddd;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+          }
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #ccc;
+            font-size: 16px;
+          }
+          .info-label {
+            font-weight: 700;
+            color: #000;
+            min-width: 120px;
+          }
+          .info-value {
+            font-weight: 500;
+            text-align: right;
+          }
+          .salary-section {
+            border: none;
+            padding: 30px;
+            margin-bottom: 30px;
+            background: white;
+          }
+          .salary-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+          }
+          .salary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+          }
+          .salary-item:last-child {
+            border-bottom: 2px solid #000;
+            font-weight: 900;
+            font-size: 18px;
+            padding: 20px 0;
+          }
+          .insurance-section {
+            background: #fff8dc;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #daa520;
+          }
+          .insurance-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #b8860b;
+            margin-bottom: 15px;
+            text-align: center;
+          }
+          .insurance-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #daa520;
+          }
+          .insurance-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            padding-top: 15px;
+            border-top: 2px solid #daa520;
+          }
+          .total-section {
+            background: #f0f8ff;
+            padding: 25px;
+            border: 2px solid #4169e1;
+            margin-top: 20px;
+          }
+          .total-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 16px;
+          }
+          .final-amount {
+            font-size: 22px;
+            font-weight: 900;
+            color: #4169e1;
+            border-top: 2px solid #4169e1;
+            padding-top: 15px;
+            margin-top: 10px;
+          }
+          .footer {
+            text-align: center;
+            padding: 30px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+          }
+          @media print {
+            body { margin: 0; padding: 0; }
+            .payslip-container { box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="payslip-container">
+          <div class="header">
+            <h1>MASLABS</h1>
+            <p>4대보험 포함 급여명세서</p>
+            <p>${payslip.period} (${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'})</p>
+          </div>
+          <div class="employee-info">
+            <div class="info-grid">
+              <div>
+                <div class="info-item">
+                  <span class="info-label">직원명:</span>
+                  <span class="info-value">${currentUser?.name || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">직원코드:</span>
+                  <span class="info-value">${currentUser?.employee_id || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">고용 형태:</span>
+                  <span class="info-value">${payslip.employment_type === 'part_time' ? '시간제' : '정규직'}</span>
+                </div>
+              </div>
+              <div>
+                <div class="info-item">
+                  <span class="info-label">지급 기간:</span>
+                  <span class="info-value">${payslip.period}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">지급일:</span>
+                  <span class="info-value">${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">상태:</span>
+                  <span class="info-value">${payslip.status === 'generated' ? '생성됨' : payslip.status === 'issued' ? '발행됨' : '지급완료'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="salary-section">
+            <div class="salary-title">급여 내역</div>
+            <div class="salary-item">
+              <span>기본급</span>
+              <span>${payslip.base_salary.toLocaleString()}원</span>
+            </div>
+            ${payslip.overtime_pay > 0 ? `<div class="salary-item"><span>주휴수당</span><span>${payslip.overtime_pay.toLocaleString()}원</span></div>` : ''}
+            ${payslip.incentive > 0 ? `<div class="salary-item"><span>인센티브</span><span>${payslip.incentive.toLocaleString()}원</span></div>` : ''}
+            <div class="salary-item">
+              <span>총 지급액</span>
+              <span>${payslip.total_earnings.toLocaleString()}원</span>
+            </div>
+          </div>
+          <div class="insurance-section">
+            <div class="insurance-title">공제 내역 (4대보험)</div>
+            ${insurance.nationalPension > 0 ? `<div class="insurance-item"><span>국민연금 (4.5%)</span><span>${insurance.nationalPension.toLocaleString()}원</span></div>` : ''}
+            <div class="insurance-item">
+              <span>건강보험</span>
+              <span>${insurance.healthInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>장기요양보험료</span>
+              <span>${insurance.longTermCareInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>고용보험 (0.9%)</span>
+              <span>${insurance.employmentInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="insurance-item">
+              <span>공제액계</span>
+              <span>${insurance.totalInsurance.toLocaleString()}원</span>
+            </div>
+          </div>
+          <div class="total-section">
+            <div class="total-item">
+              <span>총 지급액(과세):</span>
+              <span>${(payslip.total_earnings - (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            <div class="total-item">
+              <span>공제액계:</span>
+              <span>-${insurance.totalInsurance.toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+              <span>차인지급액 (이체 금액):</span>
+              <span>${((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance).toLocaleString()}원</span>
+            </div>
+            ${(payslip.meal_allowance || 0) > 0 ? `
+            <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+              <span>식대 (별도 지급):</span>
+              <span>${(payslip.meal_allowance || 0).toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
+              <span>총 급여:</span>
+              <span>${(((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            ` : ''}
+          </div>
+          <div class="footer">
+            <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
+            <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } catch (error) {
+      console.error('급여명세서 인쇄 실패:', error);
+      alert('급여명세서 인쇄에 실패했습니다.');
+    }
+  };
+
+  // 3.3%만 명세서 출력 함수
+  const printSavedPayslipBusinessIncomeOnlyForEmployee = (payslip: any) => {
+    try {
+      const businessIncomeTax = Math.round(payslip.total_earnings * 0.033);
+      const netSalary = payslip.total_earnings - businessIncomeTax;
+      
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+        return;
+      }
+
+      const printContent = `
         <!DOCTYPE html>
         <html lang="ko">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>급여명세서 - ${currentUser?.name || '직원'}</title>
+          <title>사업소득세 급여명세서 - ${currentUser?.name || '직원'}</title>
           <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
               font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
               background: white;
@@ -754,29 +1229,19 @@ export default function SalaryPage() {
               letter-spacing: 2px;
               margin-bottom: 10px;
             }
-            .header .period {
+            .header p {
               font-size: 18px;
               font-weight: 600;
-              letter-spacing: 1px;
+              margin-bottom: 5px;
             }
-            .content {
-              padding: 40px 30px;
-            }
-            .info-section {
-              margin-bottom: 40px;
-            }
-            .section-title {
-              font-size: 20px;
-              font-weight: 900;
-              text-align: center;
-              margin-bottom: 25px;
-              padding-bottom: 10px;
-              border-bottom: 2px solid #000;
+            .employee-info {
+              padding: 30px;
+              border-bottom: 1px solid #ddd;
             }
             .info-grid {
               display: grid;
               grid-template-columns: 1fr 1fr;
-              gap: 40px;
+              gap: 20px;
             }
             .info-item {
               display: flex;
@@ -812,79 +1277,65 @@ export default function SalaryPage() {
               display: flex;
               justify-content: space-between;
               padding: 15px 0;
-              font-size: 16px;
               border-bottom: 1px solid #ddd;
+              font-size: 16px;
             }
             .salary-item:last-child {
-              border-bottom: none;
-            }
-            .salary-item.total {
-              border-top: 2px solid #000;
               border-bottom: 2px solid #000;
               font-weight: 900;
-              font-size: 20px;
-              margin: 20px 0;
+              font-size: 18px;
               padding: 20px 0;
-              background: white;
             }
-            .salary-item.deduction {
-              font-weight: 600;
-            }
-            .salary-item.net {
-              font-weight: 900;
-              font-size: 22px;
-              background: white;
+            .tax-section {
+              background: #fff5f5;
               padding: 20px;
-              margin-top: 15px;
-              border: none;
+              margin: 20px 0;
+              border: 2px solid #dc2626;
+            }
+            .tax-title {
+              font-size: 18px;
+              font-weight: bold;
+              color: #dc2626;
+              margin-bottom: 15px;
+              text-align: center;
+            }
+            .tax-item {
+              display: flex;
+              justify-content: space-between;
+              padding: 10px 0;
+              font-size: 16px;
+              font-weight: bold;
+            }
+            .total-section {
+              background: #f0fdf4;
+              padding: 25px;
+              border: 2px solid #16a34a;
+              margin-top: 20px;
+            }
+            .total-item {
+              display: flex;
+              justify-content: space-between;
+              padding: 10px 0;
+              font-size: 16px;
+            }
+            .final-amount {
+              font-size: 22px;
+              font-weight: 900;
+              color: #16a34a;
+              border-top: 2px solid #16a34a;
+              padding-top: 15px;
+              margin-top: 10px;
             }
             .footer {
-              background: white;
-              color: #000;
-              padding: 25px;
               text-align: center;
+              padding: 30px;
+              border-top: 1px solid #ddd;
+              color: #666;
               font-size: 14px;
-              line-height: 1.8;
-            }
-            .status-badge {
-              display: inline-block;
-              padding: 6px 15px;
-              border: none;
-              font-size: 12px;
-              font-weight: 900;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            }
-            .status-issued {
-              background: white;
-              color: #000;
-            }
-            .status-paid {
-              background: white;
-              color: #000;
-            }
-            .status-generated {
-              background: white;
-              color: #000;
             }
             @media print {
-              body { 
-                background: white; 
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              .payslip-container { 
-                border: none;
-                box-shadow: none;
-              }
-              .header {
-                background: white !important;
-                color: black !important;
-              }
-              .footer {
-                background: white !important;
-                color: black !important;
-              }
+              body { margin: 0; padding: 0; }
+              .payslip-container { box-shadow: none; }
             }
           </style>
         </head>
@@ -892,149 +1343,88 @@ export default function SalaryPage() {
           <div class="payslip-container">
             <div class="header">
               <h1>MASLABS</h1>
-              <div class="period">급여명세서 ${payslip.period}</div>
+              <p>사업소득세 급여명세서</p>
+              <p>${payslip.period} (${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'})</p>
             </div>
-
-            <div class="content">
-              <div class="info-section">
-                <div class="section-title">기본 정보</div>
-                <div class="info-grid">
-                  <div>
-                    <div class="info-item">
-                      <span class="info-label">직원명:</span>
-                      <span class="info-value">${currentUser?.name || '정보 없음'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">직원 코드:</span>
-                      <span class="info-value">${currentUser?.employee_id || '정보 없음'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">급여 기간:</span>
-                      <span class="info-value">${payslip.period}</span>
-                    </div>
+            <div class="employee-info">
+              <div class="info-grid">
+                <div>
+                  <div class="info-item">
+                    <span class="info-label">직원명:</span>
+                    <span class="info-value">${currentUser?.name || 'N/A'}</span>
                   </div>
-                  <div>
-                    <div class="info-item">
-                      <span class="info-label">고용 형태:</span>
-                      <span class="info-value">${payslip.employment_type === 'full_time' ? '정규직' : '시간제'}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">지급일:</span>
-                      <span class="info-value">${payslip.payment_date || (payslip.status === 'paid' ? '지급완료' : '미지급')}</span>
-                    </div>
-                    <div class="info-item">
-                      <span class="info-label">상태:</span>
-                      <span class="status-badge status-${payslip.status}">
-                        ${payslip.status === 'generated' ? '생성됨' :
-                          payslip.status === 'issued' ? '발행됨' : '지급완료'}
-                      </span>
-                    </div>
+                  <div class="info-item">
+                    <span class="info-label">직원코드:</span>
+                    <span class="info-value">${currentUser?.employee_id || 'N/A'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">고용 형태:</span>
+                    <span class="info-value">${payslip.employment_type === 'part_time' ? '시간제' : '정규직'}</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="info-item">
+                    <span class="info-label">지급 기간:</span>
+                    <span class="info-value">${payslip.period}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">지급일:</span>
+                    <span class="info-value">${payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '미지급'}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">상태:</span>
+                    <span class="info-value">${payslip.status === 'generated' ? '생성됨' : payslip.status === 'issued' ? '발행됨' : '지급완료'}</span>
                   </div>
                 </div>
               </div>
-
-              <div class="salary-section">
-                <div class="salary-title">급여 내역</div>
-                <div class="salary-item">
-                  <span>기본급</span>
-                  <span>${payslip.base_salary?.toLocaleString() || 0}원</span>
-                </div>
-                ${payslip.weekly_holiday_pay > 0 ? `
-                <div class="salary-item">
-                  <span>주휴수당</span>
-                  <span>${payslip.weekly_holiday_pay.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                ${payslip.meal_allowance > 0 ? `
-                <div class="salary-item">
-                  <span>식대</span>
-                  <span>${payslip.meal_allowance.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                ${payslip.point_bonus > 0 ? `
-                <div class="salary-item">
-                  <span>포인트 보너스</span>
-                  <span>${payslip.point_bonus.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                <div class="salary-item total">
-                  <span>총 지급액</span>
-                  <span>${payslip.total_earnings?.toLocaleString() || 0}원</span>
-                </div>
+            </div>
+            <div class="salary-section">
+              <div class="salary-title">급여 내역</div>
+              <div class="salary-item">
+                <span>기본급</span>
+                <span>${payslip.base_salary.toLocaleString()}원</span>
               </div>
-
-              <div class="insurance-section">
-                <div class="insurance-title">공제 내역 (4대보험)</div>
-                ${insurance.nationalPension > 0 ? `
-                <div class="insurance-item">
-                  <span>국민연금 (4.5%)</span>
-                  <span>${insurance.nationalPension.toLocaleString()}원</span>
-                </div>
-                ` : ''}
-                <div class="insurance-item">
-                  <span>건강보험</span>
-                  <span>${insurance.healthInsurance.toLocaleString()}원</span>
-                </div>
-                <div class="insurance-item">
-                  <span>장기요양보험료</span>
-                  <span>${insurance.longTermCareInsurance.toLocaleString()}원</span>
-                </div>
-                <div class="insurance-item">
-                  <span>고용보험 (0.9%)</span>
-                  <span>${insurance.employmentInsurance.toLocaleString()}원</span>
-                </div>
-                <div class="insurance-item" style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 5px;">
-                  <span>공제액계</span>
-                  <span>${insurance.totalInsurance.toLocaleString()}원</span>
-                </div>
+              ${payslip.overtime_pay > 0 ? `<div class="salary-item"><span>주휴수당</span><span>${payslip.overtime_pay.toLocaleString()}원</span></div>` : ''}
+              ${payslip.incentive > 0 ? `<div class="salary-item"><span>인센티브</span><span>${payslip.incentive.toLocaleString()}원</span></div>` : ''}
+              <div class="salary-item">
+                <span>총 지급액</span>
+                <span>${payslip.total_earnings.toLocaleString()}원</span>
               </div>
-
-              <div class="total-section">
-                <div class="total-item">
-                  <span>총 지급액(과세):</span>
-                  <span>${(payslip.total_earnings - mealAllowance).toLocaleString()}원</span>
-                </div>
-                <div class="total-item">
-                  <span>공제액계:</span>
-                  <span>-${insurance.totalInsurance.toLocaleString()}원</span>
-                </div>
-                <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
-                  <span>차인지급액 (이체 금액):</span>
-                  <span>${((payslip.total_earnings - mealAllowance) - insurance.totalInsurance).toLocaleString()}원</span>
-                </div>
-                ${mealAllowance > 0 ? `
-                <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                  <span>식대 (별도 지급):</span>
-                  <span>${mealAllowance.toLocaleString()}원</span>
-                </div>
-                <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
-                  <span>총 급여:</span>
-                  <span>${(((payslip.total_earnings - mealAllowance) - insurance.totalInsurance) + mealAllowance).toLocaleString()}원</span>
-                </div>
-                ` : ''}
+            </div>
+            <div class="tax-section">
+              <div class="tax-title">세금 공제</div>
+              <div class="tax-item">
+                <span>사업소득세 (3.3%)</span>
+                <span>${businessIncomeTax.toLocaleString()}원</span>
               </div>
-
-              <div class="footer">
-                <p>본 급여명세서는 MASLABS에서 발행한 공식 문서입니다.</p>
-                <p>급여 관련 문의사항이 있으시면 경영지원팀으로 연락해 주세요.</p>
+            </div>
+            <div class="total-section">
+              <div class="total-item">
+                <span>총 지급액:</span>
+                <span>${payslip.total_earnings.toLocaleString()}원</span>
               </div>
+              <div class="total-item">
+                <span>세금 공제:</span>
+                <span>-${businessIncomeTax.toLocaleString()}원</span>
+              </div>
+              <div class="total-item final-amount">
+                <span>실수령액:</span>
+                <span>${netSalary.toLocaleString()}원</span>
+              </div>
+            </div>
+            <div class="footer">
+              <p>본 급여명세서는 사업소득세(3.3%)만 적용된 버전입니다.</p>
+              <p>MASLABS 급여관리시스템 | 문의: 인사팀</p>
             </div>
           </div>
         </body>
         </html>
       `;
 
-      // 새 창에서 HTML 열기
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(payslipHTML);
-        printWindow.document.close();
-        
-        // 인쇄 대화상자 열기
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-      }
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
     } catch (error) {
       console.error('급여명세서 인쇄 실패:', error);
       alert('급여명세서 인쇄에 실패했습니다.');
@@ -1346,29 +1736,13 @@ export default function SalaryPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-2">
                       <button
-                          onClick={() => handleDownloadPayslip(payslip)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                          title="다운로드"
+                        onClick={() => handlePrintPayslip(payslip)}
+                        className="text-green-600 hover:text-green-900"
+                        title="명세서 인쇄"
                       >
-                        <Download className="h-4 w-4" />
+                        <Printer className="h-4 w-4" />
                       </button>
-                        <button
-                          onClick={() => handlePrintPayslip(payslip)}
-                          className="text-green-600 hover:text-green-900"
-                          title="인쇄"
-                        >
-                          <Printer className="h-4 w-4" />
-                      </button>
-                        <button
-                          onClick={() => handleViewPayslipDetails(payslip)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="세부 내역서"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}

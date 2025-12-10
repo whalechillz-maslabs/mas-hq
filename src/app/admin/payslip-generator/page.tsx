@@ -1844,6 +1844,24 @@ export default function PayslipGenerator() {
     }
   };
 
+  const updatePayslipDisplayType = async (payslipId: string, displayType: string) => {
+    try {
+      const { error } = await supabase
+        .from('payslips')
+        .update({ display_type: displayType })
+        .eq('id', payslipId);
+
+      if (error) {
+        throw error;
+      }
+
+      await loadSavedPayslips();
+    } catch (error) {
+      console.error('명세서 표시 형식 업데이트 실패:', error);
+      alert('명세서 표시 형식 업데이트에 실패했습니다.');
+    }
+  };
+
   function printSavedPayslip(payslip: any) {
     // 인쇄용 창 열기
     const printWindow = window.open('', '_blank');
@@ -4915,44 +4933,88 @@ export default function PayslipGenerator() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 sticky right-0 z-20 bg-white border-l border-gray-200 w-[400px] min-w-[400px]">
-                          <div className="flex flex-wrap gap-1">
-                            <button
-                              onClick={() => printSavedPayslip(payslip)}
-                              className="px-1.5 py-0.5 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
-                            >
-                              기본
-                            </button>
-                            <button
-                              onClick={() => printDetailedSavedPayslip(payslip)}
-                              className="px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                            >
-                              상세
-                            </button>
-                            <button
-                              onClick={() => printSavedPayslipWithInsurance(payslip)}
-                              className="px-1.5 py-0.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                            >
-                              4대보험
-                            </button>
-                            <button
-                              onClick={() => printSavedPayslipBusinessIncomeOnly(payslip)}
-                              className="px-1.5 py-0.5 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition-colors"
-                            >
-                              3.3%만
-                            </button>
-                            <button
-                              onClick={() => viewPayslipDetails(payslip)}
-                              className="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors"
-                            >
-                              보기
-                            </button>
-                            <button
-                              onClick={() => deletePayslip(payslip.id, payslip.employees.name, payslip.period)}
-                              className="px-1.5 py-0.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                            >
-                              삭제
-                            </button>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 sticky right-0 z-20 bg-white border-l border-gray-200 w-[500px] min-w-[500px]">
+                          <div className="flex flex-col gap-2">
+                            {/* 표시 형식 토글 버튼 */}
+                            <div className="flex flex-wrap gap-1">
+                              <button
+                                onClick={() => updatePayslipDisplayType(payslip.id, 'basic')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  (payslip.display_type || 'basic') === 'basic'
+                                    ? 'bg-gray-600 text-white border-2 border-gray-800 font-semibold'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300'
+                                }`}
+                                title="기본 형식으로 설정"
+                              >
+                                기본
+                              </button>
+                              <button
+                                onClick={() => updatePayslipDisplayType(payslip.id, 'detailed')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  payslip.display_type === 'detailed'
+                                    ? 'bg-blue-600 text-white border-2 border-blue-800 font-semibold'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300'
+                                }`}
+                                title="상세 형식으로 설정"
+                              >
+                                상세
+                              </button>
+                              <button
+                                onClick={() => updatePayslipDisplayType(payslip.id, 'insurance')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  payslip.display_type === 'insurance'
+                                    ? 'bg-green-600 text-white border-2 border-green-800 font-semibold'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300'
+                                }`}
+                                title="4대보험 형식으로 설정"
+                              >
+                                4대보험
+                              </button>
+                              <button
+                                onClick={() => updatePayslipDisplayType(payslip.id, 'business_income')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  payslip.display_type === 'business_income'
+                                    ? 'bg-orange-600 text-white border-2 border-orange-800 font-semibold'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border border-gray-300'
+                                }`}
+                                title="3.3%만 형식으로 설정"
+                              >
+                                3.3%만
+                              </button>
+                            </div>
+                            {/* 출력/관리 버튼 */}
+                            <div className="flex flex-wrap gap-1">
+                              <button
+                                onClick={() => {
+                                  const displayType = payslip.display_type || 'basic';
+                                  if (displayType === 'detailed') {
+                                    printDetailedSavedPayslip(payslip);
+                                  } else if (displayType === 'insurance') {
+                                    printSavedPayslipWithInsurance(payslip);
+                                  } else if (displayType === 'business_income') {
+                                    printSavedPayslipBusinessIncomeOnly(payslip);
+                                  } else {
+                                    printSavedPayslip(payslip);
+                                  }
+                                }}
+                                className="px-1.5 py-0.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition-colors"
+                                title="설정된 형식으로 출력"
+                              >
+                                출력
+                              </button>
+                              <button
+                                onClick={() => viewPayslipDetails(payslip)}
+                                className="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors"
+                              >
+                                보기
+                              </button>
+                              <button
+                                onClick={() => deletePayslip(payslip.id, payslip.employees.name, payslip.period)}
+                                className="px-1.5 py-0.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                              >
+                                삭제
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
