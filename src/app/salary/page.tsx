@@ -18,7 +18,7 @@ interface SalaryData {
   totalEarnings: number;
   averageMonthly: number;
   // 급여 정보 추가
-  wageType: 'hourly' | 'monthly';
+  wageType: 'hourly' | 'monthly' | 'daily';
   monthlySalary: number | null;
   hourlyWage: number;
   pointBonus: number;
@@ -146,11 +146,15 @@ export default function SalaryPage() {
       }
 
       // 급여 정보 계산 (employment_type 기준으로 판단)
-      let wageType: 'hourly' | 'monthly' = 'hourly';
+      let wageType: 'hourly' | 'monthly' | 'daily' = 'hourly';
       let monthlySalary: number | null = null;
       let hourlyWage = 12000; // 기본값
 
-      if (employee.employment_type === 'full_time' && employee.monthly_salary && employee.monthly_salary > 0) {
+      if (user.name === '나수진') {
+        // 나수진은 일급제(일당제)
+        wageType = 'daily';
+        hourlyWage = 0; // 시급 표시 안 함
+      } else if (employee.employment_type === 'full_time' && employee.monthly_salary && employee.monthly_salary > 0) {
         wageType = 'monthly';
         monthlySalary = employee.monthly_salary;
         hourlyWage = Math.round(employee.monthly_salary / 22); // 일급 환산
@@ -1817,11 +1821,13 @@ export default function SalaryPage() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="bg-white rounded-lg p-4 border border-yellow-200 text-center">
               <div className="text-sm text-yellow-700 mb-2">
-                {data?.wageType === 'monthly' ? '월급' : '시급'}
+                {data?.wageType === 'monthly' ? '월급' : data?.wageType === 'daily' ? '일급제' : '시급'}
               </div>
               <div className="text-xl font-bold text-yellow-800">
                 {data?.wageType === 'monthly' && data?.monthlySalary 
                   ? `${data.monthlySalary.toLocaleString()}원/월`
+                  : data?.wageType === 'daily'
+                  ? '일당제'
                   : `${data?.hourlyWage.toLocaleString()}원/시간`
                 }
               </div>
