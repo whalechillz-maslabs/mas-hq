@@ -2463,13 +2463,9 @@ export default function PayslipGenerator() {
               <span>공제액계:</span>
               <span>-${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
-            <div class="total-item">
-              <span>소득세 (3.3%):</span>
-              <span>-${payslip.tax_amount.toLocaleString()}원</span>
-            </div>
             <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
               <span>차인지급액 (이체 금액):</span>
-              <span>${(payslip.net_salary - insurance.totalInsurance).toLocaleString()}원</span>
+              <span>${((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance).toLocaleString()}원</span>
             </div>
             ${(payslip.meal_allowance || 0) > 0 ? `
             <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
@@ -2478,7 +2474,7 @@ export default function PayslipGenerator() {
             </div>
             <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
               <span>총 급여:</span>
-              <span>${((payslip.net_salary - insurance.totalInsurance) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+              <span>${(((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
             </div>
             ` : ''}
           </div>
@@ -2801,13 +2797,9 @@ export default function PayslipGenerator() {
               <span>공제액계:</span>
               <span>-${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
-            <div class="total-item">
-              <span>소득세 (3.3%):</span>
-              <span>-${payslip.tax_amount?.toLocaleString() || 0}원</span>
-            </div>
             <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
               <span>차인지급액 (이체 금액):</span>
-              <span>${((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance - (payslip.tax_amount || 0)).toLocaleString()}원</span>
+              <span>${((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance).toLocaleString()}원</span>
             </div>
             ${(payslip.meal_allowance || 0) > 0 ? `
             <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
@@ -2816,7 +2808,7 @@ export default function PayslipGenerator() {
             </div>
             <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
               <span>총 급여:</span>
-              <span>${(((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance - (payslip.tax_amount || 0)) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
+              <span>${(((payslip.total_earnings - (payslip.meal_allowance || 0)) - insurance.totalInsurance) + (payslip.meal_allowance || 0)).toLocaleString()}원</span>
             </div>
             ` : ''}
           </div>
@@ -3119,7 +3111,7 @@ export default function PayslipGenerator() {
     // 계산 기준: 기본급만 (식대 제외) - 세무사 기준 (2025, 근로자 부담분)
     const baseAmount = totalEarnings - mealAllowance;
     
-    const round = (v: number) => Math.round(v); // 원단위 절사(반올림) - 세무사 제공 금액과 일치 목적
+    const round = (v: number) => Math.floor(v); // 원단위 절사 (세무사 기준: 반올림이 아닌 절사)
     
     // 국민연금: 60세 이상 또는 계약서 정보에 따라 제외 (근로자 4.5%이지만 60세 이상은 0원)
     const nationalPension = (
@@ -3716,17 +3708,27 @@ export default function PayslipGenerator() {
 
           <div class="total-section">
             <div class="total-item">
-              <span>총 지급액:</span>
-              <span>${payslipData.total_earnings.toLocaleString()}원</span>
+              <span>총 지급액(과세):</span>
+              <span>${(payslipData.total_earnings - (payslipData.meal_allowance || 0)).toLocaleString()}원</span>
             </div>
             <div class="total-item">
-              <span>4대보험 공제:</span>
+              <span>공제액계:</span>
               <span>-${insurance.totalInsurance.toLocaleString()}원</span>
             </div>
-            <div class="total-item final-amount">
-              <span>실수령액:</span>
-              <span>${(payslipData.total_earnings - insurance.totalInsurance).toLocaleString()}원</span>
+            <div class="total-item final-amount" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+              <span>차인지급액 (이체 금액):</span>
+              <span>${((payslipData.total_earnings - (payslipData.meal_allowance || 0)) - insurance.totalInsurance).toLocaleString()}원</span>
             </div>
+            ${(payslipData.meal_allowance || 0) > 0 ? `
+            <div class="total-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+              <span>식대 (별도 지급):</span>
+              <span>${(payslipData.meal_allowance || 0).toLocaleString()}원</span>
+            </div>
+            <div class="total-item final-amount" style="font-size: 18px; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 10px;">
+              <span>총 급여:</span>
+              <span>${(((payslipData.total_earnings - (payslipData.meal_allowance || 0)) - insurance.totalInsurance) + (payslipData.meal_allowance || 0)).toLocaleString()}원</span>
+            </div>
+            ` : ''}
           </div>
 
           <div class="footer">
