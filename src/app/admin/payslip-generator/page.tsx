@@ -2414,12 +2414,11 @@ export default function PayslipGenerator() {
             <div class="section-title">급여 내역</div>
             <div class="salary-item">
               <span>기본급</span>
-              <span>${payslip.base_salary.toLocaleString()}원</span>
+              <span>${(payslip.base_salary || 0).toLocaleString()}원</span>
             </div>
-            ${payslip.overtime_pay > 0 ? `
             <div class="salary-item">
               <span>주휴수당</span>
-              <span>${payslip.overtime_pay.toLocaleString()}원</span>
+              <span>${((payslip.overtime_pay || payslip.weekly_holiday_pay || 0) > 0 ? (payslip.overtime_pay || payslip.weekly_holiday_pay || 0).toLocaleString() : '-')}${(payslip.overtime_pay || payslip.weekly_holiday_pay || 0) > 0 ? '원' : ''}</span>
             </div>
             ${payslip.weeklyHolidayCalculation ? `
             <div class="calculation-details">
@@ -2427,16 +2426,29 @@ export default function PayslipGenerator() {
               <div class="calculation-formula">${payslip.weeklyHolidayCalculation}</div>
             </div>
             ` : ''}
-            ` : ''}
-            ${payslip.incentive > 0 ? `
+            <div class="salary-item">
+              <span>주유대</span>
+              <span>${(payslip.fuel_allowance || 0) > 0 ? payslip.fuel_allowance.toLocaleString() + '원' : '-'}</span>
+            </div>
+            <div class="salary-item">
+              <span>추가근무</span>
+              <span>${(payslip.additional_work || 0) > 0 ? payslip.additional_work.toLocaleString() + '원' : '-'}</span>
+            </div>
             <div class="salary-item">
               <span>인센티브</span>
-              <span>${payslip.incentive.toLocaleString()}원</span>
+              <span>${(payslip.incentive || 0) > 0 ? payslip.incentive.toLocaleString() + '원' : '-'}</span>
             </div>
-            ` : ''}
             <div class="salary-item">
+              <span>포인트 보너스</span>
+              <span>${(payslip.point_bonus || 0) > 0 ? payslip.point_bonus.toLocaleString() + '원' : '-'}</span>
+            </div>
+            <div class="salary-item">
+              <span>식대</span>
+              <span>${(payslip.meal_allowance || 0) > 0 ? payslip.meal_allowance.toLocaleString() + '원' : '-'}</span>
+            </div>
+            <div class="salary-item" style="border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 16px;">
               <span>총 지급액</span>
-              <span>${payslip.total_earnings.toLocaleString()}원</span>
+              <span>${(payslip.total_earnings || 0).toLocaleString()}원</span>
             </div>
           </div>
 
@@ -2497,15 +2509,17 @@ export default function PayslipGenerator() {
             ` : ''}
           </div>
 
-          ${payslip.employees?.name === '나수진' && Array.isArray(payslip.daily_details) ? `
+          ${Array.isArray(payslip.daily_details) && payslip.daily_details.length > 0 ? `
           <div class="salary-section" style="margin-top:10px">
-            <div class="section-title">일별 상세 내역</div>
+            <div class="section-title">일별 근무 내역</div>
             <table style="width:100%; border-collapse:collapse; font-size:14px">
               <thead>
                 <tr>
                   <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">날짜</th>
                   <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">근무시간</th>
-                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">표시</th>
+                  <th style="text-align:right; padding:8px 4px; border-bottom:1px solid #ddd;">시급</th>
+                  <th style="text-align:right; padding:8px 4px; border-bottom:1px solid #ddd;">일급</th>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">비고</th>
                 </tr>
               </thead>
               <tbody>
@@ -2513,12 +2527,16 @@ export default function PayslipGenerator() {
                   try {
                     const date = d.date ? new Date(d.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }) : '날짜 없음';
                     const hours = (d.hours || 0) + '시간';
+                    const hourlyRate = (d.hourly_rate || 0).toLocaleString() + '원';
+                    const dailyWage = (d.daily_wage || 0).toLocaleString() + '원';
                     const tags = typeof d.note === 'string' ? d.note.split(';').filter(Boolean) : [];
-                    const tagHtml = tags.map((t: string) => `<span style=\"display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':'#93C5FD'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':'#EFF6FF'}; color:${t==='추가근무'?'#9A3412':'#1D4ED8'};\">${t}</span>`).join('');
+                    const tagHtml = tags.map((t: string) => `<span style=\"display:inline-block; margin-right:6px; padding:2px 6px; border:1px solid ${t==='추가근무'?'#FDBA74':t==='식대'?'#93C5FD':'#E0E0E0'}; border-radius:4px; font-size:11px; background:${t==='추가근무'?'#FFEDD5':t==='식대'?'#EFF6FF':'#F5F5F5'}; color:${t==='추가근무'?'#9A3412':t==='식대'?'#1D4ED8':'#666'};\">${t}</span>`).join('');
                     return `<tr>
                       <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${date}</td>
                       <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${hours}</td>
-                      <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${tagHtml}</td>
+                      <td style=\"text-align:right; padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${hourlyRate}</td>
+                      <td style=\"text-align:right; padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${dailyWage}</td>
+                      <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${tagHtml || '-'}</td>
                     </tr>`
                   } catch { return ''}
                 }).join('')}
@@ -2526,6 +2544,73 @@ export default function PayslipGenerator() {
             </table>
           </div>
           ` : ''}
+          
+          ${(payslip.meal_allowance || 0) > 0 && Array.isArray(payslip.daily_details) && payslip.daily_details.length > 0 ? (() => {
+            // 식대 일별 계산 상세 추출 (3시간 이상 근무한 날 모두 포함)
+            const mealDetails: Array<{ date: string, rate: number, hours: number }> = [];
+            const rateChangeDate = new Date('2025-11-10');
+            rateChangeDate.setHours(0, 0, 0, 0);
+            
+            payslip.daily_details.forEach((d: any) => {
+              const hours = d.hours || 0;
+              // 3시간 이상 근무한 날에 식대 지급
+              if (hours >= 3) {
+                const date = d.date ? new Date(d.date) : null;
+                if (date) {
+                  date.setHours(0, 0, 0, 0);
+                  // 11월 10일 기준 단가 변경 확인
+                  const rate = (date >= rateChangeDate) ? 8000 : 7000;
+                  mealDetails.push({ date: d.date, rate, hours });
+                }
+              }
+            });
+            
+            // 식대가 일별 계산인 경우 상세 표시 (mealDetails가 있고 실제 식대 금액과 일치하는지 확인)
+            if (mealDetails.length > 0) {
+              const calculatedTotal = mealDetails.reduce((sum, m) => sum + m.rate, 0);
+              // 계산된 합계가 실제 식대 금액과 비슷하면 표시 (오차 10% 이내)
+              if (Math.abs(calculatedTotal - (payslip.meal_allowance || 0)) <= (payslip.meal_allowance || 0) * 0.1) {
+                return `
+          <div class="salary-section" style="margin-top:10px">
+            <div class="section-title">식대 일별 계산 상세</div>
+            <table style="width:100%; border-collapse:collapse; font-size:14px">
+              <thead>
+                <tr>
+                  <th style="text-align:left; padding:8px 4px; border-bottom:1px solid #ddd;">날짜</th>
+                  <th style="text-align:center; padding:8px 4px; border-bottom:1px solid #ddd;">근무시간</th>
+                  <th style="text-align:right; padding:8px 4px; border-bottom:1px solid #ddd;">단가</th>
+                  <th style="text-align:right; padding:8px 4px; border-bottom:1px solid #ddd;">금액</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${mealDetails.map((m: any) => {
+                  const date = new Date(m.date);
+                  const dateStr = date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+                  const hoursStr = m.hours + '시간';
+                  const rateStr = m.rate.toLocaleString() + '원';
+                  const amountStr = m.rate.toLocaleString() + '원';
+                  const isNewRate = m.rate === 8000;
+                  return `<tr>
+                    <td style=\"padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${dateStr}${isNewRate ? ' <span style=\"color:#2563eb; font-size:11px;\">(인상)</span>' : ''}</td>
+                    <td style=\"text-align:center; padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${hoursStr}</td>
+                    <td style=\"text-align:right; padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${rateStr}</td>
+                    <td style=\"text-align:right; padding:8px 4px; border-bottom:1px solid #f0f0f0;\">${amountStr}</td>
+                  </tr>`
+                }).join('')}
+                <tr style=\"font-weight:bold; border-top:2px solid #333;\">
+                  <td style=\"padding:8px 4px;\">합계</td>
+                  <td style=\"text-align:center; padding:8px 4px;\">${mealDetails.length}일</td>
+                  <td style=\"text-align:right; padding:8px 4px;\">-</td>
+                  <td style=\"text-align:right; padding:8px 4px;\">${(payslip.meal_allowance || 0).toLocaleString()}원</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          `;
+              }
+            }
+            return '';
+          })() : ''}
 
           
         </div>
