@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, auth } from '@/lib/supabase';
 import { 
   Calendar, CalendarDays, CheckCircle, XCircle, AlertCircle,
   Plus, ArrowLeft, Clock, TrendingUp
@@ -41,6 +41,8 @@ export default function LeaveRequestPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [welfareLeaves, setWelfareLeaves] = useState<any[]>([]);
+  const [specialWorks, setSpecialWorks] = useState<any[]>([]);
   const [newRequest, setNewRequest] = useState({
     start_date: '',
     end_date: '',
@@ -54,26 +56,69 @@ export default function LeaveRequestPage() {
     loadData();
   }, []);
 
+  // 휴가 유형 옵션을 고용 형태에 따라 필터링
+  const getAvailableLeaveTypes = () => {
+    if (!currentUser) return [];
+    
+    const baseTypes = [
+      { value: 'sick', label: '병가' },
+      { value: 'other', label: '기타' }
+    ];
+    
+    // 정규직: 연차, 병가, 기타
+    if (currentUser.employment_type === 'full_time') {
+      return [
+        { value: 'annual', label: '연차 (법정)' },
+        ...baseTypes
+      ];
+    }
+    
+    // 파트타임: 월차, 병가, 기타
+    if (currentUser.employment_type === 'part_time') {
+      return [
+        { value: 'monthly', label: '월차 (복리후생)' },
+        ...baseTypes
+      ];
+    }
+    
+    // 기타 고용 형태: 기본값으로 연차 포함
+    return [
+      { value: 'annual', label: '연차 (법정)' },
+      ...baseTypes
+    ];
+  };
+
+  // 고용 형태에 따라 기본값 설정
+  useEffect(() => {
+    if (currentUser) {
+      const defaultType = currentUser.employment_type === 'full_time' 
+        ? 'annual' 
+        : currentUser.employment_type === 'part_time' 
+          ? 'monthly' 
+          : 'annual';
+      
+      setNewRequest(prev => ({
+        ...prev,
+        leave_type: defaultType as any,
+        is_special_leave: false,
+        is_monthly_leave: defaultType === 'monthly'
+      }));
+    }
+  }, [currentUser]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
       
-      // 현재 사용자 정보 가져오기
-      const { data: { user } } = await supabase.auth.getUser();
+      // 현재 사용자 정보 가져오기 (localStorage 기반)
+      const user = await auth.getCurrentUser();
       if (!user) {
         router.push('/login');
         return;
       }
 
-      // 직원 정보 가져오기
-      const { data: employee, error: empError } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (empError) throw empError;
-      setCurrentUser(employee);
+      // 직원 정보는 이미 getCurrentUser에서 가져옴
+      setCurrentUser(user);
 
       // 연차 잔여일 가져오기
       const currentYear = new Date().getFullYear();
@@ -116,6 +161,32 @@ export default function LeaveRequestPage() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  // 복지 연차 확인 함수
+  const checkWelfareLeave = async (date: string): Promise<{ isWelfare: boolean; description?: string }> => {
+    if (!date) return { isWelfare: false };
+    
+    const dateObj = new Date(date);
+    const year = dateObj.getFullYear();
+    
+    try {
+      const { data } = await supabase
+        .from('welfare_leave_policy')
+        .select('*')
+        .eq('year', year)
+        .eq('date', date)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (data) {
+        return { isWelfare: true, description: data.description };
+      }
+    } catch (error) {
+      console.error('복지 연차 확인 오류:', error);
+    }
+    
+    return { isWelfare: false };
+  };
+
   const handleRequestLeave = async () => {
     try {
       if (!currentUser) {
@@ -149,6 +220,10 @@ export default function LeaveRequestPage() {
         }
       }
 
+      // 한국 시간 기준으로 현재 시간 계산 (UTC+9)
+      const koreaTime = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const koreaDateTime = koreaTime.toISOString();
+
       const { error } = await supabase
         .from('leave_requests')
         .insert({
@@ -160,7 +235,8 @@ export default function LeaveRequestPage() {
           leave_days: leaveDays,
           is_special_leave: newRequest.is_special_leave,
           is_monthly_leave: newRequest.is_monthly_leave,
-          status: 'pending'
+          status: 'pending',
+          created_at: koreaDateTime // 한국 시간으로 명시적으로 설정
         });
 
       if (error) throw error;
@@ -316,6 +392,90 @@ export default function LeaveRequestPage() {
           </div>
         )}
 
+        {/* 특별연차 및 특별 근무 섹션 */}
+        {(welfareLeaves.length > 0 || specialWorks.length > 0) && (
+          <div className="bg-white rounded-lg shadow-sm mb-6">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">특별연차 및 특별 근무</h2>
+              
+              {/* 특별연차(복지 연차) 표시 */}
+              {welfareLeaves.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
+                    {new Date().getFullYear()}년 복지 연차
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {welfareLeaves.map((welfare) => (
+                      <div
+                        key={welfare.id}
+                        className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm"
+                      >
+                        <span className="font-medium text-yellow-800">
+                          {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                        </span>
+                        {welfare.description && (
+                          <span className="text-yellow-600 ml-2">({welfare.description})</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* 특별 근무 표시 */}
+              {specialWorks.length > 0 && (
+                <div className={welfareLeaves.length > 0 ? "mt-4 pt-4 border-t border-gray-200" : ""}>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-green-600" />
+                    이번 달 특별 근무
+                  </h3>
+                  <div className="space-y-2">
+                    {specialWorks.map((work) => {
+                      const workDate = new Date(work.date);
+                      const dayOfWeek = workDate.getDay();
+                      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                      
+                      return (
+                        <div
+                          key={work.id}
+                          className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-green-800">
+                                {workDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} ({dayNames[dayOfWeek]})
+                              </span>
+                              {work.is_weekend && (
+                                <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
+                                  주말
+                                </span>
+                              )}
+                              {work.is_day_off && !work.is_weekend && (
+                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                  휴무일
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-green-600 text-xs">
+                              {work.visit_booking_time && (
+                                <span>시타 {work.visit_booking_time}</span>
+                              )}
+                            </div>
+                          </div>
+                          {work.task_title && (
+                            <p className="text-xs text-gray-600 mt-1">{work.task_title}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 연차 신청 내역 */}
         <div className="bg-white rounded-lg shadow-sm">
           <div className="p-6">
@@ -401,7 +561,22 @@ export default function LeaveRequestPage() {
                   <input
                     type="date"
                     value={newRequest.start_date}
-                    onChange={(e) => setNewRequest({ ...newRequest, start_date: e.target.value })}
+                    onChange={async (e) => {
+                      const date = e.target.value;
+                      setNewRequest({ ...newRequest, start_date: date });
+                      
+                      // 복지 연차 확인
+                      const welfareCheck = await checkWelfareLeave(date);
+                      if (welfareCheck.isWelfare) {
+                        setNewRequest(prev => ({
+                          ...prev,
+                          start_date: date,
+                          leave_type: 'special',
+                          is_special_leave: true,
+                          reason: welfareCheck.description || '복지 연차'
+                        }));
+                      }
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -412,7 +587,22 @@ export default function LeaveRequestPage() {
                   <input
                     type="date"
                     value={newRequest.end_date}
-                    onChange={(e) => setNewRequest({ ...newRequest, end_date: e.target.value })}
+                    onChange={async (e) => {
+                      const date = e.target.value;
+                      setNewRequest({ ...newRequest, end_date: date });
+                      
+                      // 복지 연차 확인
+                      const welfareCheck = await checkWelfareLeave(date);
+                      if (welfareCheck.isWelfare) {
+                        setNewRequest(prev => ({
+                          ...prev,
+                          end_date: date,
+                          leave_type: 'special',
+                          is_special_leave: true,
+                          reason: prev.reason || welfareCheck.description || '복지 연차'
+                        }));
+                      }
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -427,26 +617,26 @@ export default function LeaveRequestPage() {
                       setNewRequest({ 
                         ...newRequest, 
                         leave_type: leaveType,
-                        is_special_leave: leaveType === 'special',
+                        is_special_leave: false, // 특별연차는 자동 감지 시에만 설정
                         is_monthly_leave: leaveType === 'monthly'
                       });
                     }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="annual">연차 (법정)</option>
-                    <option value="monthly">월차 (복리후생)</option>
-                    <option value="special">특별연차 (회사 재량)</option>
-                    <option value="sick">병가</option>
-                    <option value="other">기타</option>
+                    {getAvailableLeaveTypes().map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
-                  {newRequest.leave_type === 'special' && (
-                    <p className="text-sm text-blue-600 mt-1">
-                      💡 특별연차는 연차 잔여일에 차감되지 않습니다.
-                    </p>
-                  )}
                   {newRequest.leave_type === 'monthly' && (
                     <p className="text-sm text-purple-600 mt-1">
                       💡 월차는 연차와 별도로 관리됩니다.
+                    </p>
+                  )}
+                  {newRequest.is_special_leave && (
+                    <p className="text-sm text-yellow-600 mt-1">
+                      💡 복지 연차로 자동 설정되었습니다. 연차 잔여일에 차감되지 않습니다.
                     </p>
                   )}
                 </div>

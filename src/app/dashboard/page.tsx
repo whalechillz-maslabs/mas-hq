@@ -132,6 +132,9 @@ export default function DashboardPage() {
   const [salesDetailData, setSalesDetailData] = useState<any>(null);
   const [marketingDetailData, setMarketingDetailData] = useState<any>(null);
   const [selectedMarketingBrand, setSelectedMarketingBrand] = useState<'masgolf' | 'singsingolf' | 'all'>('all');
+  const [leaveBalance, setLeaveBalance] = useState<any>(null);
+  const [welfareLeaves, setWelfareLeaves] = useState<any[]>([]);
+  const [specialWorks, setSpecialWorks] = useState<any[]>([]);
 
   useEffect(() => {
     console.log('=== useEffect 훅 실행 ===');
@@ -975,6 +978,79 @@ export default function DashboardPage() {
         weeklyPoints: 0,
         weeklyTaskCount: 0
       });
+      
+      // 연차 정보 로드
+      const currentYear = new Date().getFullYear();
+      const { data: balance } = await supabase
+        .from('leave_balance')
+        .select('*')
+        .eq('employee_id', currentUser.id)
+        .eq('year', currentYear)
+        .maybeSingle();
+      
+      setLeaveBalance(balance);
+      
+      // 특별연차(복지 연차) 정보 로드
+      const { data: welfareData } = await supabase
+        .from('welfare_leave_policy')
+        .select('*')
+        .eq('year', currentYear)
+        .eq('is_active', true)
+        .order('date', { ascending: true });
+      
+      setWelfareLeaves(welfareData || []);
+      
+      // 특별 근무 내역 로드 (휴무일 시타 근무)
+      const startOfMonth = new Date(currentYear, new Date().getMonth(), 1);
+      const endOfMonth = new Date(currentYear, new Date().getMonth() + 1, 0);
+      const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+      const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
+      
+      // 이번 달 업무 중 시타 예약이 있는 업무 가져오기
+      const { data: tasksWithSita } = await supabase
+        .from('employee_tasks')
+        .select('*')
+        .eq('employee_id', currentUser.id)
+        .eq('sita_booking', true)
+        .gte('task_date', startOfMonthStr)
+        .lte('task_date', endOfMonthStr)
+        .order('task_date', { ascending: false });
+      
+      if (tasksWithSita && tasksWithSita.length > 0) {
+        // 각 업무 날짜에 스케줄이 있는지 확인
+        const specialWorksList = [];
+        
+        for (const task of tasksWithSita) {
+          const taskDate = task.task_date;
+          const dayOfWeek = new Date(taskDate).getDay(); // 0=일요일, 6=토요일
+          
+          // 해당 날짜의 스케줄 확인
+          const { data: schedule } = await supabase
+            .from('schedules')
+            .select('*')
+            .eq('employee_id', currentUser.id)
+            .eq('schedule_date', taskDate)
+            .maybeSingle();
+          
+          // 스케줄이 없거나 주말이면 특별 근무로 간주
+          if (!schedule || dayOfWeek === 0 || dayOfWeek === 6) {
+            specialWorksList.push({
+              id: task.id,
+              date: taskDate,
+              task_title: task.title,
+              customer_name: task.customer_name,
+              visit_booking_date: task.visit_booking_date,
+              visit_booking_time: task.visit_booking_time,
+              is_weekend: dayOfWeek === 0 || dayOfWeek === 6,
+              is_day_off: !schedule
+            });
+          }
+        }
+        
+        setSpecialWorks(specialWorksList);
+      } else {
+        setSpecialWorks([]);
+      }
     } finally {
       console.log('=== loadDashboardData 함수 완료 ===');
       setLoading(false);
@@ -1877,6 +1953,103 @@ export default function DashboardPage() {
           </div>
         </div>
 
+
+        {/* 특별연차 및 특별 근무 카드 */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <CalendarDays className="h-6 w-6 mr-3 text-blue-600" />
+              특별연차 및 특별 근무
+            </h2>
+            <button
+              onClick={() => router.push('/leave')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              연차 신청하기
+            </button>
+          </div>
+          
+          {/* 특별연차(복지 연차) 표시 */}
+          {welfareLeaves.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
+                {new Date().getFullYear()}년 복지 연차
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {welfareLeaves.map((welfare) => (
+                  <div
+                    key={welfare.id}
+                    className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm"
+                  >
+                    <span className="font-medium text-yellow-800">
+                      {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                    </span>
+                    {welfare.description && (
+                      <span className="text-yellow-600 ml-2">({welfare.description})</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* 특별 근무 표시 */}
+          {specialWorks.length > 0 && (
+            <div className={welfareLeaves.length > 0 ? "mt-4 pt-4 border-t border-gray-200" : ""}>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-green-600" />
+                이번 달 특별 근무
+              </h3>
+              <div className="space-y-2">
+                {specialWorks.map((work) => {
+                  const workDate = new Date(work.date);
+                  const dayOfWeek = workDate.getDay();
+                  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                  
+                  return (
+                    <div
+                      key={work.id}
+                      className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-green-800">
+                            {workDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} ({dayNames[dayOfWeek]})
+                          </span>
+                          {work.is_weekend && (
+                            <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
+                              주말
+                            </span>
+                          )}
+                          {work.is_day_off && !work.is_weekend && (
+                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                              휴무일
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-green-600 text-xs">
+                          {work.visit_booking_time && (
+                            <span>시타 {work.visit_booking_time}</span>
+                          )}
+                        </div>
+                      </div>
+                      {work.task_title && (
+                        <p className="text-xs text-gray-600 mt-1">{work.task_title}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {welfareLeaves.length === 0 && specialWorks.length === 0 && (
+            <div className="text-center py-4 text-gray-500 text-sm">
+              특별연차 및 특별 근무 내역이 없습니다.
+            </div>
+          )}
+        </div>
 
         {/* 빠른 메뉴 */}
         <div className="mb-6">
