@@ -487,12 +487,16 @@ export default function DashboardPage() {
   };
 
   const loadDashboardData = async () => {
+    // 변수를 try 블록 밖에서 선언하여 catch 블록에서도 접근 가능하도록 함
+    let currentUser: any = null;
+    let finalEmployeeData: any = null;
+    
     try {
       console.log('=== loadDashboardData 함수 시작 ===');
       setLoading(true);
       
       // 현재 로그인한 사용자 정보 가져오기 (auth.getCurrentUser 사용)
-      const currentUser = await auth.getCurrentUser();
+      currentUser = await auth.getCurrentUser();
       
       console.log('현재 사용자:', currentUser);
       
@@ -519,7 +523,7 @@ export default function DashboardPage() {
       }
 
       // employeeData가 없거나 role 정보가 없으면 currentUser 사용하되, role 정보는 별도 조회
-      let finalEmployeeData = employeeData;
+      finalEmployeeData = employeeData;
       if (!employeeData && currentUser) {
         // currentUser에 role_id가 있으면 role 정보 조회
         if (currentUser.role_id) {
@@ -938,7 +942,7 @@ export default function DashboardPage() {
       // 에러가 있어도 기본 데이터 설정
       console.log('기본 데이터 설정 시작');
       setData({
-        employee: null,
+        employee: finalEmployeeData || currentUser || null,
         todaySchedule: null,
         monthlyStats: {
           totalSales: 4080000,
