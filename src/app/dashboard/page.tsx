@@ -502,17 +502,44 @@ export default function DashboardPage() {
         return;
       }
 
-      // 직원 정보 가져오기 (기본 정보만)
+      // 직원 정보 가져오기 (role 정보 포함)
       console.log('직원 정보 조회 시작, 사용자 ID:', currentUser.id);
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
-        .select('*')
+        .select(`
+          *,
+          role:roles(*)
+        `)
         .eq('id', currentUser.id)
         .single();
 
       console.log('직원 정보 조회 결과:', { employeeData, employeeError });
       if (employeeError) {
         console.error('직원 정보 조회 오류:', employeeError);
+      }
+
+      // employeeData가 없거나 role 정보가 없으면 currentUser 사용하되, role 정보는 별도 조회
+      let finalEmployeeData = employeeData;
+      if (!employeeData && currentUser) {
+        // currentUser에 role_id가 있으면 role 정보 조회
+        if (currentUser.role_id) {
+          const { data: roleData } = await supabase
+            .from('roles')
+            .select('*')
+            .eq('id', currentUser.role_id)
+            .single();
+          finalEmployeeData = { ...currentUser, role: roleData };
+        } else {
+          finalEmployeeData = currentUser;
+        }
+      } else if (employeeData && !employeeData.role && currentUser?.role_id) {
+        // employeeData는 있지만 role 정보가 없으면 별도 조회
+        const { data: roleData } = await supabase
+          .from('roles')
+          .select('*')
+          .eq('id', currentUser.role_id)
+          .single();
+        finalEmployeeData = { ...employeeData, role: roleData };
       }
 
       // 오늘 날짜와 이번 달 날짜 범위 계산
@@ -886,8 +913,9 @@ export default function DashboardPage() {
       console.log('팀원 순위 계산 완료:', teamRankings);
 
       console.log('setData 호출 시작, recentSharedTasks 개수:', recentSharedTasks.length);
+      console.log('finalEmployeeData:', finalEmployeeData);
       setData({
-        employee: employeeData || currentUser,
+        employee: finalEmployeeData || currentUser,
         todaySchedule: scheduleData,
         monthlyStats,
         personalKPI,
