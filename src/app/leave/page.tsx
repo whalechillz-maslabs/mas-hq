@@ -45,6 +45,7 @@ export default function LeaveRequestPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [welfareLeaves, setWelfareLeaves] = useState<any[]>([]);
   const [specialWorks, setSpecialWorks] = useState<any[]>([]);
+  const [welfareLeaveCount, setWelfareLeaveCount] = useState<number>(0);
   const [newRequest, setNewRequest] = useState({
     start_date: '',
     end_date: '',
@@ -137,13 +138,18 @@ export default function LeaveRequestPage() {
       setLeaveBalance(balance);
 
       // 특별연차(복지 연차) 개수 계산 (현재 연도 활성화된 것만)
-      const { count: welfareCount } = await supabase
+      const { data: welfareData, error: welfareError } = await supabase
         .from('welfare_leave_policy')
-        .select('*', { count: 'exact', head: true })
+        .select('*')
         .eq('year', currentYear)
         .eq('is_active', true);
       
-      setWelfareLeaveCount(welfareCount || 0);
+      if (welfareError) {
+        console.error('복지 연차 조회 오류:', welfareError);
+        // 에러가 발생해도 계속 진행 (선택적)
+      }
+      
+      setWelfareLeaveCount(welfareData?.length || 0);
 
       // 내 연차 신청 내역 가져오기
       const { data: requests, error: requestError } = await supabase
