@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, auth } from '@/lib/supabase';
 import { 
   Calendar, CalendarDays, CheckCircle, XCircle, AlertCircle,
-  Plus, ArrowLeft, Clock, TrendingUp
+  Plus, ArrowLeft, Clock, TrendingUp, Edit
 } from 'lucide-react';
 
 interface LeaveBalance {
@@ -40,6 +40,8 @@ export default function LeaveRequestPage() {
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [welfareLeaves, setWelfareLeaves] = useState<any[]>([]);
   const [specialWorks, setSpecialWorks] = useState<any[]>([]);
@@ -187,6 +189,20 @@ export default function LeaveRequestPage() {
     return { isWelfare: false };
   };
 
+  const handleEditRequest = (request: any) => {
+    setEditingRequestId(request.id);
+    setIsEditMode(true);
+    setNewRequest({
+      start_date: request.start_date,
+      end_date: request.end_date,
+      reason: request.reason || '',
+      leave_type: request.leave_type || 'annual',
+      is_special_leave: request.is_special_leave || false,
+      is_monthly_leave: request.is_monthly_leave || false
+    });
+    setShowRequestModal(true);
+  };
+
   const handleRequestLeave = async () => {
     try {
       if (!currentUser) {
@@ -220,6 +236,41 @@ export default function LeaveRequestPage() {
         }
       }
 
+      // 수정 모드인 경우
+      if (isEditMode && editingRequestId) {
+        const { error } = await supabase
+          .from('leave_requests')
+          .update({
+            start_date: newRequest.start_date,
+            end_date: newRequest.end_date,
+            reason: newRequest.reason,
+            leave_type: newRequest.leave_type,
+            leave_days: leaveDays,
+            is_special_leave: newRequest.is_special_leave,
+            is_monthly_leave: newRequest.is_monthly_leave,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingRequestId);
+
+        if (error) throw error;
+
+        alert('연차 신청이 수정되었습니다.');
+        setShowRequestModal(false);
+        setIsEditMode(false);
+        setEditingRequestId(null);
+        setNewRequest({
+          start_date: '',
+          end_date: '',
+          reason: '',
+          leave_type: 'annual',
+          is_special_leave: false,
+          is_monthly_leave: false
+        });
+        loadData();
+        return;
+      }
+
+      // 신규 신청인 경우
       // 한국 시간 기준으로 현재 시간 계산 (UTC+9)
       const koreaTime = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
       const koreaDateTime = koreaTime.toISOString();
@@ -550,12 +601,15 @@ export default function LeaveRequestPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       상태
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      액션
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {leaveRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                         신청 내역이 없습니다.
                       </td>
                     </tr>
@@ -587,6 +641,17 @@ export default function LeaveRequestPage() {
                             <p className="text-xs text-red-600 mt-1">{request.rejection_reason}</p>
                           )}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {request.status === 'pending' && (
+                            <button
+                              onClick={() => handleEditRequest(request)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span>수정</span>
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -600,7 +665,9 @@ export default function LeaveRequestPage() {
         {showRequestModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">연차 신청</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {isEditMode ? '연차 신청 수정' : '연차 신청'}
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -715,7 +782,19 @@ export default function LeaveRequestPage() {
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => setShowRequestModal(false)}
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setIsEditMode(false);
+                    setEditingRequestId(null);
+                    setNewRequest({
+                      start_date: '',
+                      end_date: '',
+                      reason: '',
+                      leave_type: 'annual',
+                      is_special_leave: false,
+                      is_monthly_leave: false
+                    });
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   취소
@@ -724,7 +803,7 @@ export default function LeaveRequestPage() {
                   onClick={handleRequestLeave}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  신청
+                  {isEditMode ? '수정' : '신청'}
                 </button>
               </div>
             </div>

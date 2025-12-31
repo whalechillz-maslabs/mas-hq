@@ -1986,55 +1986,46 @@ export default function DashboardPage() {
               return welfareDate < currentDate;
             });
             
+            // 최근 특별연차 2개만 표시 (미래 날짜 우선, 없으면 과거 날짜)
+            const recentWelfareLeaves = [...upcomingLeaves, ...pastLeaves].slice(0, 2);
+            
             return (
               <div className="mb-4">
-                {/* 이번 연도 복지 연차 (미래 날짜) */}
-                {upcomingLeaves.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
-                      이번 연도 복지 연차
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {upcomingLeaves.map((welfare) => (
-                        <div
-                          key={welfare.id}
-                          className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm"
-                        >
-                          <span className="font-medium text-yellow-800">
-                            {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                          </span>
-                          {welfare.description && (
-                            <span className="text-yellow-600 ml-2">({welfare.description})</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* 지난 복지 연차 (과거 날짜) */}
-                {pastLeaves.length > 0 && (
+                {recentWelfareLeaves.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                      지난 복지 연차
+                      <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
+                      최근 특별연차
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {pastLeaves.map((welfare) => (
-                        <div
-                          key={welfare.id}
-                          className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
-                        >
-                          <span className="font-medium text-gray-600">
-                            {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                          </span>
-                          {welfare.description && (
-                            <span className="text-gray-500 ml-2">({welfare.description})</span>
-                          )}
-                          <span className="ml-2 text-xs text-gray-400">(지남)</span>
-                        </div>
-                      ))}
+                      {recentWelfareLeaves.map((welfare) => {
+                        const welfareDate = new Date(welfare.date);
+                        welfareDate.setHours(0, 0, 0, 0);
+                        const isPast = welfareDate < currentDate;
+                        
+                        return (
+                          <div
+                            key={welfare.id}
+                            className={`px-3 py-2 rounded-lg text-sm ${
+                              isPast 
+                                ? 'bg-gray-50 border border-gray-200' 
+                                : 'bg-yellow-50 border border-yellow-200'
+                            }`}
+                          >
+                            <span className={`font-medium ${isPast ? 'text-gray-600' : 'text-yellow-800'}`}>
+                              {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                            </span>
+                            {welfare.description && (
+                              <span className={`ml-2 ${isPast ? 'text-gray-500' : 'text-yellow-600'}`}>
+                                ({welfare.description})
+                              </span>
+                            )}
+                            {isPast && (
+                              <span className="ml-2 text-xs text-gray-400">(지남)</span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -2042,15 +2033,15 @@ export default function DashboardPage() {
             );
           })()}
           
-          {/* 특별 근무 표시 */}
+          {/* 특별 근무 표시 - 최근 2개만 */}
           {specialWorks.length > 0 && (
             <div className={welfareLeaves.length > 0 ? "mt-4 pt-4 border-t border-gray-200" : ""}>
               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
                 <Clock className="h-4 w-4 mr-2 text-green-600" />
-                이번 달 특별 근무
+                최근 특별 근무
               </h3>
               <div className="space-y-2">
-                {specialWorks.map((work) => {
+                {specialWorks.slice(0, 2).map((work) => {
                   const workDate = new Date(work.date);
                   const dayOfWeek = workDate.getDay();
                   const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
