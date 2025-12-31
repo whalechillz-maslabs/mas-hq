@@ -136,6 +136,15 @@ export default function LeaveRequestPage() {
       }
       setLeaveBalance(balance);
 
+      // 특별연차(복지 연차) 개수 계산 (현재 연도 활성화된 것만)
+      const { count: welfareCount } = await supabase
+        .from('welfare_leave_policy')
+        .select('*', { count: 'exact', head: true })
+        .eq('year', currentYear)
+        .eq('is_active', true);
+      
+      setWelfareLeaveCount(welfareCount || 0);
+
       // 내 연차 신청 내역 가져오기
       const { data: requests, error: requestError } = await supabase
         .from('leave_requests')
@@ -390,22 +399,36 @@ export default function LeaveRequestPage() {
 
         {/* 연차 잔여일 카드 */}
         {leaveBalance && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className={`grid grid-cols-1 gap-6 mb-6 ${welfareLeaveCount > 0 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <CalendarDays className="h-8 w-8 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">총 연차</p>
+                  <p className="text-sm font-medium text-gray-500">총 연차 (법정)</p>
                   <p className="text-2xl font-semibold text-gray-900">{leaveBalance.total_days}일</p>
                 </div>
               </div>
             </div>
+            {welfareLeaveCount > 0 && (
+              <div className="bg-white rounded-lg shadow-sm p-6 border-2 border-yellow-200">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Calendar className="h-8 w-8 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">특별연차 (복지)</p>
+                    <p className="text-2xl font-semibold text-yellow-700">{welfareLeaveCount}일</p>
+                    <p className="text-xs text-gray-500 mt-1">연차 잔여일에 포함 안 됨</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Clock className="h-8 w-8 text-yellow-600" />
+                  <Clock className="h-8 w-8 text-orange-600" />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500">사용 연차</p>

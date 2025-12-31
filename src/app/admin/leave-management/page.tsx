@@ -69,6 +69,7 @@ export default function LeaveManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // 연차 잔여 관리용 상태
   const [newBalance, setNewBalance] = useState({
