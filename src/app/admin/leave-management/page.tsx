@@ -70,6 +70,7 @@ export default function LeaveManagementPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
 
   // 연차 잔여 관리용 상태
   const [newBalance, setNewBalance] = useState({
@@ -371,6 +372,11 @@ export default function LeaveManagementPage() {
 
   const handleRequestLeave = async () => {
     try {
+      if (!newRequest.employee_id || !newRequest.start_date || !newRequest.end_date || !newRequest.reason) {
+        alert('모든 필드를 입력해주세요.');
+        return;
+      }
+
       // 사용 일수 계산
       const leaveDays = calculateRequestDays(newRequest.start_date, newRequest.end_date);
 
@@ -378,25 +384,48 @@ export default function LeaveManagementPage() {
       const koreaTime = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
       const koreaDateTime = koreaTime.toISOString();
 
-      const { error } = await supabase
-        .from('leave_requests')
-        .insert({
-          employee_id: newRequest.employee_id,
-          start_date: newRequest.start_date,
-          end_date: newRequest.end_date,
-          reason: newRequest.reason,
-          leave_type: newRequest.leave_type,
-          leave_days: leaveDays,
-          is_special_leave: newRequest.is_special_leave,
-          is_monthly_leave: newRequest.is_monthly_leave,
-          status: 'pending',
-          created_at: koreaDateTime // 한국 시간으로 명시적으로 설정
-        });
+      if (editingRequestId) {
+        // 수정 모드
+        const { error } = await supabase
+          .from('leave_requests')
+          .update({
+            start_date: newRequest.start_date,
+            end_date: newRequest.end_date,
+            reason: newRequest.reason,
+            leave_type: newRequest.leave_type,
+            is_special_leave: newRequest.is_special_leave,
+            is_monthly_leave: newRequest.is_monthly_leave,
+            leave_days: leaveDays,
+            updated_at: koreaDateTime
+          })
+          .eq('id', editingRequestId);
 
-      if (error) throw error;
+        if (error) throw error;
+        alert('휴가 신청이 수정되었습니다.');
+      } else {
+        // 신규 신청
+        const { error } = await supabase
+          .from('leave_requests')
+          .insert({
+            employee_id: newRequest.employee_id,
+            start_date: newRequest.start_date,
+            end_date: newRequest.end_date,
+            reason: newRequest.reason,
+            leave_type: newRequest.leave_type,
+            leave_days: leaveDays,
+            is_special_leave: newRequest.is_special_leave,
+            is_monthly_leave: newRequest.is_monthly_leave,
+            status: 'pending',
+            created_at: koreaDateTime // 한국 시간으로 명시적으로 설정
+          });
 
-      alert('휴가 신청이 완료되었습니다.');
+        if (error) throw error;
+        alert('휴가 신청이 완료되었습니다.');
+      }
+
       setShowRequestModal(false);
+      setEditingRequestId(null);
+      setSelectedEmployee('');
       setNewRequest({ 
         employee_id: '', 
         start_date: '', 
@@ -1414,7 +1443,9 @@ export default function LeaveManagementPage() {
         {showRequestModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">연차 신청</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {editingRequestId ? '연차 신청 수정' : '연차 신청'}
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">직원 선택</label>

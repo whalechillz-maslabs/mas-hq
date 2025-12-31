@@ -491,19 +491,10 @@ export default function DashboardPage() {
       console.log('=== loadDashboardData 함수 시작 ===');
       setLoading(true);
       
-      // 현재 로그인한 사용자 정보 가져오기 (로컬 스토리지에서)
-      let currentUser = null;
-      if (typeof window !== 'undefined') {
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        const employeeData = localStorage.getItem('currentEmployee');
-        
-        console.log('로컬 스토리지 확인:', { isLoggedIn, employeeData: !!employeeData });
-        
-        if (isLoggedIn === 'true' && employeeData) {
-          currentUser = JSON.parse(employeeData);
-          console.log('현재 사용자:', currentUser);
-        }
-      }
+      // 현재 로그인한 사용자 정보 가져오기 (auth.getCurrentUser 사용)
+      const currentUser = await auth.getCurrentUser();
+      
+      console.log('현재 사용자:', currentUser);
       
       if (!currentUser) {
         console.log('사용자 정보가 없습니다. 로그인 페이지로 이동합니다.');
@@ -1007,17 +998,21 @@ export default function DashboardPage() {
       const todayStr = new Date().toISOString().split('T')[0];
       
       // 최근 3개월 업무 중 시타 예약이 있는 업무 가져오기 (최대 10개)
-      const { data: tasksWithSita } = await supabase
-        .from('employee_tasks')
-        .select('*')
-        .eq('employee_id', currentUser.id)
-        .eq('sita_booking', true)
-        .gte('task_date', startDateStr)
-        .lte('task_date', todayStr)
-        .order('task_date', { ascending: false })
-        .limit(10);
-      
-      if (tasksWithSita && tasksWithSita.length > 0) {
+      try {
+        const { data: tasksWithSita, error: tasksError } = await supabase
+          .from('employee_tasks')
+          .select('*')
+          .eq('employee_id', currentUser.id)
+          .eq('sita_booking', true)
+          .gte('task_date', startDateStr)
+          .lte('task_date', todayStr)
+          .order('task_date', { ascending: false })
+          .limit(10);
+        
+        if (tasksError) {
+          console.error('특별 근무 조회 오류:', tasksError);
+          setSpecialWorks([]);
+        } else if (tasksWithSita && tasksWithSita.length > 0) {
         // 각 업무 날짜에 스케줄이 있는지 확인
         const specialWorksList = [];
         
@@ -1048,8 +1043,13 @@ export default function DashboardPage() {
           }
         }
         
-        setSpecialWorks(specialWorksList);
-      } else {
+          setSpecialWorks(specialWorksList);
+        } else {
+          console.log('특별 근무 데이터 없음');
+          setSpecialWorks([]);
+        }
+      } catch (error) {
+        console.error('특별 근무 조회 예외:', error);
         setSpecialWorks([]);
       }
     } finally {
