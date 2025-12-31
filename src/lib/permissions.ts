@@ -125,6 +125,13 @@ export const MENU_PERMISSIONS: MenuPermission[] = [
     description: '회사 조직도 및 팀 구조 확인',
     roles: ['admin', 'manager', 'team_lead', 'employee', 'part_time']
   },
+  {
+    path: '/leave',
+    name: '연차 신청',
+    icon: 'CalendarDays',
+    description: '연차 신청 및 잔여일 조회',
+    roles: ['admin', 'manager', 'team_lead', 'employee', 'part_time']
+  },
   
   // 관리자 전용 메뉴
   {
@@ -146,6 +153,13 @@ export const MENU_PERMISSIONS: MenuPermission[] = [
     name: '출근 관리',
     icon: 'Clock',
     description: '직원 출근체크 위치/시간 확인',
+    roles: ['admin', 'manager']
+  },
+  {
+    path: '/admin/brand',
+    name: '브랜드 포트폴리오',
+    icon: 'Package',
+    description: '브랜드 굿즈 제작 진행 현황 및 포트폴리오 관리',
     roles: ['admin', 'manager']
   },
   {

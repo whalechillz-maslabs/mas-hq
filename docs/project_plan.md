@@ -1,3 +1,435 @@
+## 변경 이력 - 2025-12-19
+
+### 작업: 연차 관리 시스템 로직 완성 (근로기준법 반영)
+
+- 무엇을 했나
+  - 데이터베이스 스키마 확장 (이미 완료됨)
+    - `leave_requests` 테이블에 `leave_type`, `leave_days`, `is_special_leave`, `is_monthly_leave` 필드 추가
+    - 휴가 유형 구분: 연차(annual), 월차(monthly), 병가(sick), 특별연차(special), 기타(other)
+  - 연차 계산 함수를 근로기준법에 맞게 수정
+    - 1년 미만: 매월 개근 시 1일씩 발생, 최대 11일
+    - 1년 이상: 15일 (1년차), 이후 2년마다 1일씩 추가 (최대 25일)
+    - 기존 잘못된 계산 로직 수정 (11일 → 15일 시작)
+  - 프론트엔드 인터페이스 개선
+    - `LeaveRequest` 인터페이스에 새로운 필드 추가
+    - 연차 신청 모달에 휴가 유형 선택 드롭다운 추가
+    - 연차 신청 목록에 휴가 유형 및 일수 표시 추가
+    - 휴가 유형별 색상 구분 (연차: 파란색, 월차: 보라색, 특별연차: 노란색 등)
+  - 승인 시 자동 차감 로직 구현
+    - 연차: `leave_balance`의 `used_days` 자동 차감
+    - 월차/특별연차: 연차 잔여일에 차감하지 않음
+    - 잔여일 부족 시 경고 메시지 표시
+    - 사용 일수 자동 계산 함수 추가
+  - 최형호 특수 케이스 처리 준비
+    - 2025년 10월 1일 입사 기준 연차 계산 로직 준비
+    - 12월 22-24일 월차 신청 등록 준비
+
+- 왜 했나
+  - 사용자 요청: "최형호의 근로 계약서, 급여 명세서 등을 확인해서 연차 줘야해. 2025년 10월부터 1일부터 1년동안 11회를 지급하려고하는데 최형호는 12월에 22,23,24는 베트남 휴가로 월차를 내서 썼는데 아직 못적었어. 직원이 신청하고 관리자인 내가 확인해주고 하는 시스템 로직 완성 계획은?"
+  - 근로기준법에 맞는 정확한 연차 계산 필요
+  - 월차와 특별연차를 연차와 구분하여 관리 필요
+  - 승인 시 자동으로 잔여일 차감 기능 필요
+
+- 변경 파일
+  - `src/app/admin/leave-management/page.tsx`
+    - `LeaveRequest` 인터페이스 확장 (leave_type, leave_days, is_special_leave, is_monthly_leave)
+    - `calculateLeaveDays` 함수를 근로기준법 기준으로 수정
+    - `calculateRequestDays` 함수 추가 (휴가 기간 일수 계산)
+    - `handleRequestLeave` 함수 수정 (휴가 유형 및 일수 저장)
+    - `handleApproveRequest` 함수 수정 (자동 차감 로직 구현)
+    - `getLeaveTypeText`, `getLeaveTypeColor` 함수 추가
+    - 연차 신청 모달에 휴가 유형 선택 필드 추가
+    - 연차 신청 목록에 휴가 유형 및 일수 컬럼 추가
+
+- 남은 일
+  - 연차 발생 자동화 로직 구현 (매월 개근 시 1일씩 발생)
+  - 월차 별도 관리 테이블 생성 (선택사항)
+
+### 작업: 직원용 연차 신청 페이지 생성
+
+- 무엇을 했나
+  - 직원용 연차 신청 페이지 생성 (`/leave`)
+    - 본인 연차 잔여일 조회 기능
+    - 연차 신청 기능 (연차, 월차, 특별연차, 병가, 기타)
+    - 신청 내역 조회 기능
+    - 잔여일 부족 시 경고 기능
+  - 대시보드에 연차 신청 메뉴 추가
+    - 빠른 메뉴 섹션에 연차 신청 카드 추가
+    - 그리드를 5열에서 6열로 확장
+  - permissions.ts에 연차 신청 메뉴 추가
+    - 모든 직원(admin, manager, team_lead, employee, part_time) 접근 가능
+  - 최형호 연차 잔여일 확인 및 생성 SQL 작성
+    - 연차 기산일 설정 (2025-10-01)
+    - 2025년 연차 잔여일 생성 (3일)
+    - 12월 월차 신청 등록 (이미 사용한 월차)
+
+- 왜 했나
+  - 사용자 요청: "연차신청은 직원이 해야하는거 아니야? 연차관리시스템은 관리자+매니저 기능인데 직원들을 어떻게 신청을 하지?"
+  - 직원이 직접 연차를 신청할 수 있는 페이지 필요
+  - 관리자 페이지는 승인/관리 전용으로 사용
+  - 최형호의 연차 잔여일이 안 나오는 문제 해결
+
+- 변경 파일
+  - `src/app/leave/page.tsx` (신규)
+    - 직원용 연차 신청 페이지 전체 구현
+    - 연차 잔여일 카드 표시
+    - 연차 신청 모달
+    - 신청 내역 테이블
+  - `src/lib/permissions.ts`
+    - 연차 신청 메뉴 추가 (`/leave`)
+  - `src/app/dashboard/page.tsx`
+    - CalendarDays 아이콘 import 추가
+    - 빠른 메뉴에 연차 신청 버튼 추가
+    - 그리드를 6열로 확장
+  - `supabase/migrations/20251219000014_check_choi_leave_balance.sql` (신규)
+    - 최형호 연차 잔여일 확인 및 생성 SQL
+
+- 남은 일
+  - 연차 발생 자동화 로직 구현 (매월 개근 시 1일씩 발생)
+
+### 작업: 연차 잔여일 수정 기능 추가 및 중복 처리 개선
+
+- 무엇을 했나
+  - 연차 잔여일 수정 기능 추가
+    - 테이블에 "수정" 버튼 추가
+    - 수정 모달 구현 (직원/연도는 수정 불가)
+    - `handleEditBalance` 함수 추가
+  - 연차 잔여일 추가 시 중복 처리 개선
+    - `INSERT` 대신 `UPSERT` 사용
+    - `onConflict: 'employee_id,year'` 옵션으로 중복 시 자동 업데이트
+  - 모달 개선
+    - 추가/수정 모드에 따라 제목 변경
+    - 수정 모드에서 직원/연도 필드 비활성화
+    - 취소 시 상태 초기화
+
+- 왜 했나
+  - 사용자 요청: "현재 연차일 수정은? 추가는 할수 있는거야?"
+  - 기존 추가 기능이 중복 시 에러 발생 문제 해결
+  - 연차 잔여일을 수정할 수 있는 기능 필요
+
+- 변경 파일
+  - `src/app/admin/leave-management/page.tsx`
+    - `isEditMode`, `selectedBalance` 상태 추가
+    - `handleEditBalance` 함수 추가
+    - `handleAddBalance` 함수 수정 (UPSERT 사용, 수정 모드 지원)
+    - 테이블에 "액션" 컬럼 및 수정 버튼 추가
+    - 모달 제목 및 필드 수정 (수정 모드 지원)
+
+- 남은 일
+  - 연차 발생 자동화 로직 구현 (매월 개근 시 1일씩 발생)
+
+### 작업: 주문 수정 API 오류 수정
+
+- 무엇을 했나
+  - 주문 수정 API (`PUT /api/brand/orders`)에서 발생하던 500 에러 수정
+    - 빈 문자열(`''`)을 `NULL`로 변환하는 로직 추가
+    - 날짜 형식 정리 함수 추가 (`YYYY-MM-DD` 형식 보장)
+    - 숫자 필드 타입 변환 개선 (`parseInt` 사용)
+    - 에러 메시지에 상세 정보 추가
+  - 주문 생성 API (`POST /api/brand/orders`)에도 동일한 로직 적용
+    - 데이터 일관성 보장
+
+- 왜 했나
+  - 사용자 요청: "주문 수정이 안되는 이유는?"
+  - 프론트엔드에서 빈 문자열을 전송할 때 데이터베이스 타입 불일치로 인한 오류 발생
+  - `product_id`, `delivery_date`, `tracking_number` 등이 빈 문자열로 전송되면 데이터베이스에서 타입 에러 발생
+
+- 변경 파일
+  - `src/app/api/brand/orders/route.ts`
+    - PUT 메서드: 빈 문자열 처리, 날짜 형식 정리, 숫자 변환 개선
+    - POST 메서드: 동일한 로직 적용
+
+- 남은 일
+  - 다른 API 엔드포인트도 동일한 패턴으로 개선 (선택사항)
+
+### 작업: 전체 진행 대시보드 스타일 개선 (그라데이션 카드)
+
+- 무엇을 했나
+  - 전체 진행 대시보드 카드 스타일을 기존 HTML 파일과 동일하게 변경
+    - 그라데이션 배경 적용 (보라색, 핑크/빨강, 파란색, 초록색)
+    - 중앙 정렬 및 흰색 텍스트
+    - 큰 폰트 크기 (text-4xl)
+    - 그림자 효과 강화
+    - 아이콘 제거로 가독성 향상
+
+- 왜 했나
+  - 사용자 요청: "전체 진행 대시보드도 기존 파일이 더 가독성이 좋은데? 비슷하게 적용하려면?"
+  - 기존 HTML 파일의 시각적 스타일이 더 명확하고 가독성이 좋다는 피드백 반영
+
+- 변경 파일
+  - `src/app/admin/brand/page.tsx`
+    - 전체 진행 대시보드 카드 스타일 변경 (slate 배경 → 그라데이션 배경)
+    - 카드 레이아웃 변경 (아이콘 제거, 중앙 정렬)
+
+- 남은 일
+  - 테이블 스타일도 기존 HTML과 동일하게 개선 (선택사항)
+
+### 작업: 브랜드 포트폴리오 UI 개선 및 색상 팔레트 고급화
+
+- 무엇을 했나
+  - 브랜드 페이지 UI 개선
+    - 로고 이미지 표시 기능 추가 (logo_path 사용)
+    - 브랜드별 절제된 색상 팔레트 적용 (slate 계열)
+    - 호버 효과 추가 (transform, shadow)
+    - 레이아웃 개선 (중앙 정렬, 여백 조정)
+    - 통계 표시 개선 (진행 중/완료를 더 명확하게)
+  - 전체 페이지 색상 팔레트 고급화
+    - 원색(indigo, blue, purple, green, yellow, red) 제거
+    - 절제된 slate/gray 계열 색상으로 통일
+    - 모든 탭, 버튼, 카드, 모달 색상 통일
+    - 폰트 굵기 조정 (bold → semibold)
+    - 그림자 효과 개선 (shadow → shadow-sm)
+
+- 왜 했나
+  - 사용자 요청: "현재의 아이콘이 단순하고 고급스러우니 전체적으로 너무 원색을 사용하지 말고 절제하면서 고급스럽게 변경해"
+  - product_comparison.html의 가독성이 더 좋다는 피드백 반영
+  - 브랜드 포트폴리오의 전문적이고 세련된 이미지 구축
+
+- 변경 파일
+  - `src/app/admin/brand/page.tsx`
+    - 브랜드 카드 UI 개선 (로고 이미지, 호버 효과, 레이아웃)
+    - 전체 색상 팔레트 변경 (indigo/blue/purple → slate)
+    - 탭, 버튼, 카드, 모달 색상 통일
+    - 폰트 굵기 및 그림자 효과 조정
+
+- 남은 일
+  - 브랜드 데이터에 logo_path 업데이트 (선택사항)
+  - 다른 탭(상품소싱, 디자인 빌드업 등)도 동일한 스타일 적용
+
+### 작업: 브랜드 포트폴리오 CRUD 기능 및 마플 스크래핑 동기화 구현
+
+- 무엇을 했나
+  - 데이터베이스 스키마 확장 (3개 마이그레이션)
+    - `20251219000011_extend_brand_orders_schema.sql`: 주문 테이블에 tracking_number, marpple_synced_at, delivery_completed_at 필드 추가
+    - `20251219000012_create_order_additional_payments.sql`: 추가 결제 테이블 생성 (자수비 별도 결제 등)
+    - `20251219000013_create_product_pricing_tiers.sql`: 수량별 가격 티어 테이블 생성
+  - CRUD API 구현
+    - 주문 CRUD API (`/api/brand/orders`): POST, PUT, DELETE 추가
+    - 진행사항 CRUD API (`/api/brand/orders/progress`): POST, PUT 추가
+    - 추가 결제 CRUD API (`/api/brand/orders/additional-payments`): GET, POST, PUT, DELETE
+    - 수량별 가격 티어 CRUD API (`/api/brand/products/pricing-tiers`): GET, POST, PUT, DELETE
+  - 마플 연동 API 구현
+    - 마플 동기화 API (`/api/marpple/sync-order`): API 연동 또는 수동 동기화
+    - 마플 웹 스크래핑 API (`/api/marpple/scrape-order`): Playwright를 사용한 웹 스크래핑
+  - 프론트엔드 CRUD UI 구현
+    - 주문 추가/수정/삭제 모달 (`OrderModal` 컴포넌트)
+    - 진행사항 추가/수정 모달 (`ProgressFormModal` 컴포넌트)
+    - 추가 결제 등록/수정 모달 (`PaymentModal` 컴포넌트)
+    - 주문 목록에 수정/삭제/마플 동기화 버튼 추가
+    - 진행사항 히스토리에 진행사항 추가/수정 버튼 추가
+    - 마플 스크래핑 동기화 버튼 및 기능 구현
+
+- 왜 했나
+  - 사용자 요청: "진행하고 스크래핑으로 동기화하고 CRUD로 수정도 가능하도록 해줘"
+  - 관리자가 주문 정보를 직접 생성/수정/삭제할 수 있도록 하기 위함
+  - 마플에서 주문 정보를 자동으로 동기화하여 수동 입력 작업을 줄이기 위함
+  - 진행사항과 추가 결제를 체계적으로 관리하기 위함
+
+- 변경 파일
+  - `supabase/migrations/20251219000011_extend_brand_orders_schema.sql` (신규)
+  - `supabase/migrations/20251219000012_create_order_additional_payments.sql` (신규)
+  - `supabase/migrations/20251219000013_create_product_pricing_tiers.sql` (신규)
+  - `src/app/api/brand/orders/route.ts` (POST, PUT, DELETE 추가)
+  - `src/app/api/brand/orders/progress/route.ts` (POST, PUT 추가)
+  - `src/app/api/brand/orders/additional-payments/route.ts` (신규)
+  - `src/app/api/brand/products/pricing-tiers/route.ts` (신규)
+  - `src/app/api/marpple/sync-order/route.ts` (신규)
+  - `src/app/api/marpple/scrape-order/route.ts` (신규)
+  - `src/app/admin/brand/page.tsx`
+    - CRUD 상태 변수 추가 (showOrderModal, showProgressFormModal, showPaymentModal 등)
+    - 마플 동기화 핸들러 (`handleMarppleSync`)
+    - 주문 CRUD 핸들러 (`handleSaveOrder`, `handleDeleteOrder`)
+    - 진행사항 CRUD 핸들러 (`handleSaveProgress`)
+    - 추가 결제 CRUD 핸들러 (`handleSavePayment`, `handleDeletePayment`)
+    - 주문 목록에 수정/삭제/동기화 버튼 추가
+    - 진행사항 히스토리에 추가/수정 버튼 추가
+    - 모달 컴포넌트 추가 (OrderModal, ProgressFormModal, PaymentModal)
+
+- 남은 일
+  - 가격 티어 관리 UI 구현 (선택사항)
+  - 마플 API 키 발급 후 API 연동 테스트
+  - Playwright 설치 및 웹 스크래핑 테스트
+
+### 작업: 합계 행 및 원가 흐름 분석 기능 추가
+
+- 무엇을 했나
+  - 모든 제품(베이직 볼캡, 버킷햇, 클러치백, 티셔츠, 맨투맨)에 합계 행 추가
+    - 수량 합계, 원가 합계, 정상가 합계, 할인가 합계 표시
+  - 모든 제품에 원가 흐름 분석 카드 3개 추가
+    - 현재 총 수량 카드
+    - 현재 원가/개 카드
+    - 목표 수량 달성 시 예상 원가 카드
+  - 모든 제품에 수량별 원가 변화 테이블 추가
+    - 수량, 상품가/개, 자수비/개, 원가/개, 마진율 표시
+  - 베이직 볼캡 base_price 수정 (20,270원 → 15,270원)
+    - 데이터베이스에서 직접 수정 완료
+
+- 왜 했나
+  - 사용자 요청: "원래 페이지에서는 합계도 나오고 원가 흐름 분석도 나오는데 새로 만든 페이지는 왜 안나오지?"
+  - 원본 HTML 파일(`product_comparison.html`)의 기능을 모두 구현하기 위함
+  - 원가 정보를 한눈에 파악할 수 있도록 시각화
+
+- 변경 파일
+  - `src/app/admin/brand/page.tsx`
+    - 베이직 볼캡: 합계 행, 원가 흐름 분석 카드, 수량별 원가 변화 테이블 추가
+    - 버킷햇: 합계 행, 원가 흐름 분석 카드, 수량별 원가 변화 테이블 추가
+    - 클러치백: 합계 행, 원가 흐름 분석 카드, 수량별 원가 변화 테이블 추가
+    - 티셔츠: 합계 행, 원가 흐름 분석 카드, 수량별 원가 변화 테이블 추가
+    - 맨투맨: 합계 행, 원가 흐름 분석 카드, 수량별 원가 변화 테이블 추가
+
+- 남은 일
+  - 없음 (모든 기능 구현 완료)
+
+### 작업: 마이그레이션 상태 확인 및 문서화
+
+- 무엇을 했나
+  - 현재까지 생성된 모든 마이그레이션 파일 목록 정리
+  - 원격 데이터베이스 마이그레이션 상태 확인 (`npx supabase db push`)
+  - 마이그레이션 상태 문서 생성 (`docs/migration_status.md`)
+  - 마이그레이션 실행 방법 및 문제 해결 체크리스트 작성
+
+- 왜 했나
+  - 사용자 요청: "아무것도 안나온다. 현재까지 마이그레이션 확인"
+  - 마이그레이션 적용 여부 확인 필요
+  - 문제 진단을 위한 체계적 문서화
+
+- 변경 파일
+  - `docs/migration_status.md` (신규)
+    - 마이그레이션 파일 목록 (총 9개 브랜드 포트폴리오 관련)
+    - 마이그레이션 실행 상태 확인 결과
+    - 문제 해결 체크리스트
+
+- 확인 결과
+  - ✅ 원격 데이터베이스 마이그레이션 적용 완료: "Remote database is up to date"
+  - ✅ 마이그레이션 파일 모두 존재 (20251219000000 ~ 20251219000008)
+  - ⚠️ 데이터 표시 문제 가능성: API 응답 또는 RLS 정책 확인 필요
+
+- 남은 일
+  - 브라우저 콘솔에서 에러 확인
+  - 네트워크 탭에서 API 응답 확인
+  - Supabase RLS 정책 확인
+  - 환경 변수 확인
+
+### 작업: 진행사항 히스토리 및 원가 흐름 분석 기능 추가
+
+- 무엇을 했나
+  - `order_progress_history` 테이블 생성 마이그레이션 (SQL로 직접 생성)
+    - 진행사항, 원가 흐름 분석, 세부 히스토리 저장
+  - 진행사항 조회 API 엔드포인트 생성 (`/api/brand/orders/progress`)
+    - 주문번호 또는 주문 ID로 진행사항 조회
+  - 프론트엔드 진행사항 UI 추가
+    - 주문번호 클릭 시 진행사항 모달 표시
+    - 각 제품별 진행사항 타임라인 표시
+    - 원가 흐름 분석 차트 표시
+    - 버킷햇, 클러치백, 티셔츠, 맨투맨 모든 제품에 적용
+
+- 왜 했나
+  - 사용자 요청: "진행사항, 원가흐름 분석, 진행 세부 히스토리 등은 어디에 두지?"
+  - 주문 진행 상황을 체계적으로 추적하고 관리하기 위함
+  - 원가 흐름을 시각화하여 비용 분석 용이
+
+- 변경 파일
+  - `src/app/api/brand/orders/progress/route.ts` (신규)
+  - `src/app/admin/brand/page.tsx`
+    - 진행사항 상태 관리 추가 (`progressHistory`, `selectedOrderNumber`, `showProgressModal`)
+    - `loadProgressHistory`, `handleOrderNumberClick` 함수 추가
+    - 진행사항 타임라인 컴포넌트 추가
+    - 원가 흐름 분석 차트 컴포넌트 추가
+    - 진행사항 모달 컴포넌트 추가
+    - 모든 제품(버킷햇, 클러치백, 티셔츠, 맨투맨)에 적용
+
+- 남은 일
+  - 진행사항 데이터 입력 (샘플 데이터는 이미 입력됨)
+  - 진행사항 추가/수정 기능 (관리자용)
+
+### 작업: 브랜드 포트폴리오 모든 제품 탭 구현 완료
+
+- 무엇을 했나
+  - 모든 제품(클러치백, 티셔츠, 맨투맨)의 specifications에 가격 정보 추가 마이그레이션 (`20251219000008_update_all_products_specifications.sql`)
+    - 클러치백: 정상판매가 89,000원, 할인가 59,000원, 할인율 34%
+    - 티셔츠: 정상판매가 79,000원, 할인가 49,000원, 할인율 38%
+    - 맨투맨: 정상판매가 89,000원, 할인가 59,000원, 할인율 34%
+  - 프론트엔드 모든 제품 탭 구현 (`src/app/admin/brand/page.tsx`)
+    - 클러치백 탭: 가격 정보 카드 4개, 최종 제작 제품 테이블 (파우치 1: 2개, 파우치 2: 2개)
+    - 티셔츠 탭: 가격 정보 카드 4개, 최종 제작 제품 테이블 (화이트 L: 2개)
+    - 맨투맨 탭: 가격 정보 카드 4개, 최종 제작 제품 테이블 (아이보리 10개, 검정 1개)
+    - 각 제품별 마플 링크 연결
+
+- 왜 했나
+  - 사용자 요청: "하나씩 모두 구현해"
+  - 원본 HTML 파일(`product_comparison.html`)의 모든 제품 섹션 구조 확인 후 동일하게 구현
+  - 베이직 볼캡, 버킷햇과 동일한 구조로 일관성 유지
+
+- 변경 파일
+  - `supabase/migrations/20251219000008_update_all_products_specifications.sql` (신규)
+  - `src/app/admin/brand/page.tsx`
+    - `progressSubTab === 'pouches'` 조건 추가 (클러치백)
+    - `progressSubTab === 't-shirts'` 조건 추가 (티셔츠)
+    - `progressSubTab === 'sweatshirts'` 조건 추가 (맨투맨)
+    - 각 제품별 가격 정보 및 제작 제품 테이블 UI 구현
+
+- 남은 일
+  - 원본 HTML의 "원가 흐름 분석" 및 "진행 상황" 테이블도 추가 구현 필요 (선택사항)
+
+### 작업: 브랜드 포트폴리오 버킷햇 탭 구현 및 데이터베이스 업데이트
+
+- 무엇을 했나
+  - 버킷햇 제품의 specifications에 가격 정보 추가 마이그레이션 (`20251219000007_update_bucket_hat_specifications.sql`)
+    - normal_price: 79,000원
+    - discount_price: 49,000원
+    - discount_rate: 38%
+  - 프론트엔드 버킷햇 탭 구현 (`src/app/admin/brand/page.tsx`)
+    - "진행 상황" 탭 내 "버킷햇" 하위 탭 클릭 시 상세 정보 표시
+    - 가격 정보 카드 4개 (원가, 정상판매가, 할인가, 할인율)
+    - 최종 제작 제품 테이블 (블랙 5개, 화이트 5개)
+    - 주문별 마플 링크 연결 (색상별 다른 링크)
+
+- 왜 했나
+  - 사용자 요청: "버킷햇은? 원래 파일을 하나씩 확인해서 똑같이 만들고 데이터베이스화해"
+  - 원본 HTML 파일(`product_comparison.html`)의 버킷햇 섹션 구조 확인 후 동일하게 구현
+  - 베이직 볼캡과 동일한 구조로 일관성 유지
+
+- 변경 파일
+  - `supabase/migrations/20251219000007_update_bucket_hat_specifications.sql` (신규)
+  - `src/app/admin/brand/page.tsx`
+    - `progressSubTab === 'bucket-hats'` 조건 추가
+    - 버킷햇 가격 정보 및 제작 제품 테이블 UI 구현
+
+- 남은 일
+  - 클러치백, 티셔츠, 맨투맨 탭도 동일한 구조로 구현 필요
+  - 원본 HTML의 "원가 흐름 분석" 및 "진행 상황" 테이블도 추가 구현 필요
+
+### 작업: 브랜드 포트폴리오 상품소싱 탭 구현
+
+- 무엇을 했나
+  - 상품소싱 데이터 마이그레이션 스크립트 작성 (`20251219000006_insert_product_sourcing_data.sql`)
+    - 볼캡, 버킷햇, 클러치백, 티셔츠, 맨투맨 카테고리별 제품 데이터 입력
+    - 각 제품의 스펙, 가격표, 사이즈 정보, 추천 점수 포함
+  - 상품소싱 API 엔드포인트 생성 (`/api/brand/sourcing`)
+    - 카테고리별 필터링 지원
+    - 업체 및 카테고리 정보 조인
+  - 프론트엔드 상품소싱 탭 구현
+    - 카테고리별 탭 네비게이션 (볼캡, 버킷햇, 클러치백, 티셔츠, 맨투맨)
+    - 제품 카드 형태로 표시 (순위, 이미지, 스펙, 가격표, 마플 링크)
+    - 반응형 그리드 레이아웃
+
+- 왜 했나
+  - 사용자 요청: "상품소싱은 아무것도 안나오는데?" 문제 해결
+  - HTML 파일에서 상품소싱 데이터 구조 확인 후 데이터베이스화 필요
+  - 마플 제품 비교 및 분석 기능 제공
+
+- 변경 파일
+  - `supabase/migrations/20251219000006_insert_product_sourcing_data.sql` (신규)
+  - `src/app/api/brand/sourcing/route.ts` (신규)
+  - `src/app/admin/brand/page.tsx`
+    - 상태 추가: `sourcingData`, `sourcingCategory`
+    - 상품소싱 탭 UI 구현: 카테고리 탭, 제품 카드 그리드
+
+- 남은 일
+  - HTML 파일의 모든 상품소싱 데이터 추출 및 입력 (현재는 샘플 데이터만 입력)
+  - 이미지 경로 확인 및 수정 필요
+  - 가격표 데이터 완전 입력
+
 ## 변경 이력 - 2025-09-30
 
 ### 작업: 나수진 급여명세서 스케줄 연동 및 옵션화
@@ -235,6 +667,75 @@ MASLABS의 출근 관리 시스템을 개선하고 최적화하는 프로젝트�
 **마지막 업데이트**: 2025년 1월 9일 - 대시보드 개인 KPI에 방문 예약 건수 추가 완료
 **담당자**: AI Assistant
 **상태**: 방문 예약 건수 추가 완료, Git 배포 준비
+
+## 변경 이력 - 2025-12-19
+
+### 작업: 브랜드 포트폴리오 데이터베이스화 및 API 구현
+
+- 무엇을 했나
+  - 데이터베이스 스키마 생성
+    - `supabase/migrations/20251219000000_create_brand_portfolio_tables.sql` 생성
+    - 7개 테이블 생성: brands, product_categories, products, brand_orders, suppliers, product_sourcing, product_designs
+    - RLS 정책 설정 및 인덱스 생성
+  - 초기 데이터 입력
+    - `supabase/migrations/20251219000001_insert_brand_orders_data.sql` 생성
+    - 브랜드 6개, 제품 카테고리 5개, 업체 1개 초기 데이터 입력
+    - 기존 주문 데이터 5건 입력 (완료 4건, 진행중 1건)
+  - API 라우트 생성
+    - `/api/brand/dashboard` - 대시보드 통계 API
+    - `/api/brand/orders` - 주문 목록 API
+    - `/api/brand/brands` - 브랜드 목록 API
+  - 프론트엔드 데이터 연동
+    - 진행 상황 탭: API에서 데이터를 가져와 동적으로 표시
+    - 브랜드 탭: API에서 브랜드 목록 및 통계 표시
+    - 로딩 상태 및 에러 처리 추가
+  - 계획 문서 작성
+    - `/docs/brand-portfolio-database-plan.md` 작성
+
+- 왜 했나
+  - 하드코딩된 샘플 데이터를 실제 데이터베이스 연동으로 전환
+  - 동적 데이터 표시를 통한 실시간 정보 제공
+  - 확장 가능한 데이터 구조 구축
+
+- 변경 파일
+  - `supabase/migrations/20251219000000_create_brand_portfolio_tables.sql` - 테이블 생성
+  - `supabase/migrations/20251219000001_insert_brand_orders_data.sql` - 초기 데이터
+  - `src/app/api/brand/dashboard/route.ts` - 대시보드 API
+  - `src/app/api/brand/orders/route.ts` - 주문 API
+  - `src/app/api/brand/brands/route.ts` - 브랜드 API
+  - `src/app/admin/brand/page.tsx` - 프론트엔드 데이터 연동
+  - `docs/brand-portfolio-database-plan.md` - 계획 문서
+
+- 남은 일
+  - 데이터베이스 마이그레이션 실행 (Supabase에 적용)
+  - 나머지 탭 구현 (상품소싱, 디자인 빌드업, 업체 조사)
+  - `assets/` 및 `images/` 폴더를 `public/`으로 이동
+  - 이미지 경로 수정 및 최적화
+
+---
+
+### 작업: 브랜드 포트폴리오 메뉴 구성 및 기본 페이지 생성
+
+- 무엇을 했나
+  - `src/lib/permissions.ts`에 브랜드 포트폴리오 메뉴 추가
+    - 경로: `/admin/brand`
+    - 권한: admin, manager
+    - 아이콘: Package
+    - 설명: 브랜드 굿즈 제작 진행 현황 및 포트폴리오 관리
+  - `src/app/admin/brand/page.tsx` 기본 페이지 생성
+    - 인증 및 권한 체크 (관리자/매니저만 접근)
+    - 5개 탭 구조 구현 (진행 상황, 상품소싱, 디자인 빌드업, 브랜드, 업체 조사)
+    - 기본 레이아웃 및 네비게이션 구현
+    - 마이그레이션 준비 완료 상태 표시
+
+- 왜 했나
+  - MAS Brand Labs 마이그레이션 가이드에 따라 브랜드 포트폴리오를 maslabs.kr에 통합
+  - 관리자 메뉴 구조와 일관성 유지
+  - 향후 마이그레이션된 데이터를 표시할 기본 구조 준비
+
+- 변경 파일
+  - `src/lib/permissions.ts` - 브랜드 메뉴 추가
+  - `src/app/admin/brand/page.tsx` - 새 페이지 생성
 
 ## 변경 이력 - 2025-12-01
 

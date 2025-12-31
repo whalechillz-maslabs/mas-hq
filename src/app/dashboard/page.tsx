@@ -12,7 +12,7 @@ import {
   Phone, ShoppingCart, Award, BarChart3, LogOut, Bell,
   ChevronUp, ChevronDown, Briefcase, UserPlus, Settings, User, Building2,
   Star, TrendingDown, CheckCircle, AlertCircle, Trophy, Zap, Menu, FileText, Calculator,
-  Package, Eye, Siren, CheckSquare, Edit, X
+  Package, Eye, Siren, CheckSquare, Edit, X, CalendarDays
 } from 'lucide-react';
 
 interface SharedTask {
@@ -1883,7 +1883,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold text-gray-800 mb-4">빠른 메뉴</h2>
           
           {/* 모든 직원 메뉴 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
             <button 
               onClick={() => router.push('/schedules')}
               className="p-6 bg-blue-50 border-2 border-blue-200 rounded-2xl hover:bg-blue-100 transition-all duration-200 text-left"
@@ -1928,10 +1928,19 @@ export default function DashboardPage() {
               <h3 className="font-bold text-lg text-indigo-900 mb-2">출근 체크</h3>
               <p className="text-sm text-indigo-700">출근 체크 및 근무 기록</p>
             </button>
+
+            <button 
+              onClick={() => router.push('/leave')}
+              className="p-6 bg-pink-50 border-2 border-pink-200 rounded-2xl hover:bg-pink-100 transition-all duration-200 text-left"
+            >
+              <CalendarDays className="h-10 w-10 text-pink-600 mb-3" />
+              <h3 className="font-bold text-lg text-pink-900 mb-2">연차 신청</h3>
+              <p className="text-sm text-pink-700">연차 신청 및 잔여일 조회</p>
+            </button>
             
                   <button
               onClick={() => router.push('/profile')}
-              className="p-6 bg-pink-50 border-2 border-pink-200 rounded-2xl hover:bg-pink-100 transition-all duration-200 text-left"
+              className="p-6 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:bg-gray-100 transition-all duration-200 text-left"
             >
               <User className="h-10 w-10 text-pink-600 mb-3" />
               <h3 className="font-bold text-lg text-pink-900 mb-2">개인정보 관리</h3>
@@ -1956,6 +1965,16 @@ export default function DashboardPage() {
                 관리자 전용 기능
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* 브랜드 포트폴리오 버튼 */}
+                <button 
+                  onClick={() => router.push('/admin/brand')}
+                  className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-2xl hover:bg-purple-200 hover:shadow-md transition-all duration-200 text-left"
+                >
+                  <Package className="h-10 w-10 text-purple-600 mb-3" />
+                  <h3 className="font-bold text-lg text-purple-900 mb-2">브랜드 포트폴리오</h3>
+                  <p className="text-sm text-purple-700">제품 원가 분석 및 주문 관리</p>
+                </button>
+                
                 <button 
                   onClick={() => router.push('/admin/system-settings')}
                   className="p-6 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:bg-gray-100 transition-all duration-200 text-left"

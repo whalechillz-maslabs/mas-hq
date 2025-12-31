@@ -40,6 +40,10 @@ interface LeaveRequest {
   approved_by?: string;
   approved_at?: string;
   rejection_reason?: string;
+  leave_type?: 'annual' | 'monthly' | 'sick' | 'special' | 'other';
+  leave_days?: number;
+  is_special_leave?: boolean;
+  is_monthly_leave?: boolean;
   employees?: Employee;
 }
 
@@ -54,6 +58,8 @@ export default function LeaveManagementPage() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | null>(null);
 
   // 연차 잔여 관리용 상태
   const [newBalance, setNewBalance] = useState({
@@ -68,31 +74,56 @@ export default function LeaveManagementPage() {
     employee_id: '',
     start_date: '',
     end_date: '',
-    reason: ''
+    reason: '',
+    leave_type: 'annual' as 'annual' | 'monthly' | 'sick' | 'special' | 'other',
+    is_special_leave: false,
+    is_monthly_leave: false
   });
 
   useEffect(() => {
     loadData();
   }, []);
 
-  // 연차 일수 자동 계산 함수 (연차 기산일 기준)
-  const calculateLeaveDays = (anniversaryDate: string, hireDate?: string) => {
-    // 연차 기산일이 있으면 그것을 사용, 없으면 입사일 사용
-    const baseDate = anniversaryDate || hireDate;
-    if (!baseDate) return 0;
+  // 연차 일수 자동 계산 함수 (근로기준법 기준)
+  const calculateLeaveDays = (anniversaryDate: string, hireDate?: string, targetYear?: number): number => {
+    if (!anniversaryDate) return 0;
     
-    const base = new Date(baseDate);
-    const currentYear = new Date().getFullYear();
-    const yearsWorked = currentYear - base.getFullYear();
+    const anniversary = new Date(anniversaryDate);
+    const currentYear = targetYear || new Date().getFullYear();
+    const anniversaryYear = anniversary.getFullYear();
     
-    // 1년 미만: 0일, 1년 이상: 11일부터 시작
-    if (yearsWorked < 1) return 0;
-    if (yearsWorked < 2) return 11;
-    if (yearsWorked < 3) return 12;
-    if (yearsWorked < 4) return 14;
-    if (yearsWorked < 5) return 15;
-    if (yearsWorked < 6) return 16;
-    return 20; // 6년 이상
+    // 입사 연도 (1년 미만)
+    if (currentYear === anniversaryYear) {
+      // 남은 개월 수만큼 발생 (최대 11일)
+      const remainingMonths = 12 - anniversary.getMonth();
+      return Math.min(remainingMonths, 11);
+    }
+    
+    // 1년 이상 근로자
+    const yearsWorked = currentYear - anniversaryYear;
+    
+    // 1년차: 15일
+    if (yearsWorked === 1) return 15;
+    
+    // 2년차: 15일
+    if (yearsWorked === 2) return 15;
+    
+    // 3년차부터 2년마다 1일씩 추가 (최대 25일)
+    if (yearsWorked >= 3) {
+      return Math.min(15 + Math.floor((yearsWorked - 1) / 2), 25);
+    }
+    
+    return 0;
+  };
+
+  // 휴가 기간 일수 계산 함수
+  const calculateRequestDays = (startDate: string, endDate: string): number => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
   };
 
   const loadData = async () => {
@@ -192,38 +223,82 @@ export default function LeaveManagementPage() {
 
   const handleAddBalance = async () => {
     try {
-      const { error } = await supabase
-        .from('leave_balance')
-        .insert({
-          employee_id: newBalance.employee_id,
-          year: newBalance.year,
-          total_days: newBalance.total_days,
-          used_days: 0,
-          leave_anniversary_date: newBalance.leave_anniversary_date
-        });
+      if (isEditMode && selectedBalance) {
+        // 수정 모드
+        const { error } = await supabase
+          .from('leave_balance')
+          .update({
+            total_days: newBalance.total_days,
+            leave_anniversary_date: newBalance.leave_anniversary_date || null
+          })
+          .eq('id', selectedBalance.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // 직원의 연차 기산일도 업데이트
-      if (newBalance.leave_anniversary_date) {
-        await supabase
-          .from('employees')
-          .update({ leave_anniversary_date: newBalance.leave_anniversary_date })
-          .eq('id', newBalance.employee_id);
+        // 직원의 연차 기산일도 업데이트
+        if (newBalance.leave_anniversary_date) {
+          await supabase
+            .from('employees')
+            .update({ leave_anniversary_date: newBalance.leave_anniversary_date })
+            .eq('id', newBalance.employee_id);
+        }
+
+        alert('연차 잔여일이 수정되었습니다.');
+      } else {
+        // 추가 모드 (UPSERT 사용 - 중복 시 업데이트)
+        const { error } = await supabase
+          .from('leave_balance')
+          .upsert({
+            employee_id: newBalance.employee_id,
+            year: newBalance.year,
+            total_days: newBalance.total_days,
+            used_days: 0,
+            leave_anniversary_date: newBalance.leave_anniversary_date || null
+          }, {
+            onConflict: 'employee_id,year'
+          });
+
+        if (error) throw error;
+
+        // 직원의 연차 기산일도 업데이트
+        if (newBalance.leave_anniversary_date) {
+          await supabase
+            .from('employees')
+            .update({ leave_anniversary_date: newBalance.leave_anniversary_date })
+            .eq('id', newBalance.employee_id);
+        }
+
+        alert('연차 잔여일이 추가되었습니다.');
       }
 
-      alert('연차 잔여일이 추가되었습니다.');
       setShowAddModal(false);
+      setIsEditMode(false);
+      setSelectedBalance(null);
       setNewBalance({ employee_id: '', year: new Date().getFullYear(), total_days: 11, leave_anniversary_date: '' });
       loadData();
     } catch (error) {
-      console.error('연차 잔여일 추가 오류:', error);
-      alert('연차 잔여일 추가에 실패했습니다.');
+      console.error('연차 잔여일 처리 오류:', error);
+      alert(isEditMode ? '연차 잔여일 수정에 실패했습니다.' : '연차 잔여일 추가에 실패했습니다.');
     }
+  };
+
+  const handleEditBalance = (balance: LeaveBalance) => {
+    setSelectedBalance(balance);
+    setIsEditMode(true);
+    setNewBalance({
+      employee_id: balance.employee_id,
+      year: balance.year,
+      total_days: balance.total_days,
+      leave_anniversary_date: balance.leave_anniversary_date || ''
+    });
+    setShowAddModal(true);
   };
 
   const handleRequestLeave = async () => {
     try {
+      // 사용 일수 계산
+      const leaveDays = calculateRequestDays(newRequest.start_date, newRequest.end_date);
+
       const { error } = await supabase
         .from('leave_requests')
         .insert({
@@ -231,32 +306,132 @@ export default function LeaveManagementPage() {
           start_date: newRequest.start_date,
           end_date: newRequest.end_date,
           reason: newRequest.reason,
+          leave_type: newRequest.leave_type,
+          leave_days: leaveDays,
+          is_special_leave: newRequest.is_special_leave,
+          is_monthly_leave: newRequest.is_monthly_leave,
           status: 'pending'
         });
 
       if (error) throw error;
 
-      alert('연차 신청이 완료되었습니다.');
+      alert('휴가 신청이 완료되었습니다.');
       setShowRequestModal(false);
-      setNewRequest({ employee_id: '', start_date: '', end_date: '', reason: '' });
+      setNewRequest({ 
+        employee_id: '', 
+        start_date: '', 
+        end_date: '', 
+        reason: '',
+        leave_type: 'annual',
+        is_special_leave: false,
+        is_monthly_leave: false
+      });
       loadData();
     } catch (error) {
-      console.error('연차 신청 오류:', error);
-      alert('연차 신청에 실패했습니다.');
+      console.error('휴가 신청 오류:', error);
+      alert('휴가 신청에 실패했습니다.');
     }
   };
 
   const handleApproveRequest = async (requestId: string) => {
     try {
-      const { error } = await supabase
+      // 1. 신청 정보 조회
+      const { data: request, error: fetchError } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. 사용 일수 계산
+      const daysDiff = calculateRequestDays(request.start_date, request.end_date);
+
+      // 3. 현재 사용자 정보 가져오기
+      const { data: { user } } = await supabase.auth.getUser();
+      const approvedBy = user?.id;
+
+      // 4. 특별연차는 연차 잔여일에 차감하지 않음
+      if (request.leave_type === 'special' || request.is_special_leave) {
+        const { error: approveError } = await supabase
+          .from('leave_requests')
+          .update({
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            approved_by: approvedBy,
+            leave_days: daysDiff
+          })
+          .eq('id', requestId);
+
+        if (approveError) throw approveError;
+        alert('특별연차가 승인되었습니다. (연차 잔여일에 차감되지 않음)');
+        loadData();
+        return;
+      }
+
+      // 5. 월차는 연차 잔여일에 차감하지 않음
+      if (request.leave_type === 'monthly' || request.is_monthly_leave) {
+        const { error: approveError } = await supabase
+          .from('leave_requests')
+          .update({
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            approved_by: approvedBy,
+            leave_days: daysDiff
+          })
+          .eq('id', requestId);
+
+        if (approveError) throw approveError;
+        alert('월차가 승인되었습니다. (연차 잔여일에 차감되지 않음)');
+        loadData();
+        return;
+      }
+
+      // 6. 연차인 경우 잔여일 확인 및 차감
+      const startDate = new Date(request.start_date);
+      const { data: balance, error: balanceError } = await supabase
+        .from('leave_balance')
+        .select('*')
+        .eq('employee_id', request.employee_id)
+        .eq('year', startDate.getFullYear())
+        .single();
+
+      if (balanceError) throw balanceError;
+
+      // 잔여일 부족 시 경고
+      if (balance.remaining_days < daysDiff) {
+        const confirm = window.confirm(
+          `⚠️ 잔여 연차가 부족합니다.\n\n` +
+          `잔여 연차: ${balance.remaining_days}일\n` +
+          `신청 일수: ${daysDiff}일\n` +
+          `부족: ${daysDiff - balance.remaining_days}일\n\n` +
+          `그래도 승인하시겠습니까? (미사용 연차 발생 가능)`
+        );
+        if (!confirm) return;
+      }
+
+      // 7. 연차 잔여일 차감
+      const { error: updateError } = await supabase
+        .from('leave_balance')
+        .update({ 
+          used_days: balance.used_days + daysDiff 
+        })
+        .eq('id', balance.id);
+
+      if (updateError) throw updateError;
+
+      // 8. 신청 상태를 승인으로 변경
+      const { error: approveError } = await supabase
         .from('leave_requests')
         .update({
           status: 'approved',
-          approved_at: new Date().toISOString()
+          approved_at: new Date().toISOString(),
+          approved_by: approvedBy,
+          leave_days: daysDiff
         })
         .eq('id', requestId);
 
-      if (error) throw error;
+      if (approveError) throw approveError;
 
       alert('연차 신청이 승인되었습니다.');
       loadData();
@@ -302,6 +477,28 @@ export default function LeaveManagementPage() {
       case 'rejected': return '반려';
       case 'pending': return '대기';
       default: return '알 수 없음';
+    }
+  };
+
+  const getLeaveTypeText = (leaveType?: string) => {
+    switch (leaveType) {
+      case 'annual': return '연차';
+      case 'monthly': return '월차';
+      case 'sick': return '병가';
+      case 'special': return '특별연차';
+      case 'other': return '기타';
+      default: return '연차';
+    }
+  };
+
+  const getLeaveTypeColor = (leaveType?: string) => {
+    switch (leaveType) {
+      case 'annual': return 'bg-blue-100 text-blue-800';
+      case 'monthly': return 'bg-purple-100 text-purple-800';
+      case 'sick': return 'bg-red-100 text-red-800';
+      case 'special': return 'bg-yellow-100 text-yellow-800';
+      case 'other': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-blue-100 text-blue-800';
     }
   };
 
@@ -455,6 +652,9 @@ export default function LeaveManagementPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         사용률
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        액션
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -507,6 +707,15 @@ export default function LeaveManagementPage() {
                               <span className="text-sm text-gray-600">{usageRate.toFixed(1)}%</span>
                             </div>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleEditBalance(balance)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span>수정</span>
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -534,6 +743,12 @@ export default function LeaveManagementPage() {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         휴가 기간
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        휴가 유형
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        일수
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         사유
@@ -571,6 +786,14 @@ export default function LeaveManagementPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {new Date(request.start_date).toLocaleDateString('ko-KR')} ~ {new Date(request.end_date).toLocaleDateString('ko-KR')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLeaveTypeColor(request.leave_type)}`}>
+                            {getLeaveTypeText(request.leave_type)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {request.leave_days || calculateRequestDays(request.start_date, request.end_date)}일
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                           {request.reason}
@@ -655,11 +878,13 @@ export default function LeaveManagementPage() {
           </div>
         )}
 
-        {/* 연차 잔여일 추가 모달 */}
+        {/* 연차 잔여일 추가/수정 모달 */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">연차 잔여일 추가</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {isEditMode ? '연차 잔여일 수정' : '연차 잔여일 추가'}
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">직원 선택</label>
@@ -676,7 +901,10 @@ export default function LeaveManagementPage() {
                         leave_anniversary_date: anniversaryDate || ''
                       });
                     }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isEditMode}
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
                   >
                     <option value="">직원을 선택하세요</option>
                     {employees
@@ -687,16 +915,37 @@ export default function LeaveManagementPage() {
                         </option>
                       ))}
                   </select>
+                  {isEditMode && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      💡 수정 모드에서는 직원을 변경할 수 없습니다.
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">연도</label>
-                  <input
-                    type="number"
-                    value={newBalance.year}
-                    onChange={(e) => setNewBalance({ ...newBalance, year: parseInt(e.target.value) })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                {isEditMode && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">연도</label>
+                    <input
+                      type="number"
+                      value={newBalance.year}
+                      disabled
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      💡 수정 모드에서는 연도를 변경할 수 없습니다.
+                    </p>
+                  </div>
+                )}
+                {!isEditMode && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">연도</label>
+                    <input
+                      type="number"
+                      value={newBalance.year}
+                      onChange={(e) => setNewBalance({ ...newBalance, year: parseInt(e.target.value) })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">연차 기산일</label>
                   <input
@@ -743,7 +992,12 @@ export default function LeaveManagementPage() {
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setIsEditMode(false);
+                    setSelectedBalance(null);
+                    setNewBalance({ employee_id: '', year: new Date().getFullYear(), total_days: 11, leave_anniversary_date: '' });
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   취소
@@ -752,7 +1006,7 @@ export default function LeaveManagementPage() {
                   onClick={handleAddBalance}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  추가
+                  {isEditMode ? '수정' : '추가'}
                 </button>
               </div>
             </div>
@@ -801,15 +1055,56 @@ export default function LeaveManagementPage() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    휴가 유형 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newRequest.leave_type}
+                    onChange={(e) => {
+                      const leaveType = e.target.value as any;
+                      setNewRequest({ 
+                        ...newRequest, 
+                        leave_type: leaveType,
+                        is_special_leave: leaveType === 'special',
+                        is_monthly_leave: leaveType === 'monthly'
+                      });
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="annual">연차 (법정)</option>
+                    <option value="monthly">월차 (복리후생)</option>
+                    <option value="special">특별연차 (회사 재량)</option>
+                    <option value="sick">병가</option>
+                    <option value="other">기타</option>
+                  </select>
+                  {newRequest.leave_type === 'special' && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      💡 특별연차는 연차 잔여일에 차감되지 않습니다. (예: 1월 1일 추가 휴가)
+                    </p>
+                  )}
+                  {newRequest.leave_type === 'monthly' && (
+                    <p className="text-sm text-purple-600 mt-1">
+                      💡 월차는 연차와 별도로 관리됩니다.
+                    </p>
+                  )}
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">사유</label>
                   <textarea
                     value={newRequest.reason}
                     onChange={(e) => setNewRequest({ ...newRequest, reason: e.target.value })}
                     rows={3}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="연차 사용 사유를 입력하세요"
+                    placeholder="휴가 사용 사유를 입력하세요"
                   />
                 </div>
+                {newRequest.start_date && newRequest.end_date && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      📅 신청 일수: <span className="font-semibold">{calculateRequestDays(newRequest.start_date, newRequest.end_date)}일</span>
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
