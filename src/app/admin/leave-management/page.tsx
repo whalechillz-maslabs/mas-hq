@@ -1082,6 +1082,20 @@ export default function LeaveManagementPage() {
                                 <XCircle className="h-4 w-4" />
                                 <span>반려</span>
                               </button>
+                              <button
+                                onClick={() => handleEditRequest(request)}
+                                className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span>수정</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRequest(request.id)}
+                                className="text-red-600 hover:text-red-900 flex items-center space-x-1"
+                              >
+                                <Trash className="h-4 w-4" />
+                                <span>삭제</span>
+                              </button>
                             </div>
                           )}
                         </td>
