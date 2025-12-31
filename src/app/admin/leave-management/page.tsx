@@ -6,7 +6,7 @@ import { supabase, auth } from '@/lib/supabase';
 import { 
   Calendar, User, Clock, CheckCircle, XCircle, AlertCircle,
   Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, 
-  CalendarDays, Users, TrendingUp, FileText, Award
+  CalendarDays, Users, TrendingUp, FileText, Award, RefreshCw
 } from 'lucide-react';
 
 interface Employee {
@@ -386,6 +386,87 @@ export default function LeaveManagementPage() {
 
       if (editingRequestId) {
         // 수정 모드
+        // 기존 신청 정보 가져오기
+        const { data: oldRequest, error: fetchError } = await supabase
+          .from('leave_requests')
+          .select('*')
+          .eq('id', editingRequestId)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        const oldDays = oldRequest.leave_days || calculateRequestDays(oldRequest.start_date, oldRequest.end_date);
+        const newDays = leaveDays;
+
+        // 승인된 신청 수정 시 연차 차감 조정
+        if (oldRequest.status === 'approved') {
+          const startDate = new Date(newRequest.start_date);
+          const { data: balance, error: balanceError } = await supabase
+            .from('leave_balance')
+            .select('*')
+            .eq('employee_id', newRequest.employee_id)
+            .eq('year', startDate.getFullYear())
+            .single();
+
+          if (balanceError) throw balanceError;
+
+          // 기존 차감분 복구 후 새 차감분 적용
+          const daysDifference = newDays - oldDays;
+          
+          // 특별연차는 차감하지 않음
+          if (newRequest.leave_type !== 'special' && !newRequest.is_special_leave) {
+            const newUsedDays = balance.used_days + daysDifference;
+            
+            if (newUsedDays < 0) {
+              alert('연차 사용일수가 음수가 될 수 없습니다.');
+              return;
+            }
+
+            const { error: updateError } = await supabase
+              .from('leave_balance')
+              .update({ 
+                used_days: newUsedDays 
+              })
+              .eq('id', balance.id);
+
+            if (updateError) throw updateError;
+          }
+
+          // 신청 정보 업데이트
+          const { error } = await supabase
+            .from('leave_requests')
+            .update({
+              start_date: newRequest.start_date,
+              end_date: newRequest.end_date,
+              reason: newRequest.reason,
+              leave_type: newRequest.leave_type,
+              is_special_leave: newRequest.is_special_leave,
+              is_monthly_leave: newRequest.is_monthly_leave,
+              leave_days: newDays,
+              updated_at: koreaDateTime
+            })
+            .eq('id', editingRequestId);
+
+          if (error) throw error;
+
+          alert(`승인된 연차 신청이 수정되었습니다.${daysDifference !== 0 ? ` (연차 차감: ${daysDifference > 0 ? '+' : ''}${daysDifference}일)` : ''}`);
+          setShowRequestModal(false);
+          setEditingRequestId(null);
+          setSelectedEmployee('');
+          setNewRequest({ 
+            employee_id: '', 
+            start_date: '', 
+            end_date: '', 
+            reason: '',
+            leave_type: 'annual',
+            is_special_leave: false,
+            is_monthly_leave: false
+          });
+          loadData();
+          return;
+        }
+
+        // pending 신청 수정 (기존 로직)
         const { error } = await supabase
           .from('leave_requests')
           .update({
@@ -561,10 +642,117 @@ export default function LeaveManagementPage() {
     }
   };
 
-  // 연차 신청 수정 함수
+  // 승인 취소 함수 (연차 잔여일 복구)
+  const handleCancelApproval = async (requestId: string) => {
+    if (!confirm('승인된 연차 신청을 취소하시겠습니까? 연차 잔여일이 복구됩니다.')) return;
+    
+    try {
+      // 1. 신청 정보 가져오기
+      const { data: request, error: fetchError } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (request.status !== 'approved') {
+        alert('승인된 신청만 취소할 수 있습니다.');
+        return;
+      }
+
+      // 2. 특별연차는 연차 차감이 없었으므로 복구 불필요
+      if (request.leave_type === 'special' || request.is_special_leave) {
+        const { error } = await supabase
+          .from('leave_requests')
+          .update({
+            status: 'pending',
+            approved_at: null,
+            approved_by: null,
+            leave_days: null
+          })
+          .eq('id', requestId);
+
+        if (error) throw error;
+        alert('특별연차 승인이 취소되었습니다.');
+        loadData();
+        return;
+      }
+
+      // 3. 연차 잔여일 복구
+      const startDate = new Date(request.start_date);
+      const leaveDays = request.leave_days || calculateRequestDays(request.start_date, request.end_date);
+      
+      const { data: balance, error: balanceError } = await supabase
+        .from('leave_balance')
+        .select('*')
+        .eq('employee_id', request.employee_id)
+        .eq('year', startDate.getFullYear())
+        .single();
+
+      if (balanceError) throw balanceError;
+
+      // 4. 사용일수에서 차감 (복구)
+      const newUsedDays = Math.max(0, balance.used_days - leaveDays);
+      const { error: updateError } = await supabase
+        .from('leave_balance')
+        .update({ 
+          used_days: newUsedDays 
+        })
+        .eq('id', balance.id);
+
+      if (updateError) throw updateError;
+
+      // 5. 신청 상태를 pending으로 변경
+      const { error: cancelError } = await supabase
+        .from('leave_requests')
+        .update({
+          status: 'pending',
+          approved_at: null,
+          approved_by: null,
+          leave_days: null
+        })
+        .eq('id', requestId);
+
+      if (cancelError) throw cancelError;
+
+      alert(`승인이 취소되었습니다. 연차 잔여일 ${leaveDays}일이 복구되었습니다.`);
+      loadData();
+    } catch (error) {
+      console.error('승인 취소 오류:', error);
+      alert('승인 취소에 실패했습니다.');
+    }
+  };
+
+  // 반려 취소 함수 (다시 pending으로 변경)
+  const handleCancelRejection = async (requestId: string) => {
+    if (!confirm('반려된 연차 신청을 다시 검토하시겠습니까?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('leave_requests')
+        .update({
+          status: 'pending',
+          rejection_reason: null,
+          approved_at: null
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      alert('반려가 취소되었습니다. 신청이 다시 대기 상태로 변경되었습니다.');
+      loadData();
+    } catch (error) {
+      console.error('반려 취소 오류:', error);
+      alert('반려 취소에 실패했습니다.');
+    }
+  };
+
+  // 연차 신청 수정 함수 (승인된 신청도 수정 가능)
   const handleEditRequest = (request: LeaveRequest) => {
-    if (request.status !== 'pending') {
-      alert('대기 중인 신청만 수정할 수 있습니다.');
+    // pending과 approved 상태 모두 수정 가능
+    if (request.status === 'rejected') {
+      alert('반려된 신청은 수정할 수 없습니다. 반려 취소 후 수정해주세요.');
       return;
     }
     
@@ -1063,41 +1251,84 @@ export default function LeaveManagementPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {request.status === 'pending' && (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleApproveRequest(request.id)}
-                                className="text-green-600 hover:text-green-900 flex items-center space-x-1"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                <span>승인</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const reason = prompt('반려 사유를 입력하세요:');
-                                  if (reason) handleRejectRequest(request.id, reason);
-                                }}
-                                className="text-red-600 hover:text-red-900 flex items-center space-x-1"
-                              >
-                                <XCircle className="h-4 w-4" />
-                                <span>반려</span>
-                              </button>
-                              <button
-                                onClick={() => handleEditRequest(request)}
-                                className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
-                              >
-                                <Edit className="h-4 w-4" />
-                                <span>수정</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteRequest(request.id)}
-                                className="text-red-600 hover:text-red-900 flex items-center space-x-1"
-                              >
-                                <Trash className="h-4 w-4" />
-                                <span>삭제</span>
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex space-x-2 flex-wrap gap-1">
+                            {/* Pending 상태 */}
+                            {request.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveRequest(request.id)}
+                                  className="text-green-600 hover:text-green-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-green-50"
+                                  title="승인"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>승인</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const reason = prompt('반려 사유를 입력하세요:');
+                                    if (reason) handleRejectRequest(request.id, reason);
+                                  }}
+                                  className="text-red-600 hover:text-red-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-red-50"
+                                  title="반려"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  <span>반려</span>
+                                </button>
+                                <button
+                                  onClick={() => handleEditRequest(request)}
+                                  className="text-blue-600 hover:text-blue-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-blue-50"
+                                  title="수정"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  <span>수정</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteRequest(request.id)}
+                                  className="text-red-600 hover:text-red-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-red-50"
+                                  title="삭제"
+                                >
+                                  <Trash className="h-4 w-4" />
+                                  <span>삭제</span>
+                                </button>
+                              </>
+                            )}
+
+                            {/* Approved 상태 */}
+                            {request.status === 'approved' && (
+                              <>
+                                <button
+                                  onClick={() => handleCancelApproval(request.id)}
+                                  className="text-orange-600 hover:text-orange-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-orange-50"
+                                  title="승인 취소 (연차 복구)"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  <span>승인 취소</span>
+                                </button>
+                                <button
+                                  onClick={() => handleEditRequest(request)}
+                                  className="text-blue-600 hover:text-blue-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-blue-50"
+                                  title="승인된 신청 수정"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  <span>수정</span>
+                                </button>
+                              </>
+                            )}
+
+                            {/* Rejected 상태 */}
+                            {request.status === 'rejected' && (
+                              <>
+                                <button
+                                  onClick={() => handleCancelRejection(request.id)}
+                                  className="text-yellow-600 hover:text-yellow-900 flex items-center space-x-1 px-2 py-1 rounded hover:bg-yellow-50"
+                                  title="반려 취소 (다시 대기 상태로)"
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                  <span>반려 취소</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
