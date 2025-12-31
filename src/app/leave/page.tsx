@@ -68,18 +68,20 @@ export default function LeaveRequestPage() {
       { value: 'other', label: '기타' }
     ];
     
-    // 정규직: 연차, 병가, 기타
+    // 정규직: 연차, 특별연차, 병가, 기타
     if (currentUser.employment_type === 'full_time') {
       return [
         { value: 'annual', label: '연차 (법정)' },
+        { value: 'special', label: '특별연차 (복지)' },
         ...baseTypes
       ];
     }
     
-    // 파트타임: 월차, 병가, 기타
+    // 파트타임: 월차, 특별연차, 병가, 기타
     if (currentUser.employment_type === 'part_time') {
       return [
         { value: 'monthly', label: '월차 (복리후생)' },
+        { value: 'special', label: '특별연차 (복지)' },
         ...baseTypes
       ];
     }
@@ -87,6 +89,7 @@ export default function LeaveRequestPage() {
     // 기타 고용 형태: 기본값으로 연차 포함
     return [
       { value: 'annual', label: '연차 (법정)' },
+      { value: 'special', label: '특별연차 (복지)' },
       ...baseTypes
     ];
   };
@@ -709,15 +712,16 @@ export default function LeaveRequestPage() {
                       const date = e.target.value;
                       setNewRequest({ ...newRequest, start_date: date });
                       
-                      // 복지 연차 확인
+                      // 복지 연차 확인 (자동 감지하되, 사용자가 선택한 유형을 유지)
                       const welfareCheck = await checkWelfareLeave(date);
                       if (welfareCheck.isWelfare) {
                         setNewRequest(prev => ({
                           ...prev,
                           start_date: date,
-                          leave_type: 'special',
+                          // 사용자가 이미 특별연차를 선택하지 않은 경우에만 자동 변경
+                          leave_type: prev.leave_type === 'special' ? 'special' : 'special',
                           is_special_leave: true,
-                          reason: welfareCheck.description || '복지 연차'
+                          reason: prev.reason || welfareCheck.description || '복지 연차'
                         }));
                       }
                     }}
@@ -761,7 +765,7 @@ export default function LeaveRequestPage() {
                       setNewRequest({ 
                         ...newRequest, 
                         leave_type: leaveType,
-                        is_special_leave: false, // 특별연차는 자동 감지 시에만 설정
+                        is_special_leave: leaveType === 'special', // 드롭다운에서 선택 시에도 설정
                         is_monthly_leave: leaveType === 'monthly'
                       });
                     }}
@@ -778,9 +782,14 @@ export default function LeaveRequestPage() {
                       💡 월차는 연차와 별도로 관리됩니다.
                     </p>
                   )}
-                  {newRequest.is_special_leave && (
+                  {newRequest.leave_type === 'special' && (
                     <p className="text-sm text-yellow-600 mt-1">
-                      💡 복지 연차로 자동 설정되었습니다. 연차 잔여일에 차감되지 않습니다.
+                      💡 특별연차는 연차 잔여일에 차감되지 않습니다. (예: 창립기념일, 신정 등)
+                    </p>
+                  )}
+                  {newRequest.is_special_leave && newRequest.leave_type !== 'special' && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      💡 복지 연차가 자동으로 감지되었습니다. 휴가 유형을 "특별연차 (복지)"로 변경하시겠습니까?
                     </p>
                   )}
                 </div>
