@@ -561,6 +561,46 @@ export default function LeaveManagementPage() {
     }
   };
 
+  // 연차 신청 수정 함수
+  const handleEditRequest = (request: LeaveRequest) => {
+    if (request.status !== 'pending') {
+      alert('대기 중인 신청만 수정할 수 있습니다.');
+      return;
+    }
+    
+    setEditingRequestId(request.id);
+    setSelectedEmployee(request.employee_id);
+    setNewRequest({
+      employee_id: request.employee_id,
+      start_date: request.start_date,
+      end_date: request.end_date,
+      reason: request.reason || '',
+      leave_type: request.leave_type || 'annual',
+      is_special_leave: request.is_special_leave || false,
+      is_monthly_leave: request.is_monthly_leave || false
+    });
+    setShowRequestModal(true);
+  };
+
+  // 연차 신청 삭제 함수
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!confirm('연차 신청을 삭제하시겠습니까?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('leave_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+      alert('연차 신청이 삭제되었습니다.');
+      loadData();
+    } catch (error) {
+      console.error('연차 신청 삭제 오류:', error);
+      alert('연차 신청 삭제에 실패했습니다.');
+    }
+  };
+
   // 복지 연차 정책 관리 함수
   const loadWelfarePolicies = async () => {
     try {
@@ -1566,7 +1606,20 @@ export default function LeaveManagementPage() {
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => setShowRequestModal(false)}
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setEditingRequestId(null);
+                    setSelectedEmployee('');
+                    setNewRequest({ 
+                      employee_id: '', 
+                      start_date: '', 
+                      end_date: '', 
+                      reason: '',
+                      leave_type: 'annual',
+                      is_special_leave: false,
+                      is_monthly_leave: false
+                    });
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   취소
@@ -1575,7 +1628,7 @@ export default function LeaveManagementPage() {
                   onClick={handleRequestLeave}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  신청
+                  {editingRequestId ? '수정' : '신청'}
                 </button>
               </div>
             </div>
