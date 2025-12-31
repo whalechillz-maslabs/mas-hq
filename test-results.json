@@ -9,9 +9,9 @@
     "globalTimeout": 0,
     "grep": {},
     "grepInvert": null,
-    "maxFailures": 1,
+    "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 1
+      "actualWorkers": 2
     },
     "preserveOutput": "always",
     "reporter": [
@@ -45,7 +45,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "chromium-nightly",
         "name": "chromium-nightly",
@@ -54,14 +54,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 60000
       },
       {
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "chromium-stable",
         "name": "chromium-stable",
@@ -70,14 +70,30 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 60000
       },
       {
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/m2/MASLABS/www.maslabs.kr/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
         },
         "id": "firefox",
         "name": "firefox",
@@ -86,14 +102,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 60000
       },
       {
         "outputDir": "/Users/m2/MASLABS/www.maslabs.kr/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "webkit",
         "name": "webkit",
@@ -102,103 +118,159 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 0
+        "timeout": 60000
       }
     ],
     "shard": null,
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.55.0",
-    "workers": 1,
+    "workers": 4,
     "webServer": null
   },
   "suites": [
     {
-      "title": "supabase-sql-execution.spec.ts",
-      "file": "supabase-sql-execution.spec.ts",
+      "title": "leave-request-logout-test.spec.ts",
+      "file": "leave-request-logout-test.spec.ts",
       "column": 0,
       "line": 0,
-      "specs": [
+      "specs": [],
+      "suites": [
         {
-          "title": "Supabase SQL 실행 - 알림 설정 테이블 생성",
-          "ok": false,
-          "tags": [],
-          "tests": [
+          "title": "연차 신청 시 로그아웃 문제 테스트",
+          "file": "leave-request-logout-test.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
             {
-              "timeout": 0,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium-stable",
-              "projectName": "chromium-stable",
-              "results": [
+              "title": "직원용 연차 신청 페이지 - 다른 직원으로 로그인 후 연차 신청",
+              "ok": true,
+              "tags": [],
+              "tests": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 2479913,
-                  "error": {
-                    "message": "Error: page.goto: Target page, context or browser has been closed",
-                    "stack": "Error: page.goto: Target page, context or browser has been closed\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:7:14",
-                    "location": {
-                      "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts",
-                      "column": 14,
-                      "line": 7
-                    },
-                    "snippet": "   5 |   \n   6 |   // 1. Supabase 대시보드로 이동\n>  7 |   await page.goto('https://supabase.com/dashboard');\n     |              ^\n   8 |   await page.waitForLoadState('networkidle');\n   9 |   \n  10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts",
-                        "column": 14,
-                        "line": 7
-                      },
-                      "message": "Error: page.goto: Target page, context or browser has been closed\n\n   5 |   \n   6 |   // 1. Supabase 대시보드로 이동\n>  7 |   await page.goto('https://supabase.com/dashboard');\n     |              ^\n   8 |   await page.waitForLoadState('networkidle');\n   9 |   \n  10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)\n    at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:7:14"
-                    }
-                  ],
-                  "stdout": [
-                    {
-                      "text": "🚀 Supabase SQL 실행 테스트 시작\n"
-                    }
-                  ],
-                  "stderr": [
-                    {
-                      "text": "(node:22442) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
-                    }
-                  ],
-                  "retry": 0,
-                  "startTime": "2025-09-23T16:15:02.417Z",
+                  "timeout": 60000,
                   "annotations": [],
-                  "attachments": [],
-                  "errorLocation": {
-                    "file": "/Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts",
-                    "column": 14,
-                    "line": 7
-                  }
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4686,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ 로그인 페이지 접근 완료\n"
+                        },
+                        {
+                          "text": "✅ 로그인 정보 입력 완료\n"
+                        },
+                        {
+                          "text": "브라우저 콘솔: error: Failed to load resource: the server responded with a status of 406 ()\n"
+                        },
+                        {
+                          "text": "브라우저 콘솔: error: 로그인 오류: Error: 전화번호를 찾을 수 없습니다.\n    at Object.signInWithPhone (https://www.maslabs.kr/_next/static/chunks/6303-31712f789df58afe.js:1:950)\n    at async N (https://www.maslabs.kr/_next/static/chunks/app/login/page-1ec37977cca273e6.js:1:1265)\n"
+                        },
+                        {
+                          "text": "현재 URL: https://www.maslabs.kr/login\n"
+                        },
+                        {
+                          "text": "❌ 로그인 실패 - 로그인 페이지에 머물러 있음\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:87064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-31T14:24:14.570Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "status": "unexpected"
+              "id": "e2b0bab7f4e783c19109-85b536088c9ba8ceb30b",
+              "file": "leave-request-logout-test.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "관리자 연차 관리 페이지 - 다른 직원으로 연차 신청",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7197,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "브라우저 콘솔: log: ✅ 로그인 성공 - localStorage에 사용자 정보 저장됨\n"
+                        },
+                        {
+                          "text": "브라우저 콘솔: log: ✅ getCurrentUser - localStorage에서 사용자 정보 로드됨\n"
+                        },
+                        {
+                          "text": "✅ 관리자 로그인 완료\n"
+                        },
+                        {
+                          "text": "브라우저 콘솔: log: ✅ getCurrentUser - localStorage에서 사용자 정보 로드됨\n"
+                        },
+                        {
+                          "text": "✅ 관리자 연차 관리 페이지 접근 완료\n"
+                        },
+                        {
+                          "text": "관리자 페이지 URL: https://www.maslabs.kr/admin/leave-management\n"
+                        },
+                        {
+                          "text": "❌ 직원 선택 드롭다운을 찾을 수 없음\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "(node:87065) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-31T14:24:14.571Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e2b0bab7f4e783c19109-f688ac74d925e428dd13",
+              "file": "leave-request-logout-test.spec.ts",
+              "line": 114,
+              "column": 7
             }
-          ],
-          "id": "f61a060705250b6096c2-7da470c9944fa5bbfe97",
-          "file": "supabase-sql-execution.spec.ts",
-          "line": 3,
-          "column": 5
+          ]
         }
       ]
     }
   ],
-  "errors": [
-    {
-      "message": "Testing stopped early after 1 maximum allowed failures."
-    }
-  ],
+  "errors": [],
   "stats": {
-    "startTime": "2025-09-23T16:15:02.121Z",
-    "duration": 2481552.639,
-    "expected": 0,
+    "startTime": "2025-12-31T14:24:14.191Z",
+    "duration": 8458.163,
+    "expected": 2,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

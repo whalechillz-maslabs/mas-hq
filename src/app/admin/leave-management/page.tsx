@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, auth } from '@/lib/supabase';
 import { 
   Calendar, User, Clock, CheckCircle, XCircle, AlertCircle,
   Plus, Edit, Trash, Eye, Search, Filter, ArrowLeft, 
-  CalendarDays, Users, TrendingUp, FileText
+  CalendarDays, Users, TrendingUp, FileText, Award
 } from 'lucide-react';
 
 interface Employee {
@@ -49,11 +49,20 @@ interface LeaveRequest {
 
 export default function LeaveManagementPage() {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'balance' | 'requests' | 'statistics'>('balance');
+  const [activeTab, setActiveTab] = useState<'balance' | 'requests' | 'statistics' | 'welfare'>('balance');
+  const [welfarePolicies, setWelfarePolicies] = useState<any[]>([]);
+  const [welfareLeaveCount, setWelfareLeaveCount] = useState<number>(0);
+  const [showWelfareModal, setShowWelfareModal] = useState(false);
+  const [newWelfarePolicy, setNewWelfarePolicy] = useState({
+    year: new Date().getFullYear(),
+    date: '',
+    description: ''
+  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
@@ -81,10 +90,40 @@ export default function LeaveManagementPage() {
   });
 
   useEffect(() => {
-    loadData();
+    checkAuth();
   }, []);
 
-  // 연차 일수 자동 계산 함수 (근로기준법 기준)
+  // 인증 체크 함수
+  const checkAuth = async () => {
+    try {
+      const user = await auth.getCurrentUser();
+      
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      
+      // 관리자/매니저 권한 확인
+      const isManager = user.role_id === 'admin' || 
+                       user.role_id === 'manager' ||
+                       user.employee_id === 'MASLABS-001' ||
+                       user.name === '시스템 관리자';
+      
+      if (!isManager) {
+        alert('관리자 또는 매니저 권한이 필요합니다.');
+        router.push('/dashboard');
+        return;
+      }
+      
+      setCurrentUser(user);
+      loadData(); // 인증 확인 후 데이터 로드
+    } catch (error) {
+      console.error('인증 확인 오류:', error);
+      router.push('/login');
+    }
+  };
+
+  // 연차 일수 자동 계산 함수 (회사 정책 기준: 1년차 11일)
   const calculateLeaveDays = (anniversaryDate: string, hireDate?: string, targetYear?: number): number => {
     if (!anniversaryDate) return 0;
     
@@ -102,15 +141,15 @@ export default function LeaveManagementPage() {
     // 1년 이상 근로자
     const yearsWorked = currentYear - anniversaryYear;
     
-    // 1년차: 15일
-    if (yearsWorked === 1) return 15;
+    // 1년차: 11일 (회사 정책)
+    if (yearsWorked === 1) return 11;
     
-    // 2년차: 15일
-    if (yearsWorked === 2) return 15;
+    // 2년차: 12일
+    if (yearsWorked === 2) return 12;
     
     // 3년차부터 2년마다 1일씩 추가 (최대 25일)
     if (yearsWorked >= 3) {
-      return Math.min(15 + Math.floor((yearsWorked - 1) / 2), 25);
+      return Math.min(11 + Math.floor((yearsWorked - 1) / 2), 25);
     }
     
     return 0;
@@ -126,6 +165,32 @@ export default function LeaveManagementPage() {
     return diffDays;
   };
 
+  // 복지 연차 확인 함수
+  const checkWelfareLeave = async (date: string): Promise<{ isWelfare: boolean; description?: string }> => {
+    if (!date) return { isWelfare: false };
+    
+    const dateObj = new Date(date);
+    const year = dateObj.getFullYear();
+    
+    try {
+      const { data } = await supabase
+        .from('welfare_leave_policy')
+        .select('*')
+        .eq('year', year)
+        .eq('date', date)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (data) {
+        return { isWelfare: true, description: data.description };
+      }
+    } catch (error) {
+      console.error('복지 연차 확인 오류:', error);
+    }
+    
+    return { isWelfare: false };
+  };
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -139,11 +204,12 @@ export default function LeaveManagementPage() {
 
       if (employeesError) throw employeesError;
 
-      // 연차 잔여 로드 - 별도 쿼리로 해결
+      // 연차 잔여 로드 - 연도 필터 적용 (기본값: 현재 연도)
+      const currentYear = new Date().getFullYear();
       const { data: balanceData, error: balanceError } = await supabase
         .from('leave_balance')
         .select('*')
-        .eq('year', new Date().getFullYear())
+        .eq('year', currentYear)
         .order('remaining_days', { ascending: false });
 
       if (balanceError) throw balanceError;
@@ -157,8 +223,7 @@ export default function LeaveManagementPage() {
 
       if (requestError) throw requestError;
 
-      // 자동 연차 생성 (연차 기산일 기준) - 정직원만
-      const currentYear = new Date().getFullYear();
+      // 자동 연차 생성 (연차 기산일 기준) - 정직원만 (선택된 연도에 대해)
       for (const employee of employeesData || []) {
         // 파트타임(알바) 직원은 연차 생성하지 않음
         if (employee.employment_type === 'part_time') {
@@ -168,17 +233,17 @@ export default function LeaveManagementPage() {
         // 연차 기산일이 있으면 그것을 사용, 없으면 입사일 사용
         const anniversaryDate = employee.leave_anniversary_date || employee.hire_date;
         if (anniversaryDate) {
-          const calculatedDays = calculateLeaveDays(anniversaryDate, employee.hire_date);
+          const calculatedDays = calculateLeaveDays(anniversaryDate, employee.hire_date, selectedYear);
           
-          // 해당 직원의 연차 데이터가 없으면 자동 생성
-          const existingBalance = balanceData?.find(b => b.employee_id === employee.id);
+          // 해당 직원의 연차 데이터가 없으면 자동 생성 (선택된 연도에 대해)
+          const existingBalance = balanceData?.find(b => b.employee_id === employee.id && b.year === selectedYear);
           if (!existingBalance && calculatedDays > 0) {
             try {
               await supabase
                 .from('leave_balance')
                 .insert({
                   employee_id: employee.id,
-                  year: currentYear,
+                  year: selectedYear,
                   total_days: calculatedDays,
                   used_days: 0,
                   leave_anniversary_date: anniversaryDate
@@ -194,7 +259,7 @@ export default function LeaveManagementPage() {
       const { data: updatedBalanceData, error: updatedBalanceError } = await supabase
         .from('leave_balance')
         .select('*')
-        .eq('year', currentYear)
+        .eq('year', selectedYear)
         .order('remaining_days', { ascending: false });
 
       if (updatedBalanceError) throw updatedBalanceError;
@@ -213,6 +278,15 @@ export default function LeaveManagementPage() {
       setEmployees(employeesData || []);
       setLeaveBalances(balancesWithEmployees);
       setLeaveRequests(requestsWithEmployees);
+
+      // 복지 연차 정책 로드 (currentYear는 이미 위에서 선언됨)
+      const { data: welfareData } = await supabase
+        .from('welfare_leave_policy')
+        .select('*')
+        .eq('year', currentYear)
+        .eq('is_active', true);
+      
+      setWelfareLeaveCount(welfareData?.length || 0);
 
     } catch (error) {
       console.error('데이터 로드 오류:', error);
@@ -299,6 +373,10 @@ export default function LeaveManagementPage() {
       // 사용 일수 계산
       const leaveDays = calculateRequestDays(newRequest.start_date, newRequest.end_date);
 
+      // 한국 시간 기준으로 현재 시간 계산 (UTC+9)
+      const koreaTime = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+      const koreaDateTime = koreaTime.toISOString();
+
       const { error } = await supabase
         .from('leave_requests')
         .insert({
@@ -310,7 +388,8 @@ export default function LeaveManagementPage() {
           leave_days: leaveDays,
           is_special_leave: newRequest.is_special_leave,
           is_monthly_leave: newRequest.is_monthly_leave,
-          status: 'pending'
+          status: 'pending',
+          created_at: koreaDateTime // 한국 시간으로 명시적으로 설정
         });
 
       if (error) throw error;
@@ -344,14 +423,20 @@ export default function LeaveManagementPage() {
 
       if (fetchError) throw fetchError;
 
+      // 이미 승인된 경우 처리하지 않음
+      if (request.status === 'approved') {
+        alert('이미 승인된 신청입니다.');
+        return;
+      }
+
       // 2. 사용 일수 계산
       const daysDiff = calculateRequestDays(request.start_date, request.end_date);
 
-      // 3. 현재 사용자 정보 가져오기
-      const { data: { user } } = await supabase.auth.getUser();
+      // 3. 현재 사용자 정보 가져오기 (localStorage 기반)
+      const user = await auth.getCurrentUser();
       const approvedBy = user?.id;
 
-      // 4. 특별연차는 연차 잔여일에 차감하지 않음
+      // 4. 특별연차만 연차 잔여일에 차감하지 않음
       if (request.leave_type === 'special' || request.is_special_leave) {
         const { error: approveError } = await supabase
           .from('leave_requests')
@@ -369,25 +454,8 @@ export default function LeaveManagementPage() {
         return;
       }
 
-      // 5. 월차는 연차 잔여일에 차감하지 않음
-      if (request.leave_type === 'monthly' || request.is_monthly_leave) {
-        const { error: approveError } = await supabase
-          .from('leave_requests')
-          .update({
-            status: 'approved',
-            approved_at: new Date().toISOString(),
-            approved_by: approvedBy,
-            leave_days: daysDiff
-          })
-          .eq('id', requestId);
-
-        if (approveError) throw approveError;
-        alert('월차가 승인되었습니다. (연차 잔여일에 차감되지 않음)');
-        loadData();
-        return;
-      }
-
-      // 6. 연차인 경우 잔여일 확인 및 차감
+      // 5. 월차, 병가, 기타, 연차 모두 연차 잔여일에 차감
+      // 연차 잔여일 확인 및 차감
       const startDate = new Date(request.start_date);
       const { data: balance, error: balanceError } = await supabase
         .from('leave_balance')
@@ -410,7 +478,7 @@ export default function LeaveManagementPage() {
         if (!confirm) return;
       }
 
-      // 7. 연차 잔여일 차감
+      // 6. 연차 잔여일 차감 (월차, 병가, 기타, 연차 모두 차감)
       const { error: updateError } = await supabase
         .from('leave_balance')
         .update({ 
@@ -420,7 +488,7 @@ export default function LeaveManagementPage() {
 
       if (updateError) throw updateError;
 
-      // 8. 신청 상태를 승인으로 변경
+      // 7. 신청 상태를 승인으로 변경
       const { error: approveError } = await supabase
         .from('leave_requests')
         .update({
@@ -433,7 +501,8 @@ export default function LeaveManagementPage() {
 
       if (approveError) throw approveError;
 
-      alert('연차 신청이 승인되었습니다.');
+      const leaveTypeText = getLeaveTypeText(request.leave_type);
+      alert(`${leaveTypeText} 신청이 승인되었습니다. (연차 잔여일에서 ${daysDiff}일 차감)`);
       loadData();
     } catch (error) {
       console.error('연차 승인 오류:', error);
@@ -459,6 +528,83 @@ export default function LeaveManagementPage() {
     } catch (error) {
       console.error('연차 반려 오류:', error);
       alert('연차 반려에 실패했습니다.');
+    }
+  };
+
+  // 복지 연차 정책 관리 함수
+  const loadWelfarePolicies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('welfare_leave_policy')
+        .select('*')
+        .order('year', { ascending: false })
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      setWelfarePolicies(data || []);
+    } catch (error) {
+      console.error('복지 연차 정책 로드 오류:', error);
+    }
+  };
+
+  const handleAddWelfarePolicy = async () => {
+    try {
+      if (!newWelfarePolicy.date || !newWelfarePolicy.description) {
+        alert('날짜와 설명을 입력해주세요.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('welfare_leave_policy')
+        .insert({
+          year: newWelfarePolicy.year,
+          date: newWelfarePolicy.date,
+          description: newWelfarePolicy.description,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      alert('복지 연차 정책이 추가되었습니다.');
+      setShowWelfareModal(false);
+      setNewWelfarePolicy({ year: new Date().getFullYear(), date: '', description: '' });
+      loadWelfarePolicies();
+    } catch (error) {
+      console.error('복지 연차 정책 추가 오류:', error);
+      alert('복지 연차 정책 추가에 실패했습니다.');
+    }
+  };
+
+  const handleToggleWelfarePolicy = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('welfare_leave_policy')
+        .update({ is_active: !isActive })
+        .eq('id', id);
+
+      if (error) throw error;
+      loadWelfarePolicies();
+    } catch (error) {
+      console.error('복지 연차 정책 수정 오류:', error);
+      alert('복지 연차 정책 수정에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteWelfarePolicy = async (id: string) => {
+    if (!confirm('복지 연차 정책을 삭제하시겠습니까?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('welfare_leave_policy')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('복지 연차 정책이 삭제되었습니다.');
+      loadWelfarePolicies();
+    } catch (error) {
+      console.error('복지 연차 정책 삭제 오류:', error);
+      alert('복지 연차 정책 삭제에 실패했습니다.');
     }
   };
 
@@ -579,7 +725,7 @@ export default function LeaveManagementPage() {
               </button>
               <button
                 onClick={() => setActiveTab('requests')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm relative ${
                   activeTab === 'requests'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -588,11 +734,16 @@ export default function LeaveManagementPage() {
                 <div className="flex items-center space-x-2">
                   <FileText className="h-4 w-4" />
                   <span>연차 신청</span>
+                  {leaveRequests.filter(req => req.status === 'pending').length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {leaveRequests.filter(req => req.status === 'pending').length}
+                    </span>
+                  )}
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('statistics')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm relative ${
                   activeTab === 'statistics'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -601,6 +752,27 @@ export default function LeaveManagementPage() {
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-4 w-4" />
                   <span>통계</span>
+                  {leaveRequests.filter(req => req.status === 'pending').length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {leaveRequests.filter(req => req.status === 'pending').length}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('welfare');
+                  loadWelfarePolicies();
+                }}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'welfare'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Award className="h-4 w-4" />
+                  <span>복지 연차</span>
                 </div>
               </button>
             </nav>
@@ -629,7 +801,24 @@ export default function LeaveManagementPage() {
         {activeTab === 'balance' && (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">연차 잔여일 현황</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">연차 잔여일 현황</h2>
+                <div className="flex items-center space-x-4">
+                  <label className="text-sm font-medium text-gray-700">연도 선택:</label>
+                  <select 
+                    value={selectedYear} 
+                    onChange={(e) => {
+                      setSelectedYear(Number(e.target.value));
+                      loadData(); // 연도 변경 시 데이터 다시 로드
+                    }}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028].map(year => (
+                      <option key={year} value={year}>{year}년</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -837,42 +1026,249 @@ export default function LeaveManagementPage() {
 
         {/* 통계 탭 */}
         {activeTab === 'statistics' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Users className="h-8 w-8 text-blue-600" />
+          <div className="space-y-6">
+            {/* 요약 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Users className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">총 직원 수</p>
+                    <p className="text-2xl font-semibold text-gray-900">{employees.length}명</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">총 직원 수</p>
-                  <p className="text-2xl font-semibold text-gray-900">{employees.length}명</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <CalendarDays className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">{selectedYear}년 총 연차 잔여일</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {leaveBalances.reduce((sum, balance) => sum + balance.remaining_days, 0)}일
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">대기 중인 신청</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {leaveRequests.filter(req => req.status === 'pending').length}건
+                    </p>
+                    {leaveRequests.filter(req => req.status === 'pending').length > 0 && (
+                      <button
+                        onClick={() => setActiveTab('requests')}
+                        className="mt-2 text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        확인하러 가기 →
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <CalendarDays className="h-8 w-8 text-green-600" />
+
+            {/* 추가 통계 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <TrendingUp className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">{selectedYear}년 총 연차</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {leaveBalances.reduce((sum, balance) => sum + balance.total_days, 0)}일
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">총 연차 잔여일</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {leaveBalances.reduce((sum, balance) => sum + balance.remaining_days, 0)}일
-                  </p>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Clock className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">{selectedYear}년 사용 연차</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {leaveBalances.reduce((sum, balance) => sum + balance.used_days, 0)}일
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">승인된 신청</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {leaveRequests.filter(req => req.status === 'approved').length}건
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* 연차 사용률 랭킹 */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-8 w-8 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">대기 중인 신청</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {leaveRequests.filter(req => req.status === 'pending').length}건
-                  </p>
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">연차 사용률 랭킹 ({selectedYear}년)</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">순위</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">직원</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">총 연차</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용 연차</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용률</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {leaveBalances
+                      .map(balance => ({
+                        ...balance,
+                        usageRate: balance.total_days > 0 ? (balance.used_days / balance.total_days) * 100 : 0
+                      }))
+                      .sort((a, b) => b.usageRate - a.usageRate)
+                      .slice(0, 10)
+                      .map((balance, index) => (
+                        <tr key={balance.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {index === 0 && '🥇'}
+                            {index === 1 && '🥈'}
+                            {index === 2 && '🥉'}
+                            {index > 2 && `${index + 1}위`}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {balance.employees?.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {balance.total_days}일
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {balance.used_days}일
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className={`h-2 rounded-full ${
+                                    balance.usageRate > 80 ? 'bg-red-500' : 
+                                    balance.usageRate > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                                  }`}
+                                  style={{ width: `${Math.min(balance.usageRate, 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm text-gray-600">{balance.usageRate.toFixed(1)}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 복지 연차 정책 관리 탭 */}
+        {activeTab === 'welfare' && (
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">복지 연차 정책 관리</h2>
+                <button
+                  onClick={() => setShowWelfareModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>복지 연차 추가</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        연도
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        날짜
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        설명
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        상태
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        액션
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {welfarePolicies.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                          복지 연차 정책이 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      welfarePolicies.map((policy) => (
+                        <tr key={policy.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {policy.year}년
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(policy.date).toLocaleDateString('ko-KR')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {policy.description}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              policy.is_active 
+                                ? 'text-green-600 bg-green-100' 
+                                : 'text-gray-600 bg-gray-100'
+                            }`}>
+                              {policy.is_active ? '활성' : '비활성'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleToggleWelfarePolicy(policy.id, policy.is_active)}
+                                className={`${
+                                  policy.is_active 
+                                    ? 'text-yellow-600 hover:text-yellow-900' 
+                                    : 'text-green-600 hover:text-green-900'
+                                }`}
+                              >
+                                {policy.is_active ? '비활성화' : '활성화'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteWelfarePolicy(policy.id)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1041,7 +1437,22 @@ export default function LeaveManagementPage() {
                   <input
                     type="date"
                     value={newRequest.start_date}
-                    onChange={(e) => setNewRequest({ ...newRequest, start_date: e.target.value })}
+                    onChange={async (e) => {
+                      const date = e.target.value;
+                      setNewRequest({ ...newRequest, start_date: date });
+                      
+                      // 복지 연차 확인
+                      const welfareCheck = await checkWelfareLeave(date);
+                      if (welfareCheck.isWelfare) {
+                        setNewRequest(prev => ({
+                          ...prev,
+                          start_date: date,
+                          leave_type: 'special',
+                          is_special_leave: true,
+                          reason: welfareCheck.description || '복지 연차'
+                        }));
+                      }
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -1050,7 +1461,22 @@ export default function LeaveManagementPage() {
                   <input
                     type="date"
                     value={newRequest.end_date}
-                    onChange={(e) => setNewRequest({ ...newRequest, end_date: e.target.value })}
+                    onChange={async (e) => {
+                      const date = e.target.value;
+                      setNewRequest({ ...newRequest, end_date: date });
+                      
+                      // 복지 연차 확인
+                      const welfareCheck = await checkWelfareLeave(date);
+                      if (welfareCheck.isWelfare) {
+                        setNewRequest(prev => ({
+                          ...prev,
+                          end_date: date,
+                          leave_type: 'special',
+                          is_special_leave: true,
+                          reason: prev.reason || welfareCheck.description || '복지 연차'
+                        }));
+                      }
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -1118,6 +1544,65 @@ export default function LeaveManagementPage() {
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
                   신청
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 복지 연차 정책 추가 모달 */}
+        {showWelfareModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">복지 연차 정책 추가</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">연도</label>
+                  <input
+                    type="number"
+                    value={newWelfarePolicy.year}
+                    onChange={(e) => setNewWelfarePolicy({ ...newWelfarePolicy, year: parseInt(e.target.value) })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
+                  <input
+                    type="date"
+                    value={newWelfarePolicy.date}
+                    onChange={(e) => setNewWelfarePolicy({ ...newWelfarePolicy, date: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    💡 예: 2026-01-01 (신정 복지 연차)
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
+                  <input
+                    type="text"
+                    value={newWelfarePolicy.description}
+                    onChange={(e) => setNewWelfarePolicy({ ...newWelfarePolicy, description: e.target.value })}
+                    placeholder="예: 신정 복지 연차"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowWelfareModal(false);
+                    setNewWelfarePolicy({ year: new Date().getFullYear(), date: '', description: '' });
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleAddWelfarePolicy}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  추가
                 </button>
               </div>
             </div>

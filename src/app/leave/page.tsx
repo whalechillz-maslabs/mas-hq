@@ -399,29 +399,77 @@ export default function LeaveRequestPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">특별연차 및 특별 근무</h2>
               
               {/* 특별연차(복지 연차) 표시 */}
-              {welfareLeaves.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
-                    {new Date().getFullYear()}년 복지 연차
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {welfareLeaves.map((welfare) => (
-                      <div
-                        key={welfare.id}
-                        className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm"
-                      >
-                        <span className="font-medium text-yellow-800">
-                          {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                        </span>
-                        {welfare.description && (
-                          <span className="text-yellow-600 ml-2">({welfare.description})</span>
-                        )}
+              {welfareLeaves.length > 0 && (() => {
+                const currentDate = new Date();
+                currentDate.setHours(0, 0, 0, 0);
+                
+                const upcomingLeaves = welfareLeaves.filter(w => {
+                  const welfareDate = new Date(w.date);
+                  welfareDate.setHours(0, 0, 0, 0);
+                  return welfareDate >= currentDate;
+                });
+                
+                const pastLeaves = welfareLeaves.filter(w => {
+                  const welfareDate = new Date(w.date);
+                  welfareDate.setHours(0, 0, 0, 0);
+                  return welfareDate < currentDate;
+                });
+                
+                return (
+                  <div className="mb-4">
+                    {/* 이번 연도 복지 연차 (미래 날짜) */}
+                    {upcomingLeaves.length > 0 && (
+                      <div className="mb-4">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
+                          이번 연도 복지 연차
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {upcomingLeaves.map((welfare) => (
+                            <div
+                              key={welfare.id}
+                              className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm"
+                            >
+                              <span className="font-medium text-yellow-800">
+                                {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                              </span>
+                              {welfare.description && (
+                                <span className="text-yellow-600 ml-2">({welfare.description})</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+                    
+                    {/* 지난 복지 연차 (과거 날짜) */}
+                    {pastLeaves.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                          지난 복지 연차
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {pastLeaves.map((welfare) => (
+                            <div
+                              key={welfare.id}
+                              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                            >
+                              <span className="font-medium text-gray-600">
+                                {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                              </span>
+                              {welfare.description && (
+                                <span className="text-gray-500 ml-2">({welfare.description})</span>
+                              )}
+                              <span className="ml-2 text-xs text-gray-400">(지남)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
               
               {/* 특별 근무 표시 */}
               {specialWorks.length > 0 && (

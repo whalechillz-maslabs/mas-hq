@@ -1,27 +1,36 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="2481.552639">
-<testsuite name="supabase-sql-execution.spec.ts" timestamp="2025-09-23T16:15:02.141Z" hostname="chromium-stable" tests="1" failures="1" skipped="0" time="2479.913" errors="0">
-<testcase name="Supabase SQL 실행 - 알림 설정 테이블 생성" classname="supabase-sql-execution.spec.ts" time="2479.913">
-<failure message="supabase-sql-execution.spec.ts:3:5 Supabase SQL 실행 - 알림 설정 테이블 생성" type="FAILURE">
-<![CDATA[  [chromium-stable] › supabase-sql-execution.spec.ts:3:5 › Supabase SQL 실행 - 알림 설정 테이블 생성 ──────────
-
-    Error: page.goto: Target page, context or browser has been closed
-
-       5 |   
-       6 |   // 1. Supabase 대시보드로 이동
-    >  7 |   await page.goto('https://supabase.com/dashboard');
-         |              ^
-       8 |   await page.waitForLoadState('networkidle');
-       9 |   
-      10 |   // 2. 로그인 확인 (이미 로그인되어 있다고 가정)
-        at /Users/m2/MASLABS/www.maslabs.kr/tests/supabase-sql-execution.spec.ts:7:14
-]]>
-</failure>
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="8.458163">
+<testsuite name="leave-request-logout-test.spec.ts" timestamp="2025-12-31T14:24:14.275Z" hostname="chromium" tests="2" failures="0" skipped="0" time="11.883" errors="0">
+<testcase name="연차 신청 시 로그아웃 문제 테스트 › 직원용 연차 신청 페이지 - 다른 직원으로 로그인 후 연차 신청" classname="leave-request-logout-test.spec.ts" time="4.686">
 <system-out>
-<![CDATA[🚀 Supabase SQL 실행 테스트 시작
+<![CDATA[✅ 로그인 페이지 접근 완료
+✅ 로그인 정보 입력 완료
+브라우저 콘솔: error: Failed to load resource: the server responded with a status of 406 ()
+브라우저 콘솔: error: 로그인 오류: Error: 전화번호를 찾을 수 없습니다.
+    at Object.signInWithPhone (https://www.maslabs.kr/_next/static/chunks/6303-31712f789df58afe.js:1:950)
+    at async N (https://www.maslabs.kr/_next/static/chunks/app/login/page-1ec37977cca273e6.js:1:1265)
+현재 URL: https://www.maslabs.kr/login
+❌ 로그인 실패 - 로그인 페이지에 머물러 있음
 ]]>
 </system-out>
 <system-err>
-<![CDATA[(node:22442) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+<![CDATA[(node:87064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+]]>
+</system-err>
+</testcase>
+<testcase name="연차 신청 시 로그아웃 문제 테스트 › 관리자 연차 관리 페이지 - 다른 직원으로 연차 신청" classname="leave-request-logout-test.spec.ts" time="7.197">
+<system-out>
+<![CDATA[브라우저 콘솔: log: ✅ 로그인 성공 - localStorage에 사용자 정보 저장됨
+브라우저 콘솔: log: ✅ getCurrentUser - localStorage에서 사용자 정보 로드됨
+✅ 관리자 로그인 완료
+브라우저 콘솔: log: ✅ getCurrentUser - localStorage에서 사용자 정보 로드됨
+✅ 관리자 연차 관리 페이지 접근 완료
+관리자 페이지 URL: https://www.maslabs.kr/admin/leave-management
+❌ 직원 선택 드롭다운을 찾을 수 없음
+]]>
+</system-out>
+<system-err>
+<![CDATA[(node:87065) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
 ]]>
 </system-err>

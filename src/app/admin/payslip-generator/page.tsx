@@ -78,6 +78,7 @@ interface PayslipData {
     hourly_rate: number;
     note?: string;
   }>;
+  notes?: string; // 비고란
 }
 
 export default function PayslipGenerator() {
@@ -109,6 +110,7 @@ export default function PayslipGenerator() {
   const [activeTab, setActiveTab] = useState<'generate' | 'list'>('generate');
   const [payslipFilter, setPayslipFilter] = useState<string>('all'); // 'all', '허상원', '최형호', etc.
   const [yearFilter, setYearFilter] = useState<string>('all'); // 'all', '2025', '2026', etc.
+  const [showActionsColumn, setShowActionsColumn] = useState<boolean>(true); // 작업 컬럼 표시/숨김
   const [selectedPayslipForDetails, setSelectedPayslipForDetails] = useState<any>(null);
   const [editingDates, setEditingDates] = useState(false);
   const [editIssuedDate, setEditIssuedDate] = useState('');
@@ -155,6 +157,13 @@ export default function PayslipGenerator() {
     loadEmployees();
     loadSavedPayslips();
   }, []);
+
+  // 탭이 'list'로 변경될 때 목록 새로고침
+  useEffect(() => {
+    if (activeTab === 'list') {
+      loadSavedPayslips();
+    }
+  }, [activeTab]);
 
   // 중복 체크 useEffect
   useEffect(() => {
@@ -361,6 +370,8 @@ export default function PayslipGenerator() {
       }
 
       setPayslipData(payslip);
+      // 급여 명세서 생성 성공 후 목록 새로고침
+      await loadSavedPayslips();
     } catch (error) {
       console.error('급여 명세서 생성 실패:', error);
       alert(`급여 명세서 생성에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
@@ -376,8 +387,9 @@ export default function PayslipGenerator() {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
-    // 식대: 근무일 기준 7,000원 고정
-    const MEAL_PER_DAY = 7000;
+    // 11월 10일 기준 단가 변경 (7,000원 → 8,000원)
+    const rateChangeDate = new Date(2025, 10, 10); // 2025년 11월 10일 고정
+    rateChangeDate.setHours(0, 0, 0, 0);
     
     // 해당 기간의 스케줄 조회
     const { data: schedules, error: scheduleError } = await supabase
@@ -456,8 +468,33 @@ export default function PayslipGenerator() {
     const dailyWage = overtimeAmount; // 일당
     const baseSalary = workDays * dailyWage;
     
-    // 식대 계산 (근무일수 × 7,000원)
-    const totalMealAllowance = workDays * MEAL_PER_DAY;
+    // 식대 계산: 날짜별로 11월 10일 이후는 8,000원, 이전은 7,000원
+    let totalMealAllowance = 0;
+    const mealAllowanceByDate: { [date: string]: number } = {};
+    
+    if (autoOvertimeFromSchedule) {
+      // 스케줄 기반으로 날짜별 식대 계산
+      schedules.forEach(schedule => {
+        if (schedule.scheduled_start && schedule.scheduled_end) {
+          const scheduleDate = schedule.schedule_date;
+          if (!mealAllowanceByDate[scheduleDate]) {
+            const dayDate = new Date(scheduleDate);
+            dayDate.setHours(0, 0, 0, 0);
+            // 2025년 11월 10일 이후면 8,000원, 이전이면 7,000원
+            const mealRate = (dayDate >= rateChangeDate) ? 8000 : 7000;
+            mealAllowanceByDate[scheduleDate] = mealRate;
+            totalMealAllowance += mealRate;
+          }
+        }
+      });
+    } else {
+      // 수동 입력 모드인 경우 (workDays가 수동 입력값)
+      // 수동 입력 모드에서는 날짜 정보가 없으므로, 월 전체가 11월 10일 이후인지 확인
+      const monthStartDate = new Date(year, month - 1, 1);
+      monthStartDate.setHours(0, 0, 0, 0);
+      const mealRate = (monthStartDate >= rateChangeDate) ? 8000 : 7000;
+      totalMealAllowance = workDays * mealRate;
+    }
     
     // 주유대: 제외 옵션이 체크되면 0, 아니면 20만원
     const fuelAllowance = excludeFuel ? 0 : 200000;
@@ -518,8 +555,13 @@ export default function PayslipGenerator() {
       // 일당제이므로 일급은 일당으로 고정 (이미 위에서 계산된 dailyWage 변수 사용)
       const dayWage = dailyWage; // 일당 (additionalWorkAmount)
       
+      // 해당 날짜의 식대 단가 확인
+      const dayDate = new Date(date);
+      dayDate.setHours(0, 0, 0, 0);
+      const mealRate = (dayDate >= rateChangeDate) ? 8000 : 7000;
+      
       const badges = [
-        '식대',
+        `식대(${mealRate.toLocaleString()}원)`,
         ...(isOvertimeDay ? ['추가근무'] : [])
       ];
       
@@ -528,7 +570,8 @@ export default function PayslipGenerator() {
         hours: totalHours,
         hourly_rate: totalHours > 0 ? Math.round(dayWage / totalHours) : 0,
         daily_wage: dayWage,
-        note: badges.join(';') // 예: "식대;추가근무"
+        meal_allowance: mealRate, // 날짜별 식대 단가 추가
+        note: badges.join(';') // 예: "식대(8,000원);추가근무"
       };
     });
     
@@ -630,7 +673,9 @@ export default function PayslipGenerator() {
     year: number
   ) => {
     // 11월 10일 기준 단가 변경 (7,000원 → 8,000원)
-    const rateChangeDate = new Date(year, month - 1, 10); // 해당 월 10일
+    // 2025년 11월 10일 이후 모든 날짜에 8,000원 적용
+    const rateChangeDate = new Date(2025, 10, 10); // 2025년 11월 10일 고정
+    rateChangeDate.setHours(0, 0, 0, 0);
     
     if (!contract || !contract.meal_policy) {
       // 기존 방식 (일별 지급)
@@ -648,7 +693,9 @@ export default function PayslipGenerator() {
         
         eligibleDays.forEach(day => {
           const dayDate = new Date(day.date);
-          const rate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? 8000 : 7000;
+          dayDate.setHours(0, 0, 0, 0);
+          // 2025년 11월 10일 이후면 8,000원
+          const rate = (dayDate >= rateChangeDate) ? 8000 : 7000;
           totalAmount += rate;
           dailyDetails.push({ date: day.date, rate, amount: rate });
         });
@@ -682,8 +729,9 @@ export default function PayslipGenerator() {
         
         eligibleDays.forEach(day => {
           const dayDate = new Date(day.date);
-          // 11월 10일 기준 단가 변경
-          const rate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? newRate : baseRate;
+          dayDate.setHours(0, 0, 0, 0);
+          // 2025년 11월 10일 이후면 8,000원
+          const rate = (dayDate >= rateChangeDate) ? newRate : baseRate;
           totalAmount += rate;
           dailyDetails.push({ date: day.date, rate, amount: rate });
         });
@@ -707,7 +755,9 @@ export default function PayslipGenerator() {
       } else {
         eligibleDays.forEach(day => {
           const dayDate = new Date(day.date);
-          const dayRate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? 8000 : rate;
+          dayDate.setHours(0, 0, 0, 0);
+          // 2025년 11월 10일 이후면 8,000원
+          const dayRate = (dayDate >= rateChangeDate) ? 8000 : rate;
           actualAmount += dayRate;
         });
       }
@@ -738,7 +788,9 @@ export default function PayslipGenerator() {
       
       eligibleDays.forEach(day => {
         const dayDate = new Date(day.date);
-        const rate = (year === 2025 && month === 11 && dayDate >= rateChangeDate) ? 8000 : 7000;
+        dayDate.setHours(0, 0, 0, 0);
+        // 2025년 11월 10일 이후면 8,000원
+        const rate = (dayDate >= rateChangeDate) ? 8000 : 7000;
         totalAmount += rate;
         dailyDetails.push({ date: day.date, rate, amount: rate });
       });
@@ -1007,7 +1059,8 @@ export default function PayslipGenerator() {
           employment_insurance: payslip.employment_insurance,
           industrial_accident_insurance: payslip.industrial_accident_insurance,
           long_term_care_insurance: payslip.long_term_care_insurance,
-          total_insurance: payslip.total_insurance
+          total_insurance: payslip.total_insurance,
+          notes: payslip.notes || null
         }]);
 
       if (saveError) {
@@ -1207,7 +1260,8 @@ export default function PayslipGenerator() {
           employment_insurance: payslip.employment_insurance,
           industrial_accident_insurance: payslip.industrial_accident_insurance,
           long_term_care_insurance: payslip.long_term_care_insurance,
-          total_insurance: payslip.total_insurance
+          total_insurance: payslip.total_insurance,
+          notes: payslip.notes || null
         }]);
 
       if (saveError) {
@@ -3307,6 +3361,214 @@ export default function PayslipGenerator() {
     printWindow.print();
   }
 
+  // 세무사 기준 급여명세서 발행 및 인쇄 함수
+  const printSavedPayslipTaxAccountantStandard = (payslip: any) => {
+    const age = getAgeFromBirthDate(payslip.employees?.birth_date);
+    const contract = payslip.contracts;
+    
+    // 세무사 기준 4대보험 계산 (국민연금 제외 가능)
+    const baseAmount = payslip.total_earnings - (payslip.meal_allowance || 0);
+    const round = (v: number) => Math.floor(v);
+    
+    // 국민연금: 60세 이상 또는 계약서 설정에 따라 제외
+    const nationalPension = (
+      age >= 60 || 
+      contract?.insurance_display?.national_pension === false ||
+      contract?.insurance_4major === false
+    ) ? 0 : round(baseAmount * 0.045);
+    
+    // 건강보험: 근로자 부담 3.545%
+    const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
+    
+    // 장기요양보험: 건강보험료의 0.9182% × 50%
+    const longTermCareInsurance = round(healthInsurance * 0.009182);
+    
+    // 고용보험: 근로자 부담 0.9% (실업급여 부담금)
+    const employmentInsurance = round(baseAmount * 0.009);
+    
+    const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance;
+    const taxAmount = Math.round((baseAmount) * 0.033); // 3.3% 사업소득세
+    const totalDeductions = totalInsurance + taxAmount;
+    const netSalary = payslip.total_earnings - totalDeductions;
+
+    // 인쇄용 HTML 생성
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('팝업이 차단되었습니다. 팝업을 허용해주세요.');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>급여명세서 - ${payslip.employees?.name || 'N/A'}</title>
+        <style>
+          body { 
+            font-family: 'Malgun Gothic', sans-serif; 
+            padding: 40px; 
+            line-height: 1.8;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #000; 
+            padding-bottom: 20px; 
+          }
+          .header h1 { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+          .info-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+          }
+          .info-table th, .info-table td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+          }
+          .info-table th { 
+            background-color: #f5f5f5; 
+            font-weight: bold; 
+            text-align: center;
+          }
+          .info-table td:last-child { text-align: right; }
+          .notes { 
+            margin-top: 30px; 
+            padding: 15px; 
+            background-color: #f9f9f9; 
+            border-left: 4px solid #007bff; 
+          }
+          .notes-title { 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            color: #007bff;
+          }
+          .total-row { 
+            font-weight: bold; 
+            background-color: #f0f0f0; 
+          }
+          .footer { 
+            margin-top: 50px; 
+            text-align: center; 
+            font-size: 12px; 
+            color: #666; 
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${payslip.period} 급여명세서</h1>
+          <p>${payslip.employees?.name || 'N/A'}</p>
+        </div>
+        
+        <table class="info-table">
+          <tr>
+            <th>지급내역</th>
+            <th>지급액</th>
+          </tr>
+          <tr>
+            <td>기본급</td>
+            <td>${payslip.base_salary?.toLocaleString() || 0}원</td>
+          </tr>
+          ${payslip.meal_allowance > 0 ? `
+          <tr>
+            <td>식대 (별도 지급)</td>
+            <td>${payslip.meal_allowance.toLocaleString()}원</td>
+          </tr>
+          ` : ''}
+          <tr class="total-row">
+            <td>지급액계</td>
+            <td>${payslip.total_earnings?.toLocaleString() || 0}원</td>
+          </tr>
+        </table>
+        
+        <table class="info-table">
+          <tr>
+            <th>공제내역</th>
+            <th>공제액</th>
+          </tr>
+          ${nationalPension > 0 ? `
+          <tr>
+            <td>국민연금 (4.5%)</td>
+            <td>${nationalPension.toLocaleString()}원</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td>건강보험 (3.545%)</td>
+            <td>${healthInsurance.toLocaleString()}원</td>
+          </tr>
+          <tr>
+            <td>장기요양보험료 (건강보험료의 0.9182%)</td>
+            <td>${longTermCareInsurance.toLocaleString()}원</td>
+          </tr>
+          <tr>
+            <td>고용보험 (0.9%)</td>
+            <td>${employmentInsurance.toLocaleString()}원</td>
+          </tr>
+          <tr>
+            <td>소득세 (3.3%)</td>
+            <td>${taxAmount.toLocaleString()}원</td>
+          </tr>
+          <tr class="total-row">
+            <td>공제액계</td>
+            <td>${totalDeductions.toLocaleString()}원</td>
+          </tr>
+        </table>
+        
+        <div style="margin-top: 30px; text-align: right; font-size: 16px;">
+          <p style="margin-bottom: 10px;"><strong>차인지급액 (이체 금액):</strong> ${netSalary.toLocaleString()}원</p>
+          ${payslip.meal_allowance > 0 ? `
+          <p style="margin-bottom: 10px;"><strong>식대 (별도 지급):</strong> ${payslip.meal_allowance.toLocaleString()}원</p>
+          ` : ''}
+          <p><strong>총 급여:</strong> ${(netSalary + (payslip.meal_allowance || 0)).toLocaleString()}원</p>
+        </div>
+        
+        ${payslip.notes ? `
+        <div class="notes">
+          <div class="notes-title">비고:</div>
+          <div>${payslip.notes}</div>
+        </div>
+        ` : ''}
+        
+        <div class="footer">
+          <p>귀하의 노고에 감사드립니다.</p>
+          <p>마스골프</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  // 세무사 기준 급여명세서 발행 함수
+  const issuePayslipWithTaxAccountantStandard = async (payslipId: string, notes?: string) => {
+    try {
+      const { error } = await supabase
+        .from('payslips')
+        .update({
+          status: 'issued',
+          issued_at: new Date().toISOString(),
+          notes: notes || null,
+          display_type: 'tax_accountant'
+        })
+        .eq('id', payslipId);
+
+      if (error) throw error;
+      
+      alert('세무사 기준으로 급여명세서가 발행되었습니다.');
+      await loadSavedPayslips();
+    } catch (error) {
+      console.error('급여명세서 발행 실패:', error);
+      alert('급여명세서 발행에 실패했습니다.');
+    }
+  };
+
   // 생년월일로 만 나이 계산
   const getAgeFromBirthDate = (birthDate?: string | Date): number => {
     if (!birthDate) return 30; // 정보가 없으면 일반 성인 기준으로 계산
@@ -3343,8 +3605,8 @@ export default function PayslipGenerator() {
     // 계산 후 3원 추가 절사 (82,953 → 82,950)
     const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
     
-    // 장기요양보험: 근로자 부담 0.459% (세무사 목표: 10,740원 @ 2,340,000원)
-    const longTermCareInsurance = round(baseAmount * 0.00459);
+    // 장기요양보험: 건강보험료의 0.9182% × 50% (세무사 기준)
+    const longTermCareInsurance = round(healthInsurance * 0.009182);
     
     // 고용보험: 근로자 부담 0.9% (세무사 목표: 21,060원 @ 2,340,000원)
     const employmentInsurance = round(baseAmount * 0.009);
@@ -4628,7 +4890,7 @@ export default function PayslipGenerator() {
               <p className="text-gray-600 mt-1">직원의 급여 명세서를 생성하고 발행합니다</p>
             </div>
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/admin/dashboard')}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               뒤로가기
@@ -5038,8 +5300,18 @@ export default function PayslipGenerator() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">발행된 급여명세서 목록</h2>
               
-              {/* 필터 섹션 */}
               <div className="flex items-center gap-4">
+                {/* 작업 컬럼 토글 버튼 */}
+                <button
+                  onClick={() => setShowActionsColumn(!showActionsColumn)}
+                  className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  title={showActionsColumn ? '작업 컬럼 숨기기' : '작업 컬럼 보이기'}
+                >
+                  {showActionsColumn ? '👁️ 작업 숨기기' : '👁️‍🗨️ 작업 보이기'}
+                </button>
+                
+                {/* 필터 섹션 */}
+                <div className="flex items-center gap-4">
                 {/* 연도 필터 */}
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-gray-700">연도:</label>
@@ -5071,6 +5343,7 @@ export default function PayslipGenerator() {
                       <option key={name} value={name}>{name}</option>
                     ))}
                   </select>
+                </div>
                 </div>
               </div>
             </div>
@@ -5142,72 +5415,82 @@ export default function PayslipGenerator() {
                   </div>
               <div className="relative">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-xs">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         직원명
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         연도
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         급여 기간
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        고용 형태
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        고용형태
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         총 급여
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         실수령액
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         상태
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         발행일
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         지급일
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 z-20 bg-gray-50 border-l border-gray-200 w-[400px] min-w-[400px]">
-                        작업
-                      </th>
+                      {showActionsColumn && (
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 z-20 bg-gray-50 border-l border-gray-200 w-[400px] min-w-[400px]">
+                          작업
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredPayslips.map((payslip) => (
                       <tr key={payslip.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
                           {payslip.employees.name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
                           {(() => {
                             if (payslip.period?.match(/^\d{4}-\d{2}$/)) {
-                              return payslip.period.split('-')[0] + '년';
+                              return payslip.period.split('-')[0];
                             }
                             // 분할 생성인 경우 (예: "2025-08-2차", "2025-08-1차")
                             const yearMatch = payslip.period?.match(/^(\d{4})/);
-                            return yearMatch ? yearMatch[1] + '년' : '-';
+                            return yearMatch ? yearMatch[1] : '-';
                           })()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                           {formatSalaryPeriod(payslip.period, payslip.daily_details)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.employment_type === 'full_time' ? '정규직' : 
-                           payslip.employees?.name === '나수진' ? '일당제' : '시간제'}
+                        <td className="px-2 py-2 whitespace-nowrap">
+                          <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                            payslip.employment_type === 'full_time' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : payslip.employees?.name === '나수진' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : 'bg-green-100 text-green-800'
+                          }`}>
+                            {payslip.employment_type === 'full_time' ? '정규직' : 
+                             payslip.employees?.name === '나수진' ? '일당제' : '시간제'}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.total_earnings?.toLocaleString()}원
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                          {payslip.total_earnings?.toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.net_salary?.toLocaleString()}원
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                          {payslip.net_salary?.toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        <td className="px-2 py-2 whitespace-nowrap">
+                          <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full ${
                             payslip.status === 'generated' ? 'bg-yellow-100 text-yellow-800' :
                             payslip.status === 'issued' ? 'bg-blue-100 text-blue-800' :
                             'bg-green-100 text-green-800'
@@ -5216,14 +5499,21 @@ export default function PayslipGenerator() {
                              payslip.status === 'issued' ? '발행됨' : '지급완료'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.issued_at ? new Date(payslip.issued_at).toLocaleDateString('ko-KR') : '-'}
+                        <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
+                          {payslip.issued_at ? (() => {
+                            const date = new Date(payslip.issued_at);
+                            return `${date.getMonth() + 1}/${date.getDate()}`;
+                          })() : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {payslip.paid_at ? new Date(payslip.paid_at).toLocaleDateString('ko-KR') : '-'}
+                        <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
+                          {payslip.paid_at ? (() => {
+                            const date = new Date(payslip.paid_at);
+                            return `${date.getMonth() + 1}/${date.getDate()}`;
+                          })() : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 sticky right-0 z-20 bg-white border-l border-gray-200 w-[500px] min-w-[500px]">
-                          <div className="flex flex-wrap gap-1 items-center">
+                        {showActionsColumn && (
+                          <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500 sticky right-0 z-20 bg-white border-l border-gray-200 w-[400px] min-w-[400px]">
+                            <div className="flex flex-wrap gap-1 items-center">
                             {/* 표시 형식 토글 버튼 */}
                             <button
                               onClick={() => updatePayslipDisplayType(payslip.id, 'basic')}
@@ -5283,6 +5573,8 @@ export default function PayslipGenerator() {
                                   printSavedPayslipWithInsurance(payslip);
                                 } else if (displayType === 'business_income') {
                                   printSavedPayslipBusinessIncomeOnly(payslip);
+                                } else if (displayType === 'tax_accountant') {
+                                  printSavedPayslipTaxAccountantStandard(payslip);
                                 } else {
                                   printSavedPayslip(payslip);
                                 }
@@ -5302,6 +5594,42 @@ export default function PayslipGenerator() {
                               보기
                             </button>
                             <button
+                              onClick={async () => {
+                                const notes = prompt('비고를 입력하세요 (세무사 요율 변경 사항 등):', payslip.notes || '');
+                                if (notes !== null) {
+                                  await issuePayslipWithTaxAccountantStandard(payslip.id, notes);
+                                }
+                              }}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors flex items-center gap-1"
+                              title="세무사 기준 발행"
+                            >
+                              세무사 발행
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const notes = prompt('비고를 수정하세요:', payslip.notes || '');
+                                if (notes !== null) {
+                                  try {
+                                    const { error } = await supabase
+                                      .from('payslips')
+                                      .update({ notes: notes || null })
+                                      .eq('id', payslip.id);
+                                    
+                                    if (error) throw error;
+                                    alert('비고가 저장되었습니다.');
+                                    await loadSavedPayslips();
+                                  } catch (error) {
+                                    console.error('비고 저장 실패:', error);
+                                    alert('비고 저장에 실패했습니다.');
+                                  }
+                                }
+                              }}
+                              className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors flex items-center gap-1"
+                              title="비고 수정"
+                            >
+                              비고
+                            </button>
+                            <button
                               onClick={() => deletePayslip(payslip.id, payslip.employees.name, payslip.period)}
                               className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors flex items-center gap-1"
                               title="삭제"
@@ -5309,8 +5637,9 @@ export default function PayslipGenerator() {
                               <Trash2 className="h-3 w-3" />
                               삭제
                             </button>
-                          </div>
-                        </td>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

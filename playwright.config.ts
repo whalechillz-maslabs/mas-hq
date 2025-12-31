@@ -148,6 +148,24 @@ export default defineConfig({
       name: 'chromium-stable', // 🌟 Stable 버전 추가
       use: { 
         ...devices['Desktop Chrome'],
+        channel: 'chrome-beta', // 🌟 Chrome Beta 사용
+        launchOptions: {
+          args: [
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage'
+          ]
+        }
+      },
+    },
+    {
+      name: 'chromium', // 🌟 Chromium 사용 (Playwright 기본 Chromium)
+      use: { 
+        ...devices['Desktop Chrome'],
+        // channel을 지정하지 않으면 Playwright가 설치한 기본 Chromium 사용
         launchOptions: {
           args: [
             '--disable-background-timer-throttling',

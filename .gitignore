@@ -67,3 +67,8 @@ playwright/.cache/
 .env.test.local
 .env.production.local
 .env*.local
+
+# Export packages (temporary files for distribution)
+auth-module-export/
+auth-module-export.tar.gz
+auth-module-export.zip
