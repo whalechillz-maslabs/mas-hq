@@ -1000,21 +1000,22 @@ export default function DashboardPage() {
       
       setWelfareLeaves(welfareData || []);
       
-      // 특별 근무 내역 로드 (휴무일 시타 근무)
-      const startOfMonth = new Date(currentYear, new Date().getMonth(), 1);
-      const endOfMonth = new Date(currentYear, new Date().getMonth() + 1, 0);
-      const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
-      const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
+      // 특별 근무 내역 로드 (휴무일 시타 근무) - 최근 3개월 조회
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      const startDateStr = threeMonthsAgo.toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
       
-      // 이번 달 업무 중 시타 예약이 있는 업무 가져오기
+      // 최근 3개월 업무 중 시타 예약이 있는 업무 가져오기 (최대 10개)
       const { data: tasksWithSita } = await supabase
         .from('employee_tasks')
         .select('*')
         .eq('employee_id', currentUser.id)
         .eq('sita_booking', true)
-        .gte('task_date', startOfMonthStr)
-        .lte('task_date', endOfMonthStr)
-        .order('task_date', { ascending: false });
+        .gte('task_date', startDateStr)
+        .lte('task_date', todayStr)
+        .order('task_date', { ascending: false })
+        .limit(10);
       
       if (tasksWithSita && tasksWithSita.length > 0) {
         // 각 업무 날짜에 스케줄이 있는지 확인
@@ -1997,31 +1998,44 @@ export default function DashboardPage() {
                       <Calendar className="h-4 w-4 mr-2 text-yellow-600" />
                       최근 특별연차
                     </h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-2">
                       {recentWelfareLeaves.map((welfare) => {
                         const welfareDate = new Date(welfare.date);
                         welfareDate.setHours(0, 0, 0, 0);
                         const isPast = welfareDate < currentDate;
                         
+                        // 날짜 형식: 2026년 1월 1일(목)
+                        const dateStr = new Date(welfare.date).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'short'
+                        });
+                        
                         return (
                           <div
                             key={welfare.id}
-                            className={`px-3 py-2 rounded-lg text-sm ${
+                            className={`px-4 py-3 rounded-lg ${
                               isPast 
                                 ? 'bg-gray-50 border border-gray-200' 
                                 : 'bg-yellow-50 border border-yellow-200'
                             }`}
                           >
-                            <span className={`font-medium ${isPast ? 'text-gray-600' : 'text-yellow-800'}`}>
-                              {new Date(welfare.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                            </span>
-                            {welfare.description && (
-                              <span className={`ml-2 ${isPast ? 'text-gray-500' : 'text-yellow-600'}`}>
-                                ({welfare.description})
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`font-semibold text-sm ${isPast ? 'text-gray-700' : 'text-yellow-800'}`}>
+                                {dateStr}
                               </span>
+                              <span className={`text-xs font-medium ${isPast ? 'text-gray-500' : 'text-yellow-700'}`}>
+                                일수: 1일
+                              </span>
+                            </div>
+                            {welfare.description && (
+                              <div className={`text-xs mt-1 ${isPast ? 'text-gray-500' : 'text-yellow-600'}`}>
+                                사유: {welfare.description}
+                              </div>
                             )}
                             {isPast && (
-                              <span className="ml-2 text-xs text-gray-400">(지남)</span>
+                              <span className="text-xs text-gray-400 mt-1 inline-block">(지남)</span>
                             )}
                           </div>
                         );
@@ -2043,39 +2057,66 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 {specialWorks.slice(0, 2).map((work) => {
                   const workDate = new Date(work.date);
-                  const dayOfWeek = workDate.getDay();
-                  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                  
+                  // 날짜 형식: 2025년 11월 22일(토)
+                  const dateStr = workDate.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'short'
+                  });
+                  
+                  // 시간 범위 포맷팅 (예: "09:00" -> "9시", "09:00-10:00" -> "9-10시")
+                  let timeRange = '';
+                  if (work.visit_booking_time) {
+                    const timeStr = work.visit_booking_time;
+                    // "09:00" 형식인 경우
+                    if (timeStr.includes(':')) {
+                      const [hour, minute] = timeStr.split(':');
+                      const hourNum = parseInt(hour, 10);
+                      if (minute === '00') {
+                        timeRange = `${hourNum}시`;
+                      } else {
+                        timeRange = `${hourNum}:${minute}`;
+                      }
+                    } else {
+                      timeRange = timeStr;
+                    }
+                  }
+                  
+                  // 사유: task_title 또는 customer_name
+                  const reason = work.task_title || work.customer_name || '특별 근무';
                   
                   return (
                     <div
                       key={work.id}
-                      className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm"
+                      className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-green-800">
-                            {workDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} ({dayNames[dayOfWeek]})
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-sm text-green-800">
+                          {dateStr}
+                        </span>
+                        {timeRange && (
+                          <span className="text-xs font-medium text-green-700">
+                            {timeRange}
                           </span>
-                          {work.is_weekend && (
-                            <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
-                              주말
-                            </span>
-                          )}
-                          {work.is_day_off && !work.is_weekend && (
-                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                              휴무일
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-green-600 text-xs">
-                          {work.visit_booking_time && (
-                            <span>시타 {work.visit_booking_time}</span>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      {work.task_title && (
-                        <p className="text-xs text-gray-600 mt-1">{work.task_title}</p>
-                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        {work.is_weekend && (
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
+                            주말
+                          </span>
+                        )}
+                        {work.is_day_off && !work.is_weekend && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                            휴무일
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        사유: {reason}
+                      </div>
                     </div>
                   );
                 })}
