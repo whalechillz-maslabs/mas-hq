@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, auth } from '@/lib/supabase';
 
 import { formatCurrency, getStatusColor, formatHours } from '@/utils/formatUtils';
 import { formatDateKR, formatTimeKR, isToday } from '@/utils/dateUtils';
@@ -500,7 +500,7 @@ export default function DashboardPage() {
       
       console.log('현재 사용자:', currentUser);
       
-      if (!currentUser) {
+      if (!currentUser || !currentUser.id) {
         console.log('사용자 정보가 없습니다. 로그인 페이지로 이동합니다.');
         router.push('/login');
         return;
@@ -1003,15 +1003,19 @@ export default function DashboardPage() {
       });
       
       // 연차 정보 로드
-      const currentYear = new Date().getFullYear();
-      const { data: balance } = await supabase
-        .from('leave_balance')
-        .select('*')
-        .eq('employee_id', currentUser.id)
-        .eq('year', currentYear)
-        .maybeSingle();
-      
-      setLeaveBalance(balance);
+      if (!currentUser || !currentUser.id) {
+        console.error('사용자 정보가 없어 연차 정보를 로드할 수 없습니다.');
+      } else {
+        const currentYear = new Date().getFullYear();
+        const { data: balance } = await supabase
+          .from('leave_balance')
+          .select('*')
+          .eq('employee_id', currentUser.id)
+          .eq('year', currentYear)
+          .maybeSingle();
+        
+        setLeaveBalance(balance);
+      }
       
       // 특별연차(복지 연차) 정보 로드 (작년부터 조회하여 지나간 날짜도 표시)
       const { data: welfareData } = await supabase
@@ -1030,59 +1034,64 @@ export default function DashboardPage() {
       const todayStr = new Date().toISOString().split('T')[0];
       
       // 최근 3개월 업무 중 시타 예약이 있는 업무 가져오기 (최대 10개)
-      try {
-        const { data: tasksWithSita, error: tasksError } = await supabase
-          .from('employee_tasks')
-          .select('*')
-          .eq('employee_id', currentUser.id)
-          .eq('sita_booking', true)
-          .gte('task_date', startDateStr)
-          .lte('task_date', todayStr)
-          .order('task_date', { ascending: false })
-          .limit(10);
-        
-        if (tasksError) {
-          console.error('특별 근무 조회 오류:', tasksError);
-          setSpecialWorks([]);
-        } else if (tasksWithSita && tasksWithSita.length > 0) {
-        // 각 업무 날짜에 스케줄이 있는지 확인
-        const specialWorksList = [];
-        
-        for (const task of tasksWithSita) {
-          const taskDate = task.task_date;
-          const dayOfWeek = new Date(taskDate).getDay(); // 0=일요일, 6=토요일
-          
-          // 해당 날짜의 스케줄 확인
-          const { data: schedule } = await supabase
-            .from('schedules')
+      if (!currentUser || !currentUser.id) {
+        console.error('사용자 정보가 없어 특별 근무 정보를 로드할 수 없습니다.');
+        setSpecialWorks([]);
+      } else {
+        try {
+          const { data: tasksWithSita, error: tasksError } = await supabase
+            .from('employee_tasks')
             .select('*')
             .eq('employee_id', currentUser.id)
-            .eq('schedule_date', taskDate)
-            .maybeSingle();
+            .eq('sita_booking', true)
+            .gte('task_date', startDateStr)
+            .lte('task_date', todayStr)
+            .order('task_date', { ascending: false })
+            .limit(10);
           
-          // 스케줄이 없거나 주말이면 특별 근무로 간주
-          if (!schedule || dayOfWeek === 0 || dayOfWeek === 6) {
-            specialWorksList.push({
-              id: task.id,
-              date: taskDate,
-              task_title: task.title,
-              customer_name: task.customer_name,
-              visit_booking_date: task.visit_booking_date,
-              visit_booking_time: task.visit_booking_time,
-              is_weekend: dayOfWeek === 0 || dayOfWeek === 6,
-              is_day_off: !schedule
-            });
+          if (tasksError) {
+            console.error('특별 근무 조회 오류:', tasksError);
+            setSpecialWorks([]);
+          } else if (tasksWithSita && tasksWithSita.length > 0) {
+            // 각 업무 날짜에 스케줄이 있는지 확인
+            const specialWorksList = [];
+            
+            for (const task of tasksWithSita) {
+              const taskDate = task.task_date;
+              const dayOfWeek = new Date(taskDate).getDay(); // 0=일요일, 6=토요일
+              
+              // 해당 날짜의 스케줄 확인
+              const { data: schedule } = await supabase
+                .from('schedules')
+                .select('*')
+                .eq('employee_id', currentUser.id)
+                .eq('schedule_date', taskDate)
+                .maybeSingle();
+              
+              // 스케줄이 없거나 주말이면 특별 근무로 간주
+              if (!schedule || dayOfWeek === 0 || dayOfWeek === 6) {
+                specialWorksList.push({
+                  id: task.id,
+                  date: taskDate,
+                  task_title: task.title,
+                  customer_name: task.customer_name,
+                  visit_booking_date: task.visit_booking_date,
+                  visit_booking_time: task.visit_booking_time,
+                  is_weekend: dayOfWeek === 0 || dayOfWeek === 6,
+                  is_day_off: !schedule
+                });
+              }
+            }
+            
+            setSpecialWorks(specialWorksList);
+          } else {
+            console.log('특별 근무 데이터 없음');
+            setSpecialWorks([]);
           }
-        }
-        
-          setSpecialWorks(specialWorksList);
-        } else {
-          console.log('특별 근무 데이터 없음');
+        } catch (error) {
+          console.error('특별 근무 조회 예외:', error);
           setSpecialWorks([]);
         }
-      } catch (error) {
-        console.error('특별 근무 조회 예외:', error);
-        setSpecialWorks([]);
       }
     } finally {
       console.log('=== loadDashboardData 함수 완료 ===');
