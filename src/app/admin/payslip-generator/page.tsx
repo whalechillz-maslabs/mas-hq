@@ -113,7 +113,7 @@ export default function PayslipGenerator() {
   const [showActionsColumn, setShowActionsColumn] = useState<boolean>(true); // 작업 컬럼 표시/숨김
   const [selectedPayslipForDetails, setSelectedPayslipForDetails] = useState<any>(null);
   const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null); // 기타 메뉴 열림 상태
-  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null); // 드롭다운 메뉴 위치
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left?: number; right?: number } | null>(null); // 드롭다운 메뉴 위치
   const [editingDates, setEditingDates] = useState(false);
   const [editIssuedDate, setEditIssuedDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
@@ -5550,10 +5550,27 @@ export default function PayslipGenerator() {
                                       setMenuPosition(null);
                                     } else {
                                       const rect = e.currentTarget.getBoundingClientRect();
-                                      setMenuPosition({
-                                        top: rect.bottom + 4,
-                                        right: window.innerWidth - rect.right
-                                      });
+                                      const menuWidth = 160; // 드롭다운 메뉴 예상 너비
+                                      const padding = 8; // 화면 가장자리 여백
+                                      
+                                      // 버튼이 화면 우측 끝에 가까우면 왼쪽에 표시, 아니면 오른쪽에 표시
+                                      const spaceOnRight = window.innerWidth - rect.right;
+                                      const spaceOnLeft = rect.left;
+                                      
+                                      if (spaceOnRight < menuWidth + padding && spaceOnLeft > menuWidth + padding) {
+                                        // 우측 공간이 부족하고 좌측 공간이 충분하면 왼쪽에 표시
+                                        setMenuPosition({
+                                          top: rect.bottom + 4,
+                                          left: rect.left - menuWidth
+                                        });
+                                      } else {
+                                        // 기본적으로 오른쪽에 표시하되, 화면 밖으로 나가지 않도록 조정
+                                        const right = Math.max(padding, spaceOnRight);
+                                        setMenuPosition({
+                                          top: rect.bottom + 4,
+                                          right: right
+                                        });
+                                      }
                                       setOpenMoreMenu(payslip.id);
                                     }
                                   }}
@@ -5573,10 +5590,13 @@ export default function PayslipGenerator() {
                                       }}
                                     />
                                     <div 
-                                      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[140px]"
+                                      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 w-[160px]"
                                       style={{
                                         top: `${menuPosition.top}px`,
-                                        right: `${menuPosition.right}px`
+                                        ...(menuPosition.left !== undefined 
+                                          ? { left: `${menuPosition.left}px` }
+                                          : { right: `${menuPosition.right}px` }
+                                        )
                                       }}
                                     >
                                       {/* 표시 형식 */}
