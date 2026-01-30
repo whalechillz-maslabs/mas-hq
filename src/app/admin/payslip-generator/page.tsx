@@ -113,6 +113,7 @@ export default function PayslipGenerator() {
   const [showActionsColumn, setShowActionsColumn] = useState<boolean>(true); // 작업 컬럼 표시/숨김
   const [selectedPayslipForDetails, setSelectedPayslipForDetails] = useState<any>(null);
   const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null); // 기타 메뉴 열림 상태
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null); // 드롭다운 메뉴 위치
   const [editingDates, setEditingDates] = useState(false);
   const [editIssuedDate, setEditIssuedDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
@@ -5541,9 +5542,20 @@ export default function PayslipGenerator() {
                               {/* 기타 메뉴 */}
                               <div className="relative">
                                 <button
+                                  data-payslip-menu={payslip.id}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setOpenMoreMenu(openMoreMenu === payslip.id ? null : payslip.id);
+                                    if (openMoreMenu === payslip.id) {
+                                      setOpenMoreMenu(null);
+                                      setMenuPosition(null);
+                                    } else {
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setMenuPosition({
+                                        top: rect.bottom + 4,
+                                        right: window.innerWidth - rect.right
+                                      });
+                                      setOpenMoreMenu(payslip.id);
+                                    }
                                   }}
                                   className="px-2 py-1 bg-gray-100 text-gray-600 text-[10px] font-medium rounded-full hover:bg-gray-200 transition-colors flex items-center"
                                   title="기타"
@@ -5551,13 +5563,22 @@ export default function PayslipGenerator() {
                                   <MoreVertical className="h-3 w-3" />
                                 </button>
                                 
-                                {openMoreMenu === payslip.id && (
+                                {openMoreMenu === payslip.id && menuPosition && (
                                   <>
                                     <div 
-                                      className="fixed inset-0 z-10" 
-                                      onClick={() => setOpenMoreMenu(null)}
+                                      className="fixed inset-0 z-40" 
+                                      onClick={() => {
+                                        setOpenMoreMenu(null);
+                                        setMenuPosition(null);
+                                      }}
                                     />
-                                    <div className="absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+                                    <div 
+                                      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[140px]"
+                                      style={{
+                                        top: `${menuPosition.top}px`,
+                                        right: `${menuPosition.right}px`
+                                      }}
+                                    >
                                       {/* 표시 형식 */}
                                       <div className="px-2 py-1 text-[10px] text-gray-500 font-medium border-b border-gray-100">
                                         표시 형식
@@ -5566,6 +5587,7 @@ export default function PayslipGenerator() {
                                         onClick={() => {
                                           updatePayslipDisplayType(payslip.id, 'basic');
                                           setOpenMoreMenu(null);
+                                          setMenuPosition(null);
                                         }}
                                         className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 ${
                                           (payslip.display_type || 'basic') === 'basic' ? 'text-gray-900 font-medium' : 'text-gray-600'
@@ -5577,6 +5599,7 @@ export default function PayslipGenerator() {
                                         onClick={() => {
                                           updatePayslipDisplayType(payslip.id, 'detailed');
                                           setOpenMoreMenu(null);
+                                          setMenuPosition(null);
                                         }}
                                         className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 ${
                                           payslip.display_type === 'detailed' ? 'text-gray-900 font-medium' : 'text-gray-600'
@@ -5588,6 +5611,7 @@ export default function PayslipGenerator() {
                                         onClick={() => {
                                           updatePayslipDisplayType(payslip.id, 'insurance');
                                           setOpenMoreMenu(null);
+                                          setMenuPosition(null);
                                         }}
                                         className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 ${
                                           payslip.display_type === 'insurance' ? 'text-gray-900 font-medium' : 'text-gray-600'
@@ -5599,6 +5623,7 @@ export default function PayslipGenerator() {
                                         onClick={() => {
                                           updatePayslipDisplayType(payslip.id, 'business_income');
                                           setOpenMoreMenu(null);
+                                          setMenuPosition(null);
                                         }}
                                         className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 ${
                                           payslip.display_type === 'business_income' ? 'text-gray-900 font-medium' : 'text-gray-600'
@@ -5617,6 +5642,7 @@ export default function PayslipGenerator() {
                                             await issuePayslipWithTaxAccountantStandard(payslip.id, notes);
                                           }
                                           setOpenMoreMenu(null);
+                                          setMenuPosition(null);
                                         }}
                                         className="w-full text-left px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
                                       >
@@ -5641,6 +5667,7 @@ export default function PayslipGenerator() {
                                             }
                                           }
                                           setOpenMoreMenu(null);
+                                          setMenuPosition(null);
                                         }}
                                         className="w-full text-left px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50"
                                       >
