@@ -5489,7 +5489,7 @@ export default function PayslipGenerator() {
                         <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
                           {payslip.issued_at ? (() => {
                             const date = new Date(payslip.issued_at);
-                            return `${date.getMonth() + 1}/${date.getDate()}`;
+                            return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}.`;
                           })() : '-'}
                         </td>
                         <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
