@@ -112,6 +112,7 @@ export default function PayslipGenerator() {
   const [yearFilter, setYearFilter] = useState<string>('all'); // 'all', '2025', '2026', etc.
   const [showActionsColumn, setShowActionsColumn] = useState<boolean>(true); // 작업 컬럼 표시/숨김
   const [selectedPayslipForDetails, setSelectedPayslipForDetails] = useState<any>(null);
+  const [openMoreMenu, setOpenMoreMenu] = useState<string | null>(null); // 기타 메뉴 열림 상태
   const [editingDates, setEditingDates] = useState(false);
   const [editIssuedDate, setEditIssuedDate] = useState('');
   const [editPaidDate, setEditPaidDate] = useState('');
