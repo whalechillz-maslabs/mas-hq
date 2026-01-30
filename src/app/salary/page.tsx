@@ -420,22 +420,22 @@ export default function SalaryPage() {
     const baseAmount = totalEarnings - mealAllowance;
     const round = (v: number) => Math.floor(v);
     
+    // 국민연금: 세무사 실제 발행 명세서에는 없음 (공제하지 않음)
+    // 단, 계약서에서 명시적으로 포함하도록 설정된 경우에만 계산
     const nationalPension = (
-      employeeAge >= 60 || 
-      contract?.insurance_display?.national_pension === false ||
-      contract?.insurance_4major === false
-    ) ? 0 : round(baseAmount * 0.045);
+      contract?.insurance_display?.national_pension === true
+    ) ? round(baseAmount * 0.045) : 0; // 기본적으로 공제하지 않음
     
-    // 건강보험: 근로자 부담 3.545% (보수월액 기준)
+    // 건강보험: 근로자 부담 3.545% (세무사 실제 발행 기준: 82,950원 @ 2,340,000원)
     // 계산 후 3원 추가 절사 (82,953 → 82,950)
     const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
     
-    // 장기요양보험: 건강보험료의 0.9182% (세무사 기준)
-    // ⚠️ 주의: 보수월액 기준이 아닌 건강보험료 기준으로 계산
-    const longTermCareInsurance = round(healthInsurance * 0.009182);
+    // 장기요양보험: 보수월액 × 0.459% (세무사 실제 발행 기준: 10,740원 @ 2,340,000원)
+    const longTermCareInsurance = round(baseAmount * 0.00459);
     
-    // 고용보험: 근로자 부담 0.9% (보수월액 기준)
-    const employmentInsurance = round(baseAmount * 0.009);
+    // 고용보험: 보수월액 × 0.1923% (세무사 실제 발행 기준: 4,500원 @ 2,340,000원)
+    // 정확한 요율: 4,500 / 2,340,000 = 0.0019230769... → 반올림하여 4,500원
+    const employmentInsurance = Math.round(baseAmount * (4500 / 2340000));
     
     // 산재보험: 전액 사업주 부담 → 근로자 공제 0원
     const industrialAccidentInsurance = 0;
