@@ -5931,13 +5931,12 @@ export default function PayslipGenerator() {
                   const totalDeductions = insurance.totalInsurance + (payslipData.tax_amount || 0);
                   const transferAmount = (payslipData.total_earnings - mealAllowance) - totalDeductions;
                   
-                  // 세무사 실제 발행 명세서 기준 계산
-                  const baseSalary = payslipData.base_salary || (payslipData.total_earnings - mealAllowance);
-                  const taxAccountantHealthInsurance = Math.max(0, Math.floor(baseSalary * 0.03545) - 3);
-                  const taxAccountantLongTermCare = Math.floor(baseSalary * 0.00459);
-                  const taxAccountantEmployment = Math.round(baseSalary * (4500 / 2340000));
-                  const taxAccountantTotalInsurance = taxAccountantHealthInsurance + taxAccountantLongTermCare + taxAccountantEmployment;
-                  const taxAccountantNetSalary = baseSalary - taxAccountantTotalInsurance;
+                  // 데이터베이스에 저장된 값을 우선 사용 (세무사 실제 발행 기준)
+                  const healthInsurance = payslipData.health_insurance || 0;
+                  const employment = payslipData.employment_insurance || 0;
+                  const longTermCare = payslipData.long_term_care_insurance || 0;
+                  const totalInsurance = payslipData.total_insurance || 0;
+                  const netSalary = payslipData.net_salary || 0;
                   
                   return (
                     <>
@@ -5945,24 +5944,24 @@ export default function PayslipGenerator() {
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">공제 내역</h4>
                         <div className="flex justify-between items-center py-2 border-b">
                           <span className="text-gray-600">건강보험</span>
-                          <span className="font-medium text-red-600">-{taxAccountantHealthInsurance.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{healthInsurance.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b">
                           <span className="text-gray-600">고용보험</span>
-                          <span className="font-medium text-red-600">-{taxAccountantEmployment.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{employment.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b">
                           <span className="text-gray-600">장기요양보험료</span>
-                          <span className="font-medium text-red-600">-{taxAccountantLongTermCare.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{longTermCare.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-gray-400">
                           <span className="text-gray-600 font-medium">공제액계</span>
-                          <span className="font-medium text-red-600">-{taxAccountantTotalInsurance.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{totalInsurance.toLocaleString()}원</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-3 bg-blue-50 rounded-lg px-4 mt-4 border-2 border-blue-200">
                         <span className="font-bold text-gray-900">차인지급액</span>
-                        <span className="font-bold text-xl text-blue-600">{taxAccountantNetSalary.toLocaleString()}원</span>
+                        <span className="font-bold text-xl text-blue-600">{netSalary.toLocaleString()}원</span>
                       </div>
                       {mealAllowance > 0 && (
                         <div className="flex justify-between items-center py-3 bg-yellow-50 rounded-lg px-4 mt-2 border border-yellow-200">
@@ -6305,12 +6304,12 @@ export default function PayslipGenerator() {
                     <h3 className="text-lg font-semibold text-green-900 mb-3">공제 내역</h3>
                     <div className="space-y-2">
                       {(() => {
-                        const baseSalary = selectedPayslipForDetails.base_salary || (selectedPayslipForDetails.total_earnings - (selectedPayslipForDetails.meal_allowance || 0));
-                        const healthInsurance = Math.max(0, Math.floor(baseSalary * 0.03545) - 3);
-                        const longTermCare = Math.floor(baseSalary * 0.00459);
-                        const employment = Math.round(baseSalary * (4500 / 2340000));
-                        const totalInsurance = healthInsurance + longTermCare + employment;
-                        const netSalary = baseSalary - totalInsurance;
+                        // 데이터베이스에 저장된 값을 우선 사용 (세무사 실제 발행 기준)
+                        const healthInsurance = selectedPayslipForDetails.health_insurance || 0;
+                        const employment = selectedPayslipForDetails.employment_insurance || 0;
+                        const longTermCare = selectedPayslipForDetails.long_term_care_insurance || 0;
+                        const totalInsurance = selectedPayslipForDetails.total_insurance || 0;
+                        const netSalary = selectedPayslipForDetails.net_salary || 0;
                         
                         return (
                           <>
