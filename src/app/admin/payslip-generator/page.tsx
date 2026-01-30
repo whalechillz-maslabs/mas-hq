@@ -5928,14 +5928,6 @@ export default function PayslipGenerator() {
                           <span className="font-medium text-red-600">-{taxAccountantTotalInsurance.toLocaleString()}원</span>
                         </div>
                       </div>
-                      {payslipData.tax_amount > 0 && (
-                        <div className="mt-2 pt-2 border-t">
-                          <div className="flex justify-between items-center py-2">
-                            <span className="text-gray-600">세금 (3.3%)</span>
-                            <span className="font-medium text-gray-700">{payslipData.tax_amount.toLocaleString()}원</span>
-                          </div>
-                        </div>
-                      )}
                       <div className="flex justify-between items-center py-3 bg-blue-50 rounded-lg px-4 mt-4 border-2 border-blue-200">
                         <span className="font-bold text-gray-900">차인지급액</span>
                         <span className="font-bold text-xl text-blue-600">{taxAccountantNetSalary.toLocaleString()}원</span>
@@ -6306,12 +6298,6 @@ export default function PayslipGenerator() {
                               <span>공제액계</span>
                               <span>{totalInsurance.toLocaleString()}원</span>
                             </div>
-                            {(selectedPayslipForDetails.tax_amount || 0) > 0 && (
-                              <div className="flex justify-between pt-2 border-t">
-                                <span>세금 (3.3%)</span>
-                                <span>{(selectedPayslipForDetails.tax_amount || 0).toLocaleString()}원</span>
-                              </div>
-                            )}
                             <div className="border-t pt-2 font-semibold flex justify-between text-green-700">
                               <span>차인지급액</span>
                               <span>{netSalary.toLocaleString()}원</span>
