@@ -5495,8 +5495,8 @@ export default function PayslipGenerator() {
                         <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
                           {payslip.paid_at ? (() => {
                             const date = new Date(payslip.paid_at);
-                            return `${date.getMonth() + 1}/${date.getDate()}`;
-                          })() : '-'}
+                            return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}.`;
+                          })() : '미지급'}
                         </td>
                         {showActionsColumn && (
                           <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500 sticky right-0 z-20 bg-white border-l border-gray-200 w-[400px] min-w-[400px]">
