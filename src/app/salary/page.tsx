@@ -426,9 +426,18 @@ export default function SalaryPage() {
       contract?.insurance_4major === false
     ) ? 0 : round(baseAmount * 0.045);
     
+    // 건강보험: 근로자 부담 3.545% (보수월액 기준)
+    // 계산 후 3원 추가 절사 (82,953 → 82,950)
     const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
-    const longTermCareInsurance = round(baseAmount * 0.00459);
+    
+    // 장기요양보험: 건강보험료의 0.9182% (세무사 기준)
+    // ⚠️ 주의: 보수월액 기준이 아닌 건강보험료 기준으로 계산
+    const longTermCareInsurance = round(healthInsurance * 0.009182);
+    
+    // 고용보험: 근로자 부담 0.9% (보수월액 기준)
     const employmentInsurance = round(baseAmount * 0.009);
+    
+    // 산재보험: 전액 사업주 부담 → 근로자 공제 0원
     const industrialAccidentInsurance = 0;
     
     const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance + industrialAccidentInsurance;
