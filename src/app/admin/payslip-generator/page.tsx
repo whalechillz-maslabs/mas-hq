@@ -5426,10 +5426,10 @@ export default function PayslipGenerator() {
                       <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         상태
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         발행일
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         지급일
                       </th>
                       {showActionsColumn && (
