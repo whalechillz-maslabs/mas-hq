@@ -3367,30 +3367,27 @@ export default function PayslipGenerator() {
     const age = getAgeFromBirthDate(payslip.employees?.birth_date);
     const contract = payslip.contracts;
     
-    // 세무사 기준 4대보험 계산 (국민연금 제외 가능)
-    const baseAmount = payslip.total_earnings - (payslip.meal_allowance || 0);
+    // 세무사 실제 발행 명세서 기준 계산
+    const baseAmount = payslip.base_salary || (payslip.total_earnings - (payslip.meal_allowance || 0));
     const round = (v: number) => Math.floor(v);
     
-    // 국민연금: 60세 이상 또는 계약서 설정에 따라 제외
-    const nationalPension = (
-      age >= 60 || 
-      contract?.insurance_display?.national_pension === false ||
-      contract?.insurance_4major === false
-    ) ? 0 : round(baseAmount * 0.045);
-    
-    // 건강보험: 근로자 부담 3.545%
+    // 건강보험: 근로자 부담 3.545% (세무사 실제 발행 기준)
     const healthInsurance = Math.max(0, round(baseAmount * 0.03545) - 3);
     
-    // 장기요양보험: 건강보험료의 0.9182% × 50%
-    const longTermCareInsurance = round(healthInsurance * 0.009182);
+    // 장기요양보험: 보수월액 × 0.459% (세무사 실제 발행 기준)
+    const longTermCareInsurance = round(baseAmount * 0.00459);
     
-    // 고용보험: 근로자 부담 0.9% (실업급여 부담금)
-    const employmentInsurance = round(baseAmount * 0.009);
+    // 고용보험: 보수월액 × 0.1923% (세무사 실제 발행 기준)
+    const employmentInsurance = Math.round(baseAmount * (4500 / 2340000));
     
-    const totalInsurance = nationalPension + healthInsurance + longTermCareInsurance + employmentInsurance;
-    const taxAmount = Math.round((baseAmount) * 0.033); // 3.3% 사업소득세
-    const totalDeductions = totalInsurance + taxAmount;
-    const netSalary = payslip.total_earnings - totalDeductions;
+    // 공제액계: 건강보험 + 고용보험 + 장기요양보험료 (국민연금, 세금 제외)
+    const totalInsurance = healthInsurance + longTermCareInsurance + employmentInsurance;
+    
+    // 세금: 별도 계산 (공제액계에 포함 안함)
+    const taxAmount = Math.round(baseAmount * 0.033); // 3.3% 사업소득세
+    
+    // 차인지급액: 기본급 - 공제액계 (세금 제외)
+    const netSalary = baseAmount - totalInsurance;
 
     // 인쇄용 HTML 생성
     const printWindow = window.open('', '_blank');
@@ -3490,40 +3487,29 @@ export default function PayslipGenerator() {
             <th>공제내역</th>
             <th>공제액</th>
           </tr>
-          ${nationalPension > 0 ? `
           <tr>
-            <td>국민연금 (4.5%)</td>
-            <td>${nationalPension.toLocaleString()}원</td>
-          </tr>
-          ` : ''}
-          <tr>
-            <td>건강보험 (3.545%)</td>
+            <td>건강보험</td>
             <td>${healthInsurance.toLocaleString()}원</td>
           </tr>
           <tr>
-            <td>장기요양보험료 (건강보험료의 0.9182%)</td>
-            <td>${longTermCareInsurance.toLocaleString()}원</td>
-          </tr>
-          <tr>
-            <td>고용보험 (0.9%)</td>
+            <td>고용보험</td>
             <td>${employmentInsurance.toLocaleString()}원</td>
           </tr>
           <tr>
-            <td>소득세 (3.3%)</td>
-            <td>${taxAmount.toLocaleString()}원</td>
+            <td>장기요양보험료</td>
+            <td>${longTermCareInsurance.toLocaleString()}원</td>
           </tr>
           <tr class="total-row">
             <td>공제액계</td>
-            <td>${totalDeductions.toLocaleString()}원</td>
+            <td>${totalInsurance.toLocaleString()}원</td>
           </tr>
         </table>
         
         <div style="margin-top: 30px; text-align: right; font-size: 16px;">
-          <p style="margin-bottom: 10px;"><strong>차인지급액 (이체 금액):</strong> ${netSalary.toLocaleString()}원</p>
+          <p style="margin-bottom: 10px;"><strong>차인지급액:</strong> ${netSalary.toLocaleString()}원</p>
           ${payslip.meal_allowance > 0 ? `
           <p style="margin-bottom: 10px;"><strong>식대 (별도 지급):</strong> ${payslip.meal_allowance.toLocaleString()}원</p>
           ` : ''}
-          <p><strong>총 급여:</strong> ${(netSalary + (payslip.meal_allowance || 0)).toLocaleString()}원</p>
         </div>
         
         ${payslip.notes ? `
@@ -5913,60 +5899,52 @@ export default function PayslipGenerator() {
                   const totalDeductions = insurance.totalInsurance + (payslipData.tax_amount || 0);
                   const transferAmount = (payslipData.total_earnings - mealAllowance) - totalDeductions;
                   
+                  // 세무사 실제 발행 명세서 기준 계산
+                  const baseSalary = payslipData.base_salary || (payslipData.total_earnings - mealAllowance);
+                  const taxAccountantHealthInsurance = Math.max(0, Math.floor(baseSalary * 0.03545) - 3);
+                  const taxAccountantLongTermCare = Math.floor(baseSalary * 0.00459);
+                  const taxAccountantEmployment = Math.round(baseSalary * (4500 / 2340000));
+                  const taxAccountantTotalInsurance = taxAccountantHealthInsurance + taxAccountantLongTermCare + taxAccountantEmployment;
+                  const taxAccountantNetSalary = baseSalary - taxAccountantTotalInsurance;
+                  
                   return (
                     <>
                       <div className="mt-4 pt-4 border-t-2 border-gray-300">
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">공제 내역</h4>
-                        {insurance.nationalPension > 0 && (
-                          <div className="flex justify-between items-center py-2 border-b">
-                            <span className="text-gray-600">국민연금 (4.5%)</span>
-                            <span className="font-medium text-red-600">-{insurance.nationalPension.toLocaleString()}원</span>
-                          </div>
-                        )}
                         <div className="flex justify-between items-center py-2 border-b">
                           <span className="text-gray-600">건강보험</span>
-                          <span className="font-medium text-red-600">-{insurance.healthInsurance.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{taxAccountantHealthInsurance.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">고용보험</span>
+                          <span className="font-medium text-red-600">-{taxAccountantEmployment.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b">
                           <span className="text-gray-600">장기요양보험료</span>
-                          <span className="font-medium text-red-600">-{insurance.longTermCareInsurance.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{taxAccountantLongTermCare.toLocaleString()}원</span>
                         </div>
-                        <div className="flex justify-between items-center py-2 border-b">
-                          <span className="text-gray-600">고용보험 (0.8%)</span>
-                          <span className="font-medium text-red-600">-{insurance.employmentInsurance.toLocaleString()}원</span>
-                        </div>
-                        {insurance.industrialAccidentInsurance > 0 && (
-                          <div className="flex justify-between items-center py-2 border-b">
-                            <span className="text-gray-600">산재보험 (0.65%)</span>
-                            <span className="font-medium text-red-600">-{insurance.industrialAccidentInsurance.toLocaleString()}원</span>
-                          </div>
-                        )}
                         <div className="flex justify-between items-center py-2 border-b border-gray-400">
                           <span className="text-gray-600 font-medium">공제액계</span>
-                          <span className="font-medium text-red-600">-{insurance.totalInsurance.toLocaleString()}원</span>
+                          <span className="font-medium text-red-600">-{taxAccountantTotalInsurance.toLocaleString()}원</span>
                         </div>
-                        {payslipData.tax_amount > 0 && (
-                          <div className="flex justify-between items-center py-2 border-b">
-                            <span className="text-gray-600">소득세 (3.3%)</span>
-                            <span className="font-medium text-red-600">-{payslipData.tax_amount.toLocaleString()}원</span>
-                          </div>
-                        )}
                       </div>
+                      {payslipData.tax_amount > 0 && (
+                        <div className="mt-2 pt-2 border-t">
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-gray-600">세금 (3.3%)</span>
+                            <span className="font-medium text-gray-700">{payslipData.tax_amount.toLocaleString()}원</span>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-3 bg-blue-50 rounded-lg px-4 mt-4 border-2 border-blue-200">
-                        <span className="font-bold text-gray-900">차인지급액 (이체 금액)</span>
-                        <span className="font-bold text-xl text-blue-600">{transferAmount.toLocaleString()}원</span>
+                        <span className="font-bold text-gray-900">차인지급액</span>
+                        <span className="font-bold text-xl text-blue-600">{taxAccountantNetSalary.toLocaleString()}원</span>
                       </div>
                       {mealAllowance > 0 && (
-                        <>
-                          <div className="flex justify-between items-center py-3 bg-yellow-50 rounded-lg px-4 mt-2 border border-yellow-200">
-                            <span className="font-medium text-gray-900">식대 (별도 지급)</span>
-                            <span className="font-bold text-lg text-yellow-700">{mealAllowance.toLocaleString()}원</span>
-                          </div>
-                          <div className="flex justify-between items-center py-3 bg-green-50 rounded-lg px-4 mt-2 border-2 border-green-300">
-                            <span className="font-bold text-gray-900">총 급여</span>
-                            <span className="font-bold text-xl text-green-600">{(transferAmount + mealAllowance).toLocaleString()}원</span>
-                          </div>
-                        </>
+                        <div className="flex justify-between items-center py-3 bg-yellow-50 rounded-lg px-4 mt-2 border border-yellow-200">
+                          <span className="font-medium text-gray-900">식대 (별도 지급)</span>
+                          <span className="font-bold text-lg text-yellow-700">{mealAllowance.toLocaleString()}원</span>
+                        </div>
                       )}
                     </>
                   );
@@ -6270,7 +6248,7 @@ export default function PayslipGenerator() {
                       )}
                       {(selectedPayslipForDetails.meal_allowance || 0) > 0 && (
                       <div className="flex justify-between">
-                          <span>식대</span>
+                          <span>식대 (별도 지급)</span>
                           <span>{(selectedPayslipForDetails.meal_allowance || 0).toLocaleString()}원</span>
                       </div>
                       )}
@@ -6302,14 +6280,45 @@ export default function PayslipGenerator() {
                   <div className="bg-green-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold text-green-900 mb-3">공제 내역</h3>
                     <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>세금 (3.3%)</span>
-                        <span>{(selectedPayslipForDetails.tax_amount || 0).toLocaleString()}원</span>
-                      </div>
-                      <div className="border-t pt-2 font-semibold flex justify-between text-green-700">
-                        <span>실수령액</span>
-                        <span>{(selectedPayslipForDetails.net_salary || 0).toLocaleString()}원</span>
-                      </div>
+                      {(() => {
+                        const baseSalary = selectedPayslipForDetails.base_salary || (selectedPayslipForDetails.total_earnings - (selectedPayslipForDetails.meal_allowance || 0));
+                        const healthInsurance = Math.max(0, Math.floor(baseSalary * 0.03545) - 3);
+                        const longTermCare = Math.floor(baseSalary * 0.00459);
+                        const employment = Math.round(baseSalary * (4500 / 2340000));
+                        const totalInsurance = healthInsurance + longTermCare + employment;
+                        const netSalary = baseSalary - totalInsurance;
+                        
+                        return (
+                          <>
+                            <div className="flex justify-between">
+                              <span>건강보험</span>
+                              <span>{healthInsurance.toLocaleString()}원</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>고용보험</span>
+                              <span>{employment.toLocaleString()}원</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>장기요양보험료</span>
+                              <span>{longTermCare.toLocaleString()}원</span>
+                            </div>
+                            <div className="border-t pt-2 font-semibold flex justify-between">
+                              <span>공제액계</span>
+                              <span>{totalInsurance.toLocaleString()}원</span>
+                            </div>
+                            {(selectedPayslipForDetails.tax_amount || 0) > 0 && (
+                              <div className="flex justify-between pt-2 border-t">
+                                <span>세금 (3.3%)</span>
+                                <span>{(selectedPayslipForDetails.tax_amount || 0).toLocaleString()}원</span>
+                              </div>
+                            )}
+                            <div className="border-t pt-2 font-semibold flex justify-between text-green-700">
+                              <span>차인지급액</span>
+                              <span>{netSalary.toLocaleString()}원</span>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
