@@ -1204,7 +1204,8 @@ export default function PayslipGenerator() {
       total_insurance: insurance.totalInsurance
     });
     const totalDeductions = insurance.totalInsurance + taxAmount;
-    const netSalary = totalEarnings - totalDeductions; // 총 급여에서 공제를 차감한 실수령액
+    // 세무사 실제 발행 명세서 기준: 차인지급액 = 기본급 - 공제액계 (세금 공제 안함)
+    const netSalary = baseSalary - insurance.totalInsurance; // 기본급에서 공제액계만 차감
 
     const payslip: PayslipData = {
       employee_id: employee.id,
