@@ -5685,6 +5685,38 @@ export default function PayslipGenerator() {
                     지급 완료
                   </button>
                 )}
+                {payslipData.status === 'paid' && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('지급 완료를 취소하시겠습니까? 지급일이 삭제됩니다.')) return;
+                      try {
+                        const period = payslipData.period || `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+                        const { error } = await supabase
+                          .from('payslips')
+                          .update({ 
+                            status: 'issued',
+                            paid_at: null
+                          })
+                          .eq('employee_id', payslipData.employee_id)
+                          .eq('period', period);
+
+                        if (error) {
+                          throw error;
+                        }
+
+                        setPayslipData(prev => prev ? { ...prev, status: 'issued', paid_at: null } : null);
+                        await loadSavedPayslips();
+                        alert('지급 완료가 취소되었습니다.');
+                      } catch (error) {
+                        console.error('지급 취소 실패:', error);
+                        alert('지급 취소 처리에 실패했습니다.');
+                      }
+                    }}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    지급 취소
+                  </button>
+                )}
               </div>
             </div>
 
@@ -6486,6 +6518,7 @@ export default function PayslipGenerator() {
                     {selectedPayslipForDetails.status === 'issued' && (
                       <button
                         onClick={async () => {
+                          if (!confirm('급여 지급을 완료하시겠습니까?')) return;
                           try {
                             const { error } = await supabase
                               .from('payslips')
@@ -6500,7 +6533,7 @@ export default function PayslipGenerator() {
                             }
 
                             // 상태 업데이트
-                            setSelectedPayslipForDetails((prev: any) => prev ? { ...prev, status: 'paid' } : null);
+                            setSelectedPayslipForDetails((prev: any) => prev ? { ...prev, status: 'paid', paid_at: new Date().toISOString() } : null);
                             await loadSavedPayslips();
                             alert('급여 지급이 완료되었습니다.');
                           } catch (error) {
@@ -6511,6 +6544,37 @@ export default function PayslipGenerator() {
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         지급 완료
+                      </button>
+                    )}
+                    {selectedPayslipForDetails.status === 'paid' && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm('지급 완료를 취소하시겠습니까? 지급일이 삭제됩니다.')) return;
+                          try {
+                            const { error } = await supabase
+                              .from('payslips')
+                              .update({ 
+                                status: 'issued',
+                                paid_at: null
+                              })
+                              .eq('id', selectedPayslipForDetails.id);
+
+                            if (error) {
+                              throw error;
+                            }
+
+                            // 상태 업데이트
+                            setSelectedPayslipForDetails((prev: any) => prev ? { ...prev, status: 'issued', paid_at: null } : null);
+                            await loadSavedPayslips();
+                            alert('지급 완료가 취소되었습니다.');
+                          } catch (error) {
+                            console.error('지급 취소 실패:', error);
+                            alert('지급 취소 처리에 실패했습니다.');
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                      >
+                        지급 취소
                       </button>
                     )}
                     <button
